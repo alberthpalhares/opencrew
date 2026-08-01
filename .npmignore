@@ -1,0 +1,33 @@
+# Never publish the maintainer's own working instance or heavy/dev files.
+node_modules/
+dashboard/
+tests/
+crews/*
+!crews/.gitkeep
+
+# Maintainer's live workspace (the payload lives under templates/, not here)
+_opencrew/
+.claude/
+.agents/
+.agent/
+.opencode/
+.cursor/
+.github/
+.trae/
+CLAUDE.md
+GEMINI.md
+QWEN.md
+
+# Local config / secrets / reports
+.env
+.env.*
+!.env.example
+*.log
+templates/**/*.log
+RELATORIO-MELHORIAS.md
+.mcp.json
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/

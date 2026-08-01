@@ -1,0 +1,57 @@
+{
+  "name": "@aksp/opencrew",
+  "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "A reworked build of OpenSquad (by Renato Asse) — create AI agent crews that work together, right from your IDE. Multi-agent orchestration with an npm installer.",
+  "type": "module",
+  "bin": {
+    "opencrew": "bin/opencrew.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "node bin/opencrew.js",
+    "test": "node --test tests/*.test.js",
+    "version": "node -e \"require('fs').writeFileSync('templates/_opencrew/.opencrew-version', require('./package.json').version + '\\n')\""
+  },
+  "keywords": [
+    "ai-agents",
+    "multi-agent",
+    "orchestration",
+    "crews",
+    "claude-code",
+    "cursor",
+    "codex",
+    "gemini",
+    "opencode",
+    "cli"
+  ],
+  "author": {
+    "name": "aksp",
+    "url": "https://www.npmjs.com/~aksp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alberthpalhares/opencrew.git"
+  },
+  "homepage": "https://github.com/alberthpalhares/opencrew#readme",
+  "bugs": {
+    "url": "https://github.com/alberthpalhares/opencrew/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@inquirer/checkbox": "^5.1.0",
+    "@inquirer/confirm": "^5.1.0"
+  }
+}

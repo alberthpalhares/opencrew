@@ -1,0 +1,11 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "isolated": false,
+    "userDataDir": "_opencrew/_browser_profile",
+    "launchOptions": {
+      "headless": true,
+      "channel": "chrome"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Build artifacts / packing
+*.tgz
+dashboard/dist/
+dashboard/test-results/
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Maintainer's LIVE workspace (this repo IS the package; the payload lives in templates/)
+/_opencrew/
+/crews/
+/.claude/
+/.agents/
+/.agent/
+/.opencode/
+/.cursor/
+/.trae/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/QWEN.md
+
+# Internal notes (not shipped)
+RELATORIO-MELHORIAS.md
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.log
