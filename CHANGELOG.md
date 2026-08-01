@@ -3,6 +3,15 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- API keys for optional skills are now requested conversationally in chat (during crew
+  creation or skill install) instead of requiring the user to manually copy/edit `.env`
+  beforehand. Values are collected and written to `.env` automatically.
+- `init` no longer tells users to configure `.env` as a next step — no setup is required
+  to start using opencrew.
+
 ## [1.0.0] — 2026-08-01
 
 ### Added

@@ -121,10 +121,25 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
    #### a. Environment Variables (if `env:` is present)
 
-   For each variable listed in the `env` array, check if it exists in the project `.env` file.
-   - For each missing variable, inform the user:
-     "⚠️ Environment variable `{VAR_NAME}` is required by {skill name}. Add it to your `.env` file."
-   - Do NOT block installation — warn only. The skill is installed even without env vars configured.
+   This is a conversational step — never ask the user to open or edit `.env` manually.
+   The audience is non-technical (managers, analysts), so all secrets are collected in
+   chat and written to disk automatically.
+
+   For each variable listed in the `env` array:
+   1. Check if it already exists (non-empty) in the project `.env` file → if so, reuse it
+      silently, skip to the next variable.
+   2. If missing, ask the user directly in chat:
+      "This skill needs an API key to work: **{VAR_NAME}** ({one-line purpose, e.g. 'your
+      Instagram access token'}). Paste it here, or press Enter to skip and set it up later."
+   3. If the user provides a value → write it to the project `.env` file (create the file
+      from `.env.example` if it doesn't exist yet). Confirm briefly: "✅ Saved."
+   4. If the user skips → inform them:
+      "⚠️ {skill name} won't fully work until `{VAR_NAME}` is set. You can add it anytime —
+      just ask me to configure {skill name} again."
+   - Do NOT block installation either way — the skill is installed regardless of whether
+     env vars were provided.
+   - Values collected here are reused in steps b/c below — do not ask for the same
+     variable twice.
 
    #### b. MCP Setup — stdio transport (if `type: mcp` or `type: hybrid` with `mcp.transport: stdio` or no transport specified)
 
@@ -135,9 +150,8 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
         1. Yes, overwrite
         2. No, keep existing
         If "No" → skip MCP configuration but still complete installation
-   3. For each env var listed in the skill's `env` array:
-      - Check `.env` for an existing value
-      - If missing, ask the user to type the value directly
+   3. Use the values already collected in step 6.a for each env var in the skill's `env`
+      array (do not ask again).
    4. Add to `mcpServers`:
       ```json
       "{server_name}": {
@@ -154,9 +168,8 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
    1. Read `.claude/settings.local.json` (create with `{"mcpServers": {}}` if it doesn't exist)
    2. Check for `server_name` conflict (same as stdio above)
-   3. For each env var listed in the skill's `env` array:
-      - Check `.env` for an existing value
-      - If missing, ask the user to type the value directly
+   3. Use the values already collected in step 6.a for each env var in the skill's `env`
+      array (do not ask again).
    4. Build the mcpServers entry:
       - Start with `{ "type": "http", "url": "{url}" }`
       - If the skill has a `headers` field in `mcp`, add a `"headers"` object by resolving
@@ -267,8 +280,11 @@ before the pipeline begins (fail fast).
 
    d. **Verify env vars** (if `env:` is present):
       - Check each variable in `.env`
-      - If any are missing → warn the user but do NOT block pipeline execution.
-        "⚠️ Skill '{skill}' is missing environment variable(s): {list}. It may not work correctly."
+      - If any are missing → ask the user conversationally, right here in chat, the same
+        way as Operation 2, step 6.a (never point them to the `.env` file to edit it
+        themselves). If they provide a value, write it to `.env` and continue. If they
+        skip, warn: "⚠️ Skill '{skill}' is missing environment variable(s): {list}. It may
+        not work correctly." — but do NOT block pipeline execution either way.
 
 4. **Return resolved skill list**: Return all resolved skills with their parsed frontmatter
    and SKILL.md body content. This list is used by Operation 6 to inject instructions.

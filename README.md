@@ -36,14 +36,15 @@ arquivos de integração certos para cada uma. Depois:
 1. Abra a pasta na sua IDE de IA.
 2. Digite `/opencrew` para começar — a primeira execução configura o perfil da sua empresa.
 
-Isso já é suficiente para criar e rodar crews: nenhuma chave de API é obrigatória para usar
-o opencrew.
+Isso já é suficiente para criar e rodar crews: nenhuma configuração prévia, instalação
+extra ou chave de API é necessária para começar.
 
-O arquivo `.env.example` só entra em cena se você quiser usar **skills opcionais** que
-dependem de serviços externos — por exemplo, publicar no Instagram, gerar imagens com IA,
-fazer web scraping (Apify) ou enviar e-mails (Resend). Se for usar alguma delas, copie
-`.env.example` para `.env` e preencha só as chaves da skill em questão; o resto pode ficar
-em branco.
+Algumas **skills opcionais** dependem de serviços externos — por exemplo, publicar no
+Instagram, gerar imagens com IA, fazer web scraping (Apify) ou enviar e-mails (Resend). Você
+não precisa se preocupar com isso antes de começar: se, ao montar uma crew, o opencrew
+identificar que ela precisa de uma dessas skills, ele pede a chave direto na conversa
+(explicando o que é e onde consegui-la) e salva tudo por conta própria. Não é preciso abrir
+nem editar nenhum arquivo manualmente.
 
 Você pode pré-selecionar as IDEs (pula a pergunta) ou configurar todas de uma vez:
 

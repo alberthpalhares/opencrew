@@ -82,8 +82,8 @@ export async function init(opts = {}) {
   log(`\n${c.green(c.bold('Done!'))} opencrew is installed.\n`);
   log(`${c.bold('Next steps:')}`);
   log(`  1. Open this folder in your AI IDE.`);
-  log(`  2. Copy ${c.cyan('.env.example')} to ${c.cyan('.env')} and fill in keys for the skills you use.`);
-  log(`  3. Type ${c.cyan('/opencrew')} to start (first run sets up your company profile).\n`);
+  log(`  2. Type ${c.cyan('/opencrew')} to start (first run sets up your company profile).`);
+  log(`     No API keys needed up front — opencrew asks for them in chat only if a skill you use requires one.\n`);
 }
 
 async function tpl(name) {
