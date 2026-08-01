@@ -2,9 +2,9 @@
 
 **Crie equipes de agentes de IA que trabalham juntos — direto na sua IDE.**
 
-> 🇧🇷 Este README é em português (PT-BR), o público principal do projeto. Se você não fala
-> português, use o tradutor do navegador (ex.: Google Tradutor) ou peça a um assistente de
-> IA para traduzir esta página.
+> 🇧🇷 This README is in Brazilian Portuguese (PT-BR), the project's primary audience. If
+> you don't read Portuguese, use your browser's translator (e.g. Google Translate) or ask
+> an AI assistant to translate this page.
 
 opencrew é um framework de orquestração multi-agente. Descreva o que você precisa em
 linguagem natural e ele monta um time de agentes especializados que rodam como um pipeline
