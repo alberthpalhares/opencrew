@@ -1,61 +1,66 @@
 # opencrew
 
-**Create AI agent crews that work together — right from your IDE.**
+**Crie equipes de agentes de IA que trabalham juntos — direto na sua IDE.**
 
-opencrew is a multi-agent orchestration framework. Describe what you need in plain
-language and it assembles a team of specialized agents that run as an automated pipeline
-with human approval checkpoints. It works across Claude Code, Cursor, Codex, Gemini CLI,
-OpenCode, Antigravity and more.
+> 🇧🇷 Este README é em português (PT-BR), o público principal do projeto. Se você não fala
+> português, use o tradutor do navegador (ex.: Google Tradutor) ou peça a um assistente de
+> IA para traduzir esta página.
 
-> **This is not an original framework — it's my personal build of OpenSquad.**
-> [OpenSquad](https://github.com/renatoasse/opensquad) was created by
+opencrew é um framework de orquestração multi-agente. Descreva o que você precisa em
+linguagem natural e ele monta um time de agentes especializados que rodam como um pipeline
+automatizado, com pontos de aprovação humana. Funciona no Claude Code, Cursor, Codex,
+Gemini CLI, OpenCode, Antigravity e mais.
+
+> **Este não é um framework original — é a minha versão pessoal do OpenSquad.**
+> O [OpenSquad](https://github.com/renatoasse/opensquad) foi criado por
 > [Renato Asse](https://github.com/renatoasse) ([Comunidade Sem Codar](https://semcodar.com.br)).
-> I ([aksp](https://www.npmjs.com/~aksp)) use OpenSquad daily and wanted to improve a few
-> things for my own workflow — so `opencrew` is that reworked version, shared in case it
-> helps others too. All credit for the original idea and framework goes to Renato Asse.
-> See [Origin & credits](#origin--credits) below. MIT licensed, same as the original.
+> Eu ([aksp](https://www.npmjs.com/~aksp)) uso o OpenSquad no dia a dia e quis melhorar
+> algumas coisas para o meu próprio fluxo de trabalho — o `opencrew` é essa versão
+> reformulada, compartilhada caso ajude outras pessoas também. Todo o crédito pela ideia e
+> pelo framework original é do Renato Asse. Veja [Origem e créditos](#origem-e-créditos)
+> abaixo. Licenciado sob MIT, assim como o original.
 
 ---
 
-## Installation
+## Instalação
 
-**Prerequisite:** Node.js 20+
+**Pré-requisito:** Node.js 20+
 
 ```bash
 npx @aksp/opencrew init
 ```
 
-`init` scaffolds the workspace in the current folder and asks which AI IDEs you use, then
-generates the right integration files for each. Then:
+O `init` monta o workspace na pasta atual e pergunta quais IDEs de IA você usa, gerando os
+arquivos de integração certos para cada uma. Depois:
 
-1. Open the folder in your AI IDE.
-2. Copy `.env.example` to `.env` and fill in keys for the skills you plan to use.
-3. Type `/opencrew` to start — the first run sets up your company profile.
+1. Abra a pasta na sua IDE de IA.
+2. Copie `.env.example` para `.env` e preencha as chaves das skills que for usar.
+3. Digite `/opencrew` para começar — a primeira execução configura o perfil da sua empresa.
 
-Preselect IDEs (skip the prompt) or configure all of them:
+Você pode pré-selecionar as IDEs (pula a pergunta) ou configurar todas de uma vez:
 
 ```bash
 npx @aksp/opencrew init --ide=claude-code,codex
 npx @aksp/opencrew init --all
 ```
 
-## Updating
+## Atualizando
 
-Refresh the framework without losing your work:
+Atualize o framework sem perder o seu trabalho:
 
 ```bash
 npx @aksp/opencrew update
 ```
 
-`update` refreshes only `_opencrew/core`, the catalog skills and `AGENTS.md`.
-Your `crews/`, memory, IDE bridges and `.env` are left untouched.
+O `update` atualiza apenas `_opencrew/core`, as skills do catálogo e o `AGENTS.md`. Suas
+`crews/`, memória, integrações de IDE e `.env` continuam intactos.
 
-## Supported IDEs
+## IDEs suportadas
 
-| IDE | Bridge file(s) generated |
+| IDE | Arquivo(s) de integração gerado(s) |
 |-----|--------------------------|
 | Claude Code | `.claude/skills/opencrew/SKILL.md`, `CLAUDE.md` |
-| Codex (OpenAI) | `AGENTS.md` (native) + `.agents/skills/opencrew/SKILL.md` |
+| Codex (OpenAI) | `AGENTS.md` (nativo) + `.agents/skills/opencrew/SKILL.md` |
 | Cursor | `.cursor/rules/opencrew.mdc` |
 | VS Code + Copilot | `.github/copilot-instructions.md` |
 | OpenCode | `.opencode/commands/opencrew.md` |
@@ -64,55 +69,57 @@ Your `crews/`, memory, IDE bridges and `.env` are left untouched.
 | Qwen Code | `QWEN.md` |
 | Trae | `.trae/rules/opencrew.md` |
 
-Every bridge is a thin pointer to the single source of truth, **`AGENTS.md`**.
+Cada integração é só um ponteiro enxuto para a fonte única de verdade, o **`AGENTS.md`**.
 
-## How it works
+## Como funciona
 
-- **Architect** designs a crew from your description (agents, pipeline, skills).
-- **Sherlock** (optional) analyzes reference profiles to extract real content patterns.
-- **Pipeline Runner** executes the crew, pausing at checkpoints for your approval.
-- **Skills Engine** loads integrations (scraping, design, publishing, email…) on demand,
-  using a two-tier scheme to keep token usage low.
+- **Architect** projeta uma crew a partir da sua descrição (agentes, pipeline, skills).
+- **Sherlock** (opcional) analisa perfis de referência para extrair padrões reais de conteúdo.
+- **Pipeline Runner** executa a crew, pausando nos checkpoints para sua aprovação.
+- **Skills Engine** carrega integrações (scraping, design, publicação, e-mail…) sob demanda,
+  usando um esquema em duas camadas para manter o consumo de tokens baixo.
 
-## Commands (inside your IDE)
+## Comandos (dentro da sua IDE)
 
-| Command | What it does |
+| Comando | O que faz |
 |---------|--------------|
-| `/opencrew` | Open the main menu |
-| `/opencrew create <description>` | Create a new crew |
-| `/opencrew run <name>` | Run a crew |
-| `/opencrew list` | List your crews |
-| `/opencrew edit <name>` | Modify a crew |
-| `/opencrew skills` | Browse / install / remove skills |
+| `/opencrew` | Abre o menu principal |
+| `/opencrew create <descrição>` | Cria uma nova crew |
+| `/opencrew run <nome>` | Executa uma crew |
+| `/opencrew list` | Lista suas crews |
+| `/opencrew edit <nome>` | Modifica uma crew |
+| `/opencrew skills` | Navega / instala / remove skills |
 
-## For maintainers
+## Para mantenedores
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The golden rule: `AGENTS.md` is the only place
-system instructions live; per-IDE files are generated from `src/lib/ides.js`.
+Veja [CONTRIBUTING.md](CONTRIBUTING.md). Regra de ouro: `AGENTS.md` é o único lugar onde
+vivem as instruções do sistema; os arquivos por IDE são gerados a partir de `src/lib/ides.js`.
 
-## Origin & credits
+## Origem e créditos
 
-`opencrew` is a **reworked distribution of [OpenSquad](https://github.com/renatoasse/opensquad)**,
-the multi-agent orchestration framework created and maintained by
-**[Renato Asse](https://github.com/renatoasse)**, founder of
-[Comunidade Sem Codar](https://semcodar.com.br). The original project, its concept, agent
-model, pipeline design and skill system are his work — please star and follow the
-[upstream repository](https://github.com/renatoasse/opensquad) and watch the
-[launch video](https://www.youtube.com/watch?v=CL1ppI4qHeU).
+`opencrew` é uma **distribuição reformulada do [OpenSquad](https://github.com/renatoasse/opensquad)**,
+o framework de orquestração multi-agente criado e mantido por
+**[Renato Asse](https://github.com/renatoasse)**, fundador da
+[Comunidade Sem Codar](https://semcodar.com.br). O projeto original, seu conceito, o modelo
+de agentes, o design do pipeline e o sistema de skills são trabalho dele — dê uma estrela e
+siga o [repositório original](https://github.com/renatoasse/opensquad) e assista ao
+[vídeo de lançamento](https://www.youtube.com/watch?v=CL1ppI4qHeU).
 
-I use OpenSquad in my day-to-day and made a few changes that fit how I work, which I believe
-can help other people as well. What this build changes relative to upstream:
+Eu uso o OpenSquad no meu dia a dia e fiz algumas mudanças que se encaixam no meu jeito de
+trabalhar, que acredito que também podem ajudar outras pessoas. O que esta versão muda em
+relação ao original:
 
-- **npm installer under my scope** — `npx @aksp/opencrew init` / `update`, with a
-  non-destructive update path that preserves your crews, memory and `.env`.
-- **Single source of truth for multi-IDE** — one canonical `AGENTS.md`; every IDE gets a
-  thin generated bridge file instead of a hand-maintained document per tool.
-- **Token-economy and skill-invocation improvements** to the framework core.
+- **Instalador npm no meu escopo** — `npx @aksp/opencrew init` / `update`, com um caminho
+  de atualização não destrutivo que preserva suas crews, memória e `.env`.
+- **Fonte única de verdade para multi-IDE** — um `AGENTS.md` canônico; cada IDE recebe um
+  arquivo de integração gerado e enxuto, em vez de um documento mantido manualmente para
+  cada ferramenta.
+- **Melhorias de economia de tokens e de invocação de skills** no núcleo do framework.
 
-This is an independent, community fork — it is **not** affiliated with or endorsed by
-Renato Asse or Comunidade Sem Codar. If you want the official project, use
+Este é um fork independente, feito pela comunidade — **não** é afiliado nem endossado pelo
+Renato Asse ou pela Comunidade Sem Codar. Se você quiser o projeto oficial, use
 [`npx opensquad init`](https://github.com/renatoasse/opensquad).
 
-## License
+## Licença
 
-MIT — see [LICENSE](LICENSE). Original OpenSquad framework © Renato Asse, also MIT.
+MIT — veja [LICENSE](LICENSE). Framework OpenSquad original © Renato Asse, também MIT.
