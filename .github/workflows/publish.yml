@@ -1,14 +1,20 @@
 name: Publish to npm
 
-# Publishes @aksp/opencrew to npm whenever you create a GitHub Release.
+# Publishes @aksp/opencrew to npm whenever a `v*` tag is pushed (the actual
+# release flow used here: `npm version <bump>` + `git push --tags`).
 # Requires an NPM_TOKEN repo secret.
 #
-# Only one trigger (release: published) on purpose: creating a GitHub Release
-# also pushes the matching tag, so a second `push: tags` trigger would fire
-# a duplicate publish and fail with "version already exists".
+# Only `push: tags` is wired up on purpose. If you ever create a GitHub Release
+# through the UI by typing a brand-new tag name, GitHub pushes that tag AND
+# fires `release: published` in the same action — adding that trigger back
+# alongside this one would double-publish and fail with "version already
+# exists". Creating a Release for an *already-pushed* tag is safe and won't
+# trigger this workflow at all (harmless, just means no separate Release
+# entry gets made — create one manually from the tag if you want one).
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch: {}
 
 jobs:

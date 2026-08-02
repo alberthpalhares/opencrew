@@ -51,4 +51,7 @@ npm --prefix /path/to/opencrew pack   # dry-run the published tarball
    field in `package.json`. The `version` lifecycle script stamps
    `templates/_opencrew/.opencrew-version` to match automatically; CI
    (`scripts/check-version-sync.js`) fails the build if the two ever drift apart.
-3. `npm publish` (or push/create a GitHub Release — `publish.yml` handles it).
+3. `git push --tags` — this is what actually triggers `publish.yml` (it fires on
+   `push: tags: v'*'`; `npm version` above already created the tag locally). CI runs
+   the test suite, then `npm publish`. You normally don't need to run `npm publish`
+   by hand.
