@@ -50,6 +50,21 @@ export async function writeFileSafe(p, content, { overwrite = true } = {}) {
   return true;
 }
 
+/**
+ * Remove a directory and all its contents.
+ * Does nothing silently if the path does not exist.
+ * @param {string} p  Directory path to remove.
+ * @returns {Promise<boolean>} true if something was deleted, false if it didn't exist.
+ */
+export async function deleteDir(p) {
+  try {
+    await fs.rm(p, { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function readJson(p) {
   return JSON.parse(await fs.readFile(p, 'utf8'));
 }

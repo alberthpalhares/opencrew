@@ -3,7 +3,7 @@ import { packageJsonPath } from './lib/paths.js';
 import { allIdeIds } from './lib/ides.js';
 import { init } from './commands/init.js';
 import { update } from './commands/update.js';
-import { c, log, err } from './lib/ui.js';
+import { c, log, err, warn, info } from './lib/ui.js';
 
 function parseArgs(argv) {
   const opts = { _: [] };
@@ -52,14 +52,31 @@ export async function run(argv) {
   const opts = parseArgs(argv);
 
   let version = 'unknown';
+  let engines = {};
   try {
     const pkg = await readJson(packageJsonPath);
     version = pkg.version;
+    engines = pkg.engines || {};
   } catch {
     err('Could not read package.json. The installation may be corrupted.');
     info('Try reinstalling: npm install @aksp/opencrew');
     process.exitCode = 1;
     return;
+  }
+
+  // Validate Node version against engines.node requirement.
+  if (engines.node) {
+    const min = engines.node.replace(/[^0-9.]/g, '');
+    if (min) {
+      const major = Number(min.split('.')[0]);
+      const current = Number(process.versions.node.split('.')[0]);
+      if (current < major) {
+        warn(`opencrew requires Node.js ${engines.node}. You have v${process.versions.node}.`);
+        info(`Upgrade Node or use a compatible version.`);
+        process.exitCode = 1;
+        return;
+      }
+    }
   }
 
   const cmd = opts._[0] || (opts.help ? 'help' : 'init');

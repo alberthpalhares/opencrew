@@ -92,20 +92,17 @@ Cada integração é só um ponteiro enxuto para a fonte única de verdade, o **
 - **Skills Engine** carrega integrações (scraping, design, publicação, e-mail…) sob demanda,
   usando um esquema em duas camadas para manter o consumo de tokens baixo.
 
-## Dashboard (opcional, experimental)
+## Dashboard (opcional)
 
-Existe um app visual (`dashboard/`, Vite + React) que mostra uma crew rodando em tempo
-real. Ele é **desligado por padrão** — a maioria das instalações nunca usa isso, e o
-Pipeline Runner não escreve nenhum `state.json` a menos que você ligue o recurso
-explicitamente (`Dashboard: enabled` em `_opencrew/_memory/preferences.md`, via
-`/opencrew settings`).
+O opencrew inclui um dashboard visual auto-contido — `dashboard/index.html`, um arquivo
+HTML único sem dependências que mostra a execução de uma crew como um escritório virtual
+animado (com agentes trabalhando em suas mesas, handoffs entre etapas, e indicador de
+progresso). 
 
-> ⚠️ **Ainda não está pronto para uso.** O app em `dashboard/` é herdado do OpenSquad
-> original e ainda não foi migrado para a nomenclatura "crew" — ele procura por uma pasta
-> `squads/` que não existe mais neste framework, então mesmo habilitando o toggle ele não
-> vai encontrar suas crews. Não é distribuído pelo pacote npm (é só código-fonte no
-> repositório, para quem quiser rodar `npm --prefix dashboard run dev` e contribuir com o
-> port). Até esse trabalho ser concluído, deixe o toggle desligado.
+Ele é **desligado por padrão** — o Pipeline Runner não escreve `state.json` a menos que
+você ligue o recurso (`Dashboard: enabled` em `_opencrew/_memory/preferences.md`, via
+`/opencrew settings`). Inclui modo demo embutido para visualização sem precisar rodar uma
+crew real.
 
 ## Comandos (dentro da sua IDE)
 

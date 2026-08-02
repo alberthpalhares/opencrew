@@ -12,8 +12,18 @@ You are the Skills Engine. Your job is to manage skill integrations for opencrew
 ## File Locations
 
 - **Installed skills**: `skills/` — each skill in its own subdirectory with SKILL.md
-- **Skill catalog**: `https://github.com/alberthpalhares/opencrew/tree/main/templates/skills`
+- **Skill catalog index**: `skills/catalog.json` (local) — structured skill metadata.
+  If missing, fall back to the catalog README:
+  `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/README.md`
 - **Skill format reference**: `skills/opencrew-skill-creator/references/skill-format.md`
+
+### Catalog URL Resolution
+
+When fetching skill files from the catalog, resolve the base URL in this order:
+1. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field
+2. If not available, default to:
+   `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills`
+3. Append `/<name>/SKILL.md` (or other file paths) to the base URL
 
 ## How Skills Are Detected
 
@@ -96,9 +106,18 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
 1. User provides a skill name (or selects from the catalog).
 
-2. **Fetch SKILL.md from GitHub**:
+2. **Resolve the catalog base URL** (see Catalog URL Resolution above).
+
+3. **Validate minimum version** (if catalog.json available):
+   - Check `catalog.json` → `skills.<name>.minVersion`
+   - Compare against the installed opencrew version (from `_opencrew/.opencrew-version`)
+   - If installed version < minVersion → **ERROR**: "Skill '{name}' requires opencrew
+     v{minVersion} or newer. You have v{installed}. Run `npx @aksp/opencrew update`
+     to upgrade."
+
+4. **Fetch SKILL.md from catalog**:
    ```
-   https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/<name>/SKILL.md
+   {baseUrl}/<name>/SKILL.md
    ```
    - If fetch fails (404 or network error) → **ERROR**: "Skill '<name>' not found in the skills catalog."
    - Do NOT proceed if the SKILL.md cannot be fetched.
@@ -112,7 +131,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
 5. **Fetch additional files** (if the skill requires them):
    - If the SKILL.md frontmatter has `script.path` → fetch the script file from:
-     `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/<name>/{script.path}`
+     `{baseUrl}/<name>/{script.path}`
      Create subdirectories (e.g., `scripts/`) as needed.
    - If the skill has a `references/` directory mentioned → fetch those files too.
    - If the skill has an `assets/` directory mentioned → fetch those files too.
@@ -345,11 +364,16 @@ When the Architect reaches Phase 3.5 during crew creation:
    to get name, description, type, and categories.
 
 2. **Fetch the catalog index**:
-   Fetch the catalog README from GitHub to see all available skills:
-   ```
-   https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/README.md
-   ```
-   - If fetch fails → proceed with only installed skills (do not block crew creation).
+   a. First, try to read `skills/catalog.json` (installed locally). If it exists:
+      - Parse the JSON and extract the `skills` map and `baseUrl`
+      - Use this for discovery (skip the network fetch below)
+   b. If `skills/catalog.json` does NOT exist (pre-v1.1 install), fall back to fetching
+      the catalog README from GitHub:
+      ```
+      https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/README.md
+      ```
+      Parse the markdown table to extract skill names, types, and descriptions.
+   c. If both fail → proceed with only installed skills (do not block crew creation).
 
 3. **Analyze crew requirements**:
    From the discovery phase answers (Phase 1), identify what the crew needs:

@@ -15,10 +15,15 @@ src/                   CLI implementation
   lib/ides.js          IDE bridge map (single source of truth = AGENTS.md)
   lib/fsx.js           filesystem helpers
   lib/prompts.js       interactive prompts (+ non-interactive fallback)
+  lib/ui.js            terminal styling (zero deps)
+  lib/paths.js         package-relative path resolution
 templates/             the payload copied into user projects on `init`
   AGENTS.md            canonical system definition (the ONE source of truth)
-  _opencrew/          framework core (agents, pipeline, prompts, best-practices)
-  skills/              catalog skills
+  _opencrew/           framework core (runner, skills engine, prompts, best-practices)
+  skills/              catalog skills (README.md for humans, catalog.json for the engine)
+dashboard/             virtual office — self-contained HTML file (zero build)
+tests/                 test suite (node:test, zero deps)
+.github/workflows/     CI (Ubuntu + Windows, Node 20/22) + npm publish
 ```
 
 ## Golden rules

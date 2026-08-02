@@ -90,20 +90,22 @@ When running a crew:
 
 ## Dashboard (Optional)
 
-opencrew ships an optional visual dashboard (a separate app, built from source — see
-README) that shows a run in progress. It is **disabled by default** and most installs
-never use it, so the Pipeline Runner does not write `state.json` unless the user has
-turned it on.
+opencrew ships an optional visual dashboard — a self-contained HTML file
+(`dashboard/index.html`) that shows a crew run in progress as an animated
+virtual office. It is **disabled by default** and most installs never use it,
+so the Pipeline Runner does not write `state.json` unless the user has turned
+it on.
 
+- To use: open `dashboard/index.html` in a browser and point it at the
+  `crews/{name}/state.json` written during a run.
 - Toggle: `Dashboard: enabled` (or `disabled`) in `_opencrew/_memory/preferences.md`,
   editable via `/opencrew settings`.
 - When disabled (default): the runner never creates, writes, or deletes `state.json`.
 - When enabled: the runner writes `crews/{name}/state.json` before each step and at
   every handoff, exactly as described in `_opencrew/core/runner.pipeline.md`.
-- **Known limitation**: the dashboard app itself is not yet ported from the upstream
-  OpenSquad naming — it looks for a `squads/` directory instead of `crews/`, so it will
-  not discover any crews even with the toggle enabled. If a user asks about it, tell them
-  it's experimental and not functional yet rather than walking them through enabling it.
+- The dashboard auto-polls `state.json` every 1.5 seconds when in live mode;
+  it also includes a built-in demo mode so you can see what it looks like
+  without running a real crew.
 
 ## Language Handling
 

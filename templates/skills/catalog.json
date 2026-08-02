@@ -1,0 +1,61 @@
+{
+  "version": "1",
+  "baseUrl": "https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills",
+  "skills": {
+    "apify": {
+      "type": "mcp",
+      "description": "Plataforma de web scraping e automação. Extrai dados de qualquer site usando Actors prontos da Apify Store.",
+      "minVersion": "1.0.0"
+    },
+    "blotato": {
+      "type": "mcp",
+      "description": "Publicação e agendamento em redes sociais (Instagram, LinkedIn, Twitter/X, TikTok, YouTube).",
+      "minVersion": "1.0.0"
+    },
+    "canva": {
+      "type": "mcp",
+      "description": "Cria, busca, preenche e exporta designs do Canva (autenticação via OAuth).",
+      "minVersion": "1.0.0"
+    },
+    "image-ai-generator": {
+      "type": "script",
+      "description": "Gera imagens via API do OpenRouter (modo teste barato + modo produção de alta qualidade).",
+      "minVersion": "1.0.0"
+    },
+    "image-creator": {
+      "type": "mcp",
+      "description": "Renderiza HTML/CSS em imagens pixel-perfect via Playwright. Motor genérico para qualquer formato visual.",
+      "minVersion": "1.0.0"
+    },
+    "image-fetcher": {
+      "type": "hybrid",
+      "description": "Obtém assets visuais de múltiplas fontes: busca na web, screenshots via Playwright, arquivos do usuário.",
+      "minVersion": "1.0.0"
+    },
+    "instagram-publisher": {
+      "type": "script",
+      "description": "Publica carrosséis do Instagram a partir de imagens locais via imgBB + Graph API.",
+      "minVersion": "1.0.0"
+    },
+    "opencrew-best-practice-creator": {
+      "type": "prompt",
+      "description": "Guia a criação e manutenção de arquivos de best-practice na biblioteca do opencrew.",
+      "minVersion": "1.0.0"
+    },
+    "opencrew-skill-creator": {
+      "type": "prompt",
+      "description": "Cria, edita e avalia (evals/benchmark) skills do opencrew de qualquer tipo.",
+      "minVersion": "1.0.0"
+    },
+    "resend": {
+      "type": "mcp",
+      "description": "Envio de emails pelo servidor MCP oficial da Resend (individual, lote, anexos, agendamento).",
+      "minVersion": "1.0.0"
+    },
+    "template-designer": {
+      "type": "prompt",
+      "description": "Seleção de template visual para agentes de design — gera variações, renderiza e salva a identidade aprovada.",
+      "minVersion": "1.0.0"
+    }
+  }
+}

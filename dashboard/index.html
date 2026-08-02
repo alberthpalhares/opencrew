@@ -1,12 +1,358 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>opensquad Dashboard</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>opencrew — Escritório Virtual</title>
+<style>
+  :root{
+    --bg:#0e1017; --panel:#161a26; --ink:#e8ecf6; --dim:#8b93a7;
+    --accent:#5cc8ff; --work:#5cff9d; --wait:#ffcf5c; --done:#8b8bff; --hand:#ff8f5c;
+    --line:#252b3d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  #app{max-width:960px;margin:0 auto;padding:14px}
+  .bar{display:flex;align-items:center;gap:12px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+  .bar .sq{font-weight:700;font-size:15px;letter-spacing:.3px}
+  .pill{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+    text-transform:uppercase;letter-spacing:.6px}
+  .pill.running{color:var(--work);border-color:#204b33}
+  .pill.checkpoint{color:var(--wait);border-color:#4b3f20}
+  .pill.completed{color:var(--done);border-color:#33334b}
+  .pill.idle{color:var(--dim)}
+  .grow{flex:1}
+  .mode{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .mode.live .dot{background:var(--work);box-shadow:0 0 8px var(--work)}
+  .mode.demo .dot{background:var(--wait)}
+  .stage{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden}
+  canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+  .phase{display:flex;align-items:center;gap:10px;margin-top:12px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .phase .lab{font-size:13px;color:var(--ink)}
+  .phase .cnt{font-size:12px;color:var(--dim);margin-left:auto}
+  .track{height:8px;background:#0c0f18;border-radius:6px;overflow:hidden;flex:1;max-width:280px}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--work));
+    transition:width .5s ease}
+  .console{margin-top:12px;background:#0b0e16;border:1px solid var(--line);border-radius:12px;
+    padding:10px 14px;font-size:12px;color:var(--dim);min-height:40px}
+  .console b{color:var(--ink);font-weight:600}
+  .foot{margin-top:10px;font-size:11px;color:var(--dim);text-align:center}
+  .foot a{color:var(--accent);text-decoration:none}
+  .btn{cursor:pointer;background:#1d2333;border:1px solid var(--line);color:var(--ink);
+    font:inherit;font-size:11px;padding:4px 10px;border-radius:8px}
+  .btn:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Escritório virtual animado mostrando os agentes do crew trabalhando, com fase atual, progresso e handoffs.</h2>
+<div id="app">
+  <div class="bar">
+    <span id="sqIcon">🏢</span>
+    <span class="sq" id="sqName">Crew</span>
+    <span class="pill idle" id="statusPill">idle</span>
+    <span class="grow"></span>
+    <button class="btn" id="modeBtn" title="Alternar demo/ao vivo">demo</button>
+    <span class="mode demo" id="modeInd"><span class="dot"></span><span id="modeTxt">demo</span></span>
+  </div>
+
+  <div class="stage"><canvas id="cv" width="800" height="430"></canvas></div>
+
+  <div class="phase">
+    <span class="lab" id="phaseLab">Aguardando…</span>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="cnt" id="cnt">0/0</span>
+  </div>
+
+  <div class="console" id="log">Pronto.</div>
+  <div class="foot">opencrew — Escritório Virtual · baseado no
+    <a href="https://github.com/renatoasse/opensquad" target="_blank" rel="noopener">OpenSquad</a> por Renato Asse</div>
+</div>
+
+<script>
+/* ===================================================================
+   opencrew Virtual Office — self-contained, zero-build.
+   Reads crews/<name>/state.json (same contract as the pipeline runner).
+   Falls back to a scripted DEMO when no live state is found.
+=================================================================== */
+const CV = document.getElementById('cv'), X = CV.getContext('2d');
+const W = CV.width, H = CV.height;
+X.imageSmoothingEnabled = false;
+
+const P = { floor:'#2a2f42', floor2:'#262b3c', wall:'#1a1e2c', wallHi:'#222739',
+  win:'#3a6ea5', winHi:'#8fd0ff', rug:'#3a2f4a', desk:'#6b5330', deskHi:'#8a6d43',
+  screen:'#0e1524', screenOn:'#2b6cff', ink:'#e8ecf6', dim:'#8b93a7', shadow:'rgba(0,0,0,.28)' };
+
+const STATUS_COLOR = { idle:'#8b93a7', working:'#5cff9d', delivering:'#ff8f5c',
+  checkpoint:'#ffcf5c', done:'#8b8bff' };
+
+// avatar palettes (skin, hair, shirt)
+const LOOKS = [
+  ['#e8b98f','#3b2a1f','#5cc8ff'], ['#c98a5e','#1c1c22','#ff7b9c'],
+  ['#f0c9a0','#6b3f22','#7dffa8'], ['#a9714b','#2a2a2a','#ffd15c'],
+  ['#e8b98f','#8a4b2a','#b18bff'], ['#d6a97a','#141414','#ff9f5c'],
+];
+
+let state = null, mode = 'demo', t = 0;
+const sprites = new Map(); // id -> {x,y,hx,hy,look,frame,walk,statusHold}
+
+// ---- layout: desks around the room from agent index ----
+function layout(agents){
+  const n = agents.length;
+  const cols = Math.min(3, Math.max(1, Math.ceil(n/2)));
+  const rows = Math.ceil(n/cols);
+  const padX = 150, padY = 150, gapX=(W-padX*2)/Math.max(1,cols-1||1), gapY=110;
+  agents.forEach((a,i)=>{
+    const c = i % cols, r = Math.floor(i/cols);
+    const x = cols===1 ? W/2 : padX + c*gapX;
+    const y = padY + r*gapY;
+    let s = sprites.get(a.id);
+    if(!s){ s = {x, y:y+40, hx:x, hy:y, look:LOOKS[i%LOOKS.length], frame:0, walk:0}; sprites.set(a.id,s); }
+    s.hx = x; s.hy = y;
+  });
+}
+
+// ---- pixel drawing helpers ----
+function px(x,y,w,h,c){ X.fillStyle=c; X.fillRect(x|0,y|0,w,h); }
+
+function drawRoom(){
+  // wall
+  px(0,0,W,150,P.wall);
+  for(let i=0;i<W;i+=64) px(i,0,32,150,P.wallHi);
+  // windows
+  for(let wx=90; wx<W-90; wx+=210){
+    px(wx,34,120,74,'#0f1626'); px(wx+6,40,108,62,P.win);
+    px(wx+6,40,108,10,P.winHi); px(wx+58,40,6,62,'#0f1626');
+    px(wx+6,68,108,4,'#0f1626');
+  }
+  // clock
+  px(W/2-10,16,20,20,'#0e1320'); px(W/2-1,20,2,8,'#8fd0ff'); px(W/2,26,6,2,'#8fd0ff');
+  // floor
+  for(let y=150;y<H;y+=1){} px(0,150,W,H-150,P.floor);
+  for(let y=150;y<H;y+=40) for(let x=(y/40)%2*40;x<W;x+=80) px(x,y,40,40,P.floor2);
+  // center rug (handoff table zone)
+  px(W/2-120,H-150,240,120,P.rug);
+  px(W/2-120,H-150,240,6,'#4a3d5e');
+  // meeting table
+  px(W/2-46,H-96,92,30,'#3a2c22'); px(W/2-46,H-96,92,6,'#5a4433');
+}
+
+function drawDesk(x,y,on){
+  px(x-38,y+18,76,10,P.shadow);
+  // desk top
+  px(x-40,y+2,80,16,P.desk); px(x-40,y+2,80,4,P.deskHi);
+  // legs
+  px(x-36,y+18,6,14,'#4a3a20'); px(x+30,y+18,6,14,'#4a3a20');
+  // monitor
+  px(x-20,y-24,40,26,'#0c1120'); px(x-16,y-20,32,18, on?P.screenOn:P.screen);
+  if(on){ px(x-13,y-16,10,3,'#bfe0ff'); px(x-13,y-11,20,3,'#7fb6ff'); px(x-13,y-6,14,3,'#7fb6ff'); }
+  px(x-4,y+2,8,4,'#0c1120');
+}
+
+function drawAgent(a,s){
+  const [skin,hair,shirt] = s.look;
+  const x = s.x, y = s.y;
+  const bob = (a.status==='working') ? Math.round(Math.sin((t+s.frame*7)/6)) : 0;
+  const step = (s.walk>0.01) ? Math.round(Math.sin(t/4))*2 : 0;
+  // shadow
+  px(x-10,y+22,20,5,P.shadow);
+  // legs
+  px(x-6,y+10,5,12,'#2a2f42'); px(x+2,y+10,5,12+step,'#2a2f42');
+  // body
+  px(x-8,y-2+bob,16,14,shirt); px(x-8,y-2+bob,16,3,'#ffffff22');
+  // arms (typing raises)
+  const arm = a.status==='working'? bob : (a.status==='checkpoint'?-6:0);
+  px(x-11,y+0+bob,4,9+arm*0+ (a.status==='checkpoint'?0:0),shirt);
+  if(a.status==='checkpoint'){ px(x+7,y-10,4,10,shirt); } else { px(x+7,y+0+bob,4,9,shirt); }
+  // head
+  px(x-7,y-16+bob,14,14,skin); px(x-7,y-19+bob,14,6,hair); px(x-8,y-16+bob,3,7,hair); px(x+5,y-16+bob,3,7,hair);
+  // eyes
+  const blink = (Math.floor(t/40)+s.frame)%12===0;
+  px(x-4,y-11+bob,2,blink?1:2,'#12131a'); px(x+2,y-11+bob,2,blink?1:2,'#12131a');
+  // status ring
+  px(x-14,y-24,4,4,STATUS_COLOR[a.status]||P.dim);
+  // done check
+  if(a.status==='done'){ X.fillStyle='#8b8bff'; X.font='bold 12px monospace'; X.fillText('✓',x-4,y-24); }
+  // checkpoint hand pulse handled by bubble
+  // name
+  X.fillStyle=P.ink; X.font='9px ui-monospace,monospace'; X.textAlign='center';
+  X.fillText((a.icon?a.icon+' ':'')+a.name, x, y+34);
+  X.textAlign='left';
+}
+
+function bubble(x,y,text,color){
+  X.font='9px ui-monospace,monospace';
+  const w = Math.min(150, X.measureText(text).width+14);
+  const bx = Math.max(6, Math.min(W-w-6, x-w/2)), by = y-52;
+  X.fillStyle='#0b0e16f0'; roundRect(bx,by,w,20,6); X.fill();
+  X.strokeStyle=color+'88'; X.lineWidth=1; roundRect(bx,by,w,20,6); X.stroke();
+  X.fillStyle=color||'#e8ecf6'; X.fillText(clip(text,w-12), bx+7, by+13);
+  px(x-3,by+20,6,4,'#0b0e16');
+}
+function roundRect(x,y,w,h,r){ X.beginPath(); X.moveTo(x+r,y); X.arcTo(x+w,y,x+w,y+h,r);
+  X.arcTo(x+w,y+h,x,y+h,r); X.arcTo(x,y+h,x,y,r); X.arcTo(x,y,x+w,y,r); X.closePath(); }
+function clip(s,w){ let r=s; while(X.measureText(r).width>w && r.length>1) r=r.slice(0,-2); return r===s?s:r+'…'; }
+
+// ---- handoff paper flying ----
+let paper = null; // {fromId,toId,tp,msg}
+function triggerHandoff(h){
+  if(!h) return;
+  const key = h.from+'>'+h.to+h.completedAt;
+  if(paper && paper.key===key) return;
+  const from = sprites.get(h.from), to = sprites.get(h.to);
+  if(from&&to){ paper = {key, from, to, tp:0, msg:h.message||''}; }
+}
+
+// ---- main render ----
+function render(){
+  t++;
+  X.clearRect(0,0,W,H); drawRoom();
+  if(state && state.agents){
+    // desks
+    state.agents.forEach(a=>{ const s=sprites.get(a.id); if(s) drawDesk(s.hx,s.hy, a.status==='working'); });
+    // move sprites (walk to table when delivering)
+    state.agents.forEach(a=>{
+      const s=sprites.get(a.id); if(!s) return; s.frame=s.frame||(Math.random()*9|0);
+      let tx=s.hx, ty=s.hy+40;
+      if(a.status==='delivering'){ tx=W/2; ty=H-92; s.walk=1; } else s.walk=Math.max(0,s.walk-0.05);
+      s.x += (tx-s.x)*0.08; s.y += (ty-s.y)*0.08;
+    });
+    // agents (sorted by y for depth)
+    [...state.agents].sort((a,b)=>sprites.get(a.id).y-sprites.get(b.id).y).forEach(a=>{
+      const s=sprites.get(a.id); if(!s) return; drawAgent(a,s);
+      if(a.status==='working') bubble(s.x,s.y, state.step?.label||'trabalhando…', STATUS_COLOR.working);
+      else if(a.status==='checkpoint') bubble(s.x,s.y, 'aguardando aprovação', STATUS_COLOR.checkpoint);
+      else if(a.status==='delivering') bubble(s.x,s.y, 'entregando…', STATUS_COLOR.delivering);
+    });
+    // paper animation
+    triggerHandoff(state.handoff);
+    if(paper){
+      paper.tp += 0.03;
+      const p=paper.tp, a=paper.from, b=paper.to;
+      const cx=W/2, cy=H-100; // arc through table
+      const x = quad(a.x,cx,b.x,p), y = quad(a.y-10,cy-40,b.y-10,p)-Math.sin(p*Math.PI)*20;
+      px(x-5,y-6,10,8,'#f2ead0'); px(x-5,y-6,10,2,'#cfc39a'); px(x-3,y-2,6,1,'#9a8f6a');
+      if(p>=1) paper=null;
+    }
+  }
+  drawHUD();
+  requestAnimationFrame(render);
+}
+function quad(a,b,c,t){ const m=1-t; return m*m*a + 2*m*t*b + t*t*c; }
+
+function drawHUD(){ /* on-canvas subtle vignette */
+  X.fillStyle='rgba(0,0,0,.10)'; X.fillRect(0,0,W,6); X.fillRect(0,H-6,W,6);
+}
+
+// ---- bind state to DOM chrome ----
+function paintChrome(){
+  const s=state||{};
+  document.getElementById('sqName').textContent = s.crew || 'Crew';
+  document.getElementById('sqIcon').textContent = (s.agents&&s.agents[0]&&s.agents[0].icon)||'🏢';
+  const st = s.status||'idle';
+  const pill=document.getElementById('statusPill'); pill.className='pill '+st; pill.textContent=st;
+  const cur=s.step?.current||0, tot=s.step?.total||0;
+  document.getElementById('phaseLab').textContent = s.step?.label || (st==='completed'?'Concluído 🎉':'Aguardando…');
+  document.getElementById('cnt').textContent = cur+'/'+tot;
+  document.getElementById('fill').style.width = tot? Math.round(cur/tot*100)+'%':'0%';
+  const w = state?.agents?.find(a=>a.status==='working');
+  const cp = state?.agents?.find(a=>a.status==='checkpoint');
+  const log=document.getElementById('log');
+  if(cp) log.innerHTML='⏸️ <b>'+cp.name+'</b> pausou para sua aprovação — '+(s.step?.label||'');
+  else if(state?.handoff) log.innerHTML='📎 <b>'+nameOf(state.handoff.from)+'</b> → <b>'+nameOf(state.handoff.to)+'</b>: '+esc(state.handoff.message||'');
+  else if(w) log.innerHTML='⌨️ <b>'+w.name+'</b> está trabalhando: '+esc(s.step?.label||'');
+  else if(st==='completed') log.innerHTML='✅ Crew concluiu o pipeline.';
+  else log.textContent='Pronto.';
+}
+function nameOf(id){ return state?.agents?.find(a=>a.id===id)?.name || id; }
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function apply(newState){ state=newState; if(state?.agents) layout(state.agents); paintChrome(); }
+
+// ---- LIVE: poll state.json from common locations ----
+const CANDIDATES = ['./state.json','../state.json'];
+async function poll(){
+  for(const url of CANDIDATES){
+    try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) continue;
+      const j=await r.json(); if(j&&j.agents){ setMode('live'); apply(j); return true; } }catch(e){}
+  }
+  return false;
+}
+function setMode(m){ if(mode===m) return; mode=m;
+  const ind=document.getElementById('modeInd'); ind.className='mode '+m;
+  document.getElementById('modeTxt').textContent=m; document.getElementById('modeBtn').textContent = m==='live'?'ao vivo':'demo';
+}
+
+// ---- DEMO: scripted pipeline so it looks alive without a real run ----
+const DEMO_AGENTS = [
+  {id:'researcher',name:'Pesquisador',icon:'🔎'},
+  {id:'strategist',name:'Estrategista',icon:'🧭'},
+  {id:'writer',name:'Redator',icon:'✍️'},
+  {id:'designer',name:'Designer',icon:'🎨'},
+  {id:'reviewer',name:'Revisor',icon:'✅'},
+];
+const DEMO_STEPS = [
+  ['researcher','Pesquisando tendências do nicho'],
+  ['strategist','Definindo ângulo e pauta'],
+  ['writer','Escrevendo o conteúdo'],
+  ['designer','Gerando as artes'],
+  ['reviewer','Revisão final de qualidade'],
+];
+let demoI=0, demoPhase='work', demoTick=0, demoTimer=null;
+function demoState(){
+  const [wid,label]=DEMO_STEPS[demoI];
+  const agents=DEMO_AGENTS.map((a,i)=>{
+    let status='idle';
+    if(i<demoI) status='done';
+    else if(i===demoI){ status = demoPhase==='check'?'checkpoint':(demoPhase==='hand'?'delivering':'working'); }
+    return {...a,status,desk:{col:i%3,row:(i/3|0)}};
+  });
+  let handoff=null;
+  if(demoPhase==='hand' && demoI<DEMO_STEPS.length-1)
+    handoff={from:wid,to:DEMO_STEPS[demoI+1][0],message:'Passando o bastão: '+label,completedAt:String(demoTick)};
+  return {crew:'demo-conteudo',status: demoPhase==='check'?'checkpoint':'running',
+    step:{current:demoI+1,total:DEMO_STEPS.length,label},agents,handoff,
+    startedAt:'0',updatedAt:String(demoTick)};
+}
+function demoLoop(){
+  demoTick++;
+  // phase machine: work(6s) -> [check(2s) occasionally] -> hand(2s) -> next
+  demoTick%1;
+  if(demoTimer!==null) return;
+  step();
+  function step(){
+    apply(demoState());
+    let wait=1900;
+    if(demoPhase==='work'){ demoPhase = (demoI===2)?'check':'hand'; wait=2600; }
+    else if(demoPhase==='check'){ demoPhase='hand'; wait=1800; }
+    else if(demoPhase==='hand'){ demoI++; demoPhase='work'; if(demoI>=DEMO_STEPS.length){ finishDemo(); return; } wait=2600; }
+    demoTimer=setTimeout(()=>{ demoTimer=null; if(mode==='demo') step(); }, wait);
+  }
+}
+function finishDemo(){
+  const agents=DEMO_AGENTS.map((a,i)=>({...a,status:'done',desk:{col:i%3,row:(i/3|0)}}));
+  apply({crew:'demo-conteudo',status:'completed',step:{current:DEMO_STEPS.length,total:DEMO_STEPS.length,label:'Concluído'},agents,handoff:null,startedAt:'0',updatedAt:String(demoTick)});
+  setTimeout(()=>{ demoI=0; demoPhase='work'; if(mode==='demo'){ demoTimer=null; demoLoop(); } }, 3500);
+}
+
+// mode toggle
+document.getElementById('modeBtn').onclick=()=>{
+  if(mode==='live'){ setMode('demo'); demoI=0; demoPhase='work'; if(demoTimer){clearTimeout(demoTimer);demoTimer=null;} demoLoop(); }
+  else { poll().then(ok=>{ if(!ok){ setMode('demo'); } }); }
+};
+
+// boot
+render();
+(async()=>{
+  const live = await poll();
+  if(live){ setInterval(()=>{ if(mode==='live') poll(); }, 1500); }
+  else { setMode('demo'); demoLoop(); }
+})();
+</script>
+</body>
 </html>

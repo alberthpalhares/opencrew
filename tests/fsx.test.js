@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { copyDir, writeFileSafe, exists, ensureDir } from '../src/lib/fsx.js';
+import { copyDir, writeFileSafe, exists, ensureDir, deleteDir } from '../src/lib/fsx.js';
 
 async function mkTmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
@@ -100,4 +100,24 @@ test('copyDir: recurses into nested directories', async () => {
   await fs.writeFile(path.join(src, 'a', 'b', 'deep.txt'), 'deep');
   await copyDir(src, dest);
   assert.equal(await fs.readFile(path.join(dest, 'a', 'b', 'deep.txt'), 'utf8'), 'deep');
+});
+
+test('deleteDir: removes directory and all contents', async () => {
+  const dir = await mkTmp();
+  const nested = path.join(dir, 'nested', 'deep');
+  await ensureDir(nested);
+  await fs.writeFile(path.join(nested, 'file.txt'), 'x');
+  await fs.writeFile(path.join(dir, 'root.txt'), 'y');
+
+  const deleted = await deleteDir(dir);
+  assert.equal(deleted, true);
+  // After deletion, the path should not be accessible.
+  await assert.rejects(() => fs.access(dir), 'directory should be gone after deleteDir');
+});
+
+test('deleteDir: does not throw for a path that does not exist (rm -rf semantics)', async () => {
+  const dir = await mkTmp();
+  // deleteDir uses force:true — it succeeds silently even if nothing was there.
+  const deleted = await deleteDir(path.join(dir, 'does-not-exist'));
+  assert.equal(deleted, true);
 });
