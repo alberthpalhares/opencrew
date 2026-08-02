@@ -3,7 +3,7 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.1.0] — 2026-08-01
 
 ### Fixed
 - **Skill catalog URLs**: `/opencrew install` now fetches skills from the correct fork
