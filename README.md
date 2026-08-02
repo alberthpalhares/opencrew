@@ -1,5 +1,9 @@
 # opencrew
 
+[![CI](https://github.com/alberthpalhares/opencrew/actions/workflows/ci.yml/badge.svg)](https://github.com/alberthpalhares/opencrew/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/%40aksp%2Fopencrew)](https://www.npmjs.com/package/@aksp/opencrew)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Crie equipes de agentes de IA que trabalham juntos — direto na sua IDE.**
 
 > 🇧🇷 This README is in Brazilian Portuguese (PT-BR), the project's primary audience. If

@@ -3,6 +3,35 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- **Skill catalog URLs**: `/opencrew install` now fetches skills from the correct fork
+  (`alberthpalhares/opencrew/templates/skills/`) instead of the upstream OpenSquad repo.
+- **Publish workflow**: restored `push: tags` as the sole trigger — the actual release
+  flow is `npm version` + `git push --tags`, not GitHub Releases. Documented in
+  `CONTRIBUTING.md`.
+- **Cross-platform test script**: replaced shell glob (`tests/*.test.js`) with an
+  explicit file list so `npm test` works on Windows PowerShell + Node 20.
+- **CI matrix**: test suite now runs on Ubuntu and Windows on every push/PR.
+
+### Added
+- **Test suite**: 30 tests (`node:test`) covering `fsx.js`, init, update, IDE bridge
+  validation, and documentation contracts.
+- **CI version-sync check**: `scripts/check-version-sync.js` fails the build if
+  `.opencrew-version` drifts from `package.json`.
+- **Playwright plugin warning**: `init` now warns Claude Code users to disable the
+  native Playwright extension (opencrew ships its own via `.mcp.json`).
+
+### Changed
+- **Dashboard opt-in**: Pipeline Runner `state.json` writes are now gated on
+  `Dashboard: enabled` in `preferences.md` (default: disabled). Removed the
+  unconditional 10-second sleep at the end of every pipeline run.
+- **Smaller fixes**: removed `AskUserQuestion` references from IDE-neutral files,
+  corrected `update.js` comment about overwrite behavior, pinned `@playwright/mcp`
+  version, removed stale root `skills/` directory (drifted duplicate of
+  `templates/skills/`).
+
 ## [1.0.1] — 2026-08-01
 
 ### Changed
