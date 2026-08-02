@@ -100,6 +100,18 @@ test('init writes .opencrew-version matching package.json', async () => {
   assert.equal(version, pkg.version);
 });
 
+test('init with no --ide and --yes falls back to non-interactive defaults', async () => {
+  const dir = await mkTmp('init');
+  // In a test environment (no TTY), init without --ide/--all should fall back
+  // to all IDEs automatically — no crash, no hang waiting for input.
+  await withCwd(dir, () => init({ yes: true }));
+
+  assert.equal(await exists(path.join(dir, 'AGENTS.md')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'core', 'runner.pipeline.md')), true);
+  // With --yes and no TTY, all IDEs should be configured.
+  assert.equal(await exists(path.join(dir, 'CLAUDE.md')), true);
+});
+
 test('init skips an unknown IDE id without crashing', async () => {
   const dir = await mkTmp('init');
   await withCwd(dir, () => init({ ide: ['not-a-real-ide', 'claude-code'] }));

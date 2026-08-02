@@ -36,18 +36,32 @@ ${c.bold('Options for init')}
   --all           Configure every supported IDE
   --yes           Non-interactive; accept defaults
 
+${c.bold('Options for update')}
+  --check         Dry-run: report whether an update is available without making changes
+
 ${c.bold('Examples')}
   npx @aksp/opencrew init
   npx @aksp/opencrew init --ide=claude-code,codex
   npx @aksp/opencrew init --all
   npx @aksp/opencrew update
+  npx @aksp/opencrew update --check
 `);
 }
 
 export async function run(argv) {
   const opts = parseArgs(argv);
-  const pkg = await readJson(packageJsonPath);
-  const version = pkg.version;
+
+  let version = 'unknown';
+  try {
+    const pkg = await readJson(packageJsonPath);
+    version = pkg.version;
+  } catch {
+    err('Could not read package.json. The installation may be corrupted.');
+    info('Try reinstalling: npm install @aksp/opencrew');
+    process.exitCode = 1;
+    return;
+  }
+
   const cmd = opts._[0] || (opts.help ? 'help' : 'init');
 
   switch (cmd) {

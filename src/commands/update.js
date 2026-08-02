@@ -29,6 +29,17 @@ export async function update(opts = {}) {
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
 
+  if (opts.check) {
+    if (current === version) {
+      ok(`Up to date (v${version}).`);
+    } else {
+      info(`Update available: v${current} → v${version}.`);
+      info(`Run ${c.cyan('npx @aksp/opencrew update')} to apply.`);
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   if (current === version) {
     ok('Already up to date. Refreshing framework files anyway.');
   }

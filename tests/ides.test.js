@@ -37,3 +37,19 @@ test('ideById resolves a known id and returns undefined for unknown ids', () => 
 test('allIdeIds returns every declared IDE id in order', () => {
   assert.deepEqual(allIdeIds(), IDES.map((i) => i.id));
 });
+
+test('no two IDEs write to the same file path', () => {
+  const seen = new Map(); // path -> ide id
+  for (const ide of IDES) {
+    for (const f of ide.files) {
+      if (seen.has(f.path)) {
+        assert.fail(
+          `Path collision: ${f.path} is written by both "${seen.get(f.path)}" and "${ide.id}"`
+        );
+      }
+      seen.set(f.path, ide.id);
+    }
+  }
+  // If we got here, all paths are unique.
+  assert.equal(true, true);
+});
