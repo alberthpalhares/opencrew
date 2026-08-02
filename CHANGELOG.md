@@ -3,6 +3,31 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.0] — 2026-08-02
+
+### Fixed
+- **Crews created without agent names**: some crews rendered their agents' functions
+  (e.g. "Pesquisador") but not their persona names (e.g. "Pedro Pesquisa"). Root cause:
+  `build.prompt.md` never specified the `crew-party.csv` schema, so the manifest could be
+  generated without a `displayName` column — the exact column the Pipeline Runner reads to
+  render agent names — even though the correct two-word names were present in each
+  `.agent.md`. Build now documents the full CSV schema (header + example) and enforces it
+  with a new blocking **Gate 0b: Crew-Party Manifest** that checks `displayName` exists and
+  matches each agent's `.agent.md` `name:`.
+
+### Added
+- **`/opencrew repair <crew>`**: repairs an already-created crew whose manifest is missing
+  agent names. It rebuilds `crew-party.csv` from the persona names already stored in each
+  `.agent.md` (no re-generation of agents, research, or pipeline). New prompt at
+  `_opencrew/core/prompts/repair.prompt.md`, routed via `AGENTS.md`.
+
+### Migration
+- To fix an existing crew that shows functions but no names:
+  1. `npx @aksp/opencrew update` — refreshes the framework and installs the repair command.
+  2. `/opencrew repair <crew>` — rewrites the crew's manifest with the correct names.
+  `update` intentionally never touches `crews/`, so the repair step is required in addition
+  to updating.
+
 ## [1.1.0] — 2026-08-01
 
 ### Fixed

@@ -56,6 +56,7 @@ Parse user input and route to the appropriate action:
 | `/opencrew list` | List all crews in `crews/` directory |
 | `/opencrew run <name>` | Load Pipeline Runner → Execute crew |
 | `/opencrew edit <name> <changes>` | Load Architect → Edit Crew flow |
+| `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → fix agent names / rebuild crew-party.csv manifest |
 | `/opencrew skills` | Load Skills Engine → Show skills menu |
 | `/opencrew install <name>` | Install a skill from the catalog |
 | `/opencrew uninstall <name>` | Remove an installed skill |

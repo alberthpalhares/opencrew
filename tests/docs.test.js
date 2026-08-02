@@ -81,3 +81,28 @@ test('catalog.json and README.md list the same skills', async () => {
       `README.md should mention skill "${name}" that is in catalog.json`);
   }
 });
+
+test('build.prompt.md specifies the crew-party.csv displayName column and gate', async () => {
+  const build = await read(path.join('_opencrew', 'core', 'prompts', 'build.prompt.md'));
+
+  // The runner renders agent names from the `displayName` column; the build prompt
+  // must define it so the manifest is never generated with role/title instead of name.
+  assert.match(build, /displayName/, 'build.prompt.md must document the displayName column');
+  assert.match(build, /id,displayName,title,icon,path,execution/,
+    'build.prompt.md must show the canonical crew-party.csv header');
+  assert.match(build, /Gate 0b/, 'build.prompt.md must add the crew-party manifest gate');
+});
+
+test('repair.prompt.md exists and pulls names from .agent.md', async () => {
+  const repair = await read(path.join('_opencrew', 'core', 'prompts', 'repair.prompt.md'));
+
+  assert.match(repair, /crew-party\.csv/, 'repair prompt should rewrite crew-party.csv');
+  assert.match(repair, /displayName/, 'repair prompt should populate the displayName column');
+  assert.match(repair, /name:/, 'repair prompt should source names from .agent.md name: frontmatter');
+});
+
+test('AGENTS.md routes /opencrew repair to the repair prompt', async () => {
+  const agents = await read('AGENTS.md');
+  assert.match(agents, /\/opencrew repair/, 'AGENTS.md should route the repair command');
+  assert.match(agents, /repair\.prompt\.md/, 'AGENTS.md should point repair at repair.prompt.md');
+});

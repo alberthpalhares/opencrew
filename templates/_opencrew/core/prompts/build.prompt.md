@@ -92,7 +92,28 @@ Generate these files. Use the Write tool for all file creation — never use Bas
      ```
 
 2. **`crews/{code}/crew-party.csv`** — Agent manifest
-   - Path column uses `.agent.md` extension (e.g., `./agents/researcher.agent.md`)
+   - The header row MUST be EXACTLY these columns, in this order:
+     ```
+     id,displayName,title,icon,path,execution
+     ```
+   - One row per agent. Example:
+     ```
+     id,displayName,title,icon,path,execution
+     researcher,"Pedro Pesquisa","Pesquisador de Tendências",🔎,./agents/researcher.agent.md,subagent
+     copywriter,"Guilherme Gancho","Redator Copywriter",✍️,./agents/copywriter.agent.md,inline
+     ```
+   - **`displayName` is REQUIRED and MUST be byte-for-byte identical to the agent's
+     `name:` frontmatter field in its `.agent.md`** (the mandatory two-word "FirstName
+     LastName" persona name). The Pipeline Runner reads `displayName` — NOT `title` — to
+     render the agent's name in `state.json`, in "🤖 {name} is working…" announcements, and
+     in the dashboard. If `displayName` is missing, empty, or set to the role/title instead
+     of the persona name, the crew renders with functions but no names.
+   - `id` = the `path` basename with `./agents/` and `.agent.md` stripped
+     (e.g. `./agents/researcher.agent.md` → `researcher`).
+   - `title` = the agent's `title:` frontmatter (the role/function label). This is a
+     SEPARATE column from `displayName` — never merge or swap them.
+   - `path` column uses `.agent.md` extension (e.g., `./agents/researcher.agent.md`).
+   - Quote any field containing a space or comma with double quotes (as shown above).
 
 3. **Agent files** — one per agent: `crews/{code}/agents/{agent-id}.agent.md`
    - For ALL agents that include `tasks:` in their frontmatter, ALSO generate the task files:
@@ -426,6 +447,23 @@ For EACH agent in `design.yaml`, verify:
 
 If ANY agent has a single-word name (missing last name), this is a critical bug. Fix it by generating an alliterative last name that references the agent's role, then update the name in `design.yaml` and all generated files.
 
+### Gate 0b: Crew-Party Manifest (BLOCKING)
+
+Read `crews/{code}/crew-party.csv` and verify:
+- [ ] The header row contains a `displayName` column (not just `title`/`role`/`name`)
+- [ ] For EACH agent row: `displayName` is non-empty and has EXACTLY two words
+- [ ] For EACH agent row: `displayName` matches, byte-for-byte, the `name:` frontmatter
+      of the `.agent.md` file referenced by that row's `path` column
+
+This gate exists because the Pipeline Runner renders agent identity from the CSV's
+`displayName` column. An agent can have a correct two-word `name:` in its `.agent.md`
+(passing Gate 0) yet still render as "function without a name" if the CSV omits
+`displayName` or fills it with the role/title. That is the exact failure this gate catches.
+
+If ANY check fails: rewrite `crew-party.csv` using the canonical header
+(`id,displayName,title,icon,path,execution`), pulling `displayName` from each agent's
+`.agent.md` `name:` field and `title` from its `title:` field. Re-validate. Max 2 fix attempts.
+
 ### Gate 1: Agent Completeness (BLOCKING)
 
 For EACH `.agent.md` file, verify:
@@ -504,6 +542,7 @@ If any check fails: warn in the summary but don't block.
 Additional programmatic checks — read the filesystem to verify:
 - [ ] `crew.yaml` exists and is valid YAML
 - [ ] All `.agent.md` files listed in `crew-party.csv` exist
+- [ ] `crew-party.csv` has a `displayName` column, populated for every row and matching each agent's `.agent.md` `name:` field
 - [ ] All task files referenced in agent frontmatter exist
 - [ ] All step files referenced in `pipeline.yaml` exist
 - [ ] Skills listed in `crew.yaml` are installed in `skills/`
