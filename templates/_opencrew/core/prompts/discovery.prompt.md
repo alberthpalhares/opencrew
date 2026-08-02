@@ -251,7 +251,7 @@ target_formats:  # content crews only; empty list for others
 
 The `crew_code` must be a short, URL-safe slug derived from the crew's purpose (e.g., `content-calendar`, `competitor-tracker`, `lead-notify`).
 
-**CRITICAL — Name uniqueness:** The `crew_code` MUST NEVER match any existing folder name in `crews/`. You will receive a list of existing crew names. If the slug you derive already exists, append a numeric suffix (`-2`, `-3`, etc.) to guarantee uniqueness. Never reuse an existing crew folder name — doing so would overwrite another crew's files.
+**CRITICAL — Name uniqueness:** The `crew_code` MUST NEVER match any existing folder name in `crews/`. Before finalizing, run `ls crews/ 2>/dev/null` (Bash) to list existing crew directories. If the slug you derive matches an existing folder, append a numeric suffix (`-2`, `-3`, etc.) until it is unique. Never reuse an existing crew folder name — doing so would overwrite another crew's files.
 
 ---
 

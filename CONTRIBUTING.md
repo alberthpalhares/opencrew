@@ -60,3 +60,17 @@ npm --prefix /path/to/opencrew pack   # dry-run the published tarball
    `push: tags: v'*'`; `npm version` above already created the tag locally). CI runs
    the test suite, then `npm publish`. You normally don't need to run `npm publish`
    by hand.
+
+## Forking
+
+If you publish your own fork of opencrew under a different name:
+
+1. **Catalog URL** — Edit `templates/skills/catalog.json` → `baseUrl` to point to your
+   fork's raw GitHub URL (e.g. `https://raw.githubusercontent.com/<you>/<repo>/main/templates/skills`).
+   Alternatively, set the `OPENCREW_CATALOG_URL` env var at runtime — it takes precedence
+   over `catalog.json` and lets you keep the file unmodified.
+2. **Package name** — Update `name` in `package.json` and the `npx` commands in help text
+   (`src/cli.js`), init messages (`src/commands/init.js`), and update messages
+   (`src/commands/update.js`).
+3. **npm publish** — Set the `NPM_TOKEN` secret in your repo's GitHub Actions and update
+   `publish.yml` if you publish under a different scope or registry.

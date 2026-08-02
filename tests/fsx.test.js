@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { copyDir, writeFileSafe, exists, ensureDir, deleteDir } from '../src/lib/fsx.js';
+import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson } from '../src/lib/fsx.js';
 
 async function mkTmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
@@ -115,9 +115,28 @@ test('deleteDir: removes directory and all contents', async () => {
   await assert.rejects(() => fs.access(dir), 'directory should be gone after deleteDir');
 });
 
-test('deleteDir: does not throw for a path that does not exist (rm -rf semantics)', async () => {
+test('deleteDir: returns false for a path that does not exist', async () => {
   const dir = await mkTmp();
-  // deleteDir uses force:true — it succeeds silently even if nothing was there.
   const deleted = await deleteDir(path.join(dir, 'does-not-exist'));
-  assert.equal(deleted, true);
+  assert.equal(deleted, false);
+});
+
+test('readJson: throws with file path in the error message', async () => {
+  const dir = await mkTmp();
+  const bad = path.join(dir, 'bad.json');
+  await fs.writeFile(bad, 'not json {{{');
+  await assert.rejects(
+    () => readJson(bad),
+    /Failed to read.*bad\.json/,
+    'readJson should include the file path in its error message'
+  );
+});
+
+test('readJson: throws with ENOENT in the error message for missing files', async () => {
+  const dir = await mkTmp();
+  await assert.rejects(
+    () => readJson(path.join(dir, 'missing.json')),
+    /Failed to read.*file not found/,
+    'readJson should report "file not found" for ENOENT'
+  );
 });

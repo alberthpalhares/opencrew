@@ -56,3 +56,37 @@ test('init with --yes and no --ide configures all IDEs', async () => {
   assert.equal(await exists(path.join(dir, 'GEMINI.md')), true);
   assert.equal(await exists(path.join(dir, 'QWEN.md')), true);
 });
+
+// Smoke tests — verify expected text appears in CLI output.
+test('help output contains expected sections', async () => {
+  const dir = await mkTmp('cli');
+  const out = [];
+  const rest = console.log;
+  console.log = (...a) => out.push(a.join(' '));
+  try {
+    await withCwd(dir, () => run(['help']));
+  } finally {
+    console.log = rest;
+  }
+  const text = out.join('\n');
+  assert.match(text, /opencrew/);
+  assert.match(text, /Usage/);
+  assert.match(text, /Commands/);
+  assert.match(text, /init/);
+  assert.match(text, /update/);
+  assert.match(text, /Examples/);
+});
+
+test('version command prints a version string', async () => {
+  const dir = await mkTmp('cli');
+  const out = [];
+  const rest = console.log;
+  console.log = (...a) => out.push(a.join(' '));
+  try {
+    await withCwd(dir, () => run(['version']));
+  } finally {
+    console.log = rest;
+  }
+  const text = out.join('\n');
+  assert.match(text, /^\d+\.\d+\.\d+/);
+});

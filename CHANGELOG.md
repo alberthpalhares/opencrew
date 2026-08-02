@@ -3,6 +3,54 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.2] — 2026-08-02
+
+### Fixed
+- **`parseArgs` truncates values containing `=`**: flags like `--description=foo=bar`
+  no longer lose everything after the second `=`.
+- **`version` npm script uses `require()` in ESM project**: extracted to a dedicated
+  `scripts/stamp-version.js` that uses proper ESM imports.
+- **`skills.engine.md` numbering was out of order** in Operation 2 (Install a Skill):
+  steps 3/4 repeated instead of continuing 5–9. Cross-references updated accordingly.
+- **`init` now aborts when a workspace already exists** instead of proceeding with
+  `overwrite: false` (which silently did nothing). It prints instructions to use
+  `update` or reinstall from scratch.
+- **`deleteDir` semantics**: now returns `false` when the path does not exist (was `true`).
+- **`.env.example` placeholders** (`[REDACTED:API key param]`) removed — these were
+  security-redaction artifacts from the tooling, not real file content. No code change.
+
+### Added
+- **Short flags**: `-y` (yes), `-v` (version), `-h` (help) now work alongside their
+  `--long-form` equivalents.
+- **`OPENCREW_CATALOG_URL` env var**: forks can override the skill catalog base URL
+  without editing `catalog.json`. Documented in `CONTRIBUTING.md` → Forking.
+- **`update` now warns** that catalog skills are fully overwritten before refreshing them.
+- **`readJson` error messages now include the file path** (e.g. `Failed to read
+  /path/to/package.json: file not found`).
+- **`pickIdes` validates preselected IDs**: unknown IDs from `--ide` are filtered with
+  a warning instead of being passed through silently.
+- **`c.gray` removed** (unused). **`confirm()` removed** (dead code, never imported).
+- **ESLint** (`eslint.config.js` + `npm run lint` + CI step) with `@eslint/js` flat config.
+- **55 tests** (up from 30): new coverage for `paths.js`, `ui.js`, `fsx.js` error
+  scenarios, `normalizeIdes` string input, CLI smoke tests.
+
+### Changed
+- **CI `npm audit` raised from `moderate` to `high`** to avoid spurious build failures
+  from dev-dependency vulnerabilities without attack vectors.
+- **Playwright config**: `channel: "chrome"` removed — uses bundled Chromium for better
+  portability. `.mcp.json` now includes a `_comment` field explaining how to upgrade the
+  pinned `@playwright/mcp` version.
+- **Node version check** in `cli.js` now uses a proper semver comparison that handles
+  `||` ranges (e.g. `>=18.0.0 || >=20.0.0`).
+
+### Docs
+- **`discovery.prompt.md`**: `crew_code` uniqueness is now self-service (`ls crews/`)
+  instead of depending on the orchestrator to pass a list.
+- **`runner.pipeline.md`**: language contract table documents all fixed PT-BR headers
+  and the policy for adding new ones.
+- **`CONTRIBUTING.md`**: new "Forking" section with catalog URL, package name, and
+  publish instructions.
+
 ## [1.2.1] — 2026-08-02
 
 ### Changed

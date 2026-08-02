@@ -57,6 +57,7 @@ export async function writeFileSafe(p, content, { overwrite = true } = {}) {
  * @returns {Promise<boolean>} true if something was deleted, false if it didn't exist.
  */
 export async function deleteDir(p) {
+  if (!(await exists(p))) return false;
   try {
     await fs.rm(p, { recursive: true, force: true });
     return true;
@@ -66,5 +67,10 @@ export async function deleteDir(p) {
 }
 
 export async function readJson(p) {
-  return JSON.parse(await fs.readFile(p, 'utf8'));
+  try {
+    return JSON.parse(await fs.readFile(p, 'utf8'));
+  } catch (e) {
+    const reason = e.code === 'ENOENT' ? 'file not found' : e.message;
+    throw new Error(`Failed to read ${p}: ${reason}`);
+  }
 }

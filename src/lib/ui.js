@@ -9,7 +9,6 @@ export const c = {
   yellow: wrap('33'),
   cyan: wrap('36'),
   red: wrap('31'),
-  gray: wrap('90'),
 };
 
 export const log = (...a) => console.log(...a);

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
 import { copyDir, exists, writeFileSafe, readJson } from '../lib/fsx.js';
-import { IDES, ideById, allIdeIds } from '../lib/ides.js';
+import { ideById, allIdeIds } from '../lib/ides.js';
 import { pickIdes } from '../lib/prompts.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
@@ -17,8 +17,9 @@ export async function init(opts = {}) {
   const alreadyInstalled = await exists(path.join(target, '_opencrew', 'core'));
   if (alreadyInstalled) {
     warn('An opencrew workspace already exists here.');
-    warn(`Framework files are refreshed but your crews, memory and .env are kept intact.`);
-    warn(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew update')}\n`);
+    info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew update')}`);
+    info(`To reinstall from scratch, delete _opencrew/ first, then run init again.`);
+    return;
   }
 
   // 1. Copy the framework payload (never clobber user work).

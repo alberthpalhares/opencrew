@@ -4,9 +4,22 @@ import { IDES, allIdeIds } from './ides.js';
 import { warn } from './ui.js';
 
 export async function pickIdes({ preselected } = {}) {
+  const validIds = new Set(allIdeIds());
   const isTTY = process.stdin.isTTY && process.stdout.isTTY;
+
+  // Filter and validate preselected IDs.
+  let chosen = preselected?.length ? preselected : null;
+  if (chosen) {
+    const invalid = chosen.filter((id) => !validIds.has(id));
+    if (invalid.length) {
+      warn(`Unknown IDE(s) ignored: ${invalid.join(', ')}. Valid: ${allIdeIds().join(', ')}`);
+      chosen = chosen.filter((id) => validIds.has(id));
+    }
+    if (!chosen.length) chosen = null; // fall through to defaults
+  }
+
   if (!isTTY) {
-    const chosen = preselected?.length ? preselected : allIdeIds();
+    if (!chosen) chosen = allIdeIds();
     warn(`Non-interactive terminal — configuring IDEs: ${chosen.join(', ')}`);
     return chosen;
   }
@@ -18,18 +31,11 @@ export async function pickIdes({ preselected } = {}) {
       ...IDES.map((i) => ({
         name: i.label,
         value: i.id,
-        checked: preselected ? preselected.includes(i.id) : i.id === 'claude-code',
+        checked: chosen ? chosen.includes(i.id) : i.id === 'claude-code',
       })),
       new Separator(),
     ],
     validate: (a) => (a.length ? true : 'Select at least one IDE.'),
   });
   return answer;
-}
-
-export async function confirm(message, def = true) {
-  const isTTY = process.stdin.isTTY && process.stdout.isTTY;
-  if (!isTTY) return def;
-  const { default: confirmPrompt } = await import('@inquirer/confirm');
-  return confirmPrompt({ message, default: def });
 }

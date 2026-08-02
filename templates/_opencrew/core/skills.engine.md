@@ -20,10 +20,11 @@ You are the Skills Engine. Your job is to manage skill integrations for opencrew
 ### Catalog URL Resolution
 
 When fetching skill files from the catalog, resolve the base URL in this order:
-1. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field
-2. If not available, default to:
+1. Check the `OPENCREW_CATALOG_URL` environment variable — if set, use it directly as the base URL. This allows forks to point to their own catalog without editing catalog.json.
+2. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field
+3. If not available, default to:
    `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills`
-3. Append `/<name>/SKILL.md` (or other file paths) to the base URL
+4. Append `/<name>/SKILL.md` (or other file paths) to the base URL
 
 ## How Skills Are Detected
 
@@ -122,21 +123,21 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
    - If fetch fails (404 or network error) → **ERROR**: "Skill '<name>' not found in the skills catalog."
    - Do NOT proceed if the SKILL.md cannot be fetched.
 
-3. **Create the skill directory**:
+5. **Create the skill directory**:
    ```
    skills/<name>/
    ```
 
-4. **Write SKILL.md** to `skills/<name>/SKILL.md`
+6. **Write SKILL.md** to `skills/<name>/SKILL.md`
 
-5. **Fetch additional files** (if the skill requires them):
+7. **Fetch additional files** (if the skill requires them):
    - If the SKILL.md frontmatter has `script.path` → fetch the script file from:
      `{baseUrl}/<name>/{script.path}`
      Create subdirectories (e.g., `scripts/`) as needed.
    - If the skill has a `references/` directory mentioned → fetch those files too.
    - If the skill has an `assets/` directory mentioned → fetch those files too.
 
-6. **Parse SKILL.md frontmatter** and check requirements:
+8. **Parse SKILL.md frontmatter** and check requirements:
 
    #### a. Environment Variables (if `env:` is present)
 
@@ -169,7 +170,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
         1. Yes, overwrite
         2. No, keep existing
         If "No" → skip MCP configuration but still complete installation
-   3. Use the values already collected in step 6.a for each env var in the skill's `env`
+   3. Use the values already collected in step 8.a for each env var in the skill's `env`
       array (do not ask again).
    4. Add to `mcpServers`:
       ```json
@@ -187,7 +188,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
    1. Read `.claude/settings.local.json` (create with `{"mcpServers": {}}` if it doesn't exist)
    2. Check for `server_name` conflict (same as stdio above)
-   3. Use the values already collected in step 6.a for each env var in the skill's `env`
+   3. Use the values already collected in step 8.a for each env var in the skill's `env`
       array (do not ask again).
    4. Build the mcpServers entry:
       - Start with `{ "type": "http", "url": "{url}" }`
@@ -208,7 +209,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
    #### d. Script Setup (if `type: script` or `type: hybrid`)
 
    1. Verify the script file exists at `skills/<name>/{script.path}`
-      - If missing and wasn't fetched in step 5 → **ERROR**: "Script file not found. Installation may be incomplete."
+      - If missing and wasn't fetched in step 7 → **ERROR**: "Script file not found. Installation may be incomplete."
    2. If the skill lists dependencies in `script.dependencies`:
       - For `runtime: node` → run: `npm install {packages}`
       - For `runtime: python` → run: `pip install {packages}`
@@ -219,7 +220,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
    No additional setup needed. The skill is fully defined by its SKILL.md instructions.
 
-7. **Confirm installation**:
+9. **Confirm installation**:
    "✅ {name} installed! Crews can now use `{name}` in their skills list."
 
 ### 3. Create a Custom Skill
@@ -300,7 +301,7 @@ before the pipeline begins (fail fast).
    d. **Verify env vars** (if `env:` is present):
       - Check each variable in `.env`
       - If any are missing → ask the user conversationally, right here in chat, the same
-        way as Operation 2, step 6.a (never point them to the `.env` file to edit it
+        way as Operation 2, step 8.a (never point them to the `.env` file to edit it
         themselves). If they provide a value, write it to `.env` and continue. If they
         skip, warn: "⚠️ Skill '{skill}' is missing environment variable(s): {list}. It may
         not work correctly." — but do NOT block pipeline execution either way.

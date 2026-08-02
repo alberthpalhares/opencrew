@@ -118,3 +118,12 @@ test('init skips an unknown IDE id without crashing', async () => {
 
   assert.equal(await exists(path.join(dir, 'CLAUDE.md')), true);
 });
+
+test('init accepts --ide as a comma-separated string', async () => {
+  const dir = await mkTmp('init');
+  await withCwd(dir, () => init({ ide: 'claude-code,cursor' }));
+
+  assert.equal(await exists(path.join(dir, 'CLAUDE.md')), true);
+  assert.equal(await exists(path.join(dir, '.cursor', 'rules', 'opencrew.mdc')), true);
+  assert.equal(await exists(path.join(dir, 'GEMINI.md')), false);
+});

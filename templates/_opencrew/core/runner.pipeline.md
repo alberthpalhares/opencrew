@@ -28,7 +28,23 @@ Before starting execution:
     when `false`, skip ALL of them; never create, update, or delete
     `crews/{name}/state.json`.
 
-> **Note on language**: the section headers below (`## Estilo de Escrita`, `## Design Visual`, etc.) and the `runs.md` table columns (`Data | Run ID | Tema | ...`) are fixed PT-BR structural labels, not translated per Output Language — opencrew's primary supported audience is PT-BR (see AGENTS.md → Language Handling). Only the *content* written under these headers follows the user's preferred language.
+> **Note on language**: The structural labels listed below are **fixed PT-BR** and must
+> never be translated — opencrew's primary supported audience is PT-BR (see AGENTS.md →
+> Language Handling). Only the *content* written under these headers follows the user's
+> preferred language.
+>
+> | Fixed PT-BR header | Location | Purpose |
+> |---|---|---|
+> | `## Estilo de Escrita` | `memories.md` | Writing style rules accumulated per crew |
+> | `## Design Visual` | `memories.md` | Visual design preferences per crew |
+> | `## Estrutura de Conteúdo` | `memories.md` | Content structure rules per crew |
+> | `## Proibições Explícitas` | `memories.md` | User bans and hard blocks per crew |
+> | `## Técnico (específico do crew)` | `memories.md` | Technical crew-specific settings |
+> | `Data \| Run ID \| Tema \| Output \| Resultado` | `runs.md` | Run history table columns |
+>
+> When adding new structural sections to `memories.md` or `runs.md`, keep headers in PT-BR
+> unless the user base expands beyond PT-BR — at that point, discuss a migration strategy
+> (e.g. i18n key mapping) rather than mixing languages in a single file.
 
 1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format by scanning for the `## Estilo de Escrita` section header:
    ```bash

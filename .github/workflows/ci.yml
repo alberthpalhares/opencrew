@@ -30,8 +30,11 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Lint
+        run: npm run lint
+
       - name: Security audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
 
       - name: Verify .opencrew-version matches package.json
         run: node scripts/check-version-sync.js

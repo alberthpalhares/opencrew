@@ -59,6 +59,7 @@ export async function update(opts = {}) {
   // the catalog — are never touched, since copyDir only visits paths that exist
   // in the source (templates/skills/).
   step('Refreshing catalog skills');
+  warn('Catalog skills are fully overwritten — your edits to any built-in skill files will be lost.');
   let s = 0;
   await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), {
     overwrite: true,
