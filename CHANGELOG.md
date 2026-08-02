@@ -3,6 +3,15 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.1] — 2026-08-02
+
+### Changed
+- **Menu discovery for repair**: the "My crews" menu entry now mentions `repair`, so the
+  command introduced in 1.2.0 is discoverable from the menu and not only from the command
+  routing table.
+- **README**: standardized the project name as "OpenCrew" in prose (commands and the npm
+  package name stay lowercase).
+
 ## [1.2.0] — 2026-08-02
 
 ### Fixed
