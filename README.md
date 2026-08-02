@@ -1,4 +1,4 @@
-# opencrew
+# OpenCrew
 
 [![CI](https://github.com/alberthpalhares/opencrew/actions/workflows/ci.yml/badge.svg)](https://github.com/alberthpalhares/opencrew/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/%40aksp%2Fopencrew)](https://www.npmjs.com/package/@aksp/opencrew)
@@ -10,7 +10,7 @@
 > you don't read Portuguese, use your browser's translator (e.g. Google Translate) or ask
 > an AI assistant to translate this page.
 
-opencrew é um framework de orquestração multi-agente. Descreva o que você precisa em
+OpenCrew é um framework de orquestração multi-agente. Descreva o que você precisa em
 linguagem natural e ele monta um time de agentes especializados que rodam como um pipeline
 automatizado, com pontos de aprovação humana. Funciona no Claude Code, Cursor, Codex,
 Gemini CLI, OpenCode, Antigravity e mais.
@@ -19,7 +19,7 @@ Gemini CLI, OpenCode, Antigravity e mais.
 > O [OpenSquad](https://github.com/renatoasse/opensquad) foi criado por
 > [Renato Asse](https://github.com/renatoasse) ([Comunidade Sem Codar](https://semcodar.com.br)).
 > Eu ([aksp](https://www.npmjs.com/~aksp)) uso o OpenSquad no dia a dia e quis melhorar
-> algumas coisas para o meu próprio fluxo de trabalho — o `opencrew` é essa versão
+> algumas coisas para o meu próprio fluxo de trabalho — o `OpenCrew` é essa versão
 > reformulada, compartilhada caso ajude outras pessoas também. Todo o crédito pela ideia e
 > pelo framework original é do Renato Asse. Veja [Origem e créditos](#origem-e-créditos)
 > abaixo. Licenciado sob MIT, assim como o original.
@@ -45,7 +45,7 @@ extra ou chave de API é necessária para começar.
 
 Algumas **skills opcionais** dependem de serviços externos — por exemplo, publicar no
 Instagram, gerar imagens com IA, fazer web scraping (Apify) ou enviar e-mails (Resend). Você
-não precisa se preocupar com isso antes de começar: se, ao montar uma crew, o opencrew
+não precisa se preocupar com isso antes de começar: se, ao montar uma crew, o OpenCrew
 identificar que ela precisa de uma dessas skills, ele pede a chave direto na conversa
 (explicando o que é e onde consegui-la) e salva tudo por conta própria. Não é preciso abrir
 nem editar nenhum arquivo manualmente.
@@ -122,7 +122,7 @@ vivem as instruções do sistema; os arquivos por IDE são gerados a partir de `
 
 ## Origem e créditos
 
-`opencrew` é uma **distribuição reformulada do [OpenSquad](https://github.com/renatoasse/opensquad)**,
+`OpenCrew` é uma **distribuição reformulada do [OpenSquad](https://github.com/renatoasse/opensquad)**,
 o framework de orquestração multi-agente criado e mantido por
 **[Renato Asse](https://github.com/renatoasse)**, fundador da
 [Comunidade Sem Codar](https://semcodar.com.br). O projeto original, seu conceito, o modelo
