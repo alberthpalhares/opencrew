@@ -20,7 +20,7 @@
   "scripts": {
     "start": "node bin/opencrew.js",
     "test": "node --test tests/cli.test.js tests/docs.test.js tests/fsx.test.js tests/ides.test.js tests/init.test.js tests/update.test.js",
-    "version": "node -e \"require('fs').writeFileSync('templates/_opencrew/.opencrew-version', require('./package.json').version + '\\n')\""
+    "version": "node -e \"require('fs').writeFileSync('templates/_opencrew/.opencrew-version', require('./package.json').version + '\\n')\" && git add templates/_opencrew/.opencrew-version"
   },
   "keywords": [
     "ai-agents",

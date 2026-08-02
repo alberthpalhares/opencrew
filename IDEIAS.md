@@ -159,10 +159,82 @@ sem escolha de profundidade.
 
 ## 5. Outras Ideias (Backlog)
 
-### 5.1 Memória entre runs
-- Hoje cada run é independente. O crew deveria aprender com execuções anteriores,
-  refinando automaticamente seus agentes e prompts com base no feedback do usuário.
-- `memories.md` já existe — expandir para capturar padrões e preferências.
+### 5.1 Aprendizado contínuo das Crews (Memória entre runs)
+
+**Problema:** Hoje cada run de uma crew é independente. Se um agente comete um erro
+(tom de voz errado, formato que o usuário não gostou, dado incorreto) e o usuário
+corrige no checkpoint, essa correção se perde na próxima execução. A crew repete os
+mesmos erros, obrigando o usuário a corrigir manualmente as mesmas coisas toda vez.
+
+Isso é um dos maiores gargalos de usabilidade: **a crew não aprende com o feedback.**
+
+**Proposta:** Implementar um ciclo de aprendizado em 3 camadas:
+
+#### Camada 1 — Captura de feedback (já existe parcialmente)
+
+- Após cada checkpoint, o usuário pode aprovar, rejeitar ou corrigir
+- O feedback textual do usuário já é registrado no log da run
+- **O que falta:** estruturar esse feedback em um formato que o sistema consiga aplicar
+
+#### Camada 2 — Análise pós-run (nova)
+
+Ao final de cada pipeline, o Pipeline Runner deve executar um passo de **Reflexão**:
+
+1. Comparar o output de cada agente com as correções feitas pelo usuário
+2. Identificar padrões de erro:
+   - "O redator sempre usa tom muito informal para o público B2B"
+   - "O designer usa cores que não combinam com a identidade visual"
+   - "O pesquisador cita fontes desatualizadas"
+3. Registrar esses padrões em `memories.md` como **regras de correção**:
+   ```markdown
+   ## Padrões de Correção (atualizado automaticamente)
+
+   ### Tom de Voz
+   - ❌ Muito informal — usar linguagem corporativa (feedback run #3, #5)
+   - ❌ Gírias regionais — evitar (feedback run #2)
+
+   ### Design
+   - ❌ Cores muito saturadas — respeitar paleta da marca (feedback run #1, #4)
+
+   ### Fontes
+   - ❌ Citações sem data — sempre incluir ano da fonte (feedback run #3)
+   ```
+4. Se o mesmo erro ocorre **3 vezes ou mais**, promover de "observação" para
+   **"regra de ouro"** — injetada diretamente no prompt do agente
+
+#### Camada 3 — Aplicação proativa (nova)
+
+Antes de cada execução, cada agente carrega:
+1. Seu `.agent.md` original (definição base)
+2. As **regras de correção** acumuladas em `memories.md`
+3. As **proibições explícitas** (seção já existe em `memories.md`)
+
+O prompt final do agente é composto como:
+```
+[Definição base do agente]
+---
+[Regras de correção acumuladas — NUNCA faça X, SEMPRE verifique Y]
+---
+[Proibições explícitas do usuário]
+---
+[Tarefa atual]
+```
+
+#### Métricas de melhoria
+
+- **Taxa de rejeição por agente:** % de outputs rejeitados pelo usuário
+- **Recorrência de correção:** quantas runs até um erro parar de aparecer
+- **Economia de tokens:** o usuário gasta menos tokens corrigindo porque a crew já
+  internalizou as preferências
+
+**Arquivos afetados:**
+- `templates/_opencrew/core/runner.pipeline.md` — passo de Reflexão pós-run
+- `templates/_opencrew/_memory/memories.md` — template expandido com padrões de correção
+- Cada `.agent.md` — prompt template com slot para regras acumuladas
+- `crews/{name}/crew.yaml` — metadados de aprendizado (taxa de rejeição, etc.)
+
+**Horizonte:** Médio prazo (3-5 semanas) — é um ciclo completo de feedback,
+não só um feature flag.
 
 ### 5.2 Templates de crew por setor
 - Templates pré-definidos para casos comuns: "Blog semanal", "Lançamento de produto",
@@ -196,12 +268,12 @@ sem escolha de profundidade.
 
 | # | Ideia | Impacto | Esforço | Horizonte |
 |---|-------|---------|---------|-----------|
-| 1 | Sherlock multi-fonte (item 1) | 🔴 Alto | 🟢 Baixo | Curto |
-| 2 | Criação por papéis, não ferramentas (item 2) | 🔴 Alto | 🟡 Médio | Médio |
-| 3 | Tiers de crew (item 4) | 🟡 Médio | 🟡 Médio | Médio |
-| 4 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
-| 5 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
-| 6 | Memória entre runs (5.1) | 🟢 Baixo | 🟡 Médio | Longo |
+| 1 | Criação por papéis, não ferramentas (item 2) | 🔴 Alto | 🟡 Médio | Médio |
+| 2 | Aprendizado contínuo das crews (item 5.1) | 🔴 Alto | 🟡 Médio | Médio |
+| 3 | Sherlock multi-fonte (item 1) | 🔴 Alto | 🟢 Baixo | Curto |
+| 4 | Tiers de crew (item 4) | 🟡 Médio | 🟡 Médio | Médio |
+| 5 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
+| 6 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
 | 7 | Modo colaborativo (5.3) | 🟢 Baixo | 🔴 Alto | Longo |
 
 ---
