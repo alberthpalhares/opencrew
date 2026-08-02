@@ -36,7 +36,7 @@ When the user types `/opencrew` or asks for the menu, present an interactive sel
 **Primary menu (first question):**
 - **Create a new crew** — Describe what you need and I'll build a crew for you
 - **Run an existing crew** — Execute a crew's pipeline
-- **My crews** — View, edit, or delete your crews
+- **My crews** — View, edit, repair, or delete your crews
 - **More options** — Skills, company profile, settings, and help
 
 If the user selects "More options", present a second selector the same way:

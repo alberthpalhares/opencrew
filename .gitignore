@@ -15,6 +15,7 @@ dashboard/test-results/
 # Maintainer's LIVE workspace (this repo IS the package; the payload lives in templates/)
 /_opencrew/
 /crews/
+/skills/
 /.claude/
 /.agents/
 /.agent/
@@ -28,6 +29,7 @@ dashboard/test-results/
 
 # Internal notes (not shipped)
 RELATORIO-MELHORIAS.md
+ANALISE.md
 
 # OS / editor
 .DS_Store

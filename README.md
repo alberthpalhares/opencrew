@@ -94,7 +94,7 @@ Cada integração é só um ponteiro enxuto para a fonte única de verdade, o **
 
 ## Dashboard (opcional)
 
-O opencrew inclui um dashboard visual auto-contido — `dashboard/index.html`, um arquivo
+O OpenCrew inclui um dashboard visual auto-contido — `dashboard/index.html`, um arquivo
 HTML único sem dependências que mostra a execução de uma crew como um escritório virtual
 animado (com agentes trabalhando em suas mesas, handoffs entre etapas, e indicador de
 progresso). 

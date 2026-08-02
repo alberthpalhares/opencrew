@@ -2,6 +2,7 @@
 
 > Coletânea de ideias identificadas no uso real do OpenCrew.
 > Data base: 2026-08-01 — v1.1.0
+> Análise de viabilidade: 2026-08-02 — todas as ideias avaliadas
 
 ---
 
@@ -27,6 +28,16 @@ fontes online.
 - `templates/skills/` — possível nova skill `sherlock-web`
 
 **Horizonte:** Curto prazo (1-2 semanas)
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — não existe orquestração multi-fonte; Sherlock é monolítico
+- Diretrizes:
+  - ⚠️ Atenção para YAGNI: 3-4 sub-agentes especializados, mas cada um tem responsabilidade distinta (social, web, SEO, trends) → alinhado com "um agente = uma responsabilidade"
+  - ✅ Simplicidade: complexidade interna (orquestrador decide fontes), interface simples para o usuário
+  - ⚠️ Tokens: múltiplos subagentes em paralelo consomem mais, mas ganho de qualidade justifica. Estimar ~2-3K tokens extras por fonte adicional
+- Impacto: 🔴 Alto / Esforço: 🟢 Baixo
+- Dependências: Nenhuma
+- Riscos: Pesquisa redundante entre fontes (mesmo conteúdo encontrado por social + web). Mitigação: passo de deduplicação no consolidado
 
 ---
 
@@ -68,6 +79,16 @@ para **"quais papéis sua equipe precisa?"**
 - `templates/_opencrew/core/architect.agent.yaml` — reestruturar
 
 **Horizonte:** Médio prazo (2-4 semanas) — é a mudança mais importante de UX
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — fluxo atual é baseado em ferramentas/ skills, não em papéis
+- Diretrizes:
+  - ✅ Simplicidade: muda de "quais ferramentas?" para "quais pessoas?" — drasticamente mais intuitivo para não-técnicos
+  - ✅ Não adiciona agentes nem passos de pipeline — é uma mudança de apresentação no fluxo de onboarding
+  - ✅ Alinhado com "simplest pipeline that achieves the goal" — esconde complexidade técnica
+- Impacto: 🔴 Alto / Esforço: 🟡 Médio
+- Dependências: Nenhuma. Sinergia futura com item 6 (registro compartilhado — papéis mapeiam para agentes base)
+- Riscos: Baixo — é mudança de UX, não de arquitetura. Se o mapeamento papel→skill falhar, o usuário pode receber uma crew com skills erradas. Mitigação: preview antes de confirmar
 
 ---
 
@@ -116,6 +137,16 @@ Architect:
 
 **Horizonte:** Longo prazo (4-8 semanas) — funcionalidade complexa, requer iteração
 
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — skills.engine.md tem Operation 3 (Create Custom Skill) mas é manual, não automática
+- Diretrizes:
+  - ⚠️ YAGNI: skills geradas automaticamente podem ter qualidade inferior a skills curadas. A geração deve incluir validação obrigatória
+  - ⚠️ Tokens: geração consome ~3-5K tokens na criação, mas o skill gerado pode economizar em execuções futuras
+  - ✅ Flexibilidade: expande o sistema sem poluir o catálogo oficial — skills custom ficam em `skills/.custom/`
+- Impacto: 🔴 Alto / Esforço: 🔴 Alto
+- Dependências: Sinergia com item 2 (papéis não previstos geram skills automaticamente)
+- Riscos: Skills geradas podem ser imprecisas ou quebrar em execução. Mitigação: validação em sandbox antes de instalar; flag `experimental: true` no frontmatter
+
 ---
 
 ## 4. Tiers de Crew: Básico vs Completo
@@ -154,6 +185,16 @@ sem escolha de profundidade.
 - `templates/_opencrew/_memory/preferences.md` — tier padrão configurável
 
 **Horizonte:** Médio prazo (2-4 semanas) — alto impacto, complexidade moderada
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — não existe escolha de profundidade na criação ou execução
+- Diretrizes:
+  - ✅ Simplicidade: oferece escolha clara (Express/Standard/Full) em vez de decisões técnicas sobre quais agentes incluir
+  - ✅ Token efficiency: tiers mais baixos economizam tokens para tarefas simples (~5K vs ~40K)
+  - ✅ Não adiciona agentes — modula a profundidade dos existentes
+- Impacto: 🟡 Médio / Esforço: 🟡 Médio
+- Dependências: Nenhuma
+- Riscos: Calibragem dos tiers — Express pode ser insuficiente e frustrar; Full pode ser caro demais. Mitigação: começar só com Standard + Express, adicionar Full depois com dados de uso
 
 ---
 
@@ -236,31 +277,180 @@ O prompt final do agente é composto como:
 **Horizonte:** Médio prazo (3-5 semanas) — é um ciclo completo de feedback,
 não só um feature flag.
 
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — `memories.md` existe mas é estático; não há ciclo de feedback automático
+- Diretrizes:
+  - ✅ Simplicidade: o usuário corrige menos a cada run — a crew aprende sozinha
+  - ⚠️ Tokens: adiciona passo de Reflexão pós-run (~500-1000 tokens/run), mas ROI é positivo após 3+ runs com as mesmas correções
+  - ✅ Não adiciona agentes permanentes — é um passo de pipeline ao final da execução
+- Impacto: 🔴 Alto / Esforço: 🟡 Médio
+- Dependências: Nenhuma. Sinergia com item 6 (agentes compartilhados — aprendizado cross-crew)
+- Riscos: Overfitting — regras automáticas podem aprender padrões errados se o usuário corrigir por motivos diferentes. Mitigação: threshold de 3 ocorrências + sempre permitir override manual nas proibições explícitas
+
 ### 5.2 Templates de crew por setor
 - Templates pré-definidos para casos comuns: "Blog semanal", "Lançamento de produto",
   "Gestão de Instagram", "Newsletter mensal", "Relatório de vendas".
 - O usuário escolhe o template e ajusta — em vez de descrever do zero.
 
-### 5.3 Modo colaborativo
-- Suporte para múltiplos usuários humanos revisando e aprovando checkpoints.
-- Cada checkpoint pode ser enviado para um revisor específico (ex: "aprovação do
-  diretor de marketing").
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — não existe sistema de templates pré-definidos
+- Diretrizes:
+  - ✅ Simplicidade: reduz atrito de criação — "quero um blog semanal" vs descrever tudo do zero
+  - ✅ Templates são conteúdo, não código — não adicionam complexidade ao core
+- Impacto: 🟡 Médio / Esforço: 🟢 Baixo
+- Dependências: Sinergia com item 2 (criação por papéis — templates definem os papéis padrão)
+- Riscos: Templates desatualizados conforme o sistema evolui. Mitigação: versionar templates junto com o core; teste de integração no CI
 
-### 5.4 Dashboard web com histórico
-- Evoluir o dashboard de single-file para uma interface que mostre:
-  - Histórico de todas as runs passadas
-  - Comparação entre runs (métricas, tokens, qualidade)
-  - Fila de crews agendadas
-
-### 5.5 Integração com calendários
-- Agendar execuções de crews (ex: "todo domingo às 9h gerar os posts da semana").
-- Integrar com Google Calendar ou Notion para planejamento de conteúdo.
-
-### 5.6 Exportação multi-formato
+### 5.3 Exportação multi-formato
 - Hoje o output é markdown. Adicionar exportação direta para:
   - PDF (via Playwright/puppeteer)
   - CSV/Excel (dados estruturados)
   - Post pronto para Instagram/LinkedIn (formatação nativa)
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — output é exclusivamente markdown
+- Diretrizes:
+  - ✅ Não adiciona agentes nem complexidade ao pipeline — é pós-processamento
+  - ✅ Playwright já está disponível no projeto (image-creator skill)
+- Impacto: 🟡 Médio / Esforço: 🟢 Baixo
+- Dependências: Playwright (já instalado). CSV não tem dependência extra
+- Riscos: Formatação PDF pode ser frágil entre temas/plataformas. Mitigação: usar o mesmo Playwright que já renderiza imagens — caminho testado
+
+---
+
+## 6. Registro Compartilhado de Agentes (Shared Agent Registry)
+
+**Problema:** Hoje cada crew define seus agentes isoladamente em
+`crews/{code}/agents/{agent-id}.agent.md`. Se duas crews diferentes precisam de
+um pesquisador, redator ou revisor com funções iguais ou muito parecidas, o sistema
+duplica a definição inteira em cada crew. Isso causa:
+
+- **Duplicação de arquivos:** o mesmo agente (ex: pesquisador que busca notícias)
+  existe em 3 crews diferentes com definições 99% iguais
+- **Desperdício de tokens:** cada geração de crew recria agentes do zero; cada
+  execução carrega definições duplicadas
+- **Inconsistência:** o "mesmo" pesquisador evolui diferente em cada crew — correções
+  e melhorias feitas em uma crew não se propagam para as outras
+- **Manutenção custosa:** para ajustar o tom de voz do redator, é preciso editar
+  N arquivos em N crews
+
+**Proposta:** Criar um **registro compartilhado de agentes** onde definições comuns
+vivem em `_opencrew/agents/` e as crews apenas referenciam (com possibilidade de
+sobrescrever parâmetros específicos).
+
+### Arquitetura proposta:
+
+```
+_opencrew/
+  agents/                           ← NOVO: registro compartilhado
+    researcher.agent.md             ← definição base do pesquisador
+    copywriter.agent.md             ← definição base do redator
+    reviewer.agent.md               ← definição base do revisor
+    designer.agent.md               ← definição base do designer
+    strategist.agent.md             ← definição base do estrategista
+
+crews/
+  blog-semanal/
+    crew.yaml
+    crew-party.csv                  ← referencia IDs do registro compartilhado
+    agents/                         ← apenas overrides específicos da crew
+      blog-copywriter.agent.md      ← extends copywriter com regras de blog
+    pipeline/
+  instagram-crew/
+    crew.yaml
+    crew-party.csv
+    agents/                         ← vazio se usa agentes compartilhados puros
+    pipeline/
+```
+
+### Mecanismo de Resolução de Agente:
+
+1. **Ordem de busca:** Primeiro `crews/{code}/agents/{id}.agent.md` (override local),
+   depois `_opencrew/agents/{id}.agent.md` (registro compartilhado)
+2. **Herança por extend:** Um agente local pode estender um compartilhado com
+   `extends: _opencrew/agents/copywriter` no frontmatter, sobrescrevendo apenas
+   seções específicas (ex: tom de voz, exemplos de output, critérios de qualidade)
+3. **Parametrização:** Agentes compartilhados aceitam parâmetros no `crew.yaml`:
+   ```yaml
+   agents:
+     - ref: _opencrew/agents/copywriter
+       params:
+         format: instagram-feed
+         tone: autoritativo
+         max_length: 2200
+   ```
+4. **Versionamento:** Agentes compartilhados têm versão (`version: 1`). Crews
+   podem travar em uma versão específica ou seguir `latest`.
+
+### Tipos de agentes candidatos a compartilhamento:
+
+| Tipo | Função | Variações por parâmetro |
+|------|--------|------------------------|
+| `researcher` | Pesquisa web, busca fontes, rankeia notícias | Fonte (web_search vs fonte fixa), profundidade |
+| `copywriter` | Escreve conteúdo a partir de briefing | Formato (post, thread, artigo, legenda), tom, plataforma |
+| `reviewer` | Revisa qualidade, aplica critérios | Critérios específicos da crew, peso por dimensão |
+| `designer` | Cria conceitos visuais para conteúdo | Formato (carrossel, story, banner), identidade visual |
+| `strategist` | Define ângulos, hooks, estratégia de conteúdo | Plataforma, público-alvo |
+| `analyst` | Analisa dados, extrai insights | Tipo de dados, métricas |
+
+### Impacto no fluxo de criação (Design Phase):
+
+1. Architect identifica os papéis necessários para a crew
+2. **Antes de criar novos agente:** consulta o registro compartilhado (`_opencrew/agents/`)
+3. Se existe agente compatível → referencia com parâmetros específicos da crew
+4. Se o agente compartilhado cobre 80%+ mas precisa de ajustes → cria override local
+   com `extends`
+5. Se não existe → cria novo agente. Pergunta ao usuário: "Este agente parece
+   reutilizável? Salvar no registro compartilhado para futuras crews?"
+6. Se o agente é muito específico da crew → cria localmente (não polui o registro)
+
+### Benefícios:
+
+- **Tokens:** Definições de agentes não são regeneradas nem recarregadas por crew
+- **Consistência:** A mesma persona de pesquisador em todas as crews; correções no
+  agente base propagam automaticamente
+- **Aprendizado cross-crew:** O feedback do usuário sobre o copywriter na crew de
+  blog também melhora o copywriter na crew de Instagram (sinergia com item 5.1)
+- **Manutenção:** Ajustar o tom de voz do redator é 1 edição, não N
+- **Onboarding mais rápido:** Criar uma crew nova é principalmente pipeline + parâmetros,
+  não agentes inteiros do zero
+
+### Desafios:
+
+- **Generalidade vs especificidade:** Um copywriter genérico pode ficar "água com
+  açúcar" — o sistema de overrides e parâmetros precisa ser robusto
+- **Breaking changes:** Alterar um agente compartilhado pode quebrar crews existentes
+  → versionamento resolve
+- **Governança:** Quem decide se um agente merece ir para o registro compartilhado?
+  → critério: usado em 2+ crews = candidato a compartilhado
+
+### Arquivos afetados:
+
+- `templates/_opencrew/agents/` — novo diretório com agentes base
+- `templates/_opencrew/core/prompts/design.prompt.md` — Phase E: busca no registro
+  antes de criar
+- `templates/_opencrew/core/prompts/build.prompt.md` — Step B: resolução de
+  referências + extends
+- `templates/_opencrew/core/runner.pipeline.md` — carregamento com resolução de
+  agentes (local → compartilhado)
+- `templates/AGENTS.md` — "Loading Agents" com lógica de resolução
+- `crews/{code}/crew.yaml` — novo campo `agents:` com refs e parâmetros
+- `crews/{code}/crew-party.csv` — suporte a paths do registro compartilhado
+
+**Horizonte:** Longo prazo (6-10 semanas) — é uma mudança arquitetural profunda que
+afeta criação, execução, e manutenção. Ideal para ser planejada junto com o item 2
+(Criação por papéis) pois ambos mexem na mesma camada de design de agents.
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Nova — cada crew define agentes isoladamente; zero reuso
+- Diretrizes:
+  - ✅ YAGNI: evita duplicação — cada agente existe uma vez no registro, referenciado por N crews
+  - ✅ Token efficiency: reduz tokens de geração (não recria definições) e de execução (não recarrega duplicatas). Estimar economia de 40-60% nos tokens de agent definition
+  - ⚠️ Complexidade: adiciona conceitos de herança (`extends`), versionamento, resolução em 2 níveis (local → compartilhado). Custo único de implementação compensado por economia perpétua
+  - ✅ "Um agente = uma responsabilidade": agentes compartilhados são ainda mais focados por não terem que se adaptar a múltiplos contextos
+- Impacto: 🔴 Alto / Esforço: 🔴 Alto
+- Dependências: Sinergia forte com item 2 (criação por papéis — os "papéis" são os agentes compartilhados) e item 5.1 (aprendizado cross-crew)
+- Riscos: Generalidade vs especificidade — agentes genéricos podem produzir output genérico. Mitigação: sistema de overrides + parâmetros no `crew.yaml`; heurística "80%+ coberto = compartilhado, <80% = crew-specific"
 
 ---
 
@@ -272,9 +462,10 @@ não só um feature flag.
 | 2 | Aprendizado contínuo das crews (item 5.1) | 🔴 Alto | 🟡 Médio | Médio |
 | 3 | Sherlock multi-fonte (item 1) | 🔴 Alto | 🟢 Baixo | Curto |
 | 4 | Tiers de crew (item 4) | 🟡 Médio | 🟡 Médio | Médio |
-| 5 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
-| 6 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
-| 7 | Modo colaborativo (5.3) | 🟢 Baixo | 🔴 Alto | Longo |
+| 5 | Registro compartilhado de agentes (item 6) | 🔴 Alto | 🔴 Alto | Longo |
+| 6 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
+| 7 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
+| 8 | Exportação multi-formato (5.3) | 🟡 Médio | 🟢 Baixo | Curto |
 
 ---
 
