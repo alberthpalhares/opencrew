@@ -1,0 +1,39 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { IDES, ideById, allIdeIds } from '../src/lib/ides.js';
+
+test('every IDE has a unique id and at least one non-empty, relative bridge file', () => {
+  const ids = IDES.map((i) => i.id);
+  assert.equal(new Set(ids).size, ids.length, 'duplicate IDE ids found');
+
+  for (const ide of IDES) {
+    assert.ok(ide.label, `${ide.id} is missing a label`);
+    assert.ok(ide.files.length > 0, `${ide.id} declares no bridge files`);
+    for (const f of ide.files) {
+      assert.ok(f.path && !path.isAbsolute(f.path), `${ide.id} has an unsafe file path: ${f.path}`);
+      assert.ok(f.content && f.content.trim().length > 0, `${ide.id} -> ${f.path} has empty content`);
+    }
+  }
+});
+
+test('every bridge file content references AGENTS.md as the source of truth', () => {
+  for (const ide of IDES) {
+    for (const f of ide.files) {
+      assert.match(
+        f.content,
+        /AGENTS\.md/,
+        `${ide.id} -> ${f.path} does not point back to AGENTS.md`
+      );
+    }
+  }
+});
+
+test('ideById resolves a known id and returns undefined for unknown ids', () => {
+  assert.equal(ideById('claude-code').label, 'Claude Code');
+  assert.equal(ideById('does-not-exist'), undefined);
+});
+
+test('allIdeIds returns every declared IDE id in order', () => {
+  assert.deepEqual(allIdeIds(), IDES.map((i) => i.id));
+});

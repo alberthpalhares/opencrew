@@ -14,6 +14,21 @@ Before starting execution:
    - The crew's `crew-party.csv` (all agent personas)
    - Company context from `_opencrew/_memory/company.md`
    - Crew memory from `crews/{name}/_memory/memories.md`
+   - User preferences from `_opencrew/_memory/preferences.md`
+
+1a. **Check the Dashboard toggle** — the visual dashboard (`state.json` writes) is an
+    optional, opt-in feature that most installs never use (it requires running the
+    separate dashboard app from source — see README). Scan the already-loaded
+    `preferences.md` for a `Dashboard:` field:
+    - If it reads `Dashboard: enabled` → set `dashboard_enabled = true` for this run.
+    - Otherwise (`disabled`, missing, or preferences.md not configured yet) →
+      set `dashboard_enabled = false`. This is the default.
+    Store `dashboard_enabled` in working memory for the rest of this run. Every
+    `state.json` read/write instruction in this document is conditional on it —
+    when `false`, skip ALL of them; never create, update, or delete
+    `crews/{name}/state.json`.
+
+> **Note on language**: the section headers below (`## Estilo de Escrita`, `## Design Visual`, etc.) and the `runs.md` table columns (`Data | Run ID | Tema | ...`) are fixed PT-BR structural labels, not translated per Output Language — opencrew's primary supported audience is PT-BR (see AGENTS.md → Language Handling). Only the *content* written under these headers follows the user's preferred language.
 
 1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format by scanning for the `## Estilo de Escrita` section header:
    ```bash
@@ -76,8 +91,8 @@ Before starting execution:
      - If it does (sub-second collision), append `-2`, `-3`, etc. until the folder does not exist
    - Create the folder using Bash: `mkdir -p crews/{name}/output/{run_id}`
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
-6. **Initialize state.json**: Create `crews/{name}/state.json` from scratch (see below). State writes are always mandatory.
-   - **IMPORTANT**: You MUST write to `crews/{name}/state.json` before every step and after every handoff. This is non-negotiable. Never skip these writes.
+6. **Initialize state.json** (only if `dashboard_enabled` — see step 1a; otherwise skip this entire step, including all sub-steps below):
+   - **IMPORTANT**: When enabled, write to `crews/{name}/state.json` before every step and after every handoff, as described throughout this document. When `dashboard_enabled` is false, never create, write, or delete this file.
    - Create `state.json` from scratch:
      a. Read `crews/{name}/crew-party.csv` — for each agent row (skip header), extract:
         - `id`: take the `path` column, strip `./agents/` prefix and `.agent.md` suffix
@@ -270,7 +285,7 @@ Apply this transformation consistently for every write in this step.
 
 ### For each pipeline step:
 
-0. **Update dashboard** — MANDATORY. Write `crews/{name}/state.json` using the Write tool. Always write — it is never wrong to update the dashboard. Use this content:
+0. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 1). Write `crews/{name}/state.json` using the Write tool. Use this content:
    ```json
    {
      "crew": "{crew code from crew.yaml}",
@@ -458,7 +473,8 @@ When a step has `on_reject: {step-id}`:
 
 ### Dashboard Handoff (between steps)
 
-After a step completes output and there IS a next step (MANDATORY):
+Only if `dashboard_enabled` (otherwise skip this entire section). After a step
+completes output and there IS a next step:
 
 1. **Write delivering state** — Write `crews/{name}/state.json` with:
    - Current step's agent: `"status": "delivering"`
@@ -489,13 +505,13 @@ After a step completes output and there IS a next step (MANDATORY):
 For reference, the complete execution order for each pipeline step is:
 
 ```
-0. Dashboard update (state.json)
+0. Dashboard update (state.json) — only if dashboard_enabled
 1. Pre-Step Input Validation (bash gate)
 2. Read step file
 3. Check execution mode and execute (subagent / inline / checkpoint)
 4. Post-Step Output Validation (bash gate)
 5. Veto Condition Enforcement
-6. Dashboard Handoff (to next step)
+6. Dashboard Handoff (to next step) — only if dashboard_enabled
 ```
 
 Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT advance — the user is consulted.
@@ -504,7 +520,7 @@ Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT adva
 
 1. Save final output to `crews/{name}/output/{run_id}/{filename}.md`
    (The run folder was created during initialization — no separate date subfolder needed)
-1b. **Update dashboard** — MANDATORY. Write `crews/{name}/state.json` with:
+1b. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 2 below). Write `crews/{name}/state.json` with:
     - `"status": "completed"`
     - All agents: `"status": "done"`
     - `"updatedAt"`: now
@@ -512,7 +528,7 @@ Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT adva
     - `"startedAt"`: preserve from existing `state.json`
     - Keep existing `"handoff"` object
 
-### Post-Completion Cleanup
+### Post-Completion Cleanup (only if `dashboard_enabled`)
 
 After writing the final "completed" state to `crews/{name}/state.json`:
 
@@ -521,13 +537,12 @@ After writing the final "completed" state to `crews/{name}/state.json`:
    ```bash
    cp crews/{name}/state.json crews/{name}/output/{run_id}/state.json
    ```
-3. Wait 10 seconds (so the dashboard can display the completed state)
-4. Delete the working copy:
-   ```bash
-   rm crews/{name}/state.json
-   ```
+3. Leave the working copy of `crews/{name}/state.json` in place — do not delete it and
+   do not add an artificial delay. A dashboard watching the file already sees the
+   "completed" status the moment it's written; the next run's initialization (step 6)
+   overwrites this file from scratch. There is nothing to clean up.
 
-This archives the run state for the `runs` command while keeping the crew root clean.
+This archives the run state for the `runs` command while keeping crew history available.
 
 2. **Update crew memory** — write to BOTH files (runs after Post-Completion Cleanup above):
 

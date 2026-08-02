@@ -1,13 +1,14 @@
 name: Publish to npm
 
-# Publishes @aksp/opencrew to npm whenever you create a GitHub Release
-# (or push a tag like v1.0.1). Requires an NPM_TOKEN repo secret.
+# Publishes @aksp/opencrew to npm whenever you create a GitHub Release.
+# Requires an NPM_TOKEN repo secret.
+#
+# Only one trigger (release: published) on purpose: creating a GitHub Release
+# also pushes the matching tag, so a second `push: tags` trigger would fire
+# a duplicate publish and fail with "version already exists".
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch: {}
 
 jobs:
@@ -26,6 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci || npm install --no-audit --no-fund
+
+      - name: Run tests
+        run: npm test
 
       - name: Sanity check (pack)
         run: npm pack --dry-run

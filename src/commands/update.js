@@ -6,7 +6,11 @@ import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 // Update refreshes ONLY the framework. It never touches:
 //   crews/, _opencrew/_memory/, _opencrew/_browser_profile/, .env, IDE bridges.
-export async function update() {
+// Note: catalog skills (skills/<name>/ that ship with the package) ARE fully
+// overwritten below — user edits to a catalog skill's own files are not preserved.
+// Only skill directories that don't exist in the package's templates/skills/ at all
+// (i.e. custom/user-authored skills) are left untouched.
+export async function update(opts = {}) {
   const target = process.cwd();
   const pkg = await readJson(packageJsonPath);
   const version = pkg.version;
@@ -38,8 +42,11 @@ export async function update() {
   });
   ok(`_opencrew/core refreshed (${n} files)`);
 
-  // Refresh catalog skills but preserve any user-modified/added ones:
-  // only overwrite skills that ship with the package; leave others untouched.
+  // Refresh catalog skills: every skill shipped in templates/skills/ is fully
+  // overwritten (edits to a catalog skill's files do not survive an update).
+  // Skill directories that only exist in the user's project — i.e. not part of
+  // the catalog — are never touched, since copyDir only visits paths that exist
+  // in the source (templates/skills/).
   step('Refreshing catalog skills');
   let s = 0;
   await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), {

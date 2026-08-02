@@ -7,3 +7,4 @@
 - **Output Language:**
 - **IDEs:**
 - **Date Format:** YYYY-MM-DD
+- **Dashboard:** disabled

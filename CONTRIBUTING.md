@@ -37,6 +37,8 @@ templates/             the payload copied into user projects on `init`
 
 ```bash
 npm install
+npm test                              # unit + integration tests (tests/*.test.js)
+
 mkdir /tmp/try && cd /tmp/try
 node /path/to/opencrew/bin/opencrew.js init --ide=claude-code
 npm --prefix /path/to/opencrew pack   # dry-run the published tarball
@@ -45,5 +47,8 @@ npm --prefix /path/to/opencrew pack   # dry-run the published tarball
 ## Releasing
 
 1. Update `CHANGELOG.md`.
-2. `npm version <patch|minor|major>` (also stamps `.opencrew-version`).
-3. `npm publish`.
+2. `npm version <patch|minor|major>` — always use this, never hand-edit the `version`
+   field in `package.json`. The `version` lifecycle script stamps
+   `templates/_opencrew/.opencrew-version` to match automatically; CI
+   (`scripts/check-version-sync.js`) fails the build if the two ever drift apart.
+3. `npm publish` (or push/create a GitHub Release — `publish.yml` handles it).

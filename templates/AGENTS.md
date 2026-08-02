@@ -31,7 +31,7 @@ If `company.md` is empty or contains `<!-- NOT CONFIGURED -->`:
 
 ## Main Menu
 
-When the user types `/opencrew` or asks for the menu, present an interactive selector using AskUserQuestion with these options (max 4 per question):
+When the user types `/opencrew` or asks for the menu, present an interactive selector with these options (max 4 per question). Use your IDE's native interactive-choice mechanism if it has one (e.g. Claude Code's `AskUserQuestion`); otherwise present the options as a numbered list and ask the user to reply with a number:
 
 **Primary menu (first question):**
 - **Create a new crew** — Describe what you need and I'll build a crew for you
@@ -39,7 +39,7 @@ When the user types `/opencrew` or asks for the menu, present an interactive sel
 - **My crews** — View, edit, or delete your crews
 - **More options** — Skills, company profile, settings, and help
 
-If the user selects "More options", present a second AskUserQuestion:
+If the user selects "More options", present a second selector the same way:
 - **Skills** — Browse, install, create, and manage skills for your crews
 - **Company profile** — View or update your company information
 - **Settings & Help** — Language, preferences, configuration, and help
@@ -84,8 +84,26 @@ When running a crew:
 3. For each agent in the party CSV, also read their full `.agent.md` file from agents/ directory
 4. Load company context from `_opencrew/_memory/company.md`
 5. Load crew memory from `crews/{name}/_memory/memories.md`
-6. Read the pipeline runner instructions from `_opencrew/core/runner.pipeline.md`
-7. Execute the pipeline step by step following runner instructions
+6. Load user preferences from `_opencrew/_memory/preferences.md` (used to check the Dashboard toggle — see below)
+7. Read the pipeline runner instructions from `_opencrew/core/runner.pipeline.md`
+8. Execute the pipeline step by step following runner instructions
+
+## Dashboard (Optional)
+
+opencrew ships an optional visual dashboard (a separate app, built from source — see
+README) that shows a run in progress. It is **disabled by default** and most installs
+never use it, so the Pipeline Runner does not write `state.json` unless the user has
+turned it on.
+
+- Toggle: `Dashboard: enabled` (or `disabled`) in `_opencrew/_memory/preferences.md`,
+  editable via `/opencrew settings`.
+- When disabled (default): the runner never creates, writes, or deletes `state.json`.
+- When enabled: the runner writes `crews/{name}/state.json` before each step and at
+  every handoff, exactly as described in `_opencrew/core/runner.pipeline.md`.
+- **Known limitation**: the dashboard app itself is not yet ported from the upstream
+  OpenSquad naming — it looks for a `squads/` directory instead of `crews/`, so it will
+  not discover any crews even with the toggle enabled. If a user asks about it, tell them
+  it's experimental and not functional yet rather than walking them through enabling it.
 
 ## Language Handling
 
@@ -93,6 +111,13 @@ When running a crew:
 - All user-facing output should be in the user's preferred language
 - Internal file names and code remain in English
 - Agent personas communicate in the user's language
+- **Exception — crew memory scaffolding stays in PT-BR regardless of Output Language.**
+  The section headers in `crews/{name}/_memory/memories.md` (e.g. `## Estilo de Escrita`)
+  and the table columns in `crews/{name}/_memory/runs.md` (e.g. `Data | Run ID | Tema`) are
+  fixed structural labels, not generated prose — see `_opencrew/core/runner.pipeline.md`.
+  opencrew's primary supported audience is PT-BR (see README), so these are intentionally
+  not localized per-user. Only the *content* written into those sections follows the
+  user's Output Language.
 
 ## Critical Rules
 

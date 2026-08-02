@@ -75,6 +75,11 @@ export async function init(opts = {}) {
     ok(`${ide.label} → ${ide.files.map((f) => f.path).join(', ')}`);
   }
 
+  if (ids.includes('claude-code')) {
+    warn(`opencrew ships its own Playwright MCP server (.mcp.json) — disable Claude Code's`);
+    warn(`native Playwright plugin/extension to avoid the two conflicting.`);
+  }
+
   // 4. Version stamp.
   await fs.writeFile(path.join(target, '_opencrew', '.opencrew-version'), version + '\n');
 

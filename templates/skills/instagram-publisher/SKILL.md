@@ -41,7 +41,7 @@ Use the Instagram Publisher when you need to publish carousel posts directly to 
 
 1. List JPEG files in `crews/{crew}/output/images/` sorted by name.
    If no files found: stop and ask the user to add images before continuing.
-2. Present the image list to the user with AskUserQuestion to confirm order.
+2. Present the image list to the user to confirm order (use your IDE's native interactive-choice mechanism if it has one; otherwise a numbered list).
 3. Extract the caption from the content draft:
    - Use the hook slide text + CTA slide text
    - Max 2200 characters (Instagram limit)
