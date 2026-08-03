@@ -1,0 +1,35 @@
+# Template: Instagram Carrossel
+# Escolha este template para crews que produzem carrosséis educativos para Instagram.
+
+template: instagram-carrossel
+label: "Instagram Carrossel"
+description: >
+  Criação de carrosséis educativos para Instagram com pesquisa de
+  referências, geração de ângulos, design visual e copy otimizada.
+  Pipeline completo: pesquisador → criador → revisor → designer.
+icon: 🎠
+domains:
+  - social-media
+  - instagram
+  - copywriting
+  - image-design
+audience: "Seguidores do Instagram buscando conteúdo educativo, dicas práticas e insights visuais sobre o nicho"
+format: instagram-feed
+tier: standard
+suggested_agents:
+  - role: researcher
+    title: "Pesquisador de Tendências"
+    description: "Pesquisa referências, padrões virais e hooks de alto engajamento no Instagram"
+    skills: [web_search]
+  - role: creator
+    title: "Criador de Carrossel"
+    description: "Gera ângulos, escreve slides e caption otimizados para carrossel educativo"
+    skills: []
+  - role: reviewer
+    title: "Revisor de Conteúdo"
+    description: "Avalia coesão do carrossel, força dos hooks, qualidade do copy e CTAs"
+    skills: []
+  - role: designer
+    title: "Designer Visual"
+    description: "Cria os slides do carrossel com identidade visual consistente"
+    skills: [image-creator]

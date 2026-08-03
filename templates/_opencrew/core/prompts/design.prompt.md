@@ -33,7 +33,7 @@ Based on the crew's purpose and the domains identified in Discovery, select whic
 1. Review each catalog entry's `whenToUse` field
 2. Select entries whose `whenToUse` matches the crew's needs
 3. Read the full content of each selected best-practice file from `_opencrew/core/best-practices/{file}`
-4. Use this knowledge to design better agents in Phase E
+4. Use this knowledge to design better agents in Phase F
 
 **Example:** For a content creation crew targeting Instagram:
 - Read `copywriting.md` (for the writer agent)
@@ -74,6 +74,55 @@ Run all research as a subagent using the Task tool. Inform the user:
 "Researching {N} knowledge domains..."
 
 Compile all research into a structured research brief document. This will feed Phase C (Extraction) and be saved as `pipeline/data/research-brief.md` in the crew.
+
+---
+
+## Phase B.5: Tier Selection
+
+After research completes, determine the crew's tier:
+
+1. If a template was used (check `discovery.yaml` → `tier` field is present and not null) → use the template's tier.
+2. Otherwise, read the default tier from `_opencrew/_memory/preferences.md` → `Default Tier` field.
+3. If neither is set, default to `standard`.
+
+If the tier came from a template, skip the tier selection question — the template already defined it. Present it as a fact: "Template **{label}** usa tier **{tier}**."
+
+If no template was used, ask the user what depth they want:
+
+Present the three tiers with concrete trade-offs:
+
+> "Qual a profundidade ideal para essa crew?"
+> 1. ⚡ **Express** — Rápido e enxuto (2-3 pessoas, ~5K tokens)
+>    Ideal para testar uma ideia ou conteúdo simples.
+>    Ex: um post rápido, uma análise simples, validação de conceito.
+> 2. 🎯 **Standard** — Equilíbrio entre qualidade e eficiência (3-5 pessoas, ~15K tokens)
+>    Ideal para uso diário, produção regular de conteúdo, crews bem definidas.
+>    Ex: carrossel semanal, artigo de blog com SEO, newsletter mensal.
+> 3. 🔬 **Full** — Máxima profundidade (5-7 pessoas, ~40K tokens)
+>    Ideal para projetos complexos, conteúdo de alta qualidade, clientes exigentes.
+>    Ex: lançamento de produto, relatório anual, campanha multiplataforma.
+
+### Tier Impact on Design
+
+| Aspect | ⚡ Express | 🎯 Standard | 🔬 Full |
+|--------|-----------|-------------|---------|
+| Agent count | 2-3 | 3-5 | 5-7 |
+| Reviewer | Writer self-reviews | 1 dedicated reviewer | Reviewer + cross-review |
+| Sherlock | Never | Only if user provided URLs | Always (social + web + trends) |
+| Checkpoints | Final approval only | Research focus + content approval + final | All checkpoints + angle selection |
+| model_tier per step | All `fast` | Mix (research=fast, create=powerful) | All `powerful` |
+| Cross-review | None | None | Reviewer + second reviewer cross-check |
+| On-reject loops | 1 max | 2 max | 3 max |
+
+### Tier Recording
+
+Record the selected tier in `design.yaml`:
+```yaml
+crew:
+  tier: express | standard | full
+```
+
+The tier drives decisions in Phase F (Agent Design — how many agents), Phase G (Pipeline Design — how many steps and checkpoints), and at runtime (model_tier per step).
 
 ---
 
@@ -122,31 +171,201 @@ investigation:
 
 ---
 
-## Phase D: Skill Discovery (offer relevant integrations)
+## Phase D: Role Proposal (suggest people, not tools)
 
-Before designing the crew, check if any skills (installed or from catalog) would benefit this crew:
+Based on discovery answers + company context + research findings, suggest **who** should work on this crew — real people with roles and responsibilities. Do NOT mention skills, tools, or technical integrations here. The user should see a team, not a toolbox.
 
-1. Read installed skills from `skills/` directory and fetch the catalog from GitHub
-2. For each skill, compare `categories` against the crew's identified needs:
-   - Research/data crews → check for: scraping, data, analytics skills
-   - Content crews → check for: design, social-media skills
-   - Communication crews → check for: messaging, notification skills
-3. Only suggest skills when native skills (web_search, web_fetch) are clearly insufficient for the crew's needs. Do NOT suggest skills if native skills cover the use case.
-4. If relevant skills found, present to user as a numbered list. If only 1 skill is relevant, add "No thanks, skip skills" as a second option.
-   "These skill integrations could enhance your crew:
-   - {name}: {first line of description}
-   Want to set up any of these? (You can always add skills later)"
-5. For each accepted skill:
-   a. Read the skills engine from `_opencrew/core/skills.engine.md`
-   b. Follow Operation 2 (Install a Skill) — ask for env vars, configure MCP, create binding
-6. Track which skills were installed — they will be recorded in design.yaml
-7. If no relevant skills found or user declines all → proceed silently to Phase E
+### Role Discovery
+
+From the crew's purpose and domains (in `discovery.yaml`), identify what human roles would exist if this were a real team:
+
+| Domain / Need | Possible Roles |
+|---|---|
+| Research, fact-finding, market analysis | 🔎 Pesquisador — finds trends, maps keywords, does market research |
+| Writing, copy, content creation | ✍️ Redator — writes strategic text based on research, including captions and hooks |
+| Strategy, positioning, planning | 🧠 Estrategista — defines angles, editorial calendar, competitive positioning |
+| Visual design, image creation | 🎨 Designer — creates visual content aligned with brand identity |
+| Quality review, accuracy check | 🔍 Revisor — validates quality, tone, accuracy against criteria |
+| Data analysis, metrics, insights | 📊 Analista — interprets data, extracts insights, benchmarks performance |
+| Publishing, distribution, scheduling | 📢 Publicitário — publishes content, manages distribution channels |
+| Curation, selection, filtering | 📋 Curador — selects and ranks content from multiple sources |
+
+### Presenting Roles
+
+Present the suggested team as people, not functions:
+
+```
+Para {crew purpose}, sugiro este time:
+
+🔎 Pedro Pesquisa — encontra as notícias e tendências mais relevantes
+   sobre {domain}, mapeia o que está sendo discutido e rankeia por
+   relevância para o seu público.
+
+✍️ Clara Copy — escreve os textos com ganchos magnéticos e CTAs
+   estratégicos, adaptando o conteúdo da pesquisa para o formato
+   {format} com o tom de voz da sua marca.
+
+🔍 Renata Revisão — revisa cada peça antes de publicar, garantindo
+   que o tom está certo, os dados estão corretos e o conteúdo
+   entrega o que promete.
+```
+
+### Role Presentation Rules
+
+- **Use alliterative two-word names** — follow the naming convention (Phase F). Each role gets a name that makes the user smile and instantly communicates what the person does.
+- **Describe what they DO, not how** — "Encontra tendências e rankeia por relevância" not "Usa web_search para coletar dados"
+- **One sentence per role** — concise, human, focused on outcomes
+- **Suggest based on crew complexity**:
+  - Simple crews (1 format, 1 platform): 2-3 roles
+  - Medium crews (content + review): 3-4 roles
+  - Complex crews (multi-platform, multi-format): 4-6 roles
+- **Every crew needs a reviewer** — mandatory quality gate
+- **Allow editing** — after presenting roles, ask:
+  > "Quer adicionar, remover ou modificar algum papel? Ou o time está bom?"
+
+### Minimum Viable Team
+
+Never suggest fewer than 2 roles. The minimum viable crew has:
+- One creator/executor (the person who produces the output)
+- One reviewer (the person who checks quality before delivery)
+
+For very simple tasks, these two roles can be the same person with a self-review step — but the user must explicitly approve this simplification.
 
 ---
 
-## Phase E: Agent Design
+## Phase E: Skill Mapping (auto-resolve tools from roles)
+
+After the user approves the team roles, map each role to the skills and best-practices needed to execute it. This phase is automatic — the user already approved the team, now you resolve the technical details silently.
+
+### Role → Skill Mapping Table
+
+For each approved role, consult this mapping to determine which skills and best-practices are needed:
+
+| Role | Typical Skills | Typical Best-Practices |
+|------|---------------|----------------------|
+| Pesquisador (Researcher) | `web_search`, `web_fetch` (native) | `researching.md` |
+| Redator (Writer/Copywriter) | `web_search` (native, for fact-checking) | `copywriting.md` + platform-specific format file |
+| Estrategista (Strategist) | `web_search` (native) | `strategist.md` |
+| Designer (Visual Designer) | `image-creator`, `image-ai-generator`, `canva` | `image-design.md` |
+| Revisor (Reviewer) | None required | `review.md` |
+| Analista (Analyst) | `web_search`, `web_fetch` (native) | `data-analysis.md` |
+| Publicitário (Publisher) | `apify`, `blotato`, `instagram-publisher`, `resend` | `social-networks-publishing.md` |
+| Curador (Curator) | `web_search`, `web_fetch` (native) | `researching.md` |
+| Social Media Writer | `web_search` (native) | `copywriting.md` + platform-specific format |
+| Email Writer | None required | `email-newsletter.md` or `email-sales.md` |
+| Technical Writer | `web_search` (native) | `technical-writing.md` |
+| SEO Specialist | `web_search` (native) | `blog-seo.md` |
+
+### Mapping Process
+
+1. For each approved role, look up the typical skills and best-practices
+2. **Native skills** (`web_search`, `web_fetch`): always available, no installation needed
+3. **Installed skills**: check `skills/` directory — is the skill already installed?
+4. **Catalog skills**: check the skills catalog — is there a matching skill available to install?
+5. **Unmapped gaps**: if a role has no matching skill in the catalog, note it. Don't suggest creating a skill here — that's handled by Operation 3/3a in the Skills Engine on demand.
+
+### Skill Installation Offer
+
+After mapping, present only the skills that need installation:
+
+> "Para esse time funcionar, vou precisar instalar:
+> - **image-creator** — renderiza HTML/CSS em imagens para os posts do {designer name}
+> - **resend** — envia a newsletter por email
+>
+> Posso instalar agora? (São ~2 minutos, você só precisa colar as chaves de API quando eu pedir.)"
+
+If no installations needed → proceed silently to Phase F.
+
+If user declines a skill → mark it as `declined` in design.yaml. The crew can still be created but that agent's capabilities will be limited.
+
+### Dynamic Skill Generation (Operation 3a)
+
+When a role has no matching skill in the catalog AND native tools are insufficient:
+
+1. **Research the role's needs**: Use `web_search` to find:
+   - What tools/APIs do professionals in this role use?
+   - Is there an MCP server, public API, or CLI tool available?
+   - What's the workflow pattern for this role?
+   - Example: "ANVISA data access API", "PubMed query tools", "regulatory research workflow"
+
+2. **Generate the SKILL.md**: Follow the skill format from `skills.engine.md`:
+   ```yaml
+   ---
+   name: "{skill-name}"
+   description: "{one-line description of what the skill does}"
+   type: prompt  # or mcp | script | hybrid depending on research
+   version: "0.1.0"
+   generated: true
+   experimental: true
+   categories: [{relevant categories}]
+   ---
+
+   # {skill-name}
+
+   {generated instructions based on research}
+   ```
+   - `type: prompt` is the safe default — behavioral instructions only
+   - `type: mcp` only if research found a concrete MCP server to install
+   - `type: script` only if a deterministic script can be generated and tested
+
+3. **Save to `.custom/`**: Write to `skills/.custom/{skill-name}/SKILL.md`
+   - This directory is NEVER touched by `update`
+   - The user can inspect and modify the generated skill
+
+4. **Present to user**:
+   > "Para o papel de {role name}, não encontrei uma skill pronta no catálogo.
+   > Gerei uma skill personalizada: **{skill-name}** ({type})
+   > 
+   > {one-line description}
+   > 
+   > Ela está em `skills/.custom/{skill-name}/SKILL.md`. Como é experimental,
+   > recomendo revisar antes de usar. Quer que eu explique o que ela faz?"
+
+5. **If user approves**: Install any required env vars, MCP config, or dependencies (same as Operation 2 in skills.engine.md).
+6. **If user declines**: Keep the skill in `.custom/` but don't activate it for this crew. Mark as `declined` in design.yaml.
+
+### No-Match Roles (fallback)
+
+If dynamic generation is not suitable (role is too vague, research found nothing actionable):
+
+1. Flag it for the user:
+   > "Para o papel de {role name}, não encontrei uma skill específica no catálogo. Ele vai trabalhar com as ferramentas nativas (web_search, web_fetch) e o conhecimento das melhores práticas do domínio. Se precisar de algo mais específico depois, podemos instalar."
+2. This is not an error — many roles work fine with native tools + domain knowledge
+
+---
+
+## Phase F: Agent Design
 
 Based on discovery answers + company context + research findings + extracted artifacts + best-practices:
+
+### Shared Agent Registry Check
+
+Before designing any agent from scratch, check the shared registry at `_opencrew/agents/`:
+
+1. List available base agents: `ls _opencrew/agents/` — each `.agent.md` file is a reusable base agent
+2. For each role approved in Phase D, check if a matching base agent exists:
+   - Pesquisador → `_opencrew/agents/researcher.agent.md`
+   - Redator → `_opencrew/agents/copywriter.agent.md`
+   - Revisor → `_opencrew/agents/reviewer.agent.md`
+   - Designer → `_opencrew/agents/designer.agent.md`
+   - Estrategista → `_opencrew/agents/strategist.agent.md`
+3. **If a match exists (80%+ coverage):** Reference the shared agent with `extends:` in the agent's frontmatter. The Build phase will copy the base and apply overrides.
+4. **If a partial match exists (50-80%):** Use `extends:` plus local overrides — the agent file only contains the sections that differ from the base.
+5. **If no match exists:** Design the agent from scratch as before. After user approval, ask:
+   > "Este agente parece reutilizável para futuras crews. Salvar no registro compartilhado?"
+   If yes → write to `_opencrew/agents/{role}.agent.md`.
+
+**How `extends:` works:**
+```yaml
+---
+name: "Clara Copy"
+extends: copywriter
+icon: ✍️
+execution: inline
+skills: []
+---
+```
+The Build phase copies the base agent from `_opencrew/agents/copywriter.agent.md` and the local file only needs to specify what's DIFFERENT — a different tone, specific output examples for this crew, or additional anti-patterns. The runner merges: base first, local overrides on top.
 
 ### Design Philosophy
 
@@ -216,7 +435,7 @@ The name should make someone smile — it's a pun tying a common name to the pro
 
 ---
 
-## Phase F: Pipeline Design
+## Phase G: Pipeline Design
 
 ### Execution Modes
 
@@ -321,7 +540,7 @@ For non-content crews (data analysis, automation, etc.), the traditional pattern
 
 ---
 
-## Phase G: Design Presentation
+## Phase H: Design Presentation
 
 Present the design to the user:
 
@@ -351,11 +570,11 @@ Wait for user approval. If they want changes, adjust and re-present.
 
 ---
 
-## Phase G.5: Template Selection (Optional)
+## Phase H.5: Template Selection (Optional)
 
 **Condition:** The design includes an agent with the `image-creator` skill (or any image-producing skill).
 
-If this condition is met, after the user approves the design in Phase G, present:
+If this condition is met, after the user approves the design in Phase H, present:
 
 > "O crew inclui um agente de design de imagens. Quer escolher um template visual agora para definir a identidade visual? Você pode fazer isso depois também, pedindo para editar o template do designer."
 
@@ -379,6 +598,7 @@ crew:
   code: "{code}"
   name: "{Crew Name}"
   description: "{one-line description}"
+  tier: "express" | "standard" | "full"
 
 agents:
   - id: "{agent-id}"
@@ -386,6 +606,7 @@ agents:
     title: "{Agent Title}"
     icon: "{emoji}"
     execution: "inline" | "subagent"
+    extends: "{base-agent-id}"     # optional — references _opencrew/agents/{id}.agent.md
     role_summary: "{what this agent does}"
     skills: []
     tasks:
@@ -444,13 +665,15 @@ research_brief: |
 skills_installed:
   - "web_search"
   - "web_fetch"
-  # any additional skills from Phase D
+  # any additional skills from Phase E (Skill Mapping)
 
 formats_selected:
   - "{format-id}"
 
 best_practices_consulted:
   - "{filename}"
+
+template_selection: "{template-reference.html path}" | skipped  # from Phase H.5
 ```
 
 ---
@@ -461,6 +684,11 @@ best_practices_consulted:
 - DO run web research for every domain identified in discovery
 - DO present the full design and wait for user approval
 - DO record all extracted artifacts in design.yaml for the Build phase
+- DO ask about tier after research and respect the choice in all subsequent phases (Phase B.5)
+- DO adjust agent count, checkpoints, Sherlock dispatch, and model_tier based on selected tier
+- DO present roles as people with names and outcomes, never as tools or skills (Phase D)
+- DO map roles to skills silently — the user approved the team, you handle the technical details (Phase E)
+- DO NOT mention skills, tools, or MCP servers during role proposal — that comes after role approval
 - DO NOT generate crew files (agents, pipeline, steps) — that is the Build phase
 - DO NOT load Sherlock prompts or dispatch investigations — that was the Investigation phase
 - DO NOT load the pipeline runner — that is for execution, not design

@@ -1,0 +1,29 @@
+# Template: Newsletter Mensal
+# Escolha este template para crews que produzem newsletters mensais por email.
+
+template: newsletter-mensal
+label: "Newsletter Mensal"
+description: >
+  Criação de newsletter mensal com curadoria de conteúdo, redação de email,
+  e análise de métricas. Pipeline: curador → redator → revisor.
+icon: 📧
+domains:
+  - email-marketing
+  - copywriting
+  - content-curation
+audience: "Assinantes de newsletter — profissionais que buscam curadoria de qualidade, insights do setor e conteúdo exclusivo no email"
+format: email-newsletter
+tier: express
+suggested_agents:
+  - role: curator
+    title: "Curador de Conteúdo"
+    description: "Seleciona e rankeia os conteúdos mais relevantes da semana/mês para a newsletter"
+    skills: [web_search, web_fetch]
+  - role: copywriter
+    title: "Redator de Newsletter"
+    description: "Escreve o email com tom pessoal, linhas de assunto magnéticas e CTAs efetivos"
+    skills: []
+  - role: reviewer
+    title: "Revisor Final"
+    description: "Revisa tom, links, CTAs e consistência antes do envio"
+    skills: []

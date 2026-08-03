@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { copyDir, exists, writeFileSafe, readJson } from '../lib/fsx.js';
+import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
 import { ideById, allIdeIds } from '../lib/ides.js';
 import { pickIdes } from '../lib/prompts.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
@@ -42,10 +42,23 @@ export async function init(opts = {}) {
   });
   ok(`Framework files ready (${copied.count} written, existing files preserved)`);
 
-  // 2. Canonical system doc + root configs.
+  // 2. System doc + root configs.
   step('Writing configuration');
-  await writeFileSafe(path.join(target, 'AGENTS.md'), await tpl('AGENTS.md'));
-  ok('AGENTS.md (single source of truth)');
+
+  // Full system definition lives in _opencrew/core/ — never at project root.
+  // The root AGENTS.md is just a thin bridge (like CLAUDE.md, GEMINI.md, etc.).
+  await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), await tpl('AGENTS.md'));
+  ok('_opencrew/core/system.md (full system definition)');
+
+  const agentsBridge = '# opencrew\n\n'
+    + 'The opencrew system definition lives at `_opencrew/core/system.md`.\n'
+    + 'Read that file and adopt the opencrew system role — follow all initialization,\n'
+    + 'command routing, and workflow instructions defined there.\n\n'
+    + 'Type `/opencrew` to open the main menu.\n';
+
+  const agentsResult = await writeBridgeFile(path.join(target, 'AGENTS.md'), agentsBridge);
+  if (agentsResult.merged) info('AGENTS.md (merged — existing content preserved)');
+  else ok('AGENTS.md (bridge to system.md)');
 
   const mcpWritten = await writeFileSafe(path.join(target, '.mcp.json'), await tpl('.mcp.json'), {
     overwrite: false,
@@ -62,6 +75,7 @@ export async function init(opts = {}) {
   step('Configuring AI IDEs');
   let ids = normalizeIdes(opts.ide);
   if (opts.all) ids = allIdeIds();
+  if (opts.yes) ids = allIdeIds();
   if (!ids) ids = await pickIdes();
 
   for (const id of ids) {
@@ -71,7 +85,15 @@ export async function init(opts = {}) {
       continue;
     }
     for (const f of ide.files) {
-      await writeFileSafe(path.join(target, f.path), f.content);
+      const fp = path.join(target, f.path);
+      // Files that require frontmatter at byte 0 (YAML, .mdc) must NOT be wrapped in HTML markers.
+      const hasFrontmatter = f.content.startsWith('---');
+      if (hasFrontmatter) {
+        await writeFileSafe(fp, f.content, { overwrite: false });
+      } else {
+        const result = await writeBridgeFile(fp, f.content);
+        if (result.merged) info(`${f.path} (merged — existing content preserved)`);
+      }
     }
     ok(`${ide.label} → ${ide.files.map((f) => f.path).join(', ')}`);
   }
@@ -97,7 +119,7 @@ async function tpl(name) {
 }
 
 function normalizeIdes(val) {
-  if (!val) return null;
+  if (!val || val === true) return null;
   const list = Array.isArray(val) ? val : String(val).split(',');
   return list.map((s) => s.trim()).filter(Boolean);
 }

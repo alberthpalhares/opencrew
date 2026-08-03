@@ -114,7 +114,7 @@ export async function run(argv) {
     }
   }
 
-  const cmd = opts._[0] || (opts.help ? 'help' : 'init');
+  const cmd = opts._[0] || (opts.version ? 'version' : opts.help ? 'help' : 'init');
 
   switch (cmd) {
     case 'init':

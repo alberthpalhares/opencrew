@@ -40,7 +40,7 @@ Before starting execution:
 > | `## Estrutura de Conteúdo` | `memories.md` | Content structure rules per crew |
 > | `## Proibições Explícitas` | `memories.md` | User bans and hard blocks per crew |
 > | `## Técnico (específico do crew)` | `memories.md` | Technical crew-specific settings |
-> | `Data \| Run ID \| Tema \| Output \| Resultado` | `runs.md` | Run history table columns |
+> | `Data \| Run ID \| Tema \| Output \| Score \| Resultado` | `runs.md` | Run history table columns |
 >
 > When adding new structural sections to `memories.md` or `runs.md`, keep headers in PT-BR
 > unless the user base expands beyond PT-BR — at that point, discuss a migration strategy
@@ -90,13 +90,18 @@ Before starting execution:
    c. If type: mcp, verify MCP is configured in `.claude/settings.local.json`
       - If missing → **ERROR**: "Skill '{skill}' MCP not configured. Reinstall the skill."
    All skills must resolve successfully before the pipeline starts (fail fast).
-4. **Model tiers**: Individual steps declare their own `model_tier` in their frontmatter (`fast` or `powerful`), set by the Architect at crew creation time.
-   - If the file exists: read and note the tier values for reference.
-   - If the file doesn't exist: ignore silently — all steps default to `powerful` at dispatch.
+4. **Model tiers**: Individual steps declare their own `model_tier` in their frontmatter (`fast` or `powerful`), set by the Architect at crew creation time based on the crew's tier (Express/Standard/Full).
+   - Read `crew.yaml` → `crew.tier` field to understand the crew's depth level:
+     - `express`: all steps use `model_tier: fast` by default
+     - `standard`: mixed — research/data steps use `fast`, creative/review steps use `powerful`
+     - `full`: all steps use `model_tier: powerful` by default
+   - If a step has its own `model_tier` in frontmatter → step-level override takes priority over crew-level default.
+   - If neither crew tier nor step model_tier is set → default to `powerful` at dispatch.
 5. Inform the user that the crew is starting:
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    🚀 Running crew: {crew name}
+   ⚡ Tier: {tier from crew.yaml — express / standard / full}
    📋 Pipeline: {number of steps} steps
    🤖 Agents: {list agent names with icons}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -151,7 +156,8 @@ Before executing any step that references an agent:
 2. Read the FULL agent file from the crew's agents/ directory (path comes from crew-party.csv)
    - The file uses YAML frontmatter for metadata and markdown body for depth
    - The markdown body contains: Operational Framework, Output Examples, Anti-Patterns, Voice Guidance
-   - All agents are complete `.agent.md` files with full definitions — no overlay resolution needed
+   - The file is always complete — the Build phase already merged any `extends:` base agent
+   - If the frontmatter has `extends: {base-id}`, the agent was generated from `_opencrew/agents/{base-id}.agent.md` — the lineage is preserved for documentation but requires no runtime resolution
 3. When executing the step, the agent's full definition informs behavior:
    - Follow the Operational Framework's process steps
    - Use Output Examples as quality reference
@@ -159,11 +165,24 @@ Before executing any step that references an agent:
    - Apply Voice Guidance (vocabulary always/never use, tone rules)
 4. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
    If present:
-   a. Read `_opencrew/core/best-practices/{format}.md` (e.g., `_opencrew/core/best-practices/instagram-feed.md`)
+   a. **Export formats** — if format is one of `pdf`, `csv`, or `formatted-post`:
+      - Read `_opencrew/core/prompts/export.prompt.md`
+      - Parse the YAML frontmatter to extract the `name` field
+      - Extract the Markdown body (everything after the YAML frontmatter closing `---`)
+      - Append to the agent's context, before skill instructions:
+        ```
+        --- EXPORT FORMAT: {format} ---
+
+        {export.prompt.md markdown body}
+        ```
+      - The agent must follow the export process for the specified format — read the input file,
+        transform the content, and write the output file in the target format.
+      - Skip the best-practices lookup below for export formats.
+   b. **Content formats** — otherwise, read `_opencrew/core/best-practices/{format}.md` (e.g., `_opencrew/core/best-practices/instagram-feed.md`)
       - If the file does not exist → **WARNING**: "Format '{format}' not found in _opencrew/core/best-practices/. Skipping format injection." Continue without format.
-   b. Parse the YAML frontmatter to extract the `name` field
-   c. Extract the Markdown body (everything after the YAML frontmatter closing `---`)
-   d. Append to the agent's context, before skill instructions:
+   c. Parse the YAML frontmatter to extract the `name` field
+   d. Extract the Markdown body (everything after the YAML frontmatter closing `---`)
+   e. Append to the agent's context, before skill instructions:
       ```
       --- FORMAT: {name from frontmatter} ---
 
@@ -183,8 +202,31 @@ Before executing any step that references an agent:
 
    The final agent context composition order is:
    ```
-   Agent (.agent.md) → Platform Best Practices → Skill Index (Tier 1) → Skill Instructions (Tier 2, on-demand)
+   Agent (.agent.md) → Crew Memory Rules → Platform Best Practices → Skill Index (Tier 1) → Skill Instructions (Tier 2, on-demand)
    ```
+
+6. **Inject crew memory rules**: Before building the agent's execution prompt, inject accumulated correction rules from `crews/{name}/_memory/memories.md`:
+   a. Read `memories.md` and extract:
+      - `## Proibições Explícitas` — hard blocks, injected as NUNCA rules
+      - `## Regras de Ouro` — promoted patterns, injected as SEMPRE rules
+      - `## Estilo de Escrita` — writing style rules relevant to creator agents
+      - `## Design Visual` — visual rules relevant to designer agents
+   b. Build the injection block:
+      ```
+      --- CREW MEMORY (accumulated from past runs) ---
+
+      NUNCA:
+      {list of Proibições Explícitas, one per line}
+
+      SEMPRE:
+      {list of Regras de Ouro, one per line}
+
+      PREFERÊNCIAS:
+      {relevant rules from Estilo de Escrita and Design Visual for this agent}
+      ```
+   c. Inject this block immediately after the agent definition and BEFORE format/skill context.
+   d. Skip sections that are empty or not relevant to the current agent (e.g., skip Design Visual for a writer agent).
+   e. If `memories.md` has no accumulated rules → skip injection entirely (no empty block).
 
 ### Context Compression (Summary-Based Handoff)
 
@@ -594,8 +636,8 @@ This archives the run state for the `runs` command while keeping crew history av
    ```markdown
    # Run History: {crew-name}
 
-   | Data | Run ID | Tema | Output | Resultado |
-   |------|--------|------|--------|-----------|
+   | Data | Run ID | Tema | Output | Score | Resultado |
+   |------|--------|------|--------|-------|-----------|
    ```
    Then proceed to prepend the new row.
 
@@ -604,9 +646,54 @@ This archives the run state for the `runs` command while keeping crew history av
    - `Run ID`: the `run_id` for this execution
    - `Tema`: the topic or user request from this run (1 sentence max)
    - `Output`: brief description of what was generated (e.g., "Carrossel 9 slides", "Thread 7 posts")
+   - `Score`: `{approved}/{total}` agent outputs approved without corrections (e.g., `4/5`)
    - `Resultado`: one of — `Aprovado` / `Rejeitado` / `Publicado` / `Abortado`
 
-   No other data. Do not add preferences, scores, file paths, or technical notes to `runs.md`.
+   No other data.
+
+   The `Score` column tracks how many agent outputs were approved by the user without corrections in this run. Count only explicit checkpoint approvals (not "skip" or "continue"). Format: `{approved}/{total checkpoints}` (e.g., `4/5` means 4 of 5 agent outputs were approved as-is).
+
+   ### 2c. Post-Run Reflection (pattern detection)
+
+   After updating `memories.md` and `runs.md`, run a reflection pass. This is a lightweight analysis — not a full agent execution, just pattern matching on the run's feedback and past memory.
+
+   1. **Collect this run's corrections**: From checkpoint responses, gather every user rejection or correction. A correction is:
+      - A rejected output with a reason ("tom muito informal", "cor não combina", "fonte sem data")
+      - A modification request during checkpoint ("muda o título para X", "usa azul em vez de verde")
+
+   2. **Look for recurrence**: Compare each correction against past runs recorded in `memories.md`:
+      - Search `memories.md` for similar patterns (same category, same agent, same type of correction)
+      - Count: how many past runs have a correction matching this pattern?
+      - A "match" means the same agent + same type of error (e.g., "redator + tom informal", "designer + cores saturadas")
+
+   3. **Promote to Regra de Ouro**: If the SAME pattern appears in **3 or more runs** (including this one):
+      a. Add a new entry under `## Regras de Ouro` in `memories.md`:
+         ```markdown
+         ## Regras de Ouro (promovidas após 3+ ocorrências)
+
+         - **{Agent role}**: SEMPRE {correct behavior}. {Why — grounded in user feedback}.
+           (Runs: #{run1}, #{run2}, #{run3})
+         ```
+         Example:
+         ```markdown
+         - **Redator**: SEMPRE verificar se o CTA contém link rastreável antes de finalizar.
+           (Runs: #2026-08-01-143022, #2026-08-05-091530, #2026-08-10-160845)
+         ```
+      b. Remove the individual entries from their original sections (`## Estilo de Escrita`, `## Design Visual`, etc.) — the Regra de Ouro replaces them.
+      c. Display to the user:
+         ```
+         💡 Regra de Ouro detectada:
+         "{correct behavior}" aconteceu 3 vezes.
+         Vou aplicar automaticamente a partir de agora.
+         ```
+
+   4. **Mark improvement**: If a previously recurring error did NOT happen this run:
+      - Add a `✅` marker to the Regra de Ouro entry: `✅ **Redator**: SEMPRE ...`
+      - This tracks that the crew is improving — the rule is working.
+
+   5. **Bail out early**: If this run had zero corrections (all checkpoints approved), skip the entire reflection — nothing to learn.
+
+   6. **Reflection budget**: Maximum 30 seconds of analysis. If the crew has a long history (>20 past runs), sample the most recent 10 runs for pattern matching. This is a quick scan, not an exhaustive audit.
 
 3. Present completion summary:
    ```

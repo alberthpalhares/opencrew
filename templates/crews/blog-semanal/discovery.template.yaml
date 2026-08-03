@@ -1,0 +1,35 @@
+# Template: Blog Semanal
+# Escolha este template para crews que produzem artigos de blog com SEO e divulgação.
+
+template: blog-semanal
+label: "Blog Semanal"
+description: >
+  Criação de artigos para blog com pesquisa de SEO, redação otimizada,
+  e divulgação nas redes sociais. Pipeline completo: pesquisador →
+  redator SEO → revisor → social media writer.
+icon: 📝
+domains:
+  - content-marketing
+  - seo
+  - copywriting
+audience: "Leitores de blog corporativo, gestores, tomadores de decisão e profissionais buscando conteúdo educativo aprofundado"
+format: blog-seo
+tier: standard
+suggested_agents:
+  - role: researcher
+    title: "Pesquisador SEO"
+    description: "Encontra keywords, analisa concorrentes, mapeia conteúdo gaps e produz research brief"
+    skills: [web_search, web_fetch]
+  - role: copywriter
+    title: "Redator SEO"
+    description: "Escreve artigos otimizados com base no research brief, aplicando hooks, estrutura e CTAs"
+    skills: [web_search]
+  - role: reviewer
+    title: "Revisor de Conteúdo"
+    description: "Avalia qualidade, SEO, tom de voz e aderência ao briefing antes da publicação"
+    skills: []
+  - role: social-writer
+    title: "Social Media Writer"
+    description: "Adapta o artigo para formatos de redes sociais (LinkedIn, Twitter, Instagram)"
+    skills: []
+    optional: true

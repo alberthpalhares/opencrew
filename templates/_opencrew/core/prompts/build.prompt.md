@@ -42,8 +42,8 @@ Generate these files directly — they are compilations of data already gathered
      ```markdown
      # Run History: {crew-name}
 
-     | Data | Run ID | Tema | Output | Resultado |
-     |------|--------|------|--------|-----------|
+     | Data | Run ID | Tema | Output | Score | Resultado |
+     |------|--------|------|--------|-------|-----------|
      ```
 8. `crews/{code}/output/.gitkeep` — empty output directory marker (Write tool, empty content — never use mkdir)
 
@@ -125,10 +125,27 @@ Generate these files. Use the Write tool for all file creation — never use Bas
 
 ### Agent Generation Strategy
 
-All agents are created as full `.agent.md` files (never `.custom.md`).
-No `base_agent` field in frontmatter.
-Every agent file must include ALL required sections.
-Use knowledge from the best-practices files to write sections with high quality.
+Agents can be created in two ways:
+
+**A. Shared base + overrides (recommended when `extends:` is set in design.yaml):**
+1. Read the base agent from `_opencrew/agents/{extends}.agent.md`
+2. Copy the full base agent content as the starting point
+3. Apply the crew-specific overrides from design.yaml on top:
+   - `name`, `icon`, `role_summary` → replace frontmatter values
+   - Specific sections (Operational Framework, Output Examples, etc.) → replace with crew-specific versions
+   - Sections not overridden → keep the base agent's content
+4. Write to `crews/{code}/agents/{agent-id}.agent.md` — this is a complete file, not a pointer
+5. The frontmatter includes `extends: {base-agent-id}` so the runner knows the lineage
+
+**B. From scratch (when `extends:` is not set):**
+1. Design the full agent file from the design.yaml artifacts
+2. Every agent file must include ALL required sections
+3. Use knowledge from the best-practices files to write sections with high quality
+
+**Override rules:**
+- An override file does NOT need all sections — only what's DIFFERENT from the base
+- The Build phase is responsible for merging: base → overrides → complete file
+- The generated `.agent.md` is always a complete file (the runner doesn't merge at runtime)
 
 The crew-party.csv `path` column points to: `./agents/{agent-id}.agent.md`
 
@@ -356,8 +373,8 @@ outputFile: crews/{code}/output/{filename}.{ext}  # path where this step saves i
                                                     # only applies to paths starting with crews/{code}/output/,
                                                     # so any path outside output/ will bypass run_id scoping entirely.
 model_tier: fast      # ONLY for execution: subagent. fast = lightweight model; powerful = default model
-                      # Set fast for: investigator agents (data extraction, Sherlock subagents)
-                      # Set powerful for: writer, creator, reviewer, strategy, researcher agents
+                      # Set fast for: investigator agents (data extraction, Sherlock subagents), researcher agents (web search, data gathering)
+                      # Set powerful for: writer, creator, reviewer, strategy agents
                       # Omit model_tier for execution: inline steps
 ---
 ```
@@ -463,6 +480,17 @@ This gate exists because the Pipeline Runner renders agent identity from the CSV
 If ANY check fails: rewrite `crew-party.csv` using the canonical header
 (`id,displayName,title,icon,path,execution`), pulling `displayName` from each agent's
 `.agent.md` `name:` field and `title` from its `title:` field. Re-validate. Max 2 fix attempts.
+
+### Gate 0c: Shared Agent References (BLOCKING if `extends:` is used)
+
+For EACH agent in design.yaml with an `extends:` field:
+- [ ] Verify the referenced base agent exists: `_opencrew/agents/{extends}.agent.md` must be present and non-empty
+- [ ] The base agent has a valid `name:` and `id:` in its frontmatter
+- [ ] The crew agent's `name:` is different from the base agent's `name:` (crews must personalize the name)
+
+If ANY check fails:
+- If base agent is missing → **ERROR**: "Base agent '{extends}' not found in _opencrew/agents/. Remove extends or create the base agent." Max 1 fix attempt.
+- If base agent has no `name:`/`id:` → fix the base agent file. Max 1 fix attempt.
 
 ### Gate 1: Agent Completeness (BLOCKING)
 

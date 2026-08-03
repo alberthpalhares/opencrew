@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson } from '../src/lib/fsx.js';
+import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson, writeBridgeFile, readFile } from '../src/lib/fsx.js';
 
 async function mkTmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
@@ -130,6 +130,55 @@ test('readJson: throws with file path in the error message', async () => {
     /Failed to read.*bad\.json/,
     'readJson should include the file path in its error message'
   );
+});
+
+test('readFile returns file content as string', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
+  const p = path.join(dir, 'hello.txt');
+  await fs.writeFile(p, 'hello world');
+  assert.equal(await readFile(p), 'hello world');
+});
+
+test('writeBridgeFile creates file with markers when file does not exist', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
+  const p = path.join(dir, 'bridge.md');
+  const result = await writeBridgeFile(p, '# Test Bridge');
+  assert.equal(result.written, true);
+  assert.equal(result.merged, false);
+  const content = await fs.readFile(p, 'utf8');
+  assert.ok(content.includes('<!-- opencrew:start -->'));
+  assert.ok(content.includes('# Test Bridge'));
+  assert.ok(content.includes('<!-- opencrew:end -->'));
+});
+
+test('writeBridgeFile replaces block when markers exist, preserves other content', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
+  const p = path.join(dir, 'bridge.md');
+  await fs.writeFile(p, '<!-- opencrew:start -->\nold content\n<!-- opencrew:end -->\n\n# User Stuff\nmy notes');
+  const result = await writeBridgeFile(p, 'new content');
+  assert.equal(result.written, true);
+  assert.equal(result.merged, false);
+  const content = await fs.readFile(p, 'utf8');
+  assert.ok(content.includes('new content'));
+  assert.ok(!content.includes('old content'));
+  assert.ok(content.includes('# User Stuff'));
+  assert.ok(content.includes('my notes'));
+});
+
+test('writeBridgeFile prepends block when file exists without markers', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
+  const p = path.join(dir, 'bridge.md');
+  await fs.writeFile(p, '# My Project\n\nSome content.');
+  const result = await writeBridgeFile(p, '# Bridge');
+  assert.equal(result.written, true);
+  assert.equal(result.merged, true);
+  const content = await fs.readFile(p, 'utf8');
+  const openStart = content.indexOf('<!-- opencrew:start -->');
+  const openEnd = content.indexOf('<!-- opencrew:end -->');
+  const userIdx = content.indexOf('# My Project');
+  assert.ok(openStart < openEnd);
+  assert.ok(openEnd < userIdx, 'bridge block should precede user content');
+  assert.ok(content.includes('Some content.'));
 });
 
 test('readJson: throws with ENOENT in the error message for missing files', async () => {

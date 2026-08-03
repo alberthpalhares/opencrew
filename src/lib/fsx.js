@@ -51,6 +51,57 @@ export async function writeFileSafe(p, content, { overwrite = true } = {}) {
 }
 
 /**
+ * Write a bridge file using marked-block strategy.
+ * - File doesn't exist → creates with content wrapped in HTML markers
+ * - File exists with markers → replaces only the block between markers
+ * - File exists without markers → prepends marked block, preserves existing content
+ *
+ * @param {string}   p       File path
+ * @param {string}   block   Content to place between markers
+ * @param {object}   opts
+ * @param {string}   opts.marker  Marker name (default: 'opencrew')
+ * @returns {Promise<{written: boolean, merged: boolean}>}
+ */
+export async function writeBridgeFile(p, block, { marker = 'opencrew' } = {}) {
+  const start = `<!-- ${marker}:start -->`;
+  const end = `<!-- ${marker}:end -->`;
+  const marked = `${start}\n${block.trimEnd()}\n${end}`;
+
+  if (!(await exists(p))) {
+    await ensureDir(path.dirname(p));
+    await fs.writeFile(p, marked + '\n');
+    return { written: true, merged: false };
+  }
+
+  const existing = await fs.readFile(p, 'utf8');
+
+  // Already has markers → replace just the block, keep everything else
+  if (existing.includes(start) && existing.includes(end)) {
+    const updated = existing.replace(
+      new RegExp(escapeRx(start) + '[\\s\\S]*?' + escapeRx(end), 'g'),
+      marked,
+    );
+    if (updated !== existing) {
+      await fs.writeFile(p, updated);
+      return { written: true, merged: false };
+    }
+    return { written: false, merged: false };
+  }
+
+  // User content exists → prepend block, preserve everything
+  await fs.writeFile(p, marked + '\n\n' + existing.trimStart());
+  return { written: true, merged: true };
+}
+
+function escapeRx(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export async function readFile(p) {
+  return fs.readFile(p, 'utf8');
+}
+
+/**
  * Remove a directory and all its contents.
  * Does nothing silently if the path does not exist.
  * @param {string} p  Directory path to remove.

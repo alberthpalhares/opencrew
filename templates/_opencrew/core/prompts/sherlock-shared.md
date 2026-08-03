@@ -31,6 +31,66 @@ This notice is mandatory for every investigation run, even if sessions already e
 
 ---
 
+## Multi-Source Orchestration
+
+Sherlock is not a single agent — it's an orchestration layer that dispatches specialized extractors based on the crew's domain and research needs. The Architect decides which sources to activate before launching any subagents.
+
+### Available Sources
+
+| Source | Extractor File | Method | Best For |
+|--------|---------------|--------|----------|
+| **Social** | `sherlock-instagram.md`, `sherlock-linkedin.md`, `sherlock-twitter.md`, `sherlock-youtube.md` | Browser automation (Playwright) | Reference profiles, content style analysis, competitor social audit |
+| **Web** | `sherlock-web.md` | `web_search` + `web_fetch` (native) | Industry research, competitive analysis, blog/news content, technical docs |
+| **SEO** | `sherlock-seo.md` | `web_search` (native) | Keyword discovery, content gap analysis, search intent mapping, trend volume |
+| **Trends** | `sherlock-trends.md` | `web_search` + `web_fetch` (native) | Trending topics, cultural moments, viral patterns, audience conversations |
+
+### Source Selection Logic
+
+The Architect selects sources based on the crew's purpose and domains (from `discovery.yaml`):
+
+| Crew Type | Sources to Activate | Rationale |
+|-----------|-------------------|-----------|
+| **Social media content** (Instagram, LinkedIn, Twitter, YouTube) | Social + Trends | Reference profiles for style + trending topics for relevance |
+| **Blog / SEO content** | Web + SEO + Trends | Web for research depth, SEO for keyword targeting, Trends for timeliness |
+| **News / current events** | Web + Trends | Web for source material, Trends for what's breaking now |
+| **Product launch / marketing** | Web + SEO + Trends | Web for competitive intel, SEO for positioning, Trends for cultural timing |
+| **Technical / documentation** | Web | Web research is sufficient — SEO and Trends add noise for technical content |
+| **Strategy / consulting** | Social + Web + Trends | Full spectrum: what competitors do (Social), what the market says (Web), what's changing (Trends) |
+| **General / unspecified** | Web | Default to web — broadest coverage, no browser setup needed |
+
+### Dispatch Rules
+
+1. **Social sources require user-provided URLs** — only activate `sherlock-social` extractors when the user gave reference profile URLs during discovery. Never search for social profiles speculatively.
+
+2. **All other sources can be activated automatically** — the Architect decides which extractors to dispatch based on the crew's domains. No user input needed beyond the initial crew briefing.
+
+3. **Subagents run in parallel** — all activated extractors dispatch simultaneously as background subagents. Social extractors each get ONE subagent per profile URL. Web, SEO, and Trends get ONE subagent each (they handle multiple queries internally).
+
+4. **Native tools only for non-social extractors** — Web, SEO, and Trends extractors use `web_search` and `web_fetch` native tools. They do NOT need Playwright, sessions, or browser automation. This makes them faster and more reliable than social extractors.
+
+5. **Minimum viable dispatch** — at least one source must be activated. If the user provided no social URLs and the crew has no research domain, default to Web extractor.
+
+### Cross-Source Deduplication
+
+When multiple extractors find the same content or insight:
+
+1. **Same URL found by Web + SEO** → Web extractor's deep analysis takes priority. SEO extractor references it for keyword data only.
+2. **Same trend found by Trends + Social** → Trends extractor's analysis takes priority (broader context). Social extractor provides the concrete example.
+3. **Same competitor found by Web + Social** → Social extractor's pattern analysis takes priority (real content). Web extractor provides market positioning context.
+4. **The consolidated analysis explicitly calls out** which findings come from which source, using the format: `[Source: {extractor} — {detail}]`
+
+### Consolidated Analysis Enrichment
+
+When multiple sources are activated, the consolidated analysis gains additional dimensions:
+
+- **Cross-source validation**: Findings confirmed by 2+ sources carry more weight
+- **Source-specific patterns**: Social reveals execution patterns; Web reveals market positioning; SEO reveals demand signals; Trends reveals timing opportunities
+- **Contradictions**: When sources disagree (e.g., Social shows competitors doing X, but SEO shows no one searches for X), flag as a strategic insight — the crew may have found a gap or a trap
+
+These enrichments are applied during the Design phase when the Architect produces `consolidated-analysis.md`.
+
+---
+
 ## Browser Automation
 
 Sherlock uses Playwright CLI for browser automation. Use `npx playwright` commands to:
@@ -626,8 +686,20 @@ Sherlock detects the platform from the URL to apply the correct extractor:
 | `youtube.com` or `youtu.be` | YouTube | `sherlock-youtube.md` |
 | `x.com` or `twitter.com` | Twitter/X | `sherlock-twitter.md` |
 | `linkedin.com` | LinkedIn | `sherlock-linkedin.md` |
+| Any other URL | Web | `sherlock-web.md` |
 
-If the URL does not match any known pattern, inform the user: "I don't recognize this platform. Supported platforms: Instagram, YouTube, Twitter/X, LinkedIn."
+If the URL does not match any social platform, it is routed to the Web extractor — no platform-specific logic applies.
+
+### Non-URL Sources
+
+Sherlock also activates extractors that do NOT require user-provided URLs:
+
+| Source | Activated By | Extractor File |
+|--------|-------------|----------------|
+| SEO / Keywords | Crew domain involves content marketing, SEO, or organic growth | `sherlock-seo.md` |
+| Trends / Culture | Crew domain involves social media, news, or current-events content | `sherlock-trends.md` |
+
+These extractors are dispatched automatically by the Architect based on the crew type — see Multi-Source Orchestration above for the full selection matrix.
 
 ### Configuration Prompts
 

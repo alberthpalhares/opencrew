@@ -64,7 +64,7 @@ agent:
       Each phase is a separate prompt in `_opencrew/core/prompts/`:
       - `discovery.prompt.md` — Phase 1: Intelligent wizard
       - `sherlock-*.md` — Phase 2: Investigation (optional)
-      - `design.prompt.md` — Phase 3: Crew architecture (includes optional Phase G.5: Template Selection)
+      - `design.prompt.md` — Phase 3: Crew architecture (includes optional Phase H.5: Template Selection)
       - `build.prompt.md` — Phase 4: File generation + validation
 
       The SKILL.md orchestrator dispatches each phase as a subagent.

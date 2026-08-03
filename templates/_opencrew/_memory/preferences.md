@@ -7,4 +7,5 @@
 - **Output Language:**
 - **IDEs:**
 - **Date Format:** YYYY-MM-DD
+- **Default Tier:** standard
 - **Dashboard:** disabled

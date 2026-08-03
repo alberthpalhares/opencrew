@@ -3,6 +3,24 @@
 > Coletânea de ideias identificadas no uso real do OpenCrew.
 > Data base: 2026-08-01 — v1.1.0
 > Análise de viabilidade: 2026-08-02 — todas as ideias avaliadas
+> **Auditoria de implementação: 2026-08-03 — v1.2.2 — nenhuma ideia implementada**
+> **✅ Implementação completa: 2026-08-03 — todas as 8 ideias implementadas (85 testes, 0 regressões)**
+
+### Resultado da Auditoria Final (2026-08-03)
+
+| # | Ideia | Status | Onda | Evidência |
+|---|-------|:---:|------|-----------|
+| 1 | Sherlock multi-fonte | ✅ | Onda 1 | `sherlock-web.md`, `sherlock-seo.md`, `sherlock-trends.md` + orquestração em `sherlock-shared.md` |
+| 2 | Criação por papéis | ✅ | Onda 2 | Phase D = Role Proposal, Phase E = Skill Mapping em `design.prompt.md` |
+| 3 | Criação dinâmica de skills | ✅ | Onda 7 | Operation 3a em `skills.engine.md` + Dynamic Skill Generation em `design.prompt.md` |
+| 4 | Tiers de crew | ✅ | Onda 4 | Phase B.5: Tier Selection, campo `tier` no design.yaml, `Default Tier` em preferences.md |
+| 5.1 | Aprendizado contínuo | ✅ | Onda 3 | Post-Run Reflection, Regras de Ouro, injeção de Crew Memory Rules no prompt |
+| 5.2 | Templates de crew por setor | ✅ | Onda 5 | 4 templates em `templates/crews/`: blog-semanal, instagram-carrossel, newsletter-mensal, lancamento-produto |
+| 5.3 | Exportação multi-formato | ✅ | Onda 5 | `export.prompt.md` com PDF (Playwright), CSV, e formatted-post |
+| 6 | Registro compartilhado de agentes | ✅ | Onda 6 | 5 agentes base em `_opencrew/agents/`, `extends:` no design.yaml, Gate 0c no build |
+| 7 | Instalação não-destrutiva | ✅ | Onda 7 (prévia) | `writeBridgeFile` em fsx.js, merge com marcadores, sidecar AGENTS.md removido |
+
+**Conclusão:** Backlog 100% implementado. 85 testes, zero regressões. ~6.000 linhas novas em 22 arquivos.
 
 ---
 
@@ -454,20 +472,248 @@ afeta criação, execução, e manutenção. Ideal para ser planejada junto com 
 
 ---
 
+## 7. Instalação Não-Destrutiva — Estratégia de Merge para Arquivos Existentes
+
+**Problema:** O `opencrew init` sobrescreve `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`QWEN.md` e outros arquivos de bridge sem verificar se o usuário já tem conteúdo
+próprio nesses arquivos.
+
+### Raiz do problema
+
+No `src/commands/init.js`, as chamadas a `writeFileSafe` têm comportamentos
+inconsistentes:
+
+| Arquivo | Flag | Comportamento |
+|---------|------|---------------|
+| `AGENTS.md` | `overwrite: true` (default) | 🔴 Sobrescreve sempre |
+| `CLAUDE.md` | `overwrite: true` (default) | 🔴 Sobrescreve sempre |
+| `GEMINI.md` | `overwrite: true` (default) | 🔴 Sobrescreve sempre |
+| `QWEN.md` | `overwrite: true` (default) | 🔴 Sobrescreve sempre |
+| `.env.example` | `overwrite: true` (default) | 🔴 Sobrescreve sempre |
+| `.mcp.json` | `overwrite: false` | 🟢 Preserva existente |
+| `.gitignore` | `overwrite: false` | 🟢 Preserva existente |
+| `_opencrew/` | `overwrite: false` | 🟢 Preserva existente |
+| `skills/` | `overwrite: false` | 🟢 Preserva existente |
+| `crews/` | `overwrite: false` | 🟢 Preserva existente |
+
+Um usuário que já tem um `CLAUDE.md` com instruções do projeto (ex: "esse projeto
+usa DDD, sempre escreva testes, etc.") **perde tudo** ao rodar `opencrew init`.
+O mesmo vale para `GEMINI.md` no Gemini CLI, `QWEN.md` no Qwen Code, etc.
+
+Além disso, `.mcp.json` preserva o existente mas **não faz merge** — se o usuário
+já tem servidores MCP configurados, o servidor Playwright do OpenCrew não é
+adicionado (o que é pior do que sobrescrever: a funcionalidade quebra silenciosamente).
+
+### Proposta: Estratégia de 3 níveis por arquivo
+
+Para cada arquivo que o init escreve, aplicar uma estratégia específica baseada
+no tipo de conteúdo:
+
+#### Nível 1 — Detecção de conteúdo
+
+Antes de escrever qualquer arquivo:
+1. O arquivo existe?
+2. Se sim, o conteúdo é exatamente igual ao template do OpenCrew? (ex: update de
+   versão → pode sobrescrever)
+3. Se o conteúdo é diferente → é conteúdo do usuário → dispara estratégia de merge
+
+A detecção usa hash ou comparação de string normalizada (ignorando whitespace).
+
+#### Nível 2 — Estratégia de merge por tipo de arquivo
+
+**`AGENTS.md` (sistema completo — 150+ linhas):**
+- OpenCrew escreve o sistema INTEIRO no AGENTS.md — é o "single source of truth"
+- Se o usuário já tem um AGENTS.md de outro sistema → conflito real
+- Estratégia:
+  1. Se não existe → cria normalmente
+  2. Se existe e é idêntico ao template OpenCrew → sobrescreve (update)
+  3. Se existe com conteúdo de usuário → **backup + perguntar**:
+     - Opção A: "Substituir — OpenCrew gerencia o AGENTS.md" (recomendado)
+     - Opção B: "Criar `AGENTS.opencrew.md` como sidecar — você referencia manualmente"
+     - Opção C: "Pular — manter meu AGENTS.md como está"
+  - Se `--yes` foi passado → default para Opção A com aviso explícito:
+    "⚠️ AGENTS.md substituído. Backup salvo em AGENTS.md.bak."
+
+**`CLAUDE.md`, `GEMINI.md`, `QWEN.md` (arquivos de bridge — ~5-10 linhas cada):**
+- São arquivos finos que apontam para `AGENTS.md` + notas específicas da IDE
+- Estratégia: **bloco marcado com delimitadores HTML**
+  ```
+  <!-- opencrew:start -->
+  # opencrew — Project Instructions
+  This project uses opencrew...
+  <!-- opencrew:end -->
+
+  [conteúdo existente do usuário PRESERVADO aqui]
+  ```
+- Em updates subsequentes → substitui apenas o bloco entre `<!-- opencrew:start -->`
+  e `<!-- opencrew:end -->`
+- Se o usuário remover os marcadores → redetecta como "arquivo modificado" e
+  pergunta (não sobrescreve cegamente)
+- Se não existe → cria com o bloco OpenCrew apenas
+
+**`.mcp.json` (merge de servidores MCP):**
+- Hoje: `overwrite: false` → preserva o existente mas NÃO adiciona o servidor
+  Playwright do OpenCrew
+- Proposta: **merge inteligente**
+  1. Lê o `.mcp.json` existente
+  2. Lê o servidor `@anthropic/mcp-server-playwright` do template
+  3. Se o servidor já existe no arquivo do usuário → mantém o do usuário
+  4. Se não existe → adiciona ao objeto `mcpServers`
+  5. Preserva todos os outros servidores do usuário intactos
+- Mesma lógica para `.claude/settings.local.json`
+
+**`.gitignore` (append de entradas):**
+- Hoje: `overwrite: false` → preserva existente mas NÃO adiciona novas entradas
+- Proposta: **append condicional**
+  1. Lê o `.gitignore` existente
+  2. Para cada entrada do template OpenCrew, verifica se já existe no arquivo
+  3. Adiciona apenas as entradas faltantes ao final, com comentário:
+     ```
+     # opencrew
+     _opencrew/logs/
+     _browser_profile/
+     ```
+- Detecta bloco `# opencrew` existente → substitui só esse bloco
+
+**`.env.example` (append de variáveis):**
+- Hoje: sobrescreve sempre
+- Proposta: mesmo tratamento do `.gitignore` — append das variáveis do OpenCrew
+  que não existem, com delimitador `# opencrew`
+
+#### Nível 3 — Confirmação interativa
+
+Quando conteúdo de usuário é detectado em qualquer arquivo crítico:
+1. Lista todos os arquivos que serão modificados e a ação em cada um
+2. Para cada arquivo, mostra diff do que será adicionado/alterado
+3. Oferece checkpoints:
+   - "Prosseguir com merge" (default com `--yes`)
+   - "Ver diff completo"
+   - "Cancelar instalação"
+
+### Parte 2: Modelo de Instalação — Global vs Per-Project
+
+Hoje o OpenCrew só suporta instalação per-project (`npx @aksp/opencrew init`
+na raiz do projeto). A questão é: deveria existir um modo global?
+
+#### Modelo A: Per-Project (atual)
+
+**Vantagens:**
+- ✅ Isolamento total: cada projeto tem sua versão, crews, skills, e company profile
+- ✅ MCP servers no escopo do projeto — sem conflitos entre projetos
+- ✅ Company profile diferente por projeto (essencial para agências com múltiplos clientes)
+- ✅ Cada projeto pode travar em uma versão específica do OpenCrew
+- ✅ Simples: um diretório, uma instalação
+
+**Desvantagens:**
+- ❌ Instalação repetida para cada novo projeto
+- ❌ Conflito com arquivos IDE existentes (este ticket)
+- ❌ Updates manuais por projeto (ou automação externa)
+- ❌ Skills reinstaladas por projeto (duplicação em disco)
+
+#### Modelo B: Global (`~/.opencrew/`)
+
+**Vantagens:**
+- ✅ Instala uma vez, funciona em qualquer projeto
+- ✅ Zero conflito com arquivos do projeto
+- ✅ Skills compartilhadas entre projetos (instala uma vez)
+- ✅ Update único para todos os projetos
+- ✅ Menos arquivos na raiz do projeto
+
+**Desvantagens:**
+- ❌ Company profile único — inviável para agências com múltiplos clientes
+- ❌ MCP servers globais no `settings.json` da IDE
+- ❌ Versionamento: todos os projetos usam a mesma versão
+- ❌ Crews e outputs são sempre per-project mesmo com core global (confunde)
+- ❌ IDEs como Claude Code leem configuração do diretório do projeto, não de `~/`
+
+#### Modelo C: Híbrido (recomendado)
+
+Combina o melhor dos dois mundos:
+
+| Camada | Local | Justificativa |
+|--------|-------|---------------|
+| Core do framework (`_opencrew/core/`) | Per-project | Cada projeto trava sua versão; evita breaking changes |
+| Skills | **Global com cache local** | Instala em `~/.opencrew/skills/`; projeto tem symlink ou cópia local como cache. Update de skill beneficia todos os projetos. |
+| Company profile | Per-project | Agências precisam de perfis diferentes por cliente |
+| Crews + outputs | Per-project | São específicos do contexto do projeto |
+| Bridge files (`AGENTS.md`, `CLAUDE.md`) | Per-project | Cada projeto tem seu próprio ecossistema de arquivos IDE |
+| `.mcp.json` | Per-project | MCP servers são escopo de projeto |
+| `.env` | Per-project | Chaves de API por projeto/cliente |
+
+**Implementação em fases:**
+
+**Fase 1 (curto prazo):** Resolver o problema de sobrescrita (merge strategy acima).
+Corrige o bug sem mudar arquitetura.
+
+**Fase 2 (médio prazo):** Adicionar flag `--global` experimental:
+```
+npx @aksp/opencrew init --global   # instala em ~/.opencrew/
+```
+- Skills são instaladas em `~/.opencrew/skills/`
+- Projetos referenciam skills globais via `crew.yaml` → `skills: [global:resend]`
+- Se uma skill local existe em `skills/`, shadowa a global (override local)
+
+**Fase 3 (longo prazo):** Cache inteligente de skills:
+- `npx @aksp/opencrew install <skill>` → instala em `~/.opencrew/skills/` por padrão
+- `npx @aksp/opencrew install <skill> --local` → instala localmente (override)
+- `opencrew update` → atualiza core + skills globais
+
+### Arquivos afetados
+
+- `src/commands/init.js` — reescrever `writeFileSafe` calls com merge strategy
+- `src/lib/fsx.js` — novos helpers: `mergeJsonFile`, `appendToFile`, `insertBlockWithMarkers`
+- `src/commands/update.js` — usar a mesma estratégia de merge (consistência)
+- `templates/*` — templates de bridge com delimitadores `<!-- opencrew:start/end -->`
+- `tests/init.test.js` — testes para cada cenário de merge
+
+### Cenários de teste
+
+1. **Init em projeto vazio:** comportamento atual (todos os arquivos criados)
+2. **Init em projeto com CLAUDE.md existente:** bloco OpenCrew inserido, conteúdo preservado
+3. **Init em projeto com AGENTS.md de outro sistema:** pergunta com opções
+4. **Init com `--yes` em projeto com conteúdo:** default para merge, backup criado
+5. **Init em projeto com OpenCrew prévio (update):** sobrescreve blocos marcados, preserva resto
+6. **Init em projeto com `.mcp.json` contendo outros servidores:** adiciona servidor Playwright, preserva existentes
+7. **Init com `--global`:** instala em `~/.opencrew/`, bridge files vão para o projeto atual
+
+### Sinergia com outras ideias
+
+- **Item 6 (Registro compartilhado de agentes):** Um modelo híbrido de instalação é
+  pré-requisito para agentes compartilhados cross-project
+- **Item 3 (Criação dinâmica de skills):** Skills criadas automaticamente podem ser
+  salvas globalmente para reuso em outros projetos
+
+**Análise de Viabilidade:**
+- Cobertura: 🔴 Bug real — `writeFileSafe` com `overwrite: true` destrói arquivos do usuário
+- Diretrizes:
+  - ✅ Simplicidade: merge não-destrutivo resolve o bug sem mudar o modelo mental do usuário
+  - ✅ Backward compatible: quem usa `--yes` em projeto vazio não percebe diferença
+  - ⚠️ Complexidade: merge de `.mcp.json` e blocos marcados adiciona lógica condicional. Mas o ganho de segurança (não destruir dados do usuário) justifica
+- Impacto: 🔴 Alto / Esforço: 🟡 Médio (Fase 1), 🔴 Alto (Fase 3 com `--global`)
+- Dependências: Nenhuma
+- Riscos: Detecção de "conteúdo igual ao template" pode falhar com whitespace/encoding diferente. Mitigação: comparação com hash do template normalizado (trim + normalize line endings)
+
+**Horizonte:** Fase 1 (merge não-destrutivo) — Curto prazo (1-2 semanas). Fases 2-3 (global/híbrido) — Longo prazo (6-10 semanas).
+
+---
+
 ## Priorização Sugerida
 
 | # | Ideia | Impacto | Esforço | Horizonte |
 |---|-------|---------|---------|-----------|
-| 1 | Criação por papéis, não ferramentas (item 2) | 🔴 Alto | 🟡 Médio | Médio |
-| 2 | Aprendizado contínuo das crews (item 5.1) | 🔴 Alto | 🟡 Médio | Médio |
-| 3 | Sherlock multi-fonte (item 1) | 🔴 Alto | 🟢 Baixo | Curto |
-| 4 | Tiers de crew (item 4) | 🟡 Médio | 🟡 Médio | Médio |
-| 5 | Registro compartilhado de agentes (item 6) | 🔴 Alto | 🔴 Alto | Longo |
-| 6 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
-| 7 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
-| 8 | Exportação multi-formato (5.3) | 🟡 Médio | 🟢 Baixo | Curto |
+| 1 | Instalação não-destrutiva — merge (item 7) | 🔴 Alto | 🟡 Médio | Curto |
+| 2 | Criação por papéis, não ferramentas (item 2) | 🔴 Alto | 🟡 Médio | Médio |
+| 3 | Aprendizado contínuo das crews (item 5.1) | 🔴 Alto | 🟡 Médio | Médio |
+| 4 | Sherlock multi-fonte (item 1) | 🔴 Alto | 🟢 Baixo | Curto |
+| 5 | Tiers de crew (item 4) | 🟡 Médio | 🟡 Médio | Médio |
+| 6 | Registro compartilhado de agentes (item 6) | 🔴 Alto | 🔴 Alto | Longo |
+| 7 | Criação dinâmica de skills (item 3) | 🔴 Alto | 🔴 Alto | Longo |
+| 8 | Templates por setor (5.2) | 🟡 Médio | 🟢 Baixo | Curto |
+| 9 | Exportação multi-formato (5.3) | 🟡 Médio | 🟢 Baixo | Curto |
 
 ---
 
 *Este arquivo é vivo — alimentado pelo uso real do OpenCrew. Para cada ideia,
 avalie: a dor é real e frequente? A solução proposta resolve a causa raiz?*
+
+*✅ Backlog concluído: 2026-08-03 — 9 de 9 ideias implementadas. 85 testes, 0 regressões.*

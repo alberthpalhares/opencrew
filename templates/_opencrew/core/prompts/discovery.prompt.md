@@ -32,6 +32,39 @@ All output must be in the user's preferred language (from preferences.md). If no
 
 ## Discovery Flow
 
+### Step 0 — Template Selection (optional)
+
+Before asking any questions, check if the user wants to start from a template.
+
+First, scan `crews/` directory for available templates. For each subdirectory that contains a `discovery.template.yaml` file, read its frontmatter to get `label`, `description`, and `icon`.
+
+If templates are available (1 or more), present them as options:
+
+> "Quer partir de um template ou começar do zero?"
+> 1. Começar do zero — você descreve o que precisa e eu monto a crew
+> 2. {icon} {label} — {description}
+> 3. {icon} {label} — {description}
+> ...
+
+If the user selects a template:
+1. Read the full `discovery.template.yaml` from `crews/{template}/discovery.template.yaml`
+2. Load all fields silently: `domains`, `audience`, `format`, `tier`, `suggested_agents`
+3. Show a summary to the user:
+   > "Template **{label}** carregado:
+   > - **Domínios:** {domains}
+   > - **Público:** {audience}
+   > - **Formato:** {format}
+   > - **Time sugerido:** {N} agentes
+   >
+   > Quer ajustar algo ou seguir com essas configurações?"
+4. If the user wants to adjust → let them modify any field (add/remove domains, change audience, add agents)
+5. Skip Steps 1-5 (domain detection, format selection, etc.) — the template provides these answers
+6. Write `discovery.yaml` using template values as defaults, enriched by any user adjustments
+
+If the user selects "começar do zero" or no templates exist → proceed to Step 1 normally.
+
+If exactly 1 template exists, still offer option 1 ("Começar do zero") as a second option.
+
 ### Step 1 — Purpose (open-ended)
 
 Ask:
@@ -209,6 +242,14 @@ After the user confirms in Step 7, write the following file:
 crew_code: "{slugified crew name from purpose}"
 purpose: "{user's description from Step 1}"
 domain: "{content | research | automation | analysis | mixed}"
+# When a template was used (Step 0), these fields are populated from discovery.template.yaml:
+domains: []                          # list of domain tags from template (e.g., [content-marketing, seo])
+tier: "standard"                     # from template or preferences Default Tier
+format: "{format-id}"                # from template, if specified
+suggested_agents:                    # from template, if specified
+  - role: "{role}"
+    title: "{title}"
+    description: "{description}"
 
 company:
   name: "{from company.md}"
@@ -259,7 +300,7 @@ The `crew_code` must be a short, URL-safe slug derived from the crew's purpose (
 
 - **NEVER load best-practices file contents** — only scan filenames to build the format list
 - **NEVER load Sherlock prompts** — investigation setup stays within this prompt
-- **NEVER start designing the crew** — discovery ends at confirmation; crew design is Phase 2
+- **NEVER start designing the crew** — discovery ends at confirmation; crew design is Phase 3 (Design phase)
 - **NEVER ask more than 8 questions total** — respect the user's time
 - **NEVER ask about tools** — auto-detect from installed skills and include in the summary
 - **NEVER ask about performance mode** — crews are always built lean and agile

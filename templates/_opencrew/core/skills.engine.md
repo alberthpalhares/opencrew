@@ -235,6 +235,67 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
    "The Skill Creator is not installed. Install it first with:
    `/opencrew skills` → Install → `opencrew-skill-creator`"
 
+### 3a. Generate Skill Automatically (called by Architect / Design Phase E)
+
+This operation is called by the Architect during crew creation when a role has no matching skill in the catalog and native tools are insufficient. It does NOT require `opencrew-skill-creator` — it uses web research + the SKILL.md format spec.
+
+1. **Input:** Role name, role description, and domain from the crew's design phase.
+
+2. **Research the role's tooling:**
+   a. Use `web_search` to find what tools, APIs, or workflows professionals in this role use
+   b. Search for: `"{domain}" tools API`, `"{role}" workflow software`, `"{domain}" automation`
+   c. Determine the best skill type:
+      - Found a public MCP server? → `type: mcp`
+      - Found a CLI tool or API with SDK? → `type: script` (requires a script file)
+      - Found only a workflow pattern or methodology? → `type: prompt` (behavioral instructions)
+
+3. **Generate SKILL.md** following the format specification (see SKILL.md Format section above):
+   ```yaml
+   ---
+   name: "{kebab-case-skill-name}"
+   description: "{one-line description}"
+   type: prompt  # or mcp | script | hybrid
+   version: "0.1.0"
+   generated: true
+   experimental: true
+   categories: [{relevant tags}]
+   ---
+
+   # {Skill Name}
+
+   ## Purpose
+   {What this skill enables — 2-3 sentences}
+
+   ## When to Use
+   - {Condition 1}
+   - {Condition 2}
+
+   ## Instructions
+   {Detailed behavioral instructions for the agent using this skill}
+
+   ## Limitations
+   - Generated automatically — review before production use
+   - {Any specific limitations discovered during research}
+   ```
+   - `generated: true` — marks this as auto-created (distinct from catalog skills)
+   - `experimental: true` — warns users this hasn't been battle-tested
+   - Frontmatter MUST include: `name`, `description`, `type`, `version`, `generated`, `experimental`, `categories`
+
+4. **Save the skill:**
+   a. Create directory: `skills/.custom/{skill-name}/`
+   b. Write `SKILL.md` to `skills/.custom/{skill-name}/SKILL.md`
+   c. If `type: script` — also generate the script file at the path specified in `script.path`
+   d. `skills/.custom/` is NEVER touched by `update` — user edits and generated skills survive updates
+
+5. **Minimal validation:**
+   - [ ] Frontmatter has all required fields
+   - [ ] `categories` has at least 1 entry
+   - [ ] Markdown body has at least 50 words
+   - [ ] If `type: mcp` → `mcp.server_name` and `mcp.command`/`mcp.url` are present
+   - [ ] If `type: script` → `script.path` and `script.runtime` are present
+
+6. **Return to Architect:** Report the generated skill name, type, and path so it can be included in `design.yaml` → `skills_installed:`.
+
 ### 4. Remove a Skill
 
 1. **List installed skills** — present the list as a numbered list and tell the user to reply with a number.
@@ -356,9 +417,9 @@ For each skill declared in an agent's `.agent.md` frontmatter `skills:` field:
 6. **Missing skill handling**: If a skill listed in an agent's frontmatter was not resolved
    during Operation 5, skip it silently — the user was already warned during resolution.
 
-### 7. Skill Discovery (called by Architect during Phase 3.5)
+### 7. Skill Discovery (called by Architect during Design phase)
 
-When the Architect reaches Phase 3.5 during crew creation:
+When the Architect reaches the Design phase (specifically Phase D/E — Role Proposal / Skill Mapping):
 
 1. **List already-installed skills**:
    Read all subdirectories in `skills/` and parse each SKILL.md frontmatter
@@ -416,14 +477,14 @@ When the Architect reaches Phase 3.5 during crew creation:
 
 8. **Track installed skills**:
    Record which skills were installed during this phase. They will be added to the
-   crew's `crew.yaml` in Phase 5 (Build), under the `skills:` section:
+   crew's `crew.yaml` in the Build phase, under the `skills:` section:
    ```yaml
    skills:
      - web_search
      - web_fetch
-     - apify        # installed during Phase 3.5
-     - seo-guidelines  # installed during Phase 3.5
+     - apify        # installed during Design phase
+     - seo-guidelines  # installed during Design phase
    ```
 
-9. **If no relevant skills found or user declines all** → proceed silently to Phase 4.
+9. **If no relevant skills found or user declines all** → proceed silently to the next phase.
    Do not force skill installation — native skills are sufficient for many crews.

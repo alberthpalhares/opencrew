@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { copyDir, exists, writeFileSafe, readJson } from '../lib/fsx.js';
+import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 // Update refreshes ONLY the framework. It never touches:
@@ -67,8 +67,18 @@ export async function update(opts = {}) {
   });
   ok(`Catalog skills refreshed (${s} files)`);
 
-  // Canonical system doc.
-  await writeFileSafe(path.join(target, 'AGENTS.md'), await fs.readFile(path.join(templatesDir, 'AGENTS.md'), 'utf8'));
+  // System doc — full definition in _opencrew/core/, thin bridge at root.
+  const systemContent = await fs.readFile(path.join(templatesDir, 'AGENTS.md'), 'utf8');
+  await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), systemContent);
+  ok('_opencrew/core/system.md refreshed');
+
+  const agentsBridge = '# opencrew\n\n'
+    + 'The opencrew system definition lives at `_opencrew/core/system.md`.\n'
+    + 'Read that file and adopt the opencrew system role — follow all initialization,\n'
+    + 'command routing, and workflow instructions defined there.\n\n'
+    + 'Type `/opencrew` to open the main menu.\n';
+
+  await writeBridgeFile(path.join(target, 'AGENTS.md'), agentsBridge);
   ok('AGENTS.md refreshed');
 
   await fs.writeFile(versionFile, version + '\n');

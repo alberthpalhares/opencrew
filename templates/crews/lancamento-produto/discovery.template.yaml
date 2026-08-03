@@ -1,0 +1,39 @@
+# Template: Lançamento de Produto
+# Escolha este template para crews que preparam o lançamento de um produto ou feature.
+
+template: lancamento-produto
+label: "Lançamento de Produto"
+description: >
+  Estratégia completa de lançamento: pesquisa de mercado, posicionamento,
+  copy de lançamento, posts para redes sociais e email de lançamento.
+  Pipeline: estrategista → redator → social writer → revisor.
+icon: 🚀
+domains:
+  - product-marketing
+  - copywriting
+  - social-media
+  - email-marketing
+audience: "Potenciais clientes e usuários — early adopters, leads qualificados e base atual de usuários"
+format: null
+tier: full
+suggested_agents:
+  - role: strategist
+    title: "Estrategista de Lançamento"
+    description: "Define posicionamento, ângulos de lançamento, storytelling e calendário de divulgação"
+    skills: [web_search]
+  - role: copywriter
+    title: "Redator de Lançamento"
+    description: "Escreve copy de lançamento: landing page, headline, bullets de features, story de produto"
+    skills: []
+  - role: social-writer
+    title: "Social Media Writer"
+    description: "Adapta o conteúdo de lançamento para LinkedIn, Twitter/X e Instagram"
+    skills: []
+  - role: email-writer
+    title: "Redator de Email"
+    description: "Escreve sequência de emails de lançamento: teaser → launch day → follow-up"
+    skills: []
+  - role: reviewer
+    title: "Revisor de Lançamento"
+    description: "Revisa consistência da narrativa, força dos ganchos, CTAs e tom em todos os canais"
+    skills: []

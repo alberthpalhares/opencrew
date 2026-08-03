@@ -17,13 +17,13 @@ test('every IDE has a unique id and at least one non-empty, relative bridge file
   }
 });
 
-test('every bridge file content references AGENTS.md as the source of truth', () => {
+test('every bridge file content references the opencrew system entry point', () => {
   for (const ide of IDES) {
     for (const f of ide.files) {
       assert.match(
         f.content,
-        /AGENTS\.md/,
-        `${ide.id} -> ${f.path} does not point back to AGENTS.md`
+        /AGENTS\.md|_opencrew\/core\/system\.md/,
+        `${ide.id} -> ${f.path} does not reference AGENTS.md or system.md`
       );
     }
   }
