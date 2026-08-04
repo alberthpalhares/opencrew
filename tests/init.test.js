@@ -20,6 +20,9 @@ test('init scaffolds the core framework files', async () => {
   assert.equal(await exists(path.join(dir, 'skills', 'resend', 'SKILL.md')), true);
   assert.equal(await exists(path.join(dir, 'CLAUDE.md')), true);
   assert.equal(await exists(path.join(dir, '.claude', 'skills', 'opencrew', 'SKILL.md')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'agents', 'researcher.agent.md')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'agents', 'copywriter.agent.md')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'agents', 'reviewer.agent.md')), true);
 
   // AGENTS.md is now a thin bridge — full system is in _opencrew/core/
   const agents = await readFile(path.join(dir, 'AGENTS.md'));
@@ -49,9 +52,14 @@ test('init writes bridges for every IDE when --all is passed', async () => {
   assert.equal(await exists(path.join(dir, 'QWEN.md')), true);
   assert.equal(await exists(path.join(dir, '.cursor', 'rules', 'opencrew.mdc')), true);
   assert.equal(await exists(path.join(dir, '.trae', 'rules', 'opencrew.md')), true);
+  assert.equal(await exists(path.join(dir, '.agents', 'skills', 'opencrew', 'SKILL.md')), true);
+  assert.equal(await exists(path.join(dir, '.github', 'copilot-instructions.md')), true);
+  assert.equal(await exists(path.join(dir, '.opencode', 'commands', 'opencrew.md')), true);
+  assert.equal(await exists(path.join(dir, '.agent', 'rules', 'opencrew.md')), true);
+  assert.equal(await exists(path.join(dir, '.agent', 'workflows', 'opencrew.md')), true);
 });
 
-test('init never overwrites an existing company.md / preferences.md on re-run', async () => {
+test('init never overwrites an existing company.md on re-run', async () => {
   const dir = await mkTmp('init');
   await withCwd(dir, () => init({ ide: ['claude-code'] }));
 

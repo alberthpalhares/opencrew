@@ -81,3 +81,38 @@ test('update bumps .opencrew-version to the current package version', async () =
   const version = (await fs.readFile(versionFile, 'utf8')).trim();
   assert.equal(version, pkg.version);
 });
+
+test('update --check with older version reports update available (exitCode 1)', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+
+  const versionFile = path.join(dir, '_opencrew', '.opencrew-version');
+  await fs.writeFile(versionFile, '0.0.1\n');
+
+  await withCwd(dir, () => update({ check: true }));
+
+  assert.equal(process.exitCode, 1);
+  process.exitCode = 0; // reset for other tests
+});
+
+test('update refreshes _opencrew/core/system.md and AGENTS.md bridge', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+
+  // Corrupt system.md
+  const systemPath = path.join(dir, '_opencrew', 'core', 'system.md');
+  await fs.writeFile(systemPath, 'corrupted');
+
+  // Remove markers from AGENTS.md bridge
+  const agentsPath = path.join(dir, 'AGENTS.md');
+  await fs.writeFile(agentsPath, 'stale bridge content');
+
+  await withCwd(dir, () => update());
+
+  const system = await fs.readFile(systemPath, 'utf8');
+  assert.ok(system.includes('# opencrew Instructions'), 'system.md should be refreshed');
+  assert.ok(!system.includes('corrupted'), 'old system.md content should be replaced');
+
+  const agents = await fs.readFile(agentsPath, 'utf8');
+  assert.ok(agents.includes('_opencrew/core/system.md'), 'AGENTS.md bridge should point to system.md');
+});
