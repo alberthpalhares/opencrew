@@ -96,16 +96,97 @@ Before starting execution:
      - `standard`: mixed — research/data steps use `fast`, creative/review steps use `powerful`
      - `full`: all steps use `model_tier: powerful` by default
    - If a step has its own `model_tier` in frontmatter → step-level override takes priority over crew-level default.
-   - If neither crew tier nor step model_tier is set → default to `powerful` at dispatch.
+    - If neither crew tier nor step model_tier is set → default to `powerful` at dispatch.
+
+4b. **Pre-Execution Agent Selection** — Decide which agents actually run for this task.
+    Run this step ONLY if `crew.yaml` declares an `agent_dependencies:` field (even an
+    empty map `{}`). If the field is absent → skip this entire step and run ALL agents
+    exactly as before (legacy behavior).
+
+    When active, in this order:
+
+    a. **Capture the task** — Determine the user's request for this run:
+       - If the run was invoked with a description (e.g. `/opencrew run {name} {description}`),
+         use that text as the task.
+       - Otherwise ask: `📝 What is the task for this run? Reply in one line.`
+         Wait for the user's reply before continuing.
+
+    b. **Analyze against the decision matrix** — Scan the task text (case-insensitive,
+       PT-BR and EN keywords) for the signals below. Start with ALL agents suggested as
+       SELECTED (`required`). For each matching signal, find the affected agent(s) in
+       `crew-party.csv` by matching the role terms against the agent's `id` and `title`
+       (and `displayName` if ambiguous), then apply the suggested status:
+
+       | Signal in the task | Role terms to match (id / title) | Suggested status |
+       |--------------------|----------------------------------|------------------|
+       | "já pesquisei", "com base em", "fontes que tenho", "material pronto", "baseado nas fontes", "research already done" | researcher, pesquisad, research | optional |
+       | "revise", "melhore", "corrija", "refine", "edite" (sem criar do zero), "improve this draft" | copywriter, redator, writer, criador | optional |
+       | "só texto", "sem imagem", "sem visual", "sem arte", "no image" | designer, design, visual | skip |
+       | "já revisei", "já foi aprovado", "aprovado por terceiros", "revisão feita", "already reviewed" | reviewer, revisor | optional |
+       | "quero só revisar este texto", "apenas revisar", "review only" | researcher AND copywriter | skip |
+       | "tenho o conteúdo pronto", "forneço o documento", "docs em anexo", "segue o material", "here is the content" | copywriter, writer, creator | optional |
+
+       Resolution rules:
+       - `optional` = agent stays selected but may be unchecked.
+       - `skip` = agent is suggested deselected.
+       - Conflicting signals on the same agent → the more restrictive wins (`skip` > `optional`).
+       - Never suggest skipping an agent whose output is the run's final deliverable unless the
+         signal is explicit.
+       - No signal matches → suggest keeping all agents (no change).
+
+    c. **Present the selection** — IDE-neutral numbered multi-select. List every agent from
+       `crew-party.csv` in party order:
+       ```
+       🧑‍🤝‍🧑 Which agents should work on this task?
+
+       Suggested selection:
+       1. [x] {icon} {displayName} ({id}) — {title}
+       2. [x] {icon} {displayName} ({id}) — {title}
+       3. [ ] {icon} {displayName} ({id}) — {title}
+       ...
+       [x] = suggested selected · [ ] = suggested deselected
+
+       Reply with the numbers of the agents you want to INCLUDE, separated by commas.
+       Example: "1, 2"   ·   Reply "all" to run everyone.
+       ```
+       Wait for the user's reply. Parse it into `selected_agents`. At least one agent must
+       be selected — if the user replies with none, repeat the prompt once.
+
+    d. **Dependency warnings** — Using `crew.yaml → agent_dependencies`
+       (e.g. `copywriter: [researcher]` = copywriter consumes researcher's output):
+       for every dependency `dependent → required_agent`, if `dependent` is selected but
+       `required_agent` is NOT, warn:
+       ```
+       ⚠️ {dependent} normally depends on {required_agent}'s output, which you deselected.
+
+       1. Re-select {required_agent} (recommended)
+       2. Keep going without it — I will supply the input myself
+       3. Deselect {dependent} too
+       ```
+       Wait for the user's choice and apply it. If they pick option 2, set
+       `missing_dependency = true` in working memory (the existing Pre-Step Input
+       Validation recovery — "Skip step and continue / Abort" — then handles any
+       downstream gap).
+
+    e. **Build the filtered step list** — Set `skipped_agents = all party agents − selected_agents`.
+       Build `filtered_steps` by walking `pipeline.yaml` in order, keeping a step when:
+       - its frontmatter has NO `agent:` field (checkpoints / generic steps), OR
+       - its `agent:` value is in `selected_agents`.
+       Store `selected_agents`, `skipped_agents`, and `filtered_steps` in working memory for
+       the per-step loop (steps 5 and 6 below reflect them).
+
 5. Inform the user that the crew is starting:
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    🚀 Running crew: {crew name}
    ⚡ Tier: {tier from crew.yaml — express / standard / full}
-   📋 Pipeline: {number of steps} steps
-   🤖 Agents: {list agent names with icons}
+   📋 Pipeline: {count of filtered_steps} steps{if selection active:  of {total steps} in pipeline}
+   🤖 Agents: {list SELECTED agent names with icons}
+   {if any skipped} ⏭️ Skipped: {list deselected agent names with icons}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
+   When the selection step was skipped (no `agent_dependencies:` in crew.yaml), this is
+   identical to today: all agents listed, no Skipped line.
 5b. **Initialize run folder**: Generate a unique run ID for this execution:
    - Format: `YYYY-MM-DD-HHmmss` using the current timestamp (e.g. `2026-03-03-143022`)
    - Check if `crews/{name}/output/{run_id}/` already exists
@@ -145,7 +226,8 @@ Before starting execution:
           "updatedAt": "{ISO timestamp now}"
         }
         ```
-        Include one entry per agent, in crew-party.csv order.
+        Include one entry per agent, in crew-party.csv order. For each agent, set
+        `"status"` to `"skipped"` if it is in `skipped_agents`, otherwise `"idle"`.
 
 ## Execution Rules
 
@@ -244,6 +326,9 @@ when passing prior agents' outputs as context:
    - Include the **full output** from Agent N-1 (the direct predecessor) — this ensures
      the current agent has complete detail from its immediate dependency
    - Full outputs from all agents remain saved in `output/{run_id}/` for reference
+   - Skip any agent that was deselected for this run (`skipped_agents`) when walking
+     prior agents — its output file does not exist. Do not attempt to read it. The
+     "direct predecessor" is the previous agent in `filtered_steps` that actually ran.
 
 3. **Context format**:
    ```
@@ -343,7 +428,18 @@ Apply this transformation consistently for every write in this step.
 
 ### For each pipeline step:
 
-0. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 1). Write `crews/{name}/state.json` using the Write tool. Use this content:
+0. **Agent deselection check** — Read the step's `agent:` frontmatter field.
+   - If the step has an `agent:` value present AND it is in `skipped_agents` →
+     announce `⏭️ Skipping {Agent Name} (deselected for this run)` and skip this
+     step ENTIRELY: no dashboard update, no input validation, no execution, no output
+     validation, no veto, no output file, no handoff. Advance to the next step in
+     `filtered_steps`.
+   - Checkpoints that declare `agent:` and whose agent was deselected are skipped the
+     same way. Checkpoints with no `agent:` field always run (backward compatible).
+   - When the selection step was skipped (no `agent_dependencies:`), `skipped_agents`
+     is empty → this check never fires (legacy behavior).
+
+0b. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 1). Write `crews/{name}/state.json` using the Write tool. Use this content:
    ```json
    {
      "crew": "{crew code from crew.yaml}",
@@ -358,7 +454,7 @@ Apply this transformation consistently for every write in this step.
          "id": "{agent id}",
          "name": "{agent displayName}",
          "icon": "{agent icon}",
-         "status": "{working if this is the current step's agent, done if already completed, idle otherwise}",
+          "status": "{working if this is the current step's agent, done if already completed, skipped if in skipped_agents, idle otherwise}",
          "desk": {preserve existing desk positions from state.json — do not change col/row}
        }
      ],
@@ -563,7 +659,8 @@ completes output and there IS a next step:
 For reference, the complete execution order for each pipeline step is:
 
 ```
-0. Dashboard update (state.json) — only if dashboard_enabled
+0. Agent deselection check (skip step if its agent was deselected)
+0b. Dashboard update (state.json) — only if dashboard_enabled
 1. Pre-Step Input Validation (bash gate)
 2. Read step file
 3. Check execution mode and execute (subagent / inline / checkpoint)
@@ -725,5 +822,8 @@ Track pipeline state in memory during execution:
 - User choices at checkpoints
 - Review cycle count
 - Start time
+- selected_agents / skipped_agents — the agent sets from Pre-Execution Agent Selection (step 4b)
+- filtered_steps — the ordered steps that will actually run this execution
+- missing_dependency — true if the user knowingly ran with a broken dependency
 
 This state does NOT persist to disk — it exists only during the current run.

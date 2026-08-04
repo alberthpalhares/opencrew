@@ -232,3 +232,71 @@ test('init updates bridge file block, preserves other content outside markers', 
   assert.ok(updated.includes('# My additions'), 'user additions outside markers should be preserved');
   assert.ok(updated.includes('Custom project rules.'), 'user content outside markers should be preserved');
 });
+
+test('init writes workflow and skill bridge files with YAML frontmatter', async () => {
+  const dir = await mkTmp('init');
+  await withCwd(dir, () => init({ all: true }));
+
+  // Antigravity workflow should have YAML frontmatter (required for /opencrew to appear)
+  const agWorkflow = await readFile(path.join(dir, '.agent', 'workflows', 'opencrew.md'));
+  assert.ok(agWorkflow.startsWith('---'), '.agent/workflows/opencrew.md should start with ---');
+  assert.match(agWorkflow, /name:\s*opencrew/, 'workflow frontmatter should have name: opencrew');
+  assert.match(agWorkflow, /description:/, 'workflow frontmatter should have description');
+
+  // Codex / .agents skill should have frontmatter
+  const agentsSkill = await readFile(path.join(dir, '.agents', 'skills', 'opencrew', 'SKILL.md'));
+  assert.ok(agentsSkill.startsWith('---'), '.agents/skills/opencrew/SKILL.md should start with ---');
+  assert.match(agentsSkill, /name:\s*opencrew/, 'skill frontmatter should have name: opencrew');
+
+  // Claude Code skill should have frontmatter
+  const claudeSkill = await readFile(path.join(dir, '.claude', 'skills', 'opencrew', 'SKILL.md'));
+  assert.ok(claudeSkill.startsWith('---'), '.claude/skills/opencrew/SKILL.md should start with ---');
+  assert.match(claudeSkill, /name:\s*opencrew/, 'claude skill frontmatter should have name: opencrew');
+
+  // OpenCode command should have frontmatter
+  const ocCmd = await readFile(path.join(dir, '.opencode', 'commands', 'opencrew.md'));
+  assert.ok(ocCmd.startsWith('---'), '.opencode/commands/opencrew.md should start with ---');
+});
+
+test('init --repair-bridges regenerates IDE bridge files in an existing workspace', async () => {
+  const dir = await mkTmp('init');
+
+  // First, create a workspace with the old (broken) workflow file.
+  await withCwd(dir, () => init({ all: true }));
+
+  // Simulate the bug: strip frontmatter from the antigravity workflow file.
+  const workflowPath = path.join(dir, '.agent', 'workflows', 'opencrew.md');
+  let workflow = await readFile(workflowPath);
+  assert.ok(workflow.startsWith('---'), 'sanity: should have frontmatter after init');
+  // Remove the frontmatter block.
+  workflow = workflow.replace(/^---[\s\S]*?\n---\n/, '');
+  await fs.writeFile(workflowPath, workflow);
+
+  // Verify it's broken.
+  const broken = await readFile(workflowPath);
+  assert.ok(!broken.startsWith('---'), 'sanity: frontmatter should be removed');
+
+  // Now repair.
+  await withCwd(dir, () => init({ 'repair-bridges': true }));
+
+  // Verify it was fixed.
+  const repaired = await readFile(workflowPath);
+  assert.ok(repaired.startsWith('---'), 'repair-bridges should restore frontmatter');
+  assert.match(repaired, /name:\s*opencrew/, 'repair-bridges should add name field');
+
+  // Non-bridge files should NOT be touched.
+  assert.equal(await exists(path.join(dir, '_opencrew', 'core', 'system.md')), true,
+    'framework files should still exist');
+});
+
+test('init --repair-bridges deduplicates shared paths', async () => {
+  const dir = await mkTmp('init');
+  await withCwd(dir, () => init({ all: true }));
+
+  // The shared .agents/skills/opencrew/SKILL.md should exist and be valid.
+  const skillPath = path.join(dir, '.agents', 'skills', 'opencrew', 'SKILL.md');
+  assert.equal(await exists(skillPath), true);
+  const content = await readFile(skillPath);
+  assert.ok(content.startsWith('---'), 'shared skill should have frontmatter');
+  assert.match(content, /name:\s*opencrew/, 'shared skill should have name: opencrew');
+});

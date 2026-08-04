@@ -85,6 +85,16 @@ const render = (title, extra = '') =>
  * Each IDE lists the files its bridge writes. `content` is plain text.
  * `mdc` files (Cursor) get a small frontmatter so the rule always applies.
  */
+// Shared by IDEs that use `.agents/skills/` (Codex, Antigravity 2.0, Gemini CLI, Warp, etc.).
+// This is the emerging standard location for workspace-level skills.
+const AGENTS_SKILL = `---
+name: opencrew
+description: Run opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.
+---
+
+${BRIDGE}
+`;
+
 export const IDES = [
   {
     id: 'claude-code',
@@ -99,7 +109,7 @@ export const IDES = [
     label: 'Codex (OpenAI)',
     // Codex reads AGENTS.md natively — always shipped. Add a slash-style helper too.
     files: [
-      { path: '.agents/skills/opencrew/SKILL.md', content: `---\nname: opencrew\ndescription: Run opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${BRIDGE}\n` },
+      { path: '.agents/skills/opencrew/SKILL.md', content: AGENTS_SKILL },
     ],
   },
   {
@@ -132,17 +142,29 @@ export const IDES = [
         content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- This environment does not support background/parallel subagents. Run all tasks inline and\n  sequentially — never announce parallel work and then skip it.\n- Ask only one question per message; present options as a numbered list.\n`,
       },
       { path: '.agent/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${render('opencrew Workflow (Antigravity)')}` },
+      // .agents/ (plural) — standard location for Antigravity 2.0+ and CLI.
+      // Skills are discovered by the IDE, workflows appear as slash commands.
+      { path: '.agents/skills/opencrew/SKILL.md', content: AGENTS_SKILL },
+      { path: '.agents/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${BRIDGE}\n` },
     ],
   },
   {
     id: 'gemini',
     label: 'Gemini CLI',
-    files: [{ path: 'GEMINI.md', content: render('opencrew — Gemini CLI') }],
+    files: [
+      { path: 'GEMINI.md', content: render('opencrew — Gemini CLI') },
+      // Gemini CLI also reads .agents/skills/ for slash commands.
+      { path: '.agents/skills/opencrew/SKILL.md', content: AGENTS_SKILL },
+    ],
   },
   {
     id: 'qwen',
     label: 'Qwen Code',
-    files: [{ path: 'QWEN.md', content: render('opencrew — Qwen Code') }],
+    files: [
+      { path: 'QWEN.md', content: render('opencrew — Qwen Code') },
+      // Qwen Code also reads .agents/skills/ for slash commands.
+      { path: '.agents/skills/opencrew/SKILL.md', content: AGENTS_SKILL },
+    ],
   },
   {
     id: 'trae',

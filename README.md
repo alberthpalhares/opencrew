@@ -32,6 +32,9 @@ dentro da sua IDE.**
   mensal, lançamento de produto. Comece em 2 minutos.
 - 📤 **Exportação multi-formato** — PDF, CSV e posts formatados por plataforma,
   sem abrir editor nenhum.
+- 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
+  sugere quais agentes são necessários para aquela tarefa. Você confirma ou
+  ajusta com um clique. Economia de 30-70% de tokens quando agentes são pulados.
 
 ---
 
@@ -126,7 +129,7 @@ enxuto — todos apontam para a mesma fonte.
 | `AGENTS.md` (ponte) + `.cursor/rules/opencrew.mdc` | Cursor, Windsurf |
 | `AGENTS.md` (ponte) + `.github/copilot-instructions.md` | VS Code + GitHub Copilot |
 | `AGENTS.md` (ponte) + `.opencode/commands/opencrew.md` | OpenCode |
-| `AGENTS.md` (ponte) + `.agent/rules/opencrew.md` | Google Antigravity |
+| `AGENTS.md` (ponte) + `.agent/rules/opencrew.md` + `.agent/workflows/opencrew.md` + `.agents/skills/opencrew/SKILL.md` + `.agents/workflows/opencrew.md` | Google Antigravity |
 | `GEMINI.md` (ponte) | Gemini CLI |
 | `QWEN.md` (ponte) | Qwen Code |
 | `AGENTS.md` (ponte) + `.trae/rules/opencrew.md` | Trae |

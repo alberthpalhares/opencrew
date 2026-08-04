@@ -38,18 +38,62 @@ test('allIdeIds returns every declared IDE id in order', () => {
   assert.deepEqual(allIdeIds(), IDES.map((i) => i.id));
 });
 
-test('no two IDEs write to the same file path', () => {
-  const seen = new Map(); // path -> ide id
+test('no two IDEs write to the same file path with different content', () => {
+  const seen = new Map(); // path -> { id, content }
   for (const ide of IDES) {
     for (const f of ide.files) {
       if (seen.has(f.path)) {
-        assert.fail(
-          `Path collision: ${f.path} is written by both "${seen.get(f.path)}" and "${ide.id}"`
+        const other = seen.get(f.path);
+        assert.equal(
+          f.content,
+          other.content,
+          `Path collision with different content: ${f.path} is written by both "${other.id}" and "${ide.id}" — shared paths must use identical content`
         );
       }
-      seen.set(f.path, ide.id);
+      seen.set(f.path, { id: ide.id, content: f.content });
     }
   }
-  // If we got here, all paths are unique.
-  assert.equal(true, true);
+});
+
+test('workflow, skill, and command bridge files have YAML frontmatter with name', () => {
+  // Files under workflows/, skills/, or commands/ register slash commands in IDEs.
+  // They must have YAML frontmatter (--- ... ---).
+  // workflows/ and skills/ also require a `name` field so the IDE registers the slash command.
+  // commands/ files (OpenCode, etc.) infer the command name from the filename, so name is optional.
+  const slashPaths = IDES.flatMap((ide) =>
+    ide.files.filter((f) =>
+      f.path.includes('workflows/') ||
+      f.path.includes('skills/') ||
+      f.path.includes('commands/')
+    )
+  );
+
+  assert.ok(slashPaths.length > 0, 'expected at least one slash-command bridge file');
+
+  for (const f of slashPaths) {
+    assert.ok(
+      f.content.startsWith('---'),
+      `${f.path} must start with YAML frontmatter (---). Without it, the IDE won't register the slash command.`
+    );
+    assert.match(
+      f.content,
+      /^---\n[\s\S]*?\n---/,
+      `${f.path} must have a complete YAML frontmatter block (opening --- and closing ---).`
+    );
+
+    // commands/ files (OpenCode) infer the name from the filename, so name is not required.
+    if (!f.path.includes('commands/')) {
+      assert.match(
+        f.content,
+        /^---[\s\S]*?\bname:\s*\S+/m,
+        `${f.path} frontmatter must include a 'name' field so the IDE registers the slash command.`
+      );
+    } else {
+      assert.match(
+        f.content,
+        /^---[\s\S]*?\bdescription:\s*\S+/m,
+        `${f.path} frontmatter must include a 'description' field.`
+      );
+    }
+  }
 });

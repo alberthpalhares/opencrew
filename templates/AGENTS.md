@@ -87,6 +87,12 @@ When running a crew:
 5. Load crew memory from `crews/{name}/_memory/memories.md`
 6. Load user preferences from `_opencrew/_memory/preferences.md` (used to check the Dashboard toggle — see below)
 7. Read the pipeline runner instructions from `_opencrew/core/runner.pipeline.md`
+7b. **Pre-Execution Agent Selection** — only when `crew.yaml` declares
+    `agent_dependencies:`. The runner analyzes the user's request against the decision
+    matrix, presents the agents as a numbered multi-select (IDE-neutral), lets the user
+    confirm/adjust, warns about broken dependencies, and builds the filtered step list
+    (see `_opencrew/core/runner.pipeline.md` step 4b). Crews without the field skip this
+    and run all agents.
 8. Execute the pipeline step by step following runner instructions
 
 ## Dashboard (Optional)

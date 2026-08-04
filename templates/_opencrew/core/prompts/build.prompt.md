@@ -89,7 +89,21 @@ Generate these files. Use the Write tool for all file creation — never use Bas
        - pipeline/data/output-examples.md
        - pipeline/data/anti-patterns.md
        - pipeline/data/tone-of-voice.md  # for content crews
-     ```
+      ```
+    - Include an `agent_dependencies:` section (OPTIONAL — enables runtime
+      Pre-Execution Agent Selection):
+      ```yaml
+      agent_dependencies:      # OPTIONAL — enables Pre-Execution Agent Selection at runtime
+        copywriter: [researcher]   # copywriter consumes researcher's output
+        designer: [copywriter]     # designer consumes copywriter's output
+        reviewer: [copywriter]     # reviewer consumes copywriter's output
+      ```
+      - `agent_dependencies` is OPTIONAL. ALWAYS emit it for crews that should show the
+        runtime agent-selection step — even as an empty map `agent_dependencies: {}` (the
+        selection step triggers on field presence, so an empty map enables selection with
+        no dependency warnings). Derive entries from the pipeline step order: for each
+        agent step, list the agent(s) whose output it reads via `inputFile`. Omit the field
+        entirely to keep the legacy behavior (run all agents, no selection step).
 
 2. **`crews/{code}/crew-party.csv`** — Agent manifest
    - The header row MUST be EXACTLY these columns, in this order:
@@ -383,6 +397,9 @@ For **checkpoints**, use this frontmatter instead:
 ```yaml
 ---
 type: checkpoint
+agent: {agent-id}   # OPTIONAL — ties this checkpoint to an agent; if that agent is
+                    # deselected in Pre-Execution Agent Selection, this checkpoint is
+                    # skipped too. Omit to always run the checkpoint (backward compatible).
 ---
 ```
 
@@ -391,6 +408,7 @@ For **research focus checkpoints** (where the user's response is saved to a file
 ---
 type: checkpoint
 outputFile: crews/{code}/output/research-focus.md
+agent: {agent-id}   # OPTIONAL — same semantics as above
 ---
 ```
 The Pipeline Runner writes the user's response to this file before proceeding.
@@ -571,6 +589,7 @@ Additional programmatic checks — read the filesystem to verify:
 - [ ] `crew.yaml` exists and is valid YAML
 - [ ] All `.agent.md` files listed in `crew-party.csv` exist
 - [ ] `crew-party.csv` has a `displayName` column, populated for every row and matching each agent's `.agent.md` `name:` field
+- [ ] Every `agent_dependencies` key and value references a real agent `id` from crew-party.csv
 - [ ] All task files referenced in agent frontmatter exist
 - [ ] All step files referenced in `pipeline.yaml` exist
 - [ ] Skills listed in `crew.yaml` are installed in `skills/`

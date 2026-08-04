@@ -10,17 +10,35 @@ export async function init(opts = {}) {
   const target = process.cwd();
   const pkg = await readJson(packageJsonPath);
   const version = pkg.version;
-
-  log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — scaffolding a crew workspace`);
-  log(c.dim(`Target: ${target}\n`));
+  const repairBridges = opts['repair-bridges'];
 
   const alreadyInstalled = await exists(path.join(target, '_opencrew', 'core'));
+
+  // --repair-bridges mode: regenerate IDE bridge files in an existing workspace.
+  if (repairBridges && alreadyInstalled) {
+    log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
+    log(c.dim(`Target: ${target}\n`));
+
+    let ids = normalizeIdes(opts.ide);
+    if (opts.all) ids = allIdeIds();
+    if (opts.yes || !ids) ids = allIdeIds();
+    await writeBridges(target, ids, { overwrite: true });
+
+    log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
+    log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
+    return;
+  }
+
   if (alreadyInstalled) {
     warn('An opencrew workspace already exists here.');
     info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew update')}`);
+    info(`To repair IDE bridges, use: ${c.cyan('npx @aksp/opencrew init --repair-bridges')}`);
     info(`To reinstall from scratch, delete _opencrew/ first, then run init again.`);
     return;
   }
+
+  log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — scaffolding a crew workspace`);
+  log(c.dim(`Target: ${target}\n`));
 
   // 1. Copy the framework payload (never clobber user work).
   step('Installing framework files');
@@ -77,26 +95,7 @@ export async function init(opts = {}) {
   if (opts.all) ids = allIdeIds();
   if (opts.yes) ids = allIdeIds();
   if (!ids) ids = await pickIdes();
-
-  for (const id of ids) {
-    const ide = ideById(id);
-    if (!ide) {
-      warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
-      continue;
-    }
-    for (const f of ide.files) {
-      const fp = path.join(target, f.path);
-      // Files that require frontmatter at byte 0 (YAML, .mdc) must NOT be wrapped in HTML markers.
-      const hasFrontmatter = f.content.startsWith('---');
-      if (hasFrontmatter) {
-        await writeFileSafe(fp, f.content, { overwrite: false });
-      } else {
-        const result = await writeBridgeFile(fp, f.content);
-        if (result.merged) info(`${f.path} (merged — existing content preserved)`);
-      }
-    }
-    ok(`${ide.label} → ${ide.files.map((f) => f.path).join(', ')}`);
-  }
+  await writeBridges(target, ids, { overwrite: false });
 
   if (ids.includes('claude-code')) {
     warn(`opencrew ships its own Playwright MCP server (.mcp.json) — disable Claude Code's`);
@@ -112,6 +111,41 @@ export async function init(opts = {}) {
   log(`  1. Open this folder in your AI IDE.`);
   log(`  2. Type ${c.cyan('/opencrew')} to start (first run sets up your company profile).`);
   log(`     No API keys needed up front — opencrew asks for them in chat only if a skill you use requires one.\n`);
+}
+
+/**
+ * Write IDE bridge files to the target directory.
+ * @param {string} target — project root
+ * @param {string[]} ids — IDE ids to configure
+ * @param {{ overwrite: boolean }} opts
+ */
+async function writeBridges(target, ids, { overwrite }) {
+  const writtenPaths = new Set();
+
+  for (const id of ids) {
+    const ide = ideById(id);
+    if (!ide) {
+      warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
+      continue;
+    }
+    for (const f of ide.files) {
+      if (writtenPaths.has(f.path)) {
+        info(`${f.path} (shared path — written once)`);
+        continue;
+      }
+      writtenPaths.add(f.path);
+      const fp = path.join(target, f.path);
+      const hasFrontmatter = f.content.startsWith('---');
+      if (hasFrontmatter) {
+        await writeFileSafe(fp, f.content, { overwrite });
+      } else {
+        const result = await writeBridgeFile(fp, f.content);
+        if (result.merged) info(`${f.path} (merged — existing content preserved)`);
+        else if (result.written && overwrite) info(`${f.path} (regenerated)`);
+      }
+    }
+    ok(`${ide.label} → ${ide.files.map((f) => f.path).join(', ')}`);
+  }
 }
 
 async function tpl(name) {

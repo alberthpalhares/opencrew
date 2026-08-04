@@ -3,6 +3,23 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.0] — 2026-08-04
+
+### Added
+- **Seleção automática de agentes (IDEIAS #8)**: o Pipeline Runner agora analisa
+  a solicitação do usuário contra uma matriz de decisão e sugere quais agentes são
+  realmente necessários para aquela tarefa. O usuário confirma ou ajusta a seleção
+  antes da execução. Agentes excluídos têm seus steps pulados automaticamente.
+  - `runner.pipeline.md` — step 4b (Pre-Execution Agent Selection) com matriz de
+    6 sinais PT-BR/EN, menu multi-select IDE-neutral, alertas de dependências
+    quebradas, e step 0 de skip condicional no loop de execução.
+  - `crew.yaml` — novo campo `agent_dependencies:` (opcional). O step de seleção
+    só dispara quando o campo existe — crews antigas mantêm comportamento idêntico.
+  - `build.prompt.md` — schema do `agent_dependencies:`, campo `agent:` opcional
+    em checkpoints, gate de validação.
+  - `AGENTS.md` — step 7b na seção Loading the Pipeline Runner.
+  - 3 novos testes de contrato em `docs.test.js`.
+
 ## [1.3.3] — 2026-08-03
 
 ### Fixed

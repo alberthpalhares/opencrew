@@ -304,3 +304,25 @@ test('skills.engine.md includes Operation 3a for automatic skill generation', as
   assert.match(engine, /skills\/\.custom\//, 'must save to .custom/ directory');
   assert.match(engine, /Minimal validation/, 'must include validation step');
 });
+
+test('runner.pipeline.md supports pre-execution agent selection', async () => {
+  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  assert.match(runner, /Pre-Execution Agent Selection/, 'must document agent selection step');
+  assert.match(runner, /agent_dependencies/, 'must reference agent_dependencies field');
+  assert.match(runner, /skipped_agents/, 'must track skipped_agents in pipeline state');
+  assert.match(runner, /Reply with the numbers of the agents you want to INCLUDE/, 'must present IDE-neutral multi-select');
+  assert.doesNotMatch(runner, /AskUserQuestion/, 'selection must stay IDE-neutral — no AskUserQuestion');
+});
+
+test('build.prompt.md documents agent_dependencies in crew.yaml', async () => {
+  const build = await read(path.join('_opencrew', 'core', 'prompts', 'build.prompt.md'));
+  assert.match(build, /agent_dependencies/, 'must document agent_dependencies field');
+  assert.match(build, /Pre-Execution Agent Selection/, 'must reference Pre-Execution Agent Selection');
+  assert.match(build, /agent_dependencies.*key and value references a real agent/, 'must have validation gate for dependencies');
+});
+
+test('AGENTS.md documents the pre-execution agent selection step', async () => {
+  const agents = await read('AGENTS.md');
+  assert.match(agents, /Pre-Execution Agent Selection/, 'must document agent selection step');
+  assert.match(agents, /agent_dependencies/, 'must reference agent_dependencies field');
+});
