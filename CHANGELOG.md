@@ -3,6 +3,11 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.1] — 2026-08-04
+
+### Fixed
+- **NPM publish**: v1.4.0 já existia no registro. Re-publicado como 1.4.1.
+
 ## [1.4.0] — 2026-08-04
 
 ### Added
