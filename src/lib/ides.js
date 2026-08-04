@@ -41,6 +41,41 @@ Type \`/opencrew\` to open the main menu.
 - All checkpoint questions use \`AskUserQuestion\`.
 - opencrew ships its own Playwright MCP (\`.mcp.json\`); disable the native Playwright plugin.
 - Do not manually edit files under \`_opencrew/core/\` unless you know what you're doing.
+
+## STATUS.md (gestão de sessão)
+
+This project uses \`STATUS.md\` for session continuity. The file is local (gitignored).
+
+**At the start of every session:**
+- Read \`STATUS.md\`. If it doesn't exist, create it with the template below.
+- Report a 3-line summary: what was in progress, what's next, any blockers.
+
+**During the session:**
+- Move items from ⬜ Pendente to 🔄 Em andamento when you start working on them.
+- Move items to ✅ Concluído when finished.
+- Add new items that emerge during work.
+
+**Before ending the session:**
+- Ensure \`STATUS.md\` reflects the real state.
+- Update \`Última sessão\` timestamp.
+
+**Template:**
+\`\`\`markdown
+# STATUS — OpenCrew
+
+> Última sessão: {today}
+> Skill: /status
+
+## 🔄 Em andamento
+
+## ⬜ Pendente
+
+## ✅ Concluído (esta sessão)
+
+## 📋 Backlog
+
+## 💡 Decisões
+\`\`\`
 `;
 
 const render = (title, extra = '') =>
