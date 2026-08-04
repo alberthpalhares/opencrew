@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
+import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile, readFile } from '../lib/fsx.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 // Update refreshes ONLY the framework. It never touches:
@@ -78,8 +78,16 @@ export async function update(opts = {}) {
     + 'command routing, and workflow instructions defined there.\n\n'
     + 'Type `/opencrew` to open the main menu.\n';
 
-  await writeBridgeFile(path.join(target, 'AGENTS.md'), agentsBridge);
-  ok('AGENTS.md refreshed');
+  // If AGENTS.md is a legacy full-system doc (pre-v1.3), replace it entirely with the thin bridge.
+  const agentsPath = path.join(target, 'AGENTS.md');
+  const existingAgents = await readFile(agentsPath);
+  if (existingAgents.includes('# opencrew Instructions') && !existingAgents.includes('<!-- opencrew:start -->')) {
+    await writeFileSafe(agentsPath, agentsBridge);
+    ok('AGENTS.md (migrated from legacy full-system to thin bridge)');
+  } else {
+    await writeBridgeFile(agentsPath, agentsBridge);
+    ok('AGENTS.md refreshed');
+  }
 
   await fs.writeFile(versionFile, version + '\n');
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
