@@ -3,6 +3,76 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.3] — 2026-08-03
+
+### Fixed
+- **Auditoria D3 — cobertura de testes**: `--all` test agora verifica os 10 bridges
+  (eram 5). Teste de scaffold verifica `_opencrew/agents/`. +2 testes no update
+  (`--check` mismatch + refresh de `system.md`/bridge).
+
+### Security
+- **Auditoria D4 — segurança e robustez**: `escapeRx` verificada para todos os
+  caracteres especiais regex. Todos os paths usam `path.join` (zero concatenação).
+
+## [1.3.2] — 2026-08-03
+
+### Fixed
+- **Auditoria D2 — consistência de prompts**: coluna `Score` adicionada à migração
+  OLD_FORMAT do `runs.md`. Passos de injeção do runner renumerados (memory=4,
+  format=5, skill=6) para refletir a ordem real de composição. Números de fase
+  corrigidos no `skills.engine.md` (3.5/5 → descritivos) e `discovery.prompt.md`
+  (Phase 2 → 3). Campo `domains` reconciliado entre discovery e design.
+  Referência ao diretório inexistente `ide-templates/` removida.
+
+## [1.3.1] — 2026-08-03
+
+### Fixed
+- **Auditoria D1 — código TypeScript**: `--version`/`-v` não executa mais `init`.
+  `--yes`/`-y` agora funciona (seleciona todos os IDEs automaticamente).
+  `writeBridgeFile` não corrompe mais arquivos com frontmatter YAML (SKILL.md,
+  `.mdc`). `--ide` sem valor não produz mais warning "Unknown IDE 'true'".
+  Fase G.5 renomeada para H.5 no `architect.agent.yaml`. `model_tier` de
+  pesquisador alinhado entre build e design/runner (`fast`).
+  `template_selection` adicionado ao schema do `design.yaml`. Tier e domains
+  de templates agora persistem no `discovery.yaml`.
+
+## [1.3.0] — 2026-08-03
+
+### Added
+- **Instalação não-destrutiva**: `writeBridgeFile` com estratégia de blocos
+  marcados (`<!-- opencrew:start/end -->`). `AGENTS.md` agora é uma ponte fina;
+  sistema completo em `_opencrew/core/system.md`. Merge preserva conteúdo
+  existente em todos os arquivos de bridge (CLAUDE.md, GEMINI.md, QWEN.md, etc.).
+- **Sherlock multi-fonte**: novos extratores `sherlock-web.md` (pesquisa em
+  sites públicos), `sherlock-seo.md` (keywords e content gaps), e
+  `sherlock-trends.md` (trending topics de 9 fontes). Orquestração multi-fonte
+  no `sherlock-shared.md` com matriz de seleção por tipo de crew.
+- **Templates de crew por setor**: 4 templates em `templates/crews/`:
+  blog-semanal, instagram-carrossel, newsletter-mensal, lancamento-produto.
+  Template selection no Step 0 do Discovery.
+- **Exportação multi-formato**: `export.prompt.md` com suporte a PDF
+  (Playwright), CSV (compatível Excel), e formatted-post (por plataforma).
+- **Criação por papéis**: `design.prompt.md` refatorado — Phase D = Role
+  Proposal (sugere pessoas, não ferramentas), Phase E = Skill Mapping
+  (resolve skills automaticamente). Tabela de mapeamento para 12 papéis.
+- **Tiers de crew**: usuário escolhe Express/Standard/Full na criação.
+  Impacto no número de agentes, checkpoints, Sherlock, e model_tier.
+  Campo `tier` no `design.yaml` e `Default Tier` no `preferences.md`.
+- **Aprendizado contínuo**: Post-Run Reflection com detecção de padrões
+  recorrentes. Regras de Ouro após 3+ ocorrências. Crew Memory Rules
+  injetadas no prompt dos agentes. Coluna `Score` no `runs.md`.
+- **Registro compartilhado de agentes**: 5 agentes base em
+  `_opencrew/agents/` (researcher, copywriter, reviewer, designer,
+  strategist). Sistema `extends:` para herança de agentes. Gate 0c
+  para validação de referências.
+- **Criação dinâmica de skills**: Operation 3a no `skills.engine.md`
+  para geração automática de SKILL.md. Skills geradas em
+  `skills/.custom/` (não afetadas por `update`).
+
+### Changed
+- **85→91 testes** (eram 64 na v1.2.2). 103 arquivos no pacote npm.
+- **Todas as 8 ideias do `IDEIAS.md` implementadas** (backlog zerado).
+
 ## [1.2.2] — 2026-08-02
 
 ### Fixed

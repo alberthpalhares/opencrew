@@ -82,15 +82,26 @@ O `update` atualiza apenas `_opencrew/core`, as skills do catálogo e o `AGENTS.
 | Qwen Code | `QWEN.md` |
 | Trae | `.trae/rules/opencrew.md` |
 
-Cada integração é só um ponteiro enxuto para a fonte única de verdade, o **`AGENTS.md`**.
+Cada integração é só um ponteiro enxuto para o **`AGENTS.md`** na raiz do projeto. O `AGENTS.md`
+também é uma ponte fina — o sistema completo do OpenCrew vive em `_opencrew/core/system.md`.
+Isso permite que você mantenha seu próprio `AGENTS.md` (ou `CLAUDE.md`, `GEMINI.md`, etc.) com
+instruções do seu projeto sem conflitos — o OpenCrew faz merge preservando seu conteúdo.
 
 ## Como funciona
 
-- **Architect** projeta uma crew a partir da sua descrição (agentes, pipeline, skills).
-- **Sherlock** (opcional) analisa perfis de referência para extrair padrões reais de conteúdo.
-- **Pipeline Runner** executa a crew, pausando nos checkpoints para sua aprovação.
+- **Discovery** entrevista você sobre o objetivo da crew e oferece templates prontos
+  (blog semanal, Instagram, newsletter, lançamento de produto) para acelerar a criação.
+- **Architect** sugere um time de pessoas (não ferramentas!) — "Pedro Pesquisa",
+  "Clara Copy", "Renata Revisão" — e só depois resolve as skills técnicas.
+- **Sherlock** pesquisa em redes sociais, web, SEO e trending topics para fundamentar
+  o conteúdo em dados reais (não só intuição).
+- **Pipeline Runner** executa a crew com 3 níveis de profundidade (Express/Standard/Full),
+  aprende com seu feedback entre runs (Regras de Ouro), e exporta em PDF, CSV ou
+  formato pronto para redes sociais.
 - **Skills Engine** carrega integrações (scraping, design, publicação, e-mail…) sob demanda,
-  usando um esquema em duas camadas para manter o consumo de tokens baixo.
+  e pode até gerar novas skills automaticamente quando o catálogo não tem o que você precisa.
+- **Agentes compartilhados** (pesquisador, redator, revisor, designer, estrategista) vivem
+  em `_opencrew/agents/` e são reutilizados entre crews — consistência e menos tokens.
 
 ## Dashboard (opcional)
 
