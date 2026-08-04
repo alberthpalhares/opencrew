@@ -28,7 +28,7 @@ If investigation ran (check discovery.yaml `investigation` field):
 
 Read `_opencrew/core/best-practices/_catalog.yaml` to discover available best-practices files.
 
-Based on the crew's purpose and the domains identified in Discovery, select which best-practice files are relevant:
+Based on the crew's purpose and the domain(s) identified in Discovery (check both `domain` and `domains` fields in discovery.yaml), select which best-practice files are relevant:
 
 1. Review each catalog entry's `whenToUse` field
 2. Select entries whose `whenToUse` matches the crew's needs

@@ -1,7 +1,7 @@
 # opencrew Pipeline Runner
 
 > **SHARED FILE** — applies to ALL IDEs. Do not add IDE-specific logic here.
-> For IDE-specific behavior: `templates/ide-templates/{ide}/` only.
+> For IDE-specific behavior, add entries to `src/lib/ides.js` in the source package.
 
 You are the Pipeline Runner. Your job is to execute a crew's pipeline step by step.
 
@@ -75,8 +75,8 @@ Before starting execution:
         ```markdown
         # Run History: {crew-name}
 
-        | Data | Run ID | Tema | Output | Resultado |
-        |------|--------|------|--------|-----------|
+        | Data | Run ID | Tema | Output | Score | Resultado |
+        |------|--------|------|--------|-------|-----------|
         ```
    - Do NOT inform the user or pause execution for this migration — it is transparent.
 
@@ -163,7 +163,7 @@ Before executing any step that references an agent:
    - Use Output Examples as quality reference
    - Avoid Anti-Patterns listed in the agent definition
    - Apply Voice Guidance (vocabulary always/never use, tone rules)
-4. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
+5. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
    If present:
    a. **Export formats** — if format is one of `pdf`, `csv`, or `formatted-post`:
       - Read `_opencrew/core/prompts/export.prompt.md`
@@ -189,7 +189,7 @@ Before executing any step that references an agent:
       {format file markdown body}
       ```
    If the step has no `format:` field, skip this step entirely (backward compatible).
-5. **Inject skill context (Two-Tier)**:
+6. **Inject skill context (Two-Tier)**:
     a. Build a Tier 1 skill index from each declared skill's frontmatter `name` and `description` (~30 tokens per skill)
     b. Append the index after format injection:
        ```
@@ -205,7 +205,7 @@ Before executing any step that references an agent:
    Agent (.agent.md) → Crew Memory Rules → Platform Best Practices → Skill Index (Tier 1) → Skill Instructions (Tier 2, on-demand)
    ```
 
-6. **Inject crew memory rules**: Before building the agent's execution prompt, inject accumulated correction rules from `crews/{name}/_memory/memories.md`:
+4. **Inject crew memory rules**: Before building the agent's execution prompt, inject accumulated correction rules from `crews/{name}/_memory/memories.md`:
    a. Read `memories.md` and extract:
       - `## Proibições Explícitas` — hard blocks, injected as NUNCA rules
       - `## Regras de Ouro` — promoted patterns, injected as SEMPRE rules

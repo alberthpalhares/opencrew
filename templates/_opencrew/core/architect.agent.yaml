@@ -1,5 +1,5 @@
 # SHARED — applies to ALL IDEs. Do not add IDE-specific logic here.
-# For IDE-specific behavior: templates/ide-templates/{ide}/ only.
+# For IDE-specific behavior, add entries to src/lib/ides.js in the source package.
 agent:
   webskip: false
   metadata:
