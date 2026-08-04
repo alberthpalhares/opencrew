@@ -131,7 +131,7 @@ export const IDES = [
         path: '.agent/rules/opencrew.md',
         content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- This environment does not support background/parallel subagents. Run all tasks inline and\n  sequentially — never announce parallel work and then skip it.\n- Ask only one question per message; present options as a numbered list.\n`,
       },
-      { path: '.agent/workflows/opencrew.md', content: render('opencrew Workflow (Antigravity)') },
+      { path: '.agent/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${render('opencrew Workflow (Antigravity)')}` },
     ],
   },
   {
