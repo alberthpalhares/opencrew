@@ -265,18 +265,16 @@ npx @aksp/opencrew update --check
 
 ## Créditos
 
-`OpenCrew` é uma **distribuição reformulada do [OpenSquad](https://github.com/renatoasse/opensquad)**,
+Este projeto é uma **adaptação independente do [OpenSquad](https://github.com/renatoasse/opensquad)**,
 criado por **[Renato Asse](https://github.com/renatoasse)**, fundador da
-[Comunidade Sem Codar](https://semcodar.com.br). Todo o crédito pela ideia,
-pelo conceito de multi-agentes e pelo design original do pipeline é dele.
-Dê uma estrela no [repositório original](https://github.com/renatoasse/opensquad)
-e assista ao [vídeo de lançamento](https://www.youtube.com/watch?v=CL1ppI4qHeU).
+[Comunidade Sem Codar](https://semcodar.com.br). A ideia original, o conceito
+de multi-agentes e o design do pipeline são trabalho dele. Se você quiser o
+projeto oficial, use [`npx opensquad init`](https://github.com/renatoasse/opensquad).
 
 Esta versão (`@aksp/opencrew`) é mantida por **[Alberth Klinsmann](https://github.com/alberthpalhares)**
-([PALHARES Estúdio & Corporativo](https://github.com/alberthpalhares)) como um
-fork independente da comunidade — **não** é afiliada nem endossada pelo
-Renato Asse ou pela Comunidade Sem Codar. Se você quiser o projeto oficial, use
-[`npx opensquad init`](https://github.com/renatoasse/opensquad).
+([PALHARES Estúdio & Corporativo](https://github.com/alberthpalhares)) como uma
+adaptação pessoal, compartilhada publicamente caso ajude outras pessoas. **Não é**
+afiliada nem endossada pelo Renato Asse ou pela Comunidade Sem Codar.
 
 Licenciado sob MIT — veja [LICENSE](LICENSE). Framework original também MIT.
 
