@@ -15,7 +15,7 @@ version: "2.0.0"
 
 # Best-Practice Creator — Workflow
 
-Use this workflow when creating a new best-practice file for the `_opencrew/core/best-practices/` library.
+Use this workflow when creating a new best-practice file. New and customized best-practices live in `_opencrew/best-practices.local/` — the user's own library, read before `_opencrew/core/best-practices/` and never touched by `npx @aksp/opencrew update` (the core folder is replaced on every update).
 
 ## Pre-flight Checks
 
@@ -67,7 +67,7 @@ For each existing best-practice file whose scope overlaps with the new one:
 
 ### 2. Update `_catalog.yaml`
 
-Add a new entry to `_opencrew/core/best-practices/_catalog.yaml` with:
+Add a new entry to `_opencrew/best-practices.local/_catalog.yaml` (create it if missing) with:
 - `id`: matching the frontmatter `id`
 - `name`: matching the frontmatter `name`
 - `whenToUse`: single-line summary of the scope (positive only, no "NOT for")
@@ -77,7 +77,7 @@ Place it under the appropriate section comment (Discipline or Platform best prac
 
 ### 3. File placement
 
-Save to `_opencrew/core/best-practices/{id}.md`.
+Save to `_opencrew/best-practices.local/{id}.md`.
 
 ### 4. Validation
 
@@ -93,7 +93,7 @@ Re-read the created file and verify:
 
 # Best-Practice Updater — Workflow
 
-Use this workflow when updating best-practice files in the `_opencrew/core/best-practices/` library.
+Use this workflow when updating best-practice files. To change a core best-practice, first copy it from `_opencrew/core/best-practices/` to `_opencrew/best-practices.local/` and edit the copy there (the local copy overrides the core one and survives updates).
 
 ## Versioning Rules (Semver)
 

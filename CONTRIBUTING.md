@@ -43,8 +43,12 @@ sandbox/               your local dogfood workspace (gitignored, create it yours
    payload (`AGENTS.md` rule 2).
 2. **Adding a new IDE = one entry** in `src/lib/ides.js`. Do not hand-write full instruction
    documents per tool.
-3. **`update` must never touch user data** — `crews/`, `_opencrew/_memory/`, `.env`,
-   and generated IDE bridges are off limits.
+3. **`update` must never lose user data** — `crews/`, `_opencrew/_memory/`,
+   `_opencrew/best-practices.local/` and `.env` are off limits; anything the user edited in
+   files OpenCrew replaces (core, catalog skills, whole-file bridges) is copied to
+   `.opencrew-backup/<date>/` first; shared files (`AGENTS.md`, `CLAUDE.md`, `.gitignore`,
+   `.mcp.json`) only get the opencrew block/server changed. And every runtime change must reach
+   existing installs through `update` (AGENTS.md rule 14, `tests/upgrade.test.js`).
 4. **Skills follow the SKILL.md contract** (frontmatter + `When to use` → `Instructions`).
    See `templates/skills/opencrew-skill-creator/` for the format reference.
 

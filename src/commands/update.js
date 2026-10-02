@@ -1,17 +1,19 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile, readFile } from '../lib/fsx.js';
+import { exists, writeFileSafe, readJson, writeBridgeFile, readFile } from '../lib/fsx.js';
 import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION, ideById } from '../lib/ides.js';
-import { c, log, info, ok, warn, step } from '../lib/ui.js';
+import { readManifest, writeManifest, newDelivery, deliverTree, deliverFile } from '../lib/manifest.js';
+import { compareVersions, detectInstalledIdes, refreshBridges, mergeMcp, findLegacyBridges } from '../lib/migrations.js';
+import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
 
-// Update refreshes ONLY the framework. It never touches:
-//   crews/, _opencrew/_memory/, _opencrew/_browser_profile/, .env, IDE bridges
-//   (one exception: the CLAUDE.md block leaked by 1.4.0/1.4.1 — see removeLeakedStatusSection).
-// Note: catalog skills (skills/<name>/ that ship with the package) ARE fully
-// overwritten below — user edits to a catalog skill's own files are not preserved.
-// Only skill directories that don't exist in the package's templates/skills/ at all
-// (i.e. custom/user-authored skills) are left untouched.
+// `update` brings EVERY improvement to people who already use OpenCrew (AGENTS.md rule 14),
+// without losing what they made:
+//   - _opencrew/core and catalog skills are replaced — a file the user edited is copied to
+//     .opencrew-backup/<date>/ first (manifest of hashes; none = copy whatever differs);
+//   - new framework folders (agents, config, crew templates) arrive without overwriting;
+//   - bridges of the IDEs already installed are refreshed (never new IDEs);
+//   - crews/, _opencrew/_memory/, _opencrew/best-practices.local/ and .env are never touched.
 export async function update(opts = {}) {
   const target = process.cwd();
   const pkg = await readJson(packageJsonPath);
@@ -27,14 +29,15 @@ export async function update(opts = {}) {
   const current = (await exists(versionFile))
     ? (await fs.readFile(versionFile, 'utf8')).trim()
     : 'unknown';
+  const newer = current !== 'unknown' && compareVersions(current, version) > 0;
 
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
 
   if (opts.check) {
-    if (current === version) {
-      ok(`Up to date (v${version}).`);
-    } else {
+    if (current === version) ok(`Up to date (v${version}).`);
+    else if (newer) info(`A versão instalada (v${current}) é mais nova que este pacote (v${version}).`);
+    else {
       info(`Update available: v${current} → v${version}.`);
       info(`Run ${c.cyan('npx @aksp/opencrew update')} to apply.`);
       process.exitCode = 1;
@@ -42,45 +45,57 @@ export async function update(opts = {}) {
     return;
   }
 
-  if (current === version) {
-    ok('Already up to date. Refreshing framework files anyway.');
+  if (newer) {
+    err(`Você tem a v${current} instalada e este pacote é a v${version} (mais antigo). Nada foi alterado.`);
+    info(`Use ${c.cyan('npx @aksp/opencrew@latest update')}.`);
+    process.exitCode = 1;
+    return;
   }
 
-  // Refresh core framework: _opencrew/core is fully overwritten (it is not user data).
+  const manifest = await readManifest(target);
+  const ctx = newDelivery(target, manifest);
+  const tpl = (...p) => path.join(templatesDir, ...p);
+  const dest = (...p) => path.join(target, ...p);
+
   step('Refreshing framework');
-  let n = 0;
-  await copyDir(path.join(templatesDir, '_opencrew', 'core'), path.join(target, '_opencrew', 'core'), {
-    overwrite: true,
-    onCopy: () => (n += 1),
-  });
-  ok(`_opencrew/core refreshed (${n} files)`);
+  await deliverTree(ctx, tpl('_opencrew', 'core'), dest('_opencrew', 'core'), { overwrite: true });
+  await deliverFile(ctx, dest('_opencrew', 'core', 'system.md'), await fs.readFile(tpl('AGENTS.md')), { overwrite: true });
+  await deliverTree(ctx, tpl('skills'), dest('skills'), { overwrite: true });
+  // New framework folders (e.g. base agents since 1.3.2): only what is missing.
+  for (const dir of ['agents', 'config', '_investigations']) {
+    await deliverTree(ctx, tpl('_opencrew', dir), dest('_opencrew', dir), { overwrite: false });
+  }
+  await deliverTree(ctx, tpl('crews'), dest('crews'), { overwrite: false });
+  ok(`Framework and catalog skills refreshed (${ctx.written} files written)`);
 
-  // Refresh catalog skills: every skill shipped in templates/skills/ is fully
-  // overwritten (edits to a catalog skill's files do not survive an update).
-  // Skill directories that only exist in the user's project — i.e. not part of
-  // the catalog — are never touched, since copyDir only visits paths that exist
-  // in the source (templates/skills/).
-  step('Refreshing catalog skills');
-  warn('Catalog skills are fully overwritten — your edits to any built-in skill files will be lost.');
-  let s = 0;
-  await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), {
-    overwrite: true,
-    onCopy: () => (s += 1),
-  });
-  ok(`Catalog skills refreshed (${s} files)`);
-
-  // System doc — full definition in _opencrew/core/, thin bridge at root.
-  const systemContent = await fs.readFile(path.join(templatesDir, 'AGENTS.md'), 'utf8');
-  await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), systemContent);
-  ok('_opencrew/core/system.md refreshed');
-
+  step('Refreshing IDE bridges');
   await refreshAgentsBridge(target);
+  const ides = await detectInstalledIdes(target);
+  await refreshBridges(ctx, ides);
+  ok(ides.length ? `Bridges refreshed: ${ides.map((i) => i.label).join(', ')}` : 'No IDE bridges found to refresh');
   await removeLeakedStatusSection(target);
 
+  const mcp = await mergeMcp(target, tpl('.mcp.json'));
+  if (mcp === 'updated' || mcp === 'created') ok(`.mcp.json (Playwright: ${mcp === 'created' ? 'created' : 'saída em _opencrew/logs/playwright/'})`);
+  if (mcp === 'invalid') warn('.mcp.json não é um JSON válido — não alterado. Confira o arquivo.');
+
+  for (const legacy of await findLegacyBridges(target)) {
+    warn(`Ponte antiga encontrada: ${legacy} (aponta para _opensquad/, que não existe neste projeto). Pode apagar com segurança.`);
+  }
+
+  if (ctx.copied.length) {
+    const rel = path.relative(target, ctx.backupDir).split(path.sep).join('/');
+    warn(`${ctx.copied.length} arquivo(s) que você tinha editado foram copiados para ${rel}/ antes de serem substituídos:`);
+    for (const f of ctx.copied.slice(0, 15)) log(`    ${f}`);
+    if (ctx.copied.length > 15) log(`    … e mais ${ctx.copied.length - 15}`);
+    if (!manifest) info('Primeira atualização com proteção: copiamos tudo o que diferia do pacote novo. Daqui em diante, só o que você editar.');
+  }
+
+  await writeManifest(target, version, ctx.files);
   // Stamp last: a crash above leaves the old version, so the next update retries.
   await fs.writeFile(versionFile, version + '\n');
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
-  log(c.dim('Your crews, memory, IDE bridges and .env were left untouched.\n'));
+  log(c.dim('Your crews, memory, local best-practices and .env were left untouched.\n'));
 }
 
 // Root AGENTS.md: create it if missing; a legacy full-system doc (pre-v1.3) is backed up

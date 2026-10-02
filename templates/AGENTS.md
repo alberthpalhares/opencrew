@@ -115,4 +115,5 @@ enabled, it writes `crews/{name}/state.json` before each step and at every hando
 - ALWAYS save outputs to the crew's output directory
 - When switching personas (inline execution), clearly indicate which agent is speaking
 - When using subagents, inform the user that background work is happening
-- After each pipeline run, update the crew's memories.md with key learnings
+- Crew memory (memories.md) records only the user's explicit feedback and corrections —
+  written at the checkpoint where they happen (see the Pipeline Runner), never invented learnings

@@ -183,3 +183,12 @@ test('U1-01m: a current/future year is an event name, not a claim; long sentence
   assert.doesNotMatch(a[0].detalhe, /\*\*/, 'no markdown markers in the quoted sentence');
   assert.ok(a[0].detalhe.endsWith('…') && a[0].detalhe.length <= 161, 'cut with an ellipsis');
 });
+test('U2-04d: the checker reads limits from _opencrew/best-practices.local/ before core', async () => {
+  const raiz = await projeto();
+  const local = path.join(raiz, '_opencrew', 'best-practices.local');
+  await fs.mkdir(local, { recursive: true });
+  await fs.writeFile(path.join(local, 'blog-post.md'), '---\nconstraints:\n  title_max_chars: 200\n  meta_description_chars: 300\n---\n');
+  const post = await arquivo(raiz, 'local.md', blog({ titulo: texto(125), meta: texto(218) }));
+  const r = await verificar({ raiz, crew: 'crews/teste', arquivos: [post], formato: 'blog-post' });
+  assert.equal(r.status, 'OK', 'the user overlay wins over the core limits');
+});

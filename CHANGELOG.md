@@ -3,6 +3,35 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.0] — 2026-10-02
+
+Trilha U2 "Crew que conhece o projeto" + U6 "Convivência" (`specs/fase-u2-crew-que-conhece-o-projeto.md`).
+
+### Added
+- **`fontes:` no `crew.yaml`** — arquivos/pastas do projeto (caminho relativo) que a crew lê em todo
+  run e trata como verdade; o discovery pergunta quais são.
+- **Conferência de fontes** (`_opencrew/core/scripts/conferir-fontes.mjs`) no início de cada run:
+  arquivo movido → acha o novo lugar e oferece corrigir (`--corrigir`, com `.bak`); nome diferente →
+  lista a pasta; caminho absoluto → alerta "não é portátil". No uso real (Projeto B) achou os 5
+  caminhos quebrados pela reorganização, cada um com o lugar exato.
+- **Correção gravada na hora** — o que o usuário corrige num checkpoint vai para a memória antes do
+  próximo passo; termo removido vira proibição entre aspas (trava do verificador); conflito com o
+  `company.md` gera a pergunta "Atualizo o perfil da empresa?".
+- **`_opencrew/best-practices.local/`** — best-practices do usuário (aprendidas/criadas), lidas antes
+  das do core e nunca tocadas pelo `update`; o verificador também lê os limites dali primeiro.
+
+### Changed
+- **`update` completo e seguro**: entrega pastas novas do framework (agentes-base, config, templates
+  de crew) sem sobrescrever; guarda em `.opencrew-backup/<data>/` o que o usuário editou antes de
+  substituir (manifesto `_opencrew/manifest.json`); recusa voltar para versão mais antiga; atualiza
+  as pontes **só das IDEs instaladas**; faz merge do Playwright no `.mcp.json` (saída em
+  `_opencrew/logs/playwright/`, outros servidores intactos); avisa sobre pontes antigas (`opensquad`).
+- **Convivência**: pontes e bloco do `AGENTS.md` só ativam o OpenCrew com `/opencrew` (ou pedido
+  sobre crews) e apontam direto para `_opencrew/core/system.md`; outras instruções do projeto têm
+  prioridade no resto.
+- Migração do formato de memória faz `memories.md.bak` e avisa (fim do reset silencioso); regra única
+  sobre o que vai para a memória (só feedback explícito).
+- `_build/discovery.yaml` agora em `crews/{code}/_build/`; build grava caminhos relativos à raiz.
 ## [1.5.0] — 2026-10-02
 
 Trilha U1 "Revisor com dentes" — primeira melhoria vinda do uso real

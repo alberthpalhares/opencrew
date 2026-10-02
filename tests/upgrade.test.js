@@ -57,3 +57,24 @@ test('U1-upg: after update, the delivered checker works on the old crew memory; 
   const r = await verificar({ raiz: dir, crew: 'crews/minha-crew', arquivos: ['crews/minha-crew/output/post.md'] });
   assert.equal(r.status, 'BLOQUEADA');
 });
+
+// ── 1.5.0 → 1.6.0 (U2): manifest, base agents, sources checker, refreshed bridges ──────
+
+test('U2-upg: update from a 1.5.0 workspace delivers U2 without touching user data', async () => {
+  const dir = await mkTmp('upgrade150');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  await fs.rm(path.join(dir, '_opencrew', 'manifest.json'), { force: true });
+  await fs.rm(path.join(dir, '_opencrew', 'agents'), { recursive: true });
+  await fs.rm(path.join(dir, '_opencrew', 'core', 'scripts', 'conferir-fontes.mjs'), { force: true });
+  await fs.writeFile(path.join(dir, '.claude', 'skills', 'opencrew', 'SKILL.md'), '---\nname: opencrew\n---\nRead `AGENTS.md` and adopt the opencrew system role.\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '1.5.0\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '_memory', 'company.md'), '# Acme — dados reais');
+
+  await withCwd(dir, () => update());
+
+  assert.equal(await exists(path.join(dir, '_opencrew', 'manifest.json')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'agents', 'researcher.agent.md')), true);
+  assert.equal(await exists(path.join(dir, '_opencrew', 'core', 'scripts', 'conferir-fontes.mjs')), true);
+  assert.match(await fs.readFile(path.join(dir, '.claude', 'skills', 'opencrew', 'SKILL.md'), 'utf8'), /ONLY when the user types/);
+  assert.equal(await fs.readFile(path.join(dir, '_opencrew', '_memory', 'company.md'), 'utf8'), '# Acme — dados reais');
+});

@@ -1,6 +1,6 @@
 # Spec — Fase U2: Crew que conhece o projeto (+ U6 Convivência) — 1.6.0
 
-- **Fase:** U2 · **Módulos:** CLI (`src/commands/update.js`, `src/lib/ides.js`) + Runtime (`templates/`) · **Status:** aguardando aprovação
+- **Fase:** U2 · **Módulos:** CLI (`src/commands/update.js`, `src/lib/ides.js`) + Runtime (`templates/`) · **Status:** implementada (2026-10-02)
 - **Termos novos no GLOSSARIO.md:** sim — Fontes do projeto, Conferência de fontes, Overlay local
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 
@@ -187,4 +187,15 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 (U2-01…U2-07) · `tests/upgrade.test.js` (1.5.0 → 1.6.0) · alerta de tamanho para o novo script.
 
 ## 14. Correções
-(preenchida durante a implementação)
+- 2026-10-02 — Regra 9: o manifesto e as cópias de segurança também cobrem `system.md` e as
+  pontes de arquivo inteiro (frontmatter), não só core e skills. `init` e `--repair-bridges`
+  gravam o manifesto.
+- 2026-10-02 — Regra 11: a detecção de IDEs usa os arquivos de ponte **próprios** de cada IDE;
+  um arquivo compartilhado (`.agents/skills/opencrew/SKILL.md`) só detecta a IDE que não tem
+  arquivo próprio (Codex) — senão uma instalação Antigravity ganharia `GEMINI.md`/`QWEN.md`.
+- 2026-10-02 — Conferência real (seção 9): no Projeto B a conferência achou os 5 caminhos
+  absolutos quebrados, cada um com o novo lugar exato. No Projeto A as 9 fontes da crew estão OK;
+  o problema real do logo está **no manual de marca do projeto** (documento lista nomes de
+  arquivo que não existem na pasta), fora dos arquivos da crew — não coberto aqui
+  (→ IDEIAS: conferir arquivos citados dentro das fontes).
+- 2026-10-02 — Mensagens novas do `update` em PT-BR; o resto do CLI continua em inglês até a U5.

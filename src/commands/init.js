@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
+import { exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
+import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest } from '../lib/manifest.js';
 import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
 import { pickIdes as promptIdes } from '../lib/prompts.js';
 import { UsageError } from '../lib/errors.js';
@@ -26,7 +27,10 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
     const ids = await resolveIdes(opts, async () => allIdeIds());
     log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
     log(c.dim(`Target: ${target}\n`));
-    await writeBridges(target, ids, { overwrite: true });
+    const previous = await readManifest(target);
+    const repairCtx = newDelivery(target, previous);
+    await writeBridges(target, ids, { overwrite: true, ctx: repairCtx });
+    await writeManifest(target, version, { ...(previous?.files ?? {}), ...repairCtx.files });
 
     log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
     log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
@@ -51,7 +55,8 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // 1. Copy the framework payload (never clobber user work).
   step('Installing framework files');
-  const copied = await installPayload(target);
+  const ctx = newDelivery(target, null);
+  const copied = await installPayload(target, ctx);
   ok(`Framework files ready (${copied} written, existing files preserved)`);
 
   // 2. System doc + root configs.
@@ -59,7 +64,7 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // Full system definition lives in _opencrew/core/ — never at project root.
   // The root AGENTS.md is just a thin bridge (like CLAUDE.md, GEMINI.md, etc.).
-  await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), await tpl('AGENTS.md'));
+  await deliverFile(ctx, path.join(target, '_opencrew', 'core', 'system.md'), await tpl('AGENTS.md'), { overwrite: true });
   ok('_opencrew/core/system.md (full system definition)');
 
   const agentsResult = await writeBridgeFile(path.join(target, 'AGENTS.md'), AGENTS_BRIDGE);
@@ -78,14 +83,16 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // 3. IDE bridge files.
   step('Configuring AI IDEs');
-  await writeBridges(target, ids, { overwrite: false });
+  await writeBridges(target, ids, { overwrite: false, ctx });
 
   if (ids.includes('claude-code')) {
     warn(`opencrew ships its own Playwright MCP server (.mcp.json) — disable Claude Code's`);
     warn(`native Playwright plugin/extension to avoid the two conflicting.`);
   }
 
-  // 4. Version stamp — written LAST: it is what marks the install as complete.
+  // 4. Manifest (what OpenCrew delivered — lets `update` spot the user's edits), then the
+  // version stamp LAST: it is what marks the install as complete.
+  await writeManifest(target, version, ctx.files);
   await fs.writeFile(path.join(target, STAMP), version + '\n');
 
   // 5. Done.
@@ -101,21 +108,18 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
  * Never copies the version stamp: only a finished init writes it.
  * @returns {Promise<number>} files written
  */
-export async function installPayload(target) {
-  let count = 0;
-  const onCopy = () => (count += 1);
-  await copyDir(path.join(templatesDir, '_opencrew'), path.join(target, '_opencrew'), {
+export async function installPayload(target, ctx = newDelivery(target, null)) {
+  await deliverTree(ctx, path.join(templatesDir, '_opencrew'), path.join(target, '_opencrew'), {
     overwrite: false,
     // Never ship stray logs, browser sessions or the template's own stamp.
     skip: (rel) =>
       (rel.startsWith('logs/') && rel !== 'logs/.gitkeep') ||
       rel.startsWith('_browser_profile/') ||
       rel === '.opencrew-version',
-    onCopy,
   });
-  await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), { overwrite: false, onCopy });
-  await copyDir(path.join(templatesDir, 'crews'), path.join(target, 'crews'), { overwrite: false });
-  return count;
+  await deliverTree(ctx, path.join(templatesDir, 'skills'), path.join(target, 'skills'), { overwrite: false });
+  await deliverTree(ctx, path.join(templatesDir, 'crews'), path.join(target, 'crews'), { overwrite: false });
+  return ctx.written;
 }
 
 /** 'none' (no core) · 'partial' (core without stamp: interrupted install) · 'complete'. */
@@ -148,7 +152,7 @@ async function resolveIdes(opts, fallback) {
  * @param {string[]} ids — validated IDE ids to configure
  * @param {{ overwrite: boolean }} opts
  */
-async function writeBridges(target, ids, { overwrite }) {
+async function writeBridges(target, ids, { overwrite, ctx }) {
   const writtenPaths = new Set();
 
   for (const id of ids) {
@@ -162,7 +166,7 @@ async function writeBridges(target, ids, { overwrite }) {
       const fp = path.join(target, f.path);
       const hasFrontmatter = f.content.startsWith('---');
       if (hasFrontmatter) {
-        await writeFileSafe(fp, f.content, { overwrite });
+        await deliverFile(ctx, fp, f.content, { overwrite });
       } else {
         const result = await writeBridgeFile(fp, f.content);
         if (result.merged) info(`${f.path} (merged — existing content preserved)`);

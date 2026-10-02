@@ -90,6 +90,18 @@ Generate these files. Use the Write tool for all file creation — never use Bas
        - pipeline/data/anti-patterns.md
        - pipeline/data/tone-of-voice.md  # for content crews
       ```
+    - Include a `fontes:` section with the project sources from `discovery.yaml →
+      project_sources` (omit it only if that list is empty). The Pipeline Runner reads them at the
+      start of every run and checks they still exist:
+      ```yaml
+      fontes:
+        - caminho: Memoria/01_Decisoes.md      # relative to the project root
+          para_que: decisões de público e posicionamento
+      ```
+    - **Paths to the user's project files** — in `crew.yaml`, step files and tasks — are always
+      written as a caminho relativo à raiz do projeto (relative to the project root), between
+      backticks, e.g. `` `Ativos/Identidade Visual/logo.png` ``. NEVER write absolute paths
+      (`C:/…`, `J:/…`, `/Users/…`): they break as soon as the user moves or syncs the folder.
     - Include an `agent_dependencies:` section (OPTIONAL — enables runtime
       Pre-Execution Agent Selection):
       ```yaml

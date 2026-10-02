@@ -1,12 +1,18 @@
-// Single source of truth = AGENTS.md (shipped at project root).
-// Every IDE gets only a THIN bridge file that points at AGENTS.md.
+// Single source of truth = _opencrew/core/system.md (from templates/AGENTS.md).
+// Every IDE gets only a THIN bridge file that points at it.
 // Adding support for a new IDE = one more entry in this list.
 
-const BRIDGE = `Read \`AGENTS.md\` at the project root and adopt the opencrew system role.
-Follow all initialization, command routing, and workflow instructions defined there.
+// Coexistence (U6): opencrew only takes over when called — other agent systems in the same
+// project keep priority for everything else.
+const ACTIVATION = `Use opencrew ONLY when the user types \`/opencrew\` or asks to create, run or manage
+AI agent crews. In that case, read \`_opencrew/core/system.md\` and follow its initialization,
+command routing and workflow instructions. For anything else, the other instructions of this
+project take precedence.`;
+
+const BRIDGE = `${ACTIVATION}
 
 If invoked with arguments (e.g. \`/opencrew create ...\`, \`/opencrew run ...\`),
-route to the matching action from the Command Routing table in AGENTS.md.
+route to the matching action from the Command Routing table in \`_opencrew/core/system.md\`.
 If invoked without arguments, show the Main Menu.`;
 
 // Claude Code needs one extra rule (checkpoints must use AskUserQuestion) and a
@@ -20,7 +26,7 @@ description: "opencrew — multi-agent orchestration. Use when the user types /o
 
 ${BRIDGE}
 
-## Claude Code specifics (override AGENTS.md where they conflict)
+## Claude Code specifics (override system.md where they conflict)
 
 - **Checkpoints MUST use \`AskUserQuestion\`** — never output a checkpoint question as plain text.
   Combine multiple questions into a single call (max 4 slots, each with 2–4 options).
@@ -32,7 +38,8 @@ ${BRIDGE}
 const CLAUDE_MD = `# opencrew — Project Instructions
 
 This project uses **opencrew**, a multi-agent orchestration framework.
-The full system definition lives in \`AGENTS.md\` — read it and adopt that role.
+
+${ACTIVATION}
 
 Type \`/opencrew\` to open the main menu.
 
@@ -44,11 +51,7 @@ Type \`/opencrew\` to open the main menu.
 `;
 
 // Root AGENTS.md: thin bridge to the full system definition (written by init and update).
-export const AGENTS_BRIDGE = '# opencrew\n\n'
-  + 'The opencrew system definition lives at `_opencrew/core/system.md`.\n'
-  + 'Read that file and adopt the opencrew system role — follow all initialization,\n'
-  + 'command routing, and workflow instructions defined there.\n\n'
-  + 'Type `/opencrew` to open the main menu.\n';
+export const AGENTS_BRIDGE = `# opencrew\n\n${ACTIVATION}\n\nType \`/opencrew\` to open the main menu.\n`;
 
 // Marker that identifies the maintainer STATUS.md section leaked into CLAUDE.md by 1.4.0/1.4.1.
 export const LEAKED_STATUS_SECTION = '## STATUS.md (gestão de sessão)';

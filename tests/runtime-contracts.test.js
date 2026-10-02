@@ -146,3 +146,70 @@ test('U1-05b: no Instagram feed/carousel preset or base template at 1440 high', 
     assert.doesNotMatch(read(rel), /1080\s*x\s*1440|1080x1440|height:\s*1440px/i, `${rel} still uses 1080x1440`);
   }
 });
+
+// ── U2 Crew que conhece o projeto (specs/fase-u2-crew-que-conhece-o-projeto.md) ──────
+
+const init_ = () => sections(runner).find((s) => s.startsWith('## Initialization'));
+const checkpoint = () => sections(runner).find((s) => s.startsWith('#### If `type: checkpoint`'));
+
+test('U2-01a: the runner loads fontes: at the start and they win over briefing/research', () => {
+  const s = init_();
+  assert.match(s, /fontes:/);
+  assert.match(s, /(valem sobre|take precedence over)/i);
+});
+
+test('U2-03a: the runner checks sources at the start and offers fix / continue / stop', () => {
+  const s = init_();
+  assert.match(s, /node _opencrew\/core\/scripts\/conferir-fontes\.mjs/);
+  assert.match(s, /FONTES:PENDENTE/);
+  assert.match(s, /Corrigir os caminhos sugeridos/);
+  assert.match(s, /Seguir assim mesmo/);
+  assert.match(s, /Parar/);
+});
+
+test('U2-04a: a correction at a checkpoint is written to memory before the next step', () => {
+  const s = checkpoint();
+  assert.match(s, /memories\.md/);
+  assert.match(s, /(antes do próximo passo|before the next step)/i);
+  assert.match(s, /Proibições Explícitas/);
+  assert.match(s, /(entre aspas|between quotes)/i);
+});
+
+test('U2-04b: a correction that contradicts company.md asks to update the profile', () => {
+  const s = checkpoint();
+  assert.match(s, /company\.md/);
+  assert.match(s, /Atualizo o perfil da empresa\?/);
+});
+
+test('U2-04c: memory migration keeps a .bak and tells the user; one rule for what goes to memory', () => {
+  assert.doesNotMatch(runner, /Do NOT inform the user/);
+  assert.match(runner, /memories\.md\.bak/);
+  const system = read('AGENTS.md');
+  assert.doesNotMatch(system, /update the crew's memories\.md with key learnings/);
+});
+
+test('U2-04d: learned best-practices go to best-practices.local, read before core', () => {
+  assert.match(runner, /_opencrew\/best-practices\.local\//);
+  assert.doesNotMatch(runner, /(save|write|grav)[^\n]*_opencrew\/core\/best-practices\//i);
+  const creator = read('skills/opencrew-best-practice-creator/SKILL.md');
+  assert.match(creator, /_opencrew\/best-practices\.local\//);
+  assert.doesNotMatch(creator, /Save to `_opencrew\/core\/best-practices\//);
+});
+
+test('U2-07a: discovery asks for project sources; build writes fontes: with relative paths; _build in the crew', () => {
+  const discovery = read('_opencrew/core/prompts/discovery.prompt.md');
+  assert.match(discovery, /fontes/i);
+  assert.match(discovery, /crews\/\{code\}\/_build\/discovery\.yaml/);
+  assert.doesNotMatch(discovery, /## Output: `_build\/discovery\.yaml`/);
+  assert.match(build, /fontes:/);
+  assert.match(build, /(caminho relativo|relative to the project root)/i);
+});
+
+test('U2-08a: bridges activate only on /opencrew and point straight to system.md', async () => {
+  const { IDES, AGENTS_BRIDGE } = await import('../src/lib/ides.js');
+  for (const content of [AGENTS_BRIDGE, ...IDES.flatMap((i) => i.files.map((f) => f.content))]) {
+    assert.match(content, /_opencrew\/core\/system\.md/);
+    assert.match(content, /ONLY when the user types `\/opencrew`/);
+    assert.doesNotMatch(content, /adopt the opencrew system role(?![^\n]*ONLY)/);
+  }
+});

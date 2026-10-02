@@ -12,6 +12,7 @@ const tpl = path.join(root, 'templates');
 // Paths created at runtime (not shipped), or ids that look like paths.
 const RUNTIME_PATHS = [
   '_opencrew/_browser_profile', // Sherlock login sessions, created on first login
+  '_opencrew/best-practices.local', // the user's own best-practices (U2), created on demand
   '_opencrew/core/architect', // agent id, not a file
   'skills/.custom', // dynamically generated skills
   'skills/transcripts', // opencrew-skill-creator eval workspace

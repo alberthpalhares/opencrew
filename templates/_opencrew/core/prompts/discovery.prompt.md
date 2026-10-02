@@ -117,6 +117,14 @@ Based on the detected domain, ask the most relevant contextual question first. W
 **If domain = `mixed`:**
 Ask the most pressing question from each relevant domain, starting with the primary one. Cap at 3 questions total in this step.
 
+**Always (any domain) — project sources (fontes):** ask ONE question:
+"Tem arquivos ou pastas deste projeto que a crew deve consultar sempre? (por exemplo: decisões,
+calendário de eventos, manual de marca, pasta de logos). Pode citar o caminho ou o nome."
+If the user names files/folders, confirm each one exists (search the project if only a name was
+given) and store them in `project_sources` with paths **relative to the project root** (never
+absolute — absolute paths break when the folder is moved or synced to another computer).
+If the user says no, store an empty list.
+
 ---
 
 ### Step 4 — Tools and Integrations (automatic)
@@ -234,12 +242,17 @@ Wait for confirmation before writing the output file.
 
 ---
 
-## Output: `_build/discovery.yaml`
+## Output: `crews/{code}/_build/discovery.yaml`
 
-After the user confirms in Step 7, write the following file:
+After the user confirms in Step 7, write the following file **inside the crew folder** —
+`crews/{code}/_build/discovery.yaml` (never at the project root; `{code}` = the unique
+`crew_code` below):
 
 ```yaml
 crew_code: "{slugified crew name from purpose}"
+project_sources:                     # relative to the project root; becomes `fontes:` in crew.yaml
+  - path: "{e.g. Memoria/01_Decisoes.md}"
+    purpose: "{what the crew uses it for}"
 purpose: "{user's description from Step 1}"
 domain: "{content | research | automation | analysis | mixed}"
 # When a template was used (Step 0), these fields are populated from discovery.template.yaml:

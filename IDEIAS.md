@@ -89,3 +89,10 @@
   que o próprio usuário cola numa issue; + issue template "Relato de uso".
 - **Custo de adiar:** decisões de produto sem evidência de quem usa.
 - **Aprovação:** não.
+## Conferir arquivos citados DENTRO das fontes (ex.: logos listados no manual de marca)
+- **O que já existe:** U2 confere os caminhos citados pela crew; no Projeto A o manual de marca
+  (uma fonte) lista nomes de logo que não existem na pasta — a crew usou texto no lugar do logo,
+  sem aviso.
+- **Alocação:** → U3 — junto da entrega (assets conferidos antes do passo de design).
+- **Custo de adiar:** peças visuais sem logo, falha silenciosa.
+- **Aprovação:** não.

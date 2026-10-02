@@ -40,6 +40,10 @@ dentro da sua IDE.**
   termos que você proibiu e `[PREENCHER]` pendentes, e aponta afirmações a confirmar.
   Bloqueio não passa, seja qual for a nota do revisor. A crew não inventa casos nem números:
   quando falta um dado real, ela pergunta na aprovação final.
+- 📂 **Crew que conhece o projeto** — liste em `fontes:` os arquivos e pastas do seu projeto
+  (decisões, calendário, manual de marca) e a crew os lê em todo run, tratando-os como verdade.
+  Reorganizou as pastas? No início do run ela confere os caminhos, acha para onde o arquivo foi
+  e oferece corrigir. Correções que você faz num checkpoint ficam gravadas na hora.
 
 ---
 
@@ -201,27 +205,30 @@ meu-projeto/
 ## Mantendo o OpenCrew atualizado
 
 ```bash
-npx @aksp/opencrew update
+npx @aksp/opencrew@latest update
 ```
 
-O `update` não toca nas suas crews nem na sua memória. Ele atualiza apenas:
+Um único comando traz **todas** as melhorias para quem já usa uma versão antiga — sem perder
+o que você fez:
 
 | O que é atualizado | O que NUNCA é tocado |
 |---|---|
-| `_opencrew/core/` (framework — sobrescrito por inteiro) | `crews/` (suas crews) |
-| Skills do catálogo (sobrescritas — edições locais se perdem) | `_opencrew/_memory/` (perfil, preferências) |
-| `_opencrew/core/system.md` | `.env` (suas chaves) |
-| Bloco `<!-- opencrew -->` no `AGENTS.md` | Pontes das IDEs (`CLAUDE.md`, `.cursor/`, `.agents/`…) |
+| `_opencrew/core/` (framework) e skills do catálogo | `crews/` (suas crews) |
+| Pastas novas do framework (agentes-base, config) — só o que falta | `_opencrew/_memory/` (perfil, preferências) |
+| Pontes das IDEs **que você já tem instaladas** (nunca cria de IDE nova) | `_opencrew/best-practices.local/` (suas best-practices) |
+| Bloco `<!-- opencrew -->` do `AGENTS.md`/`CLAUDE.md` (o resto do arquivo fica intacto) | `.env` (suas chaves) |
+| Servidor Playwright no `.mcp.json` (outros servidores intactos) | |
 
-As **pontes das IDEs não são atualizadas** pelo `update`. Para regravá-las com a versão
-atual, use:
+- **Editou um arquivo do framework ou um skill do catálogo?** Antes de substituir, o `update`
+  guarda a sua versão em `.opencrew-backup/<data>/` e lista o que copiou.
+- **Versão mais nova instalada?** O `update` não volta para uma versão mais antiga (cache do
+  `npx`): ele para e pede `npx @aksp/opencrew@latest update`.
+
+Para regravar as pontes de IDEs específicas (ou adicionar uma IDE nova):
 
 ```bash
 npx @aksp/opencrew init --repair-bridges --ide=claude-code
 ```
-
-(troque `claude-code` pelas IDEs que você usa, separadas por vírgula; sem `--ide`, o
-comando grava as pontes de **todas** as IDEs suportadas).
 
 Se você está migrando de uma versão anterior a v1.3, o `update` detecta
 AGENTS.md legados (sistema completo de 150 linhas) e os substitui pela ponte

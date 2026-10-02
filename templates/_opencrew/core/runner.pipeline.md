@@ -52,8 +52,12 @@ Before starting execution:
    [ -f crews/{name}/_memory/memories.md ] && grep -q "## Estilo de Escrita" crews/{name}/_memory/memories.md && echo "NEW_FORMAT" || echo "OLD_FORMAT"
    ```
    - If `NEW_FORMAT` → proceed normally.
-   - If `OLD_FORMAT` (or file is empty / does not exist) → silently migrate before proceeding:
-     a. Write `crews/{name}/_memory/memories.md` with the new empty-sections format (do NOT attempt to salvage content from the old file — reset unconditionally):
+   - If `OLD_FORMAT` (or file is empty / does not exist) → migrate before proceeding:
+     a0. If the file exists and is not empty, FIRST copy it to `crews/{name}/_memory/memories.md.bak`
+        (never lose what the crew learned), then tell the user in one line:
+        "Atualizei o formato da memória da crew; a versão anterior está em `memories.md.bak`."
+        Move every rule you can recognize from the old file into the matching new section.
+     a. Write `crews/{name}/_memory/memories.md` with the new sections format:
         ```markdown
         # Crew Memory: {crew-name}
 
@@ -79,7 +83,31 @@ Before starting execution:
         | Data | Run ID | Tema | Output | Score | Resultado |
         |------|--------|------|--------|-------|-----------|
         ```
-   - Do NOT inform the user or pause execution for this migration — it is transparent.
+   - Do not pause execution for this migration (the one-line notice above is enough).
+
+1c. **Project sources (`fontes:`)** — if `crew.yaml` has a `fontes:` list (files or folders of
+    the user's project, paths relative to the project root), read them now: a file in full up to
+    ~300 lines, otherwise its headings plus the passages relevant to this run's task; a folder as
+    its file list. Treat them as the **truth of the project**: when they disagree with the
+    briefing, the research or your own assumptions, the sources take precedence over them
+    (as fontes valem sobre o briefing e a pesquisa) — and say so when it matters.
+
+1d. **Source check** — before the first step, run:
+    ```bash
+    node _opencrew/core/scripts/conferir-fontes.mjs --crew crews/{name}
+    ```
+    If the last line is `FONTES:PENDENTE` (a cited file was moved, renamed or deleted), show the
+    report and ask — never continue silently with a missing source:
+    ```
+    Alguns arquivos que a crew usa não estão mais onde ela espera:
+    {resumo do relatório}
+
+    1. Corrigir os caminhos sugeridos (troco nos arquivos da crew e guardo .bak)
+    2. Seguir assim mesmo
+    3. Parar
+    ```
+    On 1, run the same command with `--corrigir` and show the new result. Not-portable alerts
+    (absolute paths) are mentioned once, without stopping.
 
 2. Read `crews/{name}/pipeline/pipeline.yaml` for the pipeline definition
 3. **Resolve skills**: Read `crew.yaml` → `skills` section. For each non-native skill (anything other than web_search, web_fetch):
@@ -261,8 +289,10 @@ Before executing any step that references an agent:
       - The agent must follow the export process for the specified format — read the input file,
         transform the content, and write the output file in the target format.
       - Skip the best-practices lookup below for export formats.
-   b. **Content formats** — otherwise, read `_opencrew/core/best-practices/{format}.md` (e.g., `_opencrew/core/best-practices/instagram-feed.md`)
-      - If the file does not exist → **WARNING**: "Format '{format}' not found in _opencrew/core/best-practices/. Skipping format injection." Continue without format.
+   b. **Content formats** — otherwise, read `_opencrew/best-practices.local/{format}.md` (the user's
+      own version, never touched by `update`) if it exists, else `_opencrew/core/best-practices/{format}.md`
+      (e.g., `_opencrew/core/best-practices/instagram-feed.md`)
+      - If neither exists → **WARNING**: "Format '{format}' not found in _opencrew/best-practices.local/ or _opencrew/core/best-practices/. Skipping format injection." Continue without format.
    c. Parse the YAML frontmatter to extract the `name` field
    d. Extract the Markdown body (everything after the YAML frontmatter closing `---`)
    e. Append to the agent's context, before skill instructions:
@@ -530,6 +560,14 @@ Apply this transformation consistently for every write in this step.
 - **Always include the file path** of any generated content the user needs to review. Example: "Review the content at `crews/{name}/output/{run_id}/v1/content.md` and let me know if it looks good."
 - Wait for user input before proceeding
 - Save the user's choice/response for the next step
+- **Correction → memory, right away**: if the answer corrects something (tone, audience, a term,
+  a fact, a format), write it to `crews/{name}/_memory/memories.md` in the matching section
+  **before the next step** (antes do próximo passo) — not only at the end of the run, which may
+  never come. A term the user asked to remove goes to `## Proibições Explícitas` **between
+  quotes** (entre aspas: `- Nunca usar "termo"`), so the automatic checker blocks it next time.
+- **Correction vs. company profile**: if the correction contradicts `_opencrew/_memory/company.md`
+  (e.g. the organization's name, the main audience), ask: "Isso vale para todas as crews?
+  Atualizo o perfil da empresa?" — change `company.md` only after a yes.
 - **If the step frontmatter contains `outputFile`**: after collecting the user's full response,
   apply the Output Path Transformation **Step 1 only** (run_id injection — skip Step 2, version folder) to the `outputFile` path, then write the response to the transformed path using the Write tool before moving to the next step. Checkpoint files are user input captures, not versioned output — Step 2 does not apply here, regardless of the general "every write" rule in the Output Path Transformation section above.
   Use this format:
@@ -766,7 +804,7 @@ This archives the run state for the `runs` command while keeping crew history av
    - Run scores, review grades, output file paths, topics from past runs
 
    **Technical routing:** For any technical learning (bugs, workarounds, API behavior):
-   - If it affects any crew (Playwright bugs, OS rendering quirks, API limits) → write to the appropriate `_opencrew/core/best-practices/` file instead of `memories.md`
+   - If it affects any crew (Playwright bugs, OS rendering quirks, API limits) → write to `_opencrew/best-practices.local/{format}.md` instead of `memories.md` (copy the core file there first if the local one does not exist yet — the core folder is replaced by every `update`; the local one is never touched)
    - If it is specific to this crew's output type or toolchain → add to `## Técnico (específico do crew)` following the dedup rules above
 
    After applying all candidates, write the updated `memories.md`.

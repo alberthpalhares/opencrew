@@ -3,7 +3,7 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@0.0.78", "--config", "_opencrew/config/playwright.config.json"]
+      "args": ["@playwright/mcp@0.0.78", "--config", "_opencrew/config/playwright.config.json", "--output-dir", "_opencrew/logs/playwright"]
     }
   }
 }

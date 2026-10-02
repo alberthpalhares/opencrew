@@ -37,11 +37,16 @@ export function semFrontmatter(texto) {
   return texto.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 }
 
-/** Limites do formato: `constraints:` de `_opencrew/core/best-practices/<id>.md`. */
+/**
+ * Limites do formato: `constraints:` do best-practice — primeiro o do usuário
+ * (`_opencrew/best-practices.local/<id>.md`, nunca tocado pelo update), depois o do core.
+ */
 export async function lerLimites(raiz, formatoId) {
-  const arquivo = path.join(raiz, '_opencrew', 'core', 'best-practices', `${formatoId}.md`);
-  if (!existsSync(arquivo)) return null;
-  return lerFrontmatter(await readFile(arquivo, 'utf8'))?.constraints ?? {};
+  for (const pasta of [['best-practices.local'], ['core', 'best-practices']]) {
+    const arquivo = path.join(raiz, '_opencrew', ...pasta, `${formatoId}.md`);
+    if (existsSync(arquivo)) return lerFrontmatter(await readFile(arquivo, 'utf8'))?.constraints ?? {};
+  }
+  return null;
 }
 
 /**
