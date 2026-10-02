@@ -8,14 +8,14 @@ whenToUse: |
 constraints:
   caption_max_chars: 2200
   caption_visible_chars: 125
-  max_hashtags: 30
+  hashtags_max: 30
   recommended_hashtags: "5-15"
-  carousel_max_slides: 20
+  carousel_max_slides: 10
   recommended_slides: "8-10"
   min_words_per_slide: 40
   max_words_per_slide: 80
-  image_ratio: "3:4 portrait"
-  image_resolution: "1080x1440px"
+  image_ratio: "4:5 portrait"
+  image_resolution: "1080x1350px"
 version: "1.0.0"
 ---
 

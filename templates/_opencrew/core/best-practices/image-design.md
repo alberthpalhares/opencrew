@@ -88,7 +88,7 @@ Present all rendered images to the user or downstream agent. Include the design 
 ## Platform Specifications
 
 ### Instagram Post / Carousel
-- **Viewport**: 1080 x 1440 (3:4 portrait)
+- **Viewport**: 1080 x 1350 (4:5 portrait)
 - **Min font sizes**: Hero 58px, Heading 43px, Body 34px, Caption 24px
 - **Optimal slide count**: 5-10 slides. Under 5 feels incomplete, over 10 causes drop-off.
 - **Structure**: Hook on slide 1, CTA on last slide, value in between.
@@ -135,7 +135,7 @@ Present all rendered images to the user or downstream agent. Include the design 
 DESIGN SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Platform: Instagram Carousel
-Viewport: 1080 x 1440
+Viewport: 1080 x 1350
 Slides: 7 (hook + 5 content + CTA)
 
 Colors:
@@ -181,7 +181,7 @@ File: slide-01.html
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      width: 1080px; height: 1440px; overflow: hidden;
+      width: 1080px; height: 1350px; overflow: hidden;
       background: #1A1A2E;
       font-family: 'Inter', sans-serif;
       display: flex; flex-direction: column;
@@ -342,7 +342,7 @@ Design rationale: Clean white background matches LinkedIn's professional aesthet
 
 3. **Document design rationale.** After each completed design, briefly explain why you made the key visual choices: color rationale, font selection, layout strategy. This helps the user understand the design thinking and makes iteration faster.
 
-4. **Match viewport exactly.** Body width and height in CSS must match the browser viewport resize dimensions exactly. A 1080x1440 carousel slide means body { width: 1080px; height: 1440px; }.
+4. **Match viewport exactly.** Body width and height in CSS must match the browser viewport resize dimensions exactly. A 1080x1350 carousel slide means body { width: 1080px; height: 1350px; }.
 
 ## Vocabulary Guidance
 
@@ -350,7 +350,7 @@ Design rationale: Clean white background matches LinkedIn's professional aesthet
 
 - **"Design system"**: The foundational term for consistent visual identity across pieces. Always define it before creating individual assets.
 - **"Visual hierarchy"**: How the eye moves through the design. Use this when explaining font size, weight, and positioning choices.
-- **"Viewport: WxH"**: Always state the target dimensions explicitly. "Instagram carousel at 1080x1440" not "standard Instagram size."
+- **"Viewport: WxH"**: Always state the target dimensions explicitly. "Instagram carousel at 1080x1350" not "standard Instagram size."
 - **"Contrast ratio"**: Reference WCAG contrast standards when justifying color combinations. "4.5:1 minimum for body text."
 - **"Self-contained HTML"**: The non-negotiable constraint. Reinforce that every file must render independently without external dependencies.
 - **"Rendering verification"**: The step where you visually confirm the screenshot matches the intended design before proceeding.

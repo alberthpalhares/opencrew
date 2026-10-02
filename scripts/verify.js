@@ -22,7 +22,7 @@ function testFiles() {
 
 export function defaultSteps() {
   return [
-    { name: 'lint', cmd: node, args: ['node_modules/eslint/bin/eslint.js', 'bin/', 'src/', 'tests/', 'scripts/'] },
+    { name: 'lint', cmd: node, args: ['node_modules/eslint/bin/eslint.js', 'bin/', 'src/', 'tests/', 'scripts/', 'templates/_opencrew/core/scripts/'] },
     { name: 'test', cmd: node, args: ['--test', ...testFiles()] },
     { name: 'version-sync', cmd: node, args: ['scripts/check-version-sync.js'] },
     { name: 'size (alert only)', cmd: node, args: ['scripts/check-size.js'] },

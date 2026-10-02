@@ -2,7 +2,7 @@
 // These guard the TEXT of the rules; whether a model obeys them is checked in sandbox/.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const read = (rel) => readFileSync(new URL(`../templates/${rel}`, import.meta.url), 'utf8');
 const design = read('_opencrew/core/prompts/design.prompt.md');
@@ -70,4 +70,79 @@ test('F1-12a: the dashboard toggle rule matches the bold list format preferences
 
 test('F1-13a: system definition keeps the title used by legacy AGENTS.md detection', () => {
   assert.equal(read('AGENTS.md').split('\n')[0].trim(), '# opencrew Instructions');
+});
+
+// ── U1 Revisor com dentes (specs/fase-u1-revisor-com-dentes.md) ─────────────────────
+
+const reviewLoops = () => sections(runner).find((s) => s.startsWith('### Review Loops'));
+
+test('U1-02a: before every on_reject step the runner runs verificar.mjs on every output since the writer', () => {
+  const s = reviewLoops();
+  assert.match(s, /node _opencrew\/core\/scripts\/verificar\.mjs/);
+  assert.match(s, /on_reject/);
+  assert.match(s, /todas as saídas|every output|all outputs/i);
+  assert.match(s, /VERIFICAÇÃO AUTOMÁTICA/);
+});
+
+test('U1-02b: VERIFICACAO:BLOQUEADA forces REJECT whatever the score', () => {
+  const s = reviewLoops();
+  assert.match(s, /VERIFICACAO:BLOQUEADA/);
+  assert.match(s, /REJECT/);
+  assert.match(s, /(qualquer que seja|regardless of) (a nota|the score)/i);
+});
+
+test('U1-02c: at the cycle limit the user gets fix / accept-on-record / abort', () => {
+  const s = reviewLoops();
+  assert.match(s, /Corrigir eu mesmo/);
+  assert.match(s, /Aceitar assim mesmo/);
+  assert.match(s, /Abortar/);
+});
+
+test('U1-02d: final approval shows the check summary and asks for every [PREENCHER]', () => {
+  const s = reviewLoops();
+  assert.match(s, /Verificação automática: \{N\} bloqueios, \{M\} alertas/);
+  assert.match(s, /\[PREENCHER/);
+});
+
+test('U1-03a: the reviewer copies measured values and cannot approve with a block', () => {
+  const review = read('_opencrew/core/best-practices/review.md');
+  assert.match(review, /nunca estime contagens|never estimate counts/i);
+  assert.match(review, /APPROVE[^\n]*bloqueio|bloqueio[^\n]*APPROVE/i);
+  assert.match(review, /7\/10[^\n]*alerta|alerta[^\n]*7\/10/i);
+});
+
+test('U1-04a: the runner injects the truthfulness block into creation steps', () => {
+  const loading = sections(runner).find((s) => s.startsWith('### Agent Loading'));
+  assert.match(loading, /REGRAS DE VERACIDADE/);
+  assert.match(loading, /\[PREENCHER: /);
+});
+
+test('U1-04b: build and copywriting carry the no-invention rule', () => {
+  for (const md of [build, read('_opencrew/core/best-practices/copywriting.md')]) {
+    assert.match(md, /\[PREENCHER: /);
+    assert.match(md, /(nunca invent|never invent)/i);
+  }
+});
+
+test('U1-05a: canonical constraint names; Instagram feed is 4:5, max 10 slides', () => {
+  const dir = new URL('../templates/_opencrew/core/best-practices/', import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.md'))) {
+    assert.doesNotMatch(readFileSync(new URL(f, dir), 'utf8'), /^\s+max_hashtags:/m, `${f} uses max_hashtags (use hashtags_max)`);
+  }
+  const ig = read('_opencrew/core/best-practices/instagram-feed.md');
+  assert.match(ig, /^\s+carousel_max_slides: 10$/m);
+  assert.match(ig, /1080x1350/);
+  assert.doesNotMatch(ig, /1080x1440|3:4/);
+});
+
+test('U1-05b: no Instagram feed/carousel preset or base template at 1440 high', () => {
+  for (const rel of [
+    'skills/image-creator/SKILL.md',
+    'skills/template-designer/SKILL.md',
+    'skills/template-designer/base-templates/model-a.html',
+    'skills/template-designer/base-templates/model-b.html',
+    'skills/template-designer/base-templates/model-c.html',
+  ]) {
+    assert.doesNotMatch(read(rel), /1080\s*x\s*1440|1080x1440|height:\s*1440px/i, `${rel} still uses 1080x1440`);
+  }
 });

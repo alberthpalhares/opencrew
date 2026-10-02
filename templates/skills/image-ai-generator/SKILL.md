@@ -100,7 +100,7 @@ Each item can optionally include a `"reference": "path/to/ref.png"` field.
 ### Prompt guidelines
 
 - Be specific about composition, lighting, style, and mood
-- Specify aspect ratio or orientation when relevant (e.g., "portrait 3:4", "landscape 16:9")
+- Specify aspect ratio or orientation when relevant (e.g., "portrait 4:5", "landscape 16:9")
 - Include "hyper realistic, 4K quality" for photographic styles
 - Include "clean composition" to avoid cluttered outputs
 - Avoid requesting text in images — AI models struggle with text rendering

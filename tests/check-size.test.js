@@ -18,4 +18,7 @@ test('each category uses its own target', () => {
   assert.equal(classify('tests/x.test.js', 320).level, 'aviso');
   assert.equal(classify('templates/_opencrew/core/runner.pipeline.md', 829).level, 'critico');
   assert.equal(classify('README.md', 5000), null, 'files outside the categories are ignored');
+  // U1: runtime scripts shipped in the payload are code too (target 200), not prompts.
+  assert.equal(classify('templates/_opencrew/core/scripts/verificar.mjs', 320).level, 'critico');
+  assert.equal(classify('templates/_opencrew/core/scripts/verificar/regras.mjs', 210).level, 'aviso');
 });

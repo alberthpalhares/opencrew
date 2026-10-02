@@ -46,7 +46,7 @@ Before generating any template, read and internalize the design best practices:
 - `_opencrew/core/best-practices/image-design.md` — **REQUIRED reading**. Contains platform-specific minimum font sizes, typography rules, spacing guidelines, color palette constraints, contrast requirements, and layout methodology. Every template you generate MUST comply with these rules.
 
 Key rules to always follow:
-- **Font sizes**: Hero 58px, Heading 43px, Body 34px, Caption 24px minimum for Instagram carousel (1080x1440). Absolute minimum 20px for any readable text on any platform.
+- **Font sizes**: Hero 58px, Heading 43px, Body 34px, Caption 24px minimum for Instagram carousel (1080x1350). Absolute minimum 20px for any readable text on any platform.
 - **Font weight**: 500 or higher for body text and above.
 - **Colors**: Maximum 5 colors per design system (primary, secondary, accent, background, text).
 - **Contrast**: WCAG AA minimum 4.5:1 for all text against background.
@@ -61,7 +61,7 @@ You should also apply general web design best practices: proper white space, vis
 These rules are NON-NEGOTIABLE. Every template must comply:
 
 **Fixed Dimensions (never use height: auto or flexible height):**
-- Instagram Carousel: `width: 1080px; height: 1440px` (3:4 portrait)
+- Instagram Carousel: `width: 1080px; height: 1350px` (4:5 portrait)
 - Instagram Story/Reel: `width: 1080px; height: 1920px` (9:16 portrait)
 - Instagram Post: `width: 1080px; height: 1080px` (1:1 square)
 - LinkedIn Post: `width: 1200px; height: 627px` (1.91:1 horizontal)
@@ -155,7 +155,7 @@ When the user approves, create two files:
 
 Save to: `crews/{code}/pipeline/data/template-reference.html`
 
-The complete, self-contained HTML/CSS of the approved template at full resolution (e.g., 1080x1440). This is the literal example the design agent will use.
+The complete, self-contained HTML/CSS of the approved template at full resolution (e.g., 1080x1350). This is the literal example the design agent will use.
 
 ### 2. Visual Identity Rules
 

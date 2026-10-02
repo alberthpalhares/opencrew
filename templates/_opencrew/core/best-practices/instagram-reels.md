@@ -11,7 +11,7 @@ constraints:
   aspect_ratio: "9:16 vertical"
   caption_max_chars: 2200
   caption_visible_chars: 125
-  max_hashtags: 30
+  hashtags_max: 30
 version: "1.0.0"
 ---
 

@@ -150,13 +150,13 @@ Platform:  Instagram (carousel)
 Account:   @brandname
 Skill:     instagram-publisher
 Images:    7 slides
-  1. slide-01.jpg (1080x1440, JPEG, 287KB)
-  2. slide-02.jpg (1080x1440, JPEG, 195KB)
-  3. slide-03.jpg (1080x1440, JPEG, 213KB)
-  4. slide-04.jpg (1080x1440, JPEG, 178KB)
-  5. slide-05.jpg (1080x1440, JPEG, 201KB)
-  6. slide-06.jpg (1080x1440, JPEG, 192KB)
-  7. slide-07.jpg (1080x1440, JPEG, 244KB)
+  1. slide-01.jpg (1080x1350, JPEG, 287KB)
+  2. slide-02.jpg (1080x1350, JPEG, 195KB)
+  3. slide-03.jpg (1080x1350, JPEG, 213KB)
+  4. slide-04.jpg (1080x1350, JPEG, 178KB)
+  5. slide-05.jpg (1080x1350, JPEG, 201KB)
+  6. slide-06.jpg (1080x1350, JPEG, 192KB)
+  7. slide-07.jpg (1080x1350, JPEG, 244KB)
 
 Caption (1,847 / 2,200 chars):
   "You are doing 100 things to grow on Instagram.
@@ -173,7 +173,7 @@ Caption (1,847 / 2,200 chars):
 VALIDATION
   Image format: JPEG (required: JPEG)
   Image count: 7 (required: 2-10)
-  Image dimensions: 1080x1440 (valid carousel)
+  Image dimensions: 1080x1350 (valid carousel)
   Caption length: 1,847 chars (max: 2,200)
   Hashtags: 5 (recommended: 5-8)
   Rate limit: 3/25 posts used in last 24h

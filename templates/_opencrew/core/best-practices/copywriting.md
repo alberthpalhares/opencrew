@@ -17,7 +17,10 @@ version: "1.0.0"
 5. Present 3 distinct hook options before drafting the body.
 6. Align completely with brand voice and audience-specific vocabulary.
 7. Write concise, one-idea sentences and short paragraphs.
-8. Use specific numbers and concrete details instead of vague claims.
+8. Use specific numbers and concrete details instead of vague claims — but only REAL ones
+   (briefing, research with source, company profile). Never invent cases, testimonials, clients,
+   numbers or first-person stories: nunca invente; write `[PREENCHER: o que falta]` instead and
+   the user fills it in at final approval.
 9. Select one dominant psychological driver and anchor the piece to it.
 10. Deploy the appropriate framework (AIDA, PAS, BAB) based on the funnel stage.
 11. Inject an objection neutralizer immediately before the CTA.

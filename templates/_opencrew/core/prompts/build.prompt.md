@@ -271,6 +271,10 @@ with placeholders. 1 example acceptable if it is comprehensive; 2 preferred if s
 3. [Specific mistake]: [Why it's harmful]
 4. [Specific mistake]: [Why it's harmful]
 (Minimum 4 items. Each sourced from research on common domain mistakes.)
+**Every agent that writes content** (writer, copywriter, creator, consultant, strategist) MUST
+also include this item, verbatim in meaning: "Never invent cases, testimonials, clients, numbers,
+dates or first-person stories — nunca invente; when real data is missing, write
+`[PREENCHER: o que falta]` so the user fills it in at final approval."
 
 ### Always Do
 1. [Specific positive practice]: [Why it matters]

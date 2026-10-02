@@ -3,6 +3,40 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0] — 2026-10-02
+
+Trilha U1 "Revisor com dentes" — primeira melhoria vinda do uso real
+(`docs/jornada/2026-10-02-uso-real.md`, `specs/fase-u1-revisor-com-dentes.md`).
+
+### Added
+- **Verificador automático** (`_opencrew/core/scripts/verificar.mjs`, Node puro): mede o texto
+  ANTES do revisor usando os limites `constraints:` dos best-practices — título e meta description
+  do blog, legenda e hashtags do Instagram, slides do carrossel, post do LinkedIn, tweets, links
+  (alerta quando abaixo do mínimo). Bloqueia placeholders (`wa.me/55…9999…`, `[Empresa X]`,
+  `lorem ipsum`…), termos entre aspas em `## Proibições Explícitas` da memória da crew e
+  `[PREENCHER: …]`; alerta afirmações em 1ª pessoa com dado concreto (R$, %, ano passado,
+  "N clientes"). Relatório em PT-BR com valor medido × limite; última linha
+  `VERIFICACAO:OK | BLOQUEADA | AGUARDANDO_USUARIO`.
+- **Regras de veracidade** injetadas em todo passo de criação: nunca inventar casos, depoimentos,
+  números ou histórias em 1ª pessoa — usar `[PREENCHER: o que falta]`.
+
+### Changed
+- **Revisão com trava**: antes de todo passo com `on_reject`, o runner verifica **todas** as saídas
+  desde o redator (não só a entrada do revisor — no uso real as legendas nunca eram revisadas);
+  `VERIFICACAO:BLOQUEADA` força REJECT seja qual for a nota; no limite de ciclos o usuário escolhe
+  corrigir, aceitar (registrado) ou abortar; a aprovação final mostra o resumo e pede os
+  `[PREENCHER]`.
+- `review.md`: o revisor copia os números do relatório (nunca estima), não aprova com bloqueio e
+  tem nota máxima 7/10 com alerta não resolvido. `copywriting.md` e o build: regra de não inventar.
+- **Instagram em 4:5**: carrossel/feed agora 1080×1350 (a API do Instagram só publica de 4:5 a
+  1,91:1), no máximo 10 slides; presets do `image-creator`, `template-designer` (e modelos-base),
+  `image-fetcher` e best-practices atualizados. Limites com nomes canônicos (`hashtags_max`).
+
+### Internal
+- Docs de jornada (`docs/jornada/`: uso real, roteiro de teste U0, medições) e roadmap de trilhas U.
+- Regras de dev 12 (limite só vale se medido) e 13 (PT-BR para o usuário); alerta de tamanho e
+  lint cobrem os scripts do runtime.
+
 ## [1.4.2] — 2026-10-02
 
 Hotfix "parar de causar dano" (Fase 1 da auditoria — `specs/fase-1-hotfix.md`).

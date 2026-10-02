@@ -1,6 +1,6 @@
 # Spec — Fase U1: Revisor com dentes (1.5.0)
 
-- **Fase:** U1 · **Módulo:** Runtime (`templates/`) · **Status:** aguardando aprovação
+- **Fase:** U1 · **Módulo:** Runtime (`templates/`) · **Status:** implementada (2026-10-02)
 - **Termos novos no GLOSSARIO.md:** sim — Verificador automático, Bloqueio, Alerta, Marcador `[PREENCHER]`
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 
@@ -199,4 +199,14 @@ conteúdo; não faz chamadas de rede.
 - `tests/package.test.js`: o verificador vai no tarball.
 
 ## 14. Correções
-(preenchida durante a implementação)
+- 2026-10-02 — Regra 5/7: `[PREENCHER]` como bloqueio comum faria a revisão entrar em loop (o
+  redator não tem o dado). Novo estado `VERIFICACAO:AGUARDANDO_USUARIO` quando os únicos
+  bloqueios são `[PREENCHER]`: não força REJECT; a aprovação final pede o dado. Cenário U1-01l.
+- 2026-10-02 — Conferência real (seção 9) no Projeto A: o verificador pegou título (123/70),
+  meta (215/160), o placeholder do WhatsApp e a história inventada que o revisor aprovou com
+  8,4. Ela revelou 3 ajustes, todos com teste (U1-01a reforçado, U1-01m):
+  o placeholder vinha com resíduo de markdown (agora só a URL); ano atual/futuro ("Congresso
+  2026") não conta como dado concreto; a frase citada sai sem marcadores e com "…".
+- 2026-10-02 — A porta passou a rodar o lint também em `templates/_opencrew/core/scripts/`.
+- 2026-10-02 — `image-design.md`, `social-networks-publishing.md`, `image-fetcher` e
+  `instagram-reels.md` também tinham 1080×1440 / `max_hashtags`: corrigidos junto (U1-05).

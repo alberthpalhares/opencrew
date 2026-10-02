@@ -27,7 +27,7 @@ test('tarball never ships secrets, logs, session or sandbox files', () => {
 });
 
 test('tarball ships the CLI entry point and the runtime payload', () => {
-  for (const must of ['bin/opencrew.js', 'src/cli.js', 'templates/AGENTS.md', 'templates/_opencrew/core/runner.pipeline.md', 'templates/skills/catalog.json']) {
+  for (const must of ['bin/opencrew.js', 'src/cli.js', 'templates/AGENTS.md', 'templates/_opencrew/core/runner.pipeline.md', 'templates/skills/catalog.json', 'templates/_opencrew/core/scripts/verificar.mjs']) {
     assert.ok(files.includes(must), `missing from tarball: ${must}`);
   }
 });

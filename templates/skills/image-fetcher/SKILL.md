@@ -47,7 +47,7 @@ When taking a screenshot:
 1. Navigate to the URL with `browser_navigate`
 2. Set viewport: `browser_resize` with width/height for target format
    - Instagram post: 1080x1080
-   - Instagram carousel: 1080x1440
+   - Instagram carousel: 1080x1350
    - Story/Reel: 1080x1920
    - Generic: 1280x720
 3. Wait for page load (`browser_wait_for` if needed)

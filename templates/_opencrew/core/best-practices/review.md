@@ -22,6 +22,13 @@ version: "1.0.0"
 10. Assign an APPROVE verdict only if overall score is >= 7/10 and no criterion is < 4/10.
 11. Include at least one acknowledged strength, even in REJECT reviews.
 12. Provide a specific fix or rewrite example for every required change.
+13. **Números medidos, nunca estimados** — nunca estime contagens (caracteres, hashtags, links,
+    slides): copie os valores do relatório `--- VERIFICAÇÃO AUTOMÁTICA ---`. Checklist só marca ✓
+    o que o relatório confirma.
+14. **Sem APPROVE com bloqueio** — qualquer bloqueio no relatório da verificação automática é
+    REJECT, seja qual for a nota (exceto `[PREENCHER]`, que vai para o usuário na aprovação final).
+15. **Alerta limita a nota** — com alerta não resolvido nem justificado, a nota máxima é 7/10;
+    liste cada alerta e diga se foi resolvido.
 
 <!-- End Compact Rules. Full reference below. -->
 

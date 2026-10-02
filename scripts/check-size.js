@@ -13,6 +13,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const CATEGORIES = [
   { name: 'test', target: 300, match: (p) => p.startsWith('tests/') && p.endsWith('.js') },
   { name: 'code', target: 200, match: (p) => /^(src|bin|scripts)\//.test(p) && p.endsWith('.js') },
+  // Scripts shipped in the payload (e.g. the automatic checker) are code, not prompts.
+  { name: 'runtime-script', target: 200, match: (p) => /^templates\/.*\/scripts\/.*\.m?js$/.test(p) },
   { name: 'prompt', target: 400, match: (p) => p.startsWith('templates/_opencrew/core/') && p.endsWith('.md') },
 ];
 

@@ -310,6 +310,15 @@ Before executing any step that references an agent:
    c. Inject this block immediately after the agent definition and BEFORE format/skill context.
    d. Skip sections that are empty or not relevant to the current agent (e.g., skip Design Visual for a writer agent).
    e. If `memories.md` has no accumulated rules → skip injection entirely (no empty block).
+   f. **Truthfulness block (always)** — for every agent step that is not a checkpoint and not a
+      review step (no `on_reject:`), inject right after the crew memory block:
+      ```
+      --- REGRAS DE VERACIDADE ---
+      - Nunca invente casos, depoimentos, clientes, números, datas ou histórias em 1ª pessoa.
+      - Use só fatos do briefing, da pesquisa (com fonte) ou do perfil da empresa.
+      - Faltou um dado real? Escreva [PREENCHER: o que falta] no lugar — o usuário completa
+        na aprovação final. Um [PREENCHER] honesto vale mais que um exemplo inventado.
+      ```
 
 ### Context Compression (Summary-Based Handoff)
 
@@ -628,11 +637,39 @@ catching obvious issues early and reducing review cycle waste.
 
 ### Review Loops
 
-When a step has `on_reject: {step-id}`:
-- Track the review cycle count
-- If reviewer rejects, go back to the referenced step
-- Pass reviewer feedback to the writer agent
-- If max_review_cycles reached, present to user for manual decision
+When a step has `on_reject: {step-id}` (a review step):
+
+1. **Automatic check BEFORE the reviewer runs** — run the checker on **all outputs** (todas as
+   saídas) of every non-checkpoint step from the `on_reject` step up to the step right before
+   the review, using the transformed paths of this run (run_id/vN):
+   ```bash
+   node _opencrew/core/scripts/verificar.mjs --crew crews/{name} --arquivo "{path1},{path2},…" --formato {blog format id of those steps, if any}
+   ```
+   Save the full output to `crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md` and inject it
+   into the reviewer's context as `--- VERIFICAÇÃO AUTOMÁTICA ---`. The reviewer must copy the
+   measured values from it (see best-practices `review.md`). If the command itself fails (no
+   Node, unexpected error), tell the user "⚠️ A verificação automática não rodou: {motivo}" and
+   continue with the normal review.
+2. **A block cannot be approved** — if the last line of the checker output is
+   `VERIFICACAO:BLOQUEADA`, the verdict is **REJECT** regardless of the score (qualquer que seja a
+   nota). Send the report (blocks first) to the writer together with the reviewer's feedback.
+   If the last line is `VERIFICACAO:AGUARDANDO_USUARIO`, the only blocks are `[PREENCHER: …]`
+   (real data only the user has): do NOT reject for them — the reviewer judges the rest, and the
+   final approval below collects the missing data from the user.
+3. Track the review cycle count. If the reviewer rejects, go back to the referenced step.
+4. If max_review_cycles is reached with blocks remaining, present the report to the user:
+   ```
+   ⚠️ A revisão ainda encontra bloqueios depois de {N} ciclos:
+   {lista de bloqueios do relatório}
+
+   1. Corrigir eu mesmo (eu edito o texto e você verifica de novo)
+   2. Aceitar assim mesmo (fica registrado no histórico da execução)
+   3. Abortar
+   ```
+5. **Final approval checkpoint** (the checkpoint after the review): show the summary of the last
+   report — `Verificação automática: {N} bloqueios, {M} alertas` — plus the list of alerts. If the
+   approved text still contains `[PREENCHER: …]`, ask the user for each missing piece of real
+   information and write it into the text before approving.
 
 ### Dashboard Handoff (between steps)
 

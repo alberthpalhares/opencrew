@@ -35,6 +35,11 @@ dentro da sua IDE.**
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
   ajusta com um clique. Agentes pulados não gastam tokens naquele run.
+- 🔎 **Revisor com dentes** — antes da revisão, um verificador automático mede o texto
+  (tamanho de título, meta description, legenda, hashtags, slides), barra placeholders,
+  termos que você proibiu e `[PREENCHER]` pendentes, e aponta afirmações a confirmar.
+  Bloqueio não passa, seja qual for a nota do revisor. A crew não inventa casos nem números:
+  quando falta um dado real, ela pergunta na aprovação final.
 
 ---
 

@@ -60,7 +60,7 @@ Use the Visual Renderer when you need to generate production-ready images from H
 
 Use these standard dimensions:
 - Instagram Post: 1080 x 1080
-- Instagram Carousel: 1080 x 1440
+- Instagram Carousel: 1080 x 1350
 - Instagram Story/Reel: 1080 x 1920
 - Facebook Post: 1200 x 630
 - Twitter/X Post: 1200 x 675
@@ -86,7 +86,7 @@ Example minimal structure:
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { width: 1080px; height: 1440px; overflow: hidden; }
+    body { width: 1080px; height: 1350px; overflow: hidden; }
     /* ... your design ... */
   </style>
 </head>

@@ -83,6 +83,16 @@ tentado, o que está ambíguo na spec).
 Ao terminar QUALQUER sessão, mesmo interrompida: atualizar `STATUS.md` (local, fora do
 git — regra deste projeto; diverge de propósito da skill project-standards).
 
+### 12. Limite de formato só vale se o verificador mede
+Todo limite que o produto promete (tamanho de título, legenda, post, hashtags, slides) mora no
+frontmatter `constraints:` do best-practice — com nome canônico — e é medido por
+`_opencrew/core/scripts/verificar.mjs` antes do revisor. Limite só escrito em prosa é intenção.
+**Trava:** `tests/verificar.test.js` + `tests/runtime-contracts.test.js` (U1-05).
+
+### 13. Texto que o usuário vê: PT-BR correto
+Mensagens, perguntas e relatórios mostrados ao usuário final são em português do Brasil, com
+acentos. Outros idiomas: tradução pelo modelo. **Trava:** sem trava — revisão humana (→ U5).
+
 ## Regra → Trava
 
 | Regra | Trava | Tipo |
@@ -98,6 +108,8 @@ git — regra deste projeto; diverge de propósito da skill project-standards).
 | 9 Doc que mente | sem trava — revisão humana | — |
 | 10 Quando travar | sem trava — revisão humana | — |
 | 11 Continuidade | sem trava — revisão humana | — |
+| 12 Limite medido | `tests/verificar.test.js`, `tests/runtime-contracts.test.js` | Reprova |
+| 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.
