@@ -1,87 +1,53 @@
-# IDEIAS — Melhorias Futuras para o OpenCrew
+# IDEIAS — o que espera a hora certa
 
-> Coletânea de ideias identificadas no uso real do OpenCrew.
-> Data base: 2026-08-01 — v1.1.0
-> Análise de viabilidade: 2026-08-02 — todas as ideias avaliadas
-> **✅ 10 ideias implementadas: 2026-08-04 (88 testes, 0 regressões)**
-
-### Histórico de Implementação
-
-| # | Ideia | Onda | Evidência |
-|---|-------|------|-----------|
-| 1 | Sherlock multi-fonte | Onda 1 | `sherlock-web.md`, `sherlock-seo.md`, `sherlock-trends.md` + orquestração |
-| 2 | Criação por papéis | Onda 2 | Phase D = Role Proposal, Phase E = Skill Mapping em `design.prompt.md` |
-| 3 | Criação dinâmica de skills | Onda 7 | Operation 3a em `skills.engine.md` + Dynamic Skill Generation |
-| 4 | Tiers de crew | Onda 4 | Phase B.5: Tier Selection, campo `tier` no design.yaml, `Default Tier` em preferences.md |
-| 5.1 | Aprendizado contínuo | Onda 3 | Post-Run Reflection, Regras de Ouro, injeção de Crew Memory Rules |
-| 5.2 | Templates de crew por setor | Onda 5 | 4 templates em `templates/crews/` |
-| 5.3 | Exportação multi-formato | Onda 5 | `export.prompt.md` com PDF (Playwright), CSV, e formatted-post |
-| 6 | Registro compartilhado de agentes | Onda 6 | 5 agentes base, `extends:` no design.yaml, Gate 0c no build |
-| 7 | Instalação não-destrutiva | Onda 7 | `writeBridgeFile` em fsx.js, merge com marcadores |
-| 8 | Seleção automática de agentes | Onda 8 | `runner.pipeline.md` (step 4b), `AGENTS.md` (step 7b), `build.prompt.md` (agent_dependencies) |
-
-**Conclusão:** Backlog 100% implementado. 88 testes, zero regressões. ~6.600 linhas novas em 24 arquivos.
+> Ideia só entra com triagem (4 campos): **O que plano/specs já dizem** · **Alocação**
+> (`→ Fase N` ou `→ sem fase`, com motivo) · **Custo de adiar** · **Aprovação** (só se
+> mudar o escopo de uma fase). Ideia implementada ou descartada **sai** daqui — o histórico
+> fica no `CHANGELOG.md`. Fases: ver `docs/auditoria/2026-10-02-auditoria-geral.md` §3.
+>
+> As 10 ideias do backlog original (Sherlock multi-fonte, criação por papéis, skills
+> dinâmicas, tiers, aprendizado contínuo, templates de crew, exportação, registro de
+> agentes, instalação não-destrutiva, seleção de agentes) saíram: estão no CHANGELOG
+> (v1.3.0–v1.4.0). A #7 (instalação não-destrutiva) ficou **parcial** — o restante virou
+> os achados C-04/C-05 da auditoria (→ F1).
 
 ---
 
-## Ideias Pendentes
+## Dashboard: publicar ou remover
+- **O que já existe:** `dashboard/index.html` no repo, fora do pacote npm; o runtime o cita
+  (`runner.pipeline.md:20`, `templates/AGENTS.md`). Achados D-01 e D-06 (XSS, modo live
+  quebrado).
+- **Alocação:** → Fase 4 — decisão de produto; até lá a doc diz que ele não é instalado.
+- **Custo de adiar:** baixo; o runtime continua citando um arquivo que o usuário não tem.
+- **Aprovação:** sim — escolher entre publicar (com correção de XSS e caminho do
+  `state.json`) ou remover.
 
-*Nenhuma ideia pendente. Backlog 100% concluído em 2026-08-04.*
+## `/opencrew resume` — retomar um run interrompido
+- **O que já existe:** o estado do run vive só na memória do modelo (T-A11).
+- **Alocação:** → Fase 3 — depende de `run-state.json` e do formato canônico de
+  `pipeline.yaml` (T-A10).
+- **Custo de adiar:** run longo que estoura o contexto é perdido inteiro.
+- **Aprovação:** não.
 
----
+## Orçamento de custo por run
+- **O que já existe:** nada; skills pagas (OpenRouter, Apify, Resend) sem teto (T-A12).
+- **Alocação:** → Fase 3 — `Budget:` em `preferences.md`, confirmação antes de lote pago,
+  teto de `--batch` no `generate.py`.
+- **Custo de adiar:** gasto inesperado do usuário; retries multiplicam o custo.
+- **Aprovação:** não.
 
-## Priorização Atual
+## `/opencrew cleanup` + retenção
+- **O que já existe:** `runs.md`, `output/{run_id}/vN/`, `_investigations/` (com `.wav`)
+  crescem sem poda.
+- **Alocação:** → Fase 4.
+- **Custo de adiar:** disco e leitura de contexto crescem com o uso.
+- **Aprovação:** não.
 
-*Nada a priorizar — todas as ideias registradas foram implementadas.*
-
----
-
-## Histórico — Detalhes das Ideias Implementadas
-
-<details>
-<summary>Expandir para ver os detalhes originais das 10 ideias implementadas (2026-08-04)</summary>
-
-### 1. Sherlock Multi-Fonte
-
-**Problema:** Sherlock só pesquisava redes sociais. **Solução:** Orquestrador multi-fonte com sub-agentes para web, SEO, e trends. **Impacto:** 🔴 Alto / **Esforço:** 🟢 Baixo. **Evidência:** `sherlock-web.md`, `sherlock-seo.md`, `sherlock-trends.md` + orquestração em `sherlock-shared.md`.
-
-### 2. Criação de Crew por Papéis (Não por Ferramentas)
-
-**Problema:** Usuário não-técnico não entendia termos como "apify", "resend". **Solução:** Fluxo de criação mudou de "quais ferramentas?" para "quais papéis/pessoas?". **Impacto:** 🔴 Alto / **Esforço:** 🟡 Médio. **Evidência:** Phase D = Role Proposal, Phase E = Skill Mapping em `design.prompt.md`.
-
-### 3. Criação Dinâmica de Skills
-
-**Problema:** Catálogo fixo de 11 skills limitava necessidades específicas. **Solução:** Geração automática de `SKILL.md` sob demanda via pesquisa web + IA. **Impacto:** 🔴 Alto / **Esforço:** 🔴 Alto. **Evidência:** Operation 3a em `skills.engine.md` + Dynamic Skill Generation em `design.prompt.md`.
-
-### 4. Tiers de Crew: Express / Standard / Full
-
-**Problema:** Toda crew rodava com pipeline completo, sem escolha de profundidade. **Solução:** 3 tiers (Express ~5K tokens, Standard ~15K, Full ~40K) escolhidos na criação. **Impacto:** 🟡 Médio / **Esforço:** 🟡 Médio. **Evidência:** Phase B.5: Tier Selection, campo `tier` no design.yaml, `Default Tier` em preferences.md.
-
-### 5.1 Aprendizado Contínuo das Crews (Memória entre runs)
-
-**Problema:** Correções do usuário se perdiam entre execuções. **Solução:** Ciclo de feedback em 3 camadas: captura → análise pós-run → aplicação proativa com regras de ouro. **Impacto:** 🔴 Alto / **Esforço:** 🟡 Médio. **Evidência:** Post-Run Reflection, Regras de Ouro, injeção de Crew Memory Rules no prompt.
-
-### 5.2 Templates de Crew por Setor
-
-**Problema:** Criar crew do zero exigia descrever tudo. **Solução:** 4 templates pré-definidos: blog-semanal, instagram-carrossel, newsletter-mensal, lancamento-produto. **Impacto:** 🟡 Médio / **Esforço:** 🟢 Baixo. **Evidência:** 4 templates em `templates/crews/`.
-
-### 5.3 Exportação Multi-Formato
-
-**Problema:** Output era só markdown. **Solução:** Export para PDF (Playwright), CSV, e formatted-post. **Impacto:** 🟡 Médio / **Esforço:** 🟢 Baixo. **Evidência:** `export.prompt.md` com suporte a 3 formatos.
-
-### 6. Registro Compartilhado de Agentes (Shared Agent Registry)
-
-**Problema:** Cada crew duplicava agentes idênticos. **Solução:** Registro em `_opencrew/agents/` com herança (`extends:`) e parametrização no `crew.yaml`. **Impacto:** 🔴 Alto / **Esforço:** 🔴 Alto. **Evidência:** 5 agentes base, `extends:` no design.yaml, Gate 0c no build.
-
-### 7. Instalação Não-Destrutiva (Estratégia de Merge)
-
-**Problema:** `opencrew init` sobrescrevia `CLAUDE.md`, `AGENTS.md` e outros arquivos do usuário. **Solução:** Merge com blocos marcados `<!-- opencrew:start/end -->`, append condicional em `.gitignore` e `.env.example`. **Impacto:** 🔴 Alto / **Esforço:** 🟡 Médio. **Evidência:** `writeBridgeFile` em fsx.js, merge com marcadores.
-
-</details>
-
----
-
-*Este arquivo é vivo — alimentado pelo uso real do OpenCrew. Para cada ideia,
-avalie: a dor é real e frequente? A solução proposta resolve a causa raiz?*
-
-*✅ Backlog concluído: 2026-08-04 — 10 de 10 ideias implementadas (88 testes, 0 regressões).*
+## Dividir o `runner.pipeline.md`
+- **O que já existe:** 829 linhas (~11k tokens) lidas em todo run; overhead fixo de
+  25–35k tokens contra os "~5K" anunciados no tier Express.
+- **Alocação:** → Fase 4 — núcleo de ~250 linhas + arquivos carregados sob demanda
+  (dashboard, seleção de agentes, reflexão); carregar os agentes uma vez só (T-M11).
+- **Custo de adiar:** cada run paga o custo; a divisão fica mais cara à medida que a
+  Fase 3 acrescenta regras ao runner.
+- **Aprovação:** não.

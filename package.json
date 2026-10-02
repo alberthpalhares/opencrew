@@ -19,8 +19,9 @@
   ],
   "scripts": {
     "start": "node bin/opencrew.js",
-    "test": "node --test tests/cli.test.js tests/docs.test.js tests/fsx.test.js tests/ides.test.js tests/init.test.js tests/paths.test.js tests/ui.test.js tests/update.test.js",
-    "lint": "eslint src/ tests/ scripts/",
+    "test": "node scripts/verify.js test",
+    "lint": "node scripts/verify.js lint",
+    "verify": "node scripts/verify.js",
     "version": "node scripts/stamp-version.js && git add templates/_opencrew/.opencrew-version"
   },
   "keywords": [

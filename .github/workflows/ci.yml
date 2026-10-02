@@ -25,16 +25,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci || npm install --no-audit --no-fund
+        run: npm ci
 
-      - name: Run tests
-        run: npm test
-
-      - name: Lint
-        run: npm run lint
+      # Single verification gate (AGENTS.md rule 7): lint, tests, version-sync, size alert.
+      - name: Verify
+        run: npm run verify
 
       - name: Security audit
         run: npm audit --audit-level=high
-
-      - name: Verify .opencrew-version matches package.json
-        run: node scripts/check-version-sync.js

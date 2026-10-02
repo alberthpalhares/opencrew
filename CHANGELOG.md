@@ -3,6 +3,32 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Auditoria geral da v1.4.1 com roadmap por fases: `docs/auditoria/2026-10-02-auditoria-geral.md`.
+- Regras de desenvolvimento em `AGENTS.md` (project-standards T3, tabela Regra → Trava);
+  `CLAUDE.md` da raiz vira apontador versionado.
+- Porta de verificação única `npm run verify` (`scripts/verify.js`): lint (agora inclui
+  `bin/`), testes (descobertos automaticamente em `tests/`), version-sync e alerta de
+  tamanho (`scripts/check-size.js`). CI e publish chamam a mesma porta.
+- Travas novas: `tests/package.test.js` (conteúdo do tarball × README),
+  `tests/template-refs.test.js` (caminhos citados nos prompts existem),
+  `tests/verify.test.js` e `tests/check-size.test.js` (provetas).
+- `GLOSSARIO.md`; `IDEIAS.md` reformatado com triagem e `Alocação: →`.
+
+### Changed
+- Dogfood do mantenedor sai da raiz e vai para `sandbox/` (fora do git).
+- `publish.yml` confere a tag contra a versão do `package.json` e roda `npm run verify`;
+  CI e publish usam só `npm ci` (sem fallback que esconde drift do lockfile).
+
+### Docs
+- README: o dashboard não é instalado pelo `init`; `update` não atualiza as pontes de IDE
+  (use `init --repair-bridges`); migração do `AGENTS.md` legado perde instruções extras;
+  flags `upgrade`, `--ide`, `--all`/`-y`, `--repair-bridges` documentadas; contagens
+  corrigidas (22 guias, 13 prompts); Windsurf removido da lista; promessa "30-70% de
+  economia" sem base removida.
+
 ## [1.4.1] — 2026-08-04
 
 ### Fixed
@@ -24,6 +50,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
     em checkpoints, gate de validação.
   - `AGENTS.md` — step 7b na seção Loading the Pipeline Runner.
   - 3 novos testes de contrato em `docs.test.js`.
+
+> Itens desta versão que ficaram de fora da entrada original (acrescentados na auditoria
+> de 2026-10-02):
+- **Pontes `.agents/`** para Antigravity, Gemini CLI e Qwen Code
+  (`.agents/skills/opencrew/SKILL.md`, `.agents/workflows/opencrew.md`).
+- **`init --repair-bridges`**: regrava as pontes de IDE num workspace existente.
+- **`update` migra `AGENTS.md` legado** (pré-1.3, sistema completo) para a ponte fina.
+- **Fix Antigravity**: frontmatter no workflow para registrar `/opencrew`.
+- ⚠️ **Regressão**: o `CLAUDE.md` gerado passou a conter a seção "STATUS.md (gestão de
+  sessão)" do fluxo pessoal do mantenedor, e `templates/gitignore` ganhou `STATUS.md`.
+  Correção prevista na 1.4.2 (F1-01).
 
 ## [1.3.3] — 2026-08-03
 

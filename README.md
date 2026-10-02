@@ -34,7 +34,7 @@ dentro da sua IDE.**
   sem abrir editor nenhum.
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
-  ajusta com um clique. Economia de 30-70% de tokens quando agentes são pulados.
+  ajusta com um clique. Agentes pulados não gastam tokens naquele run.
 
 ---
 
@@ -126,12 +126,12 @@ enxuto — todos apontam para a mesma fonte.
 |---|---|
 | `AGENTS.md` (ponte) + `.claude/skills/opencrew/SKILL.md` + `CLAUDE.md` | Claude Code |
 | `AGENTS.md` (ponte) + `.agents/skills/opencrew/SKILL.md` | OpenAI Codex, Codex CLI |
-| `AGENTS.md` (ponte) + `.cursor/rules/opencrew.mdc` | Cursor, Windsurf |
+| `AGENTS.md` (ponte) + `.cursor/rules/opencrew.mdc` | Cursor |
 | `AGENTS.md` (ponte) + `.github/copilot-instructions.md` | VS Code + GitHub Copilot |
 | `AGENTS.md` (ponte) + `.opencode/commands/opencrew.md` | OpenCode |
 | `AGENTS.md` (ponte) + `.agent/rules/opencrew.md` + `.agent/workflows/opencrew.md` + `.agents/skills/opencrew/SKILL.md` + `.agents/workflows/opencrew.md` | Google Antigravity |
-| `GEMINI.md` (ponte) | Gemini CLI |
-| `QWEN.md` (ponte) | Qwen Code |
+| `GEMINI.md` (ponte) + `.agents/skills/opencrew/SKILL.md` | Gemini CLI |
+| `QWEN.md` (ponte) + `.agents/skills/opencrew/SKILL.md` | Qwen Code |
 | `AGENTS.md` (ponte) + `.trae/rules/opencrew.md` | Trae |
 
 > ⚠️ **Importante:** `CLAUDE.md`, `GEMINI.md` e os demais arquivos de IDE são
@@ -159,8 +159,8 @@ meu-projeto/
 │   │   ├── runner.pipeline.md    ← executor de pipeline
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
-│   │   ├── best-practices/       ← 23 guias de melhores práticas
-│   │   └── prompts/              ← 12 prompts de fase (discovery, design, build, etc.)
+│   │   ├── best-practices/       ← 22 guias de melhores práticas + _catalog.yaml
+│   │   └── prompts/              ← 13 prompts de fase (discovery, design, build, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
 │   │   ├── copywriter.agent.md
@@ -185,10 +185,11 @@ meu-projeto/
 │   ├── instagram-publisher/      ← publicação no Instagram
 │   ├── resend/                   ← envio de emails
 │   └── ...
-│
-└── dashboard/
-    └── index.html                ← dashboard visual (opcional, offline)
 ```
+
+> O dashboard visual (`dashboard/index.html`) **não é instalado** pelo `init` — ele vive
+> só no repositório do OpenCrew e ainda é experimental (decisão de publicar ou remover:
+> Fase 4 da auditoria em `docs/auditoria/`).
 
 ---
 
@@ -198,18 +199,29 @@ meu-projeto/
 npx @aksp/opencrew update
 ```
 
-O `update` **nunca destrói seus dados**. Ele atualiza apenas:
+O `update` não toca nas suas crews nem na sua memória. Ele atualiza apenas:
 
 | O que é atualizado | O que NUNCA é tocado |
 |---|---|
-| `_opencrew/core/` (framework) | `crews/` (suas crews) |
-| Skills do catálogo | `_opencrew/_memory/` (perfil, preferências) |
+| `_opencrew/core/` (framework — sobrescrito por inteiro) | `crews/` (suas crews) |
+| Skills do catálogo (sobrescritas — edições locais se perdem) | `_opencrew/_memory/` (perfil, preferências) |
 | `_opencrew/core/system.md` | `.env` (suas chaves) |
-| Bloco `<!-- opencrew -->` nos bridges | Arquivos de IDE (fora do bloco) |
+| Bloco `<!-- opencrew -->` no `AGENTS.md` | Pontes das IDEs (`CLAUDE.md`, `.cursor/`, `.agents/`…) |
+
+As **pontes das IDEs não são atualizadas** pelo `update`. Para regravá-las com a versão
+atual, use:
+
+```bash
+npx @aksp/opencrew init --repair-bridges --ide=claude-code
+```
+
+(troque `claude-code` pelas IDEs que você usa, separadas por vírgula; sem `--ide`, o
+comando grava as pontes de **todas** as IDEs suportadas).
 
 Se você está migrando de uma versão anterior a v1.3, o `update` detecta
 AGENTS.md legados (sistema completo de 150 linhas) e os substitui pela ponte
-fina automaticamente, sem perder suas instruções.
+fina. ⚠️ Até a v1.4.1, qualquer instrução sua adicionada a esse `AGENTS.md` legado é
+perdida na substituição — faça uma cópia antes.
 
 Para verificar se há atualização disponível sem aplicar:
 
@@ -246,6 +258,10 @@ npx @aksp/opencrew update --check
 | `npx @aksp/opencrew init` | Instala o OpenCrew na pasta atual |
 | `npx @aksp/opencrew update` | Atualiza o framework |
 | `npx @aksp/opencrew update --check` | Verifica se há update disponível |
+| `npx @aksp/opencrew upgrade` | Atalho para `update` |
+| `npx @aksp/opencrew init --ide=claude-code,cursor` | Instala só as pontes das IDEs indicadas |
+| `npx @aksp/opencrew init --all` (ou `-y`) | Instala as pontes de todas as IDEs |
+| `npx @aksp/opencrew init --repair-bridges` | Regrava as pontes de IDE num workspace existente |
 | `npx @aksp/opencrew version` | Mostra a versão instalada |
 | `npx @aksp/opencrew help` | Mostra ajuda dos comandos CLI |
 

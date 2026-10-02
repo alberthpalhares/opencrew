@@ -12,7 +12,12 @@ dashboard/test-results/
 .env.*
 !.env.example
 
-# Maintainer's LIVE workspace (this repo IS the package; the payload lives in templates/)
+# Maintainer's dogfood workspace — run `opencrew init` inside sandbox/, never at the root.
+# Root AGENTS.md / CLAUDE.md are the DEVELOPMENT rules (versioned); the runtime payload
+# lives in templates/.
+/sandbox/
+
+# Legacy root-install leftovers + local IDE config (kept out of git)
 /_opencrew/
 /crews/
 /skills/
@@ -22,8 +27,6 @@ dashboard/test-results/
 /.opencode/
 /.cursor/
 /.trae/
-/AGENTS.md
-/CLAUDE.md
 /GEMINI.md
 /QWEN.md
 
