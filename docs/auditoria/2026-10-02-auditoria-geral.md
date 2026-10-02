@@ -166,6 +166,20 @@ copiada no design; timeouts do Sherlock 2×.
 Cada fase abre com o **portão de entrada** (varrer `Alocação: → Fase N` neste relatório e no
 `IDEIAS.md`) e fecha com a **auditoria de fim de fase** (`governance.md` §7).
 
+> **Emenda (2026-10-02, depois da F1):** o diagnóstico de **uso real**
+> (`docs/jornada/2026-10-02-uso-real.md`) mudou a ordem. As trilhas de experiência "U" vêm
+> primeiro; os itens técnicos das fases F2–F4 entram na trilha que os usa. A tabela acima vale
+> como inventário; a ordem de execução é esta:
+>
+> | Trilha | Versão | Absorve da tabela acima |
+> |---|---|---|
+> | **U1 Revisor com dentes** | 1.5.0 | — (achado novo do uso real); T-M5 parcial (memória de proibições lida pelo verificador) |
+> | **U2 Crew que conhece o projeto + U6 Convivência** | 1.6.0 | F2 inteira (C-01, C-08..13, T-A7, T-M9…), C-14, C-17, T-M5, T-M6, T-M10 |
+> | **U3 Entrega no projeto** | 1.7.0 | T-M21 (export), T-B3/D-06 (dashboard: decidir), instagram 4:5 |
+> | **U4 Modo equipe + histórico confiável** | 1.8.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 |
+> | **U5 Rápido, barato e em PT-BR** | contínuo | T-A1, T-A8, T-A9, T-A12, T-M11, T-B13, runner dividido, C-18/C-19 (infra) |
+> | **U0 Processo** | sempre | jornada de referência (`docs/jornada/roteiro-de-teste.md`) antes de cada release |
+
 ## 4. Estado do IDEIAS.md
 
 As 10 ideias registradas estão marcadas como feitas, mas a #7 (instalação não-destrutiva)
