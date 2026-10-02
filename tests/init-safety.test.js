@@ -8,7 +8,7 @@ import { exists, writeBridgeFile } from '../src/lib/fsx.js';
 import { packageJsonPath } from '../src/lib/paths.js';
 import { mkTmp, withCwd, exitPromptError } from './_helpers.js';
 
-const BLOCK = /# opencrew:start\n[\s\S]*?\n# opencrew:end/g;
+const BLOCK = /# opencrew:start\r?\n[\s\S]*?\r?\n# opencrew:end/g;
 
 test('F1-05a: an existing .env.example keeps its content on top, opencrew block appended', async () => {
   const dir = await mkTmp('safe');
@@ -52,7 +52,7 @@ test('F1-06a: an existing .gitignore keeps its content; the block protects secre
   assert.ok(after.startsWith(original), 'user lines stay first, byte for byte');
   const [block] = after.match(BLOCK);
   for (const entry of ['.env', '_opencrew/_browser_profile/', '.claude/settings.local.json', 'crews/*/state.json', 'crews/*/_investigations/']) {
-    assert.ok(block.split('\n').includes(entry), `missing ${entry} in the opencrew block`);
+    assert.ok(block.split(/\r?\n/).includes(entry), `missing ${entry} in the opencrew block`);
   }
 });
 
@@ -74,8 +74,8 @@ test('F1-06c: an orphan start marker (end deleted by hand) never makes user line
   await writeBridgeFile(file, '.env', { comment: 'hash', position: 'append' });
   await writeBridgeFile(file, '.env\nnew/', { comment: 'hash', position: 'append' }); // second run
   const after = await fs.readFile(file, 'utf8');
-  for (const line of original.trimEnd().split('\n')) {
-    assert.ok(after.split('\n').includes(line), `user line lost: ${line}`);
+  for (const line of original.trimEnd().split(/\r?\n/)) {
+    assert.ok(after.split(/\r?\n/).includes(line), `user line lost: ${line}`);
   }
 });
 
