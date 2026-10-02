@@ -96,3 +96,10 @@
 - **Alocação:** → U3 — junto da entrega (assets conferidos antes do passo de design).
 - **Custo de adiar:** peças visuais sem logo, falha silenciosa.
 - **Aprovação:** não.
+
+## `.opencrew-backup/` no `.gitignore` do usuário (e `update` renovar o bloco do `.gitignore`)
+- **O que já existe:** a 1.6.0 cria `.opencrew-backup/<data>/` nas atualizações; o bloco do
+  `.gitignore` só é escrito no `init` (o `update` não o renova).
+- **Alocação:** → U3 — junto da entrega no projeto.
+- **Custo de adiar:** em projetos com git, as cópias de segurança aparecem como arquivos novos.
+- **Aprovação:** não.
