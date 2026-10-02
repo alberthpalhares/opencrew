@@ -8,7 +8,13 @@ import { exists } from './fsx.js';
 
 export const MANIFEST = path.join('_opencrew', 'manifest.json');
 
-const sha = (buf) => createHash('sha256').update(buf).digest('hex');
+// Text files are hashed with LF line endings: an editor, git or a sync tool switching CRLF/LF
+// must not make a file look "edited by the user". Binary files (with NUL bytes) are hashed as is.
+const normalize = (buf) => {
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+  return b.includes(0) ? b : Buffer.from(b.toString('utf8').replace(/\r\n/g, '\n'));
+};
+const sha = (buf) => createHash('sha256').update(normalize(buf)).digest('hex');
 const rel = (target, abs) => path.relative(target, abs).split(path.sep).join('/');
 
 /** @returns {Promise<{files: Record<string,string>} | null>} null = no (or unreadable) manifest */

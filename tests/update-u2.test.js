@@ -135,3 +135,22 @@ test('U2-09b: a legacy opensquad bridge triggers a warning and is not deleted', 
   assert.match(out, /\.gemini\/skills\/opensquad\/SKILL\.md/);
   assert.equal(await exists(legado), true);
 });
+
+test('U2-06d: a file that differs only in line endings (CRLF) is not treated as edited', async () => {
+  const dir = await workspace();
+  await fs.rm(path.join(dir, '_opencrew', 'manifest.json'));
+  const skill = path.join(dir, 'skills', 'resend', 'SKILL.md');
+  await fs.writeFile(skill, (await fs.readFile(skill, 'utf8')).replace(/\r?\n/g, '\r\n'));
+  const { out } = await rodarUpdate(dir);
+  assert.deepEqual(await backups(dir), []);
+  assert.doesNotMatch(out, /que você tinha editado/);
+});
+
+test('U2-06e: without a manifest, the summary says "diferentes do pacote", not "você editou"', async () => {
+  const dir = await workspace();
+  await fs.rm(path.join(dir, '_opencrew', 'manifest.json'));
+  await fs.writeFile(path.join(dir, 'skills', 'resend', 'SKILL.md'), 'versão diferente');
+  const { out } = await rodarUpdate(dir);
+  assert.match(out, /diferentes do pacote novo/);
+  assert.doesNotMatch(out, /que você tinha editado/);
+});

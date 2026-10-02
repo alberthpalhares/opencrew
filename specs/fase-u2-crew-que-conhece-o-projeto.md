@@ -198,4 +198,8 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
   o problema real do logo está **no manual de marca do projeto** (documento lista nomes de
   arquivo que não existem na pasta), fora dos arquivos da crew — não coberto aqui
   (→ IDEIAS: conferir arquivos citados dentro das fontes).
+- 2026-10-02 — Simulação 1.5.0 → 1.6.0 revelou falso "editado" por diferença CRLF/LF: o hash de
+  arquivos de texto passou a ignorar a quebra de linha (U2-06d) e, sem manifesto, o resumo diz
+  "diferentes do pacote novo" em vez de "você editou" (U2-06e). Resultado: 8 cópias (os arquivos
+  que mudaram na 1.6.0 + o editado), não 72.
 - 2026-10-02 — Mensagens novas do `update` em PT-BR; o resto do CLI continua em inglês até a U5.

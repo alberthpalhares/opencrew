@@ -85,10 +85,11 @@ export async function update(opts = {}) {
 
   if (ctx.copied.length) {
     const rel = path.relative(target, ctx.backupDir).split(path.sep).join('/');
-    warn(`${ctx.copied.length} arquivo(s) que você tinha editado foram copiados para ${rel}/ antes de serem substituídos:`);
+    const what = manifest ? 'que você tinha editado' : 'diferentes do pacote novo';
+    warn(`${ctx.copied.length} arquivo(s) ${what} foram copiados para ${rel}/ antes de serem substituídos:`);
     for (const f of ctx.copied.slice(0, 15)) log(`    ${f}`);
     if (ctx.copied.length > 15) log(`    … e mais ${ctx.copied.length - 15}`);
-    if (!manifest) info('Primeira atualização com proteção: copiamos tudo o que diferia do pacote novo. Daqui em diante, só o que você editar.');
+    if (!manifest) info('Primeira atualização com proteção: sem registro anterior, guardamos tudo o que diferia. Daqui em diante, só o que você editar.');
   }
 
   await writeManifest(target, version, ctx.files);
