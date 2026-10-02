@@ -2,26 +2,30 @@ import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
 import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
-import { ideById, allIdeIds } from '../lib/ides.js';
-import { pickIdes } from '../lib/prompts.js';
+import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
+import { pickIdes as promptIdes } from '../lib/prompts.js';
+import { UsageError } from '../lib/errors.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
-export async function init(opts = {}) {
+const STAMP = path.join('_opencrew', '.opencrew-version');
+// .gitignore / .env.example belong to the user: opencrew only owns a marked block at the end.
+const SHARED_BLOCK = { comment: 'hash', position: 'append' };
+
+/**
+ * @param {object} opts  parsed CLI options
+ * @param {{ pickIdes?: () => Promise<string[]> }} deps  injectable for tests
+ */
+export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   const target = process.cwd();
   const pkg = await readJson(packageJsonPath);
   const version = pkg.version;
-  const repairBridges = opts['repair-bridges'];
-
-  const alreadyInstalled = await exists(path.join(target, '_opencrew', 'core'));
+  const state = await workspaceState(target);
 
   // --repair-bridges mode: regenerate IDE bridge files in an existing workspace.
-  if (repairBridges && alreadyInstalled) {
+  if (opts['repair-bridges'] && state !== 'none') {
+    const ids = await resolveIdes(opts, async () => allIdeIds());
     log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
     log(c.dim(`Target: ${target}\n`));
-
-    let ids = normalizeIdes(opts.ide);
-    if (opts.all) ids = allIdeIds();
-    if (opts.yes || !ids) ids = allIdeIds();
     await writeBridges(target, ids, { overwrite: true });
 
     log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
@@ -29,7 +33,7 @@ export async function init(opts = {}) {
     return;
   }
 
-  if (alreadyInstalled) {
+  if (state === 'complete') {
     warn('An opencrew workspace already exists here.');
     info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew update')}`);
     info(`To repair IDE bridges, use: ${c.cyan('npx @aksp/opencrew init --repair-bridges')}`);
@@ -37,28 +41,18 @@ export async function init(opts = {}) {
     return;
   }
 
+  // Every choice is resolved BEFORE the first write: a bad --ide or Ctrl+C on the
+  // prompt leaves the folder exactly as it was.
+  const ids = await resolveIdes(opts, pickIdes);
+
   log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — scaffolding a crew workspace`);
   log(c.dim(`Target: ${target}\n`));
+  if (state === 'partial') info('A previous install was interrupted — resuming (existing files are kept).');
 
   // 1. Copy the framework payload (never clobber user work).
   step('Installing framework files');
-  const copied = { count: 0 };
-  await copyDir(path.join(templatesDir, '_opencrew'), path.join(target, '_opencrew'), {
-    overwrite: false,
-    // Never ship stray logs or browser sessions; keep the empty dir via .gitkeep only.
-    skip: (rel) =>
-      (rel.startsWith('logs/') && rel !== 'logs/.gitkeep') ||
-      rel.startsWith('_browser_profile/'),
-    onCopy: () => (copied.count += 1),
-  });
-  await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), {
-    overwrite: false,
-    onCopy: () => (copied.count += 1),
-  });
-  await copyDir(path.join(templatesDir, 'crews'), path.join(target, 'crews'), {
-    overwrite: false,
-  });
-  ok(`Framework files ready (${copied.count} written, existing files preserved)`);
+  const copied = await installPayload(target);
+  ok(`Framework files ready (${copied} written, existing files preserved)`);
 
   // 2. System doc + root configs.
   step('Writing configuration');
@@ -68,13 +62,7 @@ export async function init(opts = {}) {
   await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), await tpl('AGENTS.md'));
   ok('_opencrew/core/system.md (full system definition)');
 
-  const agentsBridge = '# opencrew\n\n'
-    + 'The opencrew system definition lives at `_opencrew/core/system.md`.\n'
-    + 'Read that file and adopt the opencrew system role — follow all initialization,\n'
-    + 'command routing, and workflow instructions defined there.\n\n'
-    + 'Type `/opencrew` to open the main menu.\n';
-
-  const agentsResult = await writeBridgeFile(path.join(target, 'AGENTS.md'), agentsBridge);
+  const agentsResult = await writeBridgeFile(path.join(target, 'AGENTS.md'), AGENTS_BRIDGE);
   if (agentsResult.merged) info('AGENTS.md (merged — existing content preserved)');
   else ok('AGENTS.md (bridge to system.md)');
 
@@ -83,18 +71,13 @@ export async function init(opts = {}) {
   });
   info(mcpWritten ? '.mcp.json' : '.mcp.json (kept existing)');
 
-  await writeFileSafe(path.join(target, '.env.example'), await tpl('.env.example'));
-  const giWritten = await writeFileSafe(path.join(target, '.gitignore'), await tpl('gitignore'), {
-    overwrite: false,
-  });
-  info(giWritten ? '.gitignore' : '.gitignore (kept existing)');
+  for (const [file, template] of [['.env.example', '.env.example'], ['.gitignore', 'gitignore']]) {
+    const res = await writeBridgeFile(path.join(target, file), await tpl(template), SHARED_BLOCK);
+    info(res.merged ? `${file} (opencrew block added at the end — your lines kept)` : file);
+  }
 
   // 3. IDE bridge files.
   step('Configuring AI IDEs');
-  let ids = normalizeIdes(opts.ide);
-  if (opts.all) ids = allIdeIds();
-  if (opts.yes) ids = allIdeIds();
-  if (!ids) ids = await pickIdes();
   await writeBridges(target, ids, { overwrite: false });
 
   if (ids.includes('claude-code')) {
@@ -102,8 +85,8 @@ export async function init(opts = {}) {
     warn(`native Playwright plugin/extension to avoid the two conflicting.`);
   }
 
-  // 4. Version stamp.
-  await fs.writeFile(path.join(target, '_opencrew', '.opencrew-version'), version + '\n');
+  // 4. Version stamp — written LAST: it is what marks the install as complete.
+  await fs.writeFile(path.join(target, STAMP), version + '\n');
 
   // 5. Done.
   log(`\n${c.green(c.bold('Done!'))} opencrew is installed.\n`);
@@ -114,9 +97,55 @@ export async function init(opts = {}) {
 }
 
 /**
+ * Copy the framework payload into `target` without overwriting anything.
+ * Never copies the version stamp: only a finished init writes it.
+ * @returns {Promise<number>} files written
+ */
+export async function installPayload(target) {
+  let count = 0;
+  const onCopy = () => (count += 1);
+  await copyDir(path.join(templatesDir, '_opencrew'), path.join(target, '_opencrew'), {
+    overwrite: false,
+    // Never ship stray logs, browser sessions or the template's own stamp.
+    skip: (rel) =>
+      (rel.startsWith('logs/') && rel !== 'logs/.gitkeep') ||
+      rel.startsWith('_browser_profile/') ||
+      rel === '.opencrew-version',
+    onCopy,
+  });
+  await copyDir(path.join(templatesDir, 'skills'), path.join(target, 'skills'), { overwrite: false, onCopy });
+  await copyDir(path.join(templatesDir, 'crews'), path.join(target, 'crews'), { overwrite: false });
+  return count;
+}
+
+/** 'none' (no core) · 'partial' (core without stamp: interrupted install) · 'complete'. */
+async function workspaceState(target) {
+  if (!(await exists(path.join(target, '_opencrew', 'core')))) return 'none';
+  return (await exists(path.join(target, STAMP))) ? 'complete' : 'partial';
+}
+
+/**
+ * Decide which IDEs to configure. --all / --yes → every IDE; --ide → validated list;
+ * nothing → `fallback()` (the interactive prompt). Throws UsageError if --ide names no
+ * valid IDE.
+ */
+async function resolveIdes(opts, fallback) {
+  if (opts.all || opts.yes) return allIdeIds();
+  const ids = normalizeIdes(opts.ide);
+  if (!ids) return fallback();
+  const invalid = ids.filter((id) => !ideById(id));
+  const valid = ids.filter((id) => ideById(id));
+  if (!valid.length) {
+    throw new UsageError(`Unknown IDE "${invalid.join('", "')}". Valid: ${allIdeIds().join(', ')}`);
+  }
+  for (const id of invalid) warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
+  return valid;
+}
+
+/**
  * Write IDE bridge files to the target directory.
  * @param {string} target — project root
- * @param {string[]} ids — IDE ids to configure
+ * @param {string[]} ids — validated IDE ids to configure
  * @param {{ overwrite: boolean }} opts
  */
 async function writeBridges(target, ids, { overwrite }) {
@@ -124,10 +153,6 @@ async function writeBridges(target, ids, { overwrite }) {
 
   for (const id of ids) {
     const ide = ideById(id);
-    if (!ide) {
-      warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
-      continue;
-    }
     for (const f of ide.files) {
       if (writtenPaths.has(f.path)) {
         info(`${f.path} (shared path — written once)`);
@@ -155,5 +180,6 @@ async function tpl(name) {
 function normalizeIdes(val) {
   if (!val || val === true) return null;
   const list = Array.isArray(val) ? val : String(val).split(',');
-  return list.map((s) => s.trim()).filter(Boolean);
+  const ids = list.map((s) => s.trim()).filter(Boolean);
+  return ids.length ? ids : null;
 }

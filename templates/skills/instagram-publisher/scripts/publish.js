@@ -1,20 +1,32 @@
 #!/usr/bin/env node
 // Instagram Carousel Publisher
-// Usage: node --env-file=.env publish.js --images "slide1.jpg,slide2.jpg" --caption "..." [--dry-run]
+// Usage: node --env-file=.env publish.js --images "a.jpg,b.jpg" --caption-file caption.txt [--dry-run]
+//
+// Safety rules (specs/fase-1-hotfix.md F1-10):
+// - the caption comes from a FILE, never from a shell-interpolated argument;
+// - only .jpg/.jpeg files inside crews/*/output/ can be uploaded (public hosting);
+// - imgBB uploads expire; the Graph API token goes in POST bodies, not URLs.
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { resolve, relative, isAbsolute, sep, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const IMGBB_EXPIRATION_SECONDS = 86_400; // Instagram fetches the images right away; 1 day is plenty.
 
 // ── Argument parsing ──────────────────────────────────────────
 
 export function parseArgs(argv) {
-  const args = { images: [], caption: '', dryRun: false };
+  const args = { images: [], caption: '', captionFile: '', dryRun: false };
   for (let i = 2; i < argv.length; i++) {
     if (argv[i] === '--images') {
-      if (i + 1 < argv.length) args.images = argv[++i].split(',').map(s => s.trim());
+      if (i + 1 < argv.length) args.images = argv[++i].split(',').map(s => s.trim()).filter(Boolean);
+    }
+    else if (argv[i] === '--caption-file') {
+      if (i + 1 < argv.length) args.captionFile = argv[++i];
     }
     else if (argv[i] === '--caption') {
+      // Legacy: prefer --caption-file (a caption in a shell command can execute code).
       if (i + 1 < argv.length) args.caption = argv[++i];
     }
     else if (argv[i] === '--dry-run') args.dryRun = true;
@@ -22,15 +34,32 @@ export function parseArgs(argv) {
   return args;
 }
 
+export async function readCaption(args) {
+  return args.captionFile ? readFile(args.captionFile, 'utf8') : args.caption;
+}
+
+/** Throws unless every path is a .jpg/.jpeg inside <cwd>/crews/<crew>/output/. */
+export function validateImagePaths(images, cwd = process.cwd()) {
+  const crewsDir = resolve(cwd, 'crews');
+  for (const img of images) {
+    const rel = relative(crewsDir, resolve(cwd, img));
+    const parts = rel.split(sep);
+    const inside = rel && !rel.startsWith('..') && !isAbsolute(rel) && parts.length >= 3 && parts[1] === 'output';
+    const jpeg = ['.jpg', '.jpeg'].includes(extname(img).toLowerCase());
+    if (!inside || !jpeg) {
+      throw new Error(`Refusing to upload ${img}: only .jpg/.jpeg files inside crews/*/output/ are allowed.`);
+    }
+  }
+}
+
 // ── Image upload (imgBB) ──────────────────────────────────────
 
 export async function uploadToImgBB(imagePath, apiKey) {
-  const absolutePath = resolve(imagePath);
-  const fileBuffer = readFileSync(absolutePath);
-  const base64Image = fileBuffer.toString('base64');
+  const base64Image = readFileSync(resolve(imagePath)).toString('base64');
   const form = new FormData();
   form.append('key', apiKey);
   form.append('image', base64Image);
+  form.append('expiration', String(IMGBB_EXPIRATION_SECONDS));
   const res = await fetch('https://api.imgbb.com/1/upload', {
     method: 'POST',
     body: form,
@@ -45,15 +74,19 @@ export async function uploadToImgBB(imagePath, apiKey) {
 
 const IG_BASE = 'https://graph.facebook.com/v21.0';
 
+// POST with form-encoded body: keeps the access token out of URLs (and out of server/proxy logs).
+async function igPost(path, params, label) {
+  const res = await fetch(`${IG_BASE}/${path}`, { method: 'POST', body: new URLSearchParams(params) });
+  if (!res.ok) throw new Error(`${label} failed [${res.status}]: ${await res.text()}`);
+  return (await res.json()).id;
+}
+
 export async function createChildContainer(userId, imageUrl, accessToken) {
-  const params = new URLSearchParams({
+  return igPost(`${userId}/media`, {
     image_url: imageUrl,
     is_carousel_item: 'true',
     access_token: accessToken,
-  });
-  const res = await fetch(`${IG_BASE}/${userId}/media?${params}`, { method: 'POST' });
-  if (!res.ok) throw new Error(`createChildContainer failed [${res.status}]: ${await res.text()}`);
-  return (await res.json()).id;
+  }, 'createChildContainer');
 }
 
 export async function getContainerStatus(containerId, accessToken) {
@@ -75,22 +108,16 @@ export async function pollUntilFinished(containerId, accessToken, timeoutMs = 60
 }
 
 export async function createCarouselContainer(userId, childIds, caption, accessToken) {
-  const params = new URLSearchParams({
+  return igPost(`${userId}/media`, {
     media_type: 'CAROUSEL',
     children: childIds.join(','),
     caption,
     access_token: accessToken,
-  });
-  const res = await fetch(`${IG_BASE}/${userId}/media?${params}`, { method: 'POST' });
-  if (!res.ok) throw new Error(`createCarouselContainer failed [${res.status}]: ${await res.text()}`);
-  return (await res.json()).id;
+  }, 'createCarouselContainer');
 }
 
 export async function publishMedia(userId, containerId, accessToken) {
-  const params = new URLSearchParams({ creation_id: containerId, access_token: accessToken });
-  const res = await fetch(`${IG_BASE}/${userId}/media_publish?${params}`, { method: 'POST' });
-  if (!res.ok) throw new Error(`publishMedia failed [${res.status}]: ${await res.text()}`);
-  return (await res.json()).id;
+  return igPost(`${userId}/media_publish`, { creation_id: containerId, access_token: accessToken }, 'publishMedia');
 }
 
 export async function getPermalink(mediaId, accessToken) {
@@ -103,25 +130,29 @@ export async function getPermalink(mediaId, accessToken) {
 
 // ── Main ──────────────────────────────────────────────────────
 
-async function main() {
-  const { images, caption, dryRun } = parseArgs(process.argv);
+export async function main(argv = process.argv, { env = process.env, cwd = process.cwd() } = {}) {
+  const args = parseArgs(argv);
+  const { images, dryRun } = args;
 
   if (!images.length) throw new Error('--images is required (e.g. --images "slide1.jpg,slide2.jpg")');
-  if (!caption) throw new Error('--caption is required');
   if (images.length < 2 || images.length > 10) {
     throw new Error(`Instagram carousels require 2–10 images (got ${images.length})`);
   }
+  validateImagePaths(images, cwd);
+
+  const caption = await readCaption(args);
+  if (!caption) throw new Error('--caption-file is required');
   if (caption.length > 2200) {
     throw new Error(`Caption exceeds Instagram's 2200-character limit (got ${caption.length})`);
   }
 
-  const { INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_USER_ID, IMGBB_API_KEY } = process.env;
+  const { INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_USER_ID, IMGBB_API_KEY } = env;
   if (!INSTAGRAM_ACCESS_TOKEN) throw new Error('INSTAGRAM_ACCESS_TOKEN is not set in environment');
   if (!INSTAGRAM_USER_ID) throw new Error('INSTAGRAM_USER_ID is not set in environment');
   if (!IMGBB_API_KEY) throw new Error('IMGBB_API_KEY is not set in environment. Get one at https://api.imgbb.com/');
 
-  console.log(`📸 Uploading ${images.length} image(s) to imgBB...`);
-  const imageUrls = await Promise.all(images.map(p => uploadToImgBB(p, IMGBB_API_KEY)));
+  console.log(`📸 Uploading ${images.length} image(s) to imgBB (expire in 24h)...`);
+  const imageUrls = await Promise.all(images.map(p => uploadToImgBB(resolve(cwd, p), IMGBB_API_KEY)));
   imageUrls.forEach((url, i) => console.log(`   [${i + 1}] ${url}`));
 
   console.log('\n📦 Creating Instagram media containers...');

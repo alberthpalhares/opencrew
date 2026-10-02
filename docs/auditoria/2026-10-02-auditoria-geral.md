@@ -179,3 +179,32 @@ triagem: decisão sobre o dashboard, `/opencrew resume`, orçamento de custo,
 ## 5. Auditorias de fim de fase
 
 (seções acrescentadas ao fechar cada fase: achado → trava criada)
+
+### Fase 1 — hotfix 1.4.2 (2026-10-02)
+
+Resultado: 15 achados de severidade alta/média resolvidos (C-02..07, C-16, C-24, T-A3..A6,
+T-M2, T-M3, T-B2, T-B12), todos com teste de mesmo ID da spec. Porta: 152 testes, 0 falhas,
+0 `todo`, `KNOWN_BROKEN` vazio.
+
+| Checklist (governance.md §7) | Constatação | Trava |
+|---|---|---|
+| 1. Regra sem trava | Regras 1, 9, 10 e 11 do `AGENTS.md` seguem como revisão humana (declarado) | — |
+| 2. Trava de um lado só | "Payload sem mantenedor" olhava só as pontes e o gitignore | ampliada: `template-refs.test.js` varre todo o `templates/` (proveta: arquivo plantado → exit 1) |
+| 3. Verde pelo motivo errado | F1-02a passaria mesmo com `update` executado (reescrita idêntica) | o teste grava stamp antigo antes do snapshot |
+| 3. Verde pelo motivo errado | F1-01d e F1-13a já passavam antes do conserto | aceitos como guarda de regressão (comportamento já correto) |
+| 5. Guarda menor que a promessa | Marcador órfão: a 2ª escrita apagava linhas do usuário | regex do bloco mais interno + F1-06c com duas escritas |
+| 5. Guarda menor que a promessa | `template-refs` não varre os `.js`/`.py` das skills | → F3 (junto com a validação de esquema) |
+| 7. Doc que o código não sustenta | README dizia "até a v1.4.1 se perde" / sem `--dry-run` / sem bloco no `.gitignore` | README corrigido no mesmo commit |
+| 8. Travas com proveta | `verify` (proveta em `verify.test.js`), conteúdo do mantenedor (plantado), `KNOWN_BROKEN` (teste de lista obsoleta) | — |
+| 9. Aprendizados | Pipe do PowerShell mascarou exit code **2 vezes** na sessão | padrão anotado no STATUS; a porta não usa pipe (`spawnSync` direto) |
+
+**Achados novos** (entram na tabela §2 na próxima revisão):
+- T-B14 (baixa) — `publish.js` e outros scripts `.js` das skills usam ESM; num projeto do
+  usuário sem `"type": "module"` só rodam em Node ≥ 22.12 (detecção de sintaxe). → F4,
+  junto com `engines` (C-18).
+- T-B15 (baixa) — crews criadas antes da 1.4.2 mantêm "publicar antes do Review" até serem
+  recriadas. → F3 (`/opencrew repair` reordena passos irreversíveis).
+
+**Não coberto pela porta e não conferido nesta sessão:** a execução real de uma crew por uma IA
+seguindo F1-08/F1-09 e o fluxo de confirmação do Instagram (F1-10e). Conferência manual no
+`sandbox/` → dono do repositório, antes ou logo depois do release.

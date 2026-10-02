@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // opencrew — CLI entry point
-import { run } from '../src/cli.js';
+import { run, reportError } from '../src/cli.js';
 
-run(process.argv.slice(2)).catch((err) => {
-  console.error(err?.stack || String(err));
-  process.exit(1);
+// run() reports its own errors; this only catches a failure inside the reporter itself.
+run(process.argv.slice(2)).catch((e) => {
+  process.exitCode = reportError(e);
 });

@@ -1,6 +1,8 @@
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { readJson } from './lib/fsx.js';
 import { packageJsonPath } from './lib/paths.js';
 import { allIdeIds } from './lib/ides.js';
+import { UsageError, isPromptCancel } from './lib/errors.js';
 import { init } from './commands/init.js';
 import { update } from './commands/update.js';
 import { c, log, err, warn, info } from './lib/ui.js';
@@ -31,27 +33,56 @@ function lt(a, b) {
   return false; // equal
 }
 
-function parseArgs(argv) {
-  const opts = { _: [] };
-  for (const a of argv) {
-    if (a.startsWith('--')) {
-      const eq = a.indexOf('=');
-      const k = eq > -1 ? a.slice(2, eq) : a.slice(2);
-      const v = eq > -1 ? a.slice(eq + 1) : true;
-      opts[k] = v;
-    } else if (a.startsWith('-') && a.length === 2) {
-      // Short flags: -y → yes, -v → version, -h → help
-      const short = a[1];
-      opts[short] = true;
-    } else {
-      opts._.push(a);
-    }
+const OPTION_SPEC = {
+  help: { type: 'boolean', short: 'h' },
+  version: { type: 'boolean', short: 'v' },
+  ide: { type: 'string' },
+  all: { type: 'boolean' },
+  yes: { type: 'boolean', short: 'y' },
+  'repair-bridges': { type: 'boolean' },
+  check: { type: 'boolean' },
+  'dry-run': { type: 'boolean' },
+};
+
+const GLOBAL_OPTIONS = ['help', 'version'];
+const COMMAND_OPTIONS = {
+  init: ['ide', 'all', 'yes', 'repair-bridges'],
+  update: ['check', 'dry-run'],
+  upgrade: ['check', 'dry-run'],
+};
+
+/**
+ * Strict argument parsing: unknown options, options of another command and stray
+ * positionals are UsageErrors — raised before any command can write a file.
+ */
+export function parseArgs(argv) {
+  let parsed;
+  try {
+    parsed = nodeParseArgs({ args: argv, options: OPTION_SPEC, allowPositionals: true, strict: true, tokens: true });
+  } catch (e) {
+    const unknown = e.code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION' && e.message.match(/'([^']+)'/);
+    const cmd = argv.find((a) => !a.startsWith('-')) ?? 'init';
+    throw new UsageError(unknown
+      ? `Unknown option '${unknown[1]}' for "${cmd}".`
+      : e.message.split('. ')[0].replace(/\.$/, '') + '.');
   }
-  // Normalize short flags to their long-form equivalents.
-  if (opts.y) opts.yes = true;
-  if (opts.v) opts.version = true;
-  if (opts.h) opts.help = true;
-  return opts;
+  const [cmd, ...extra] = parsed.positionals;
+  const { values } = parsed;
+  const command = cmd ?? (values.version ? 'version' : values.help ? 'help' : 'init');
+
+  const allowed = new Set([...GLOBAL_OPTIONS, ...(COMMAND_OPTIONS[command] ?? [])]);
+  const foreign = parsed.tokens.find((t) => t.kind === 'option' && !allowed.has(t.name));
+  if (foreign) throw new UsageError(`Unknown option '${foreign.rawName}' for "${command}".`);
+
+  if (extra.length) {
+    throw new UsageError(command === 'init'
+      ? 'init does not take a directory — cd into the project folder first.'
+      : `Unexpected argument "${extra[0]}" for "${command}".`);
+  }
+
+  const opts = { ...values, _: parsed.positionals };
+  if (opts['dry-run']) opts.check = true;
+  return { command, opts };
 }
 
 function help(version) {
@@ -65,8 +96,8 @@ ${c.bold('Commands')}
   init            Scaffold an opencrew workspace in the current folder
   update          Refresh the framework (keeps your crews, memory and .env)
   upgrade         Alias for update
-  help            Show this help
-  version         Print the version
+  help            Show this help (also: <command> --help, -h)
+  version         Print the version (also: --version, -v)
 
 ${c.bold('Options for init')}
   --ide=a,b       Preselect IDEs (skip the prompt). Valid: ${allIdeIds().join(', ')}
@@ -75,7 +106,8 @@ ${c.bold('Options for init')}
   --repair-bridges  Regenerate IDE bridge files in an existing workspace
 
 ${c.bold('Options for update')}
-  --check         Dry-run: report whether an update is available without making changes
+  --check         Report whether an update is available without making changes
+  --dry-run       Same as --check
 
 ${c.bold('Examples')}
   npx @aksp/opencrew init
@@ -87,8 +119,26 @@ ${c.bold('Examples')}
 `);
 }
 
-export async function run(argv) {
-  const opts = parseArgs(argv);
+/** Turn any error into one readable line and an exit code. Stack only with OPENCREW_DEBUG=1. */
+export function reportError(e) {
+  if (isPromptCancel(e)) {
+    warn('Cancelled — nothing was written.');
+    return 130;
+  }
+  err(e?.message ?? String(e));
+  if (e instanceof UsageError) info(`Run ${c.cyan('npx @aksp/opencrew help')} for usage.`);
+  else if (process.env.OPENCREW_DEBUG) console.error(e?.stack);
+  return 1;
+}
+
+export async function run(argv, { commands = { init, update } } = {}) {
+  let command, opts;
+  try {
+    ({ command, opts } = parseArgs(argv));
+  } catch (e) {
+    process.exitCode = reportError(e);
+    return;
+  }
 
   let version = 'unknown';
   let engines = {};
@@ -115,23 +165,23 @@ export async function run(argv) {
     }
   }
 
-  const cmd = opts._[0] || (opts.version ? 'version' : opts.help ? 'help' : 'init');
+  // --version / --help never run a command (they may follow any command).
+  if (opts.version || command === 'version') return log(version);
+  if (opts.help || command === 'help') return help(version);
 
-  switch (cmd) {
-    case 'init':
-      return init(opts);
-    case 'update':
-    case 'upgrade':
-      return update(opts);
-    case 'version':
-    case '--version':
-      return log(version);
-    case 'help':
-    case '--help':
-      return help(version);
-    default:
-      err(`Unknown command: ${cmd}`);
-      help(version);
-      process.exitCode = 1;
+  try {
+    switch (command) {
+      case 'init':
+        return await commands.init(opts);
+      case 'update':
+      case 'upgrade':
+        return await commands.update(opts);
+      default:
+        err(`Unknown command: ${command}`);
+        help(version);
+        process.exitCode = 1;
+    }
+  } catch (e) {
+    process.exitCode = reportError(e);
   }
 }

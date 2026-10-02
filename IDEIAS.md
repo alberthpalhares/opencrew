@@ -8,8 +8,8 @@
 > As 10 ideias do backlog original (Sherlock multi-fonte, criação por papéis, skills
 > dinâmicas, tiers, aprendizado contínuo, templates de crew, exportação, registro de
 > agentes, instalação não-destrutiva, seleção de agentes) saíram: estão no CHANGELOG
-> (v1.3.0–v1.4.0). A #7 (instalação não-destrutiva) ficou **parcial** — o restante virou
-> os achados C-04/C-05 da auditoria (→ F1).
+> (v1.3.0–v1.4.0). A #7 (instalação não-destrutiva) foi concluída na v1.4.2 (bloco marcado
+> no `.gitignore` e no `.env.example`).
 
 ---
 

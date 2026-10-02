@@ -525,10 +525,14 @@ ERRADO: 5 noticias diferentes = NAO sao angulos, sao pautas distintas
 
 #### Pipeline Patterns
 
-- **Standard (fixed source):** Research → Angle Selection checkpoint → Creation → Content Approval checkpoint → [Execution Steps] → Review → Final Approval checkpoint
-- **News-based (multiple stories):** Research → News Selection checkpoint → Creator[generate-angles] → Angle Selection checkpoint → Creator[create+optimize] → Content Approval checkpoint → [Execution Steps] → Review → Final Approval checkpoint
+- **Standard (fixed source):** Research → Angle Selection checkpoint → Creation → Content Approval checkpoint → [Render Steps] → Review → Final Approval checkpoint → [Publish/Send Steps]
+- **News-based (multiple stories):** Research → News Selection checkpoint → Creator[generate-angles] → Angle Selection checkpoint → Creator[create+optimize] → Content Approval checkpoint → [Render Steps] → Review → Final Approval checkpoint → [Publish/Send Steps]
 
-**Content Approval checkpoint is MANDATORY** whenever the pipeline includes any execution step after content creation (image generation, visual rendering, publishing, distribution, etc.). Never place an execution step immediately after a creation step without a checkpoint in between.
+**Render Steps** (image generation, visual rendering, slides) are reversible and run BEFORE the Review, so the reviewer sees the final visuals.
+
+**Publish/Send Steps** (social media posting, email sending, any distribution outside the project) are IRREVERSIBLE: they ALWAYS come last — after the Review and immediately after the Final Approval checkpoint — and their step files declare `side_effects: irreversible` (see build.prompt.md, Pipeline Step Format and Gate 2c). Never place a publish/send step before the Review. Omit either bracket when the crew has no such step.
+
+**Content Approval checkpoint is MANDATORY** whenever the pipeline includes any render step after content creation. Never place a render step immediately after a creation step without a checkpoint in between.
 
 On reject: loop back to creation step (re-execute full creator, not individual tasks).
 
@@ -555,8 +559,8 @@ I'll create a crew with N agents:
    Format: [format name, if applicable]
 ...
 
-Pipeline (fixed source): [Research] → checkpoint Select Angle → [Creator] → checkpoint Approve Content → [Execution] → [Review] → checkpoint Approve
-Pipeline (news-based): [Research] → checkpoint Select News → [Creator: generate angles] → checkpoint Select Angle → [Creator: create content] → checkpoint Approve Content → [Execution] → [Review] → checkpoint Approve
+Pipeline (fixed source): [Research] → checkpoint Select Angle → [Creator] → checkpoint Approve Content → [Render] → [Review] → checkpoint Final Approval → [Publish/Send]
+Pipeline (news-based): [Research] → checkpoint Select News → [Creator: generate angles] → checkpoint Select Angle → [Creator: create content] → checkpoint Approve Content → [Render] → [Review] → checkpoint Final Approval → [Publish/Send]
 Formats: [list of selected formats, e.g., instagram-feed, twitter-thread]
 
 Reference materials: [list of data files]

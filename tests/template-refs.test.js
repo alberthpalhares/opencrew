@@ -19,11 +19,8 @@ const RUNTIME_PATHS = [
 
 // Known-broken references, each with a destination. Remove the entry when fixed —
 // the last test fails if a listed reference starts resolving.
-const KNOWN_BROKEN = {
-  'skills/image-generator/scripts/generate.py': 'Alocação: → F1 (F1-11)',
-  'image-ai-generator: skills/image-generator/scripts/generate.py': 'Alocação: → F1 (F1-11)',
-  'instagram-publisher: crews/{crew}/tools/publish.js': 'Alocação: → F1 (F1-11)',
-};
+// Format: 'ref or skill: path' → 'Alocação: → Fase N (item)'. Emptied by F1-11.
+const KNOWN_BROKEN = {};
 
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -75,6 +72,18 @@ test('every _opencrew/ and skills/ path referenced by the payload exists', () =>
 test('every script a SKILL.md runs is {skill_path}/scripts/<file> and exists', () => {
   const broken = [...brokenSkillScripts()].filter(([key]) => !(key in KNOWN_BROKEN));
   assert.deepEqual(broken, [], 'broken skill scripts:\n' + broken.map(([k]) => `  ${k}`).join('\n'));
+});
+
+// AGENTS.md rule 2, whole payload (not only the bridges in src/lib/ides.js).
+test('no file in templates/ carries the maintainer workflow (STATUS.md, /status, /ideias, local paths)', () => {
+  const markers = [/STATUS\.md/, /Skill: \/status/, /\/ideias\b/, /gestão de sessão/i, /[A-Z]:\\60-69/];
+  const leaks = [];
+  for (const file of walk(tpl)) {
+    if (!/\.(md|ya?ml|json|js|py|html|txt)$|(^|[\\/])(gitignore|\.env\.example)$/.test(file)) continue;
+    const text = readFileSync(file, 'utf8');
+    for (const rx of markers) if (rx.test(text)) leaks.push(`${path.relative(root, file)} (${rx})`);
+  }
+  assert.deepEqual(leaks, []);
 });
 
 test('KNOWN_BROKEN only lists references that are still broken', () => {

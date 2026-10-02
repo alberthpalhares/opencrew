@@ -3,9 +3,54 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.4.2] — 2026-10-02
 
-### Added
+Hotfix "parar de causar dano" (Fase 1 da auditoria — `specs/fase-1-hotfix.md`).
+
+### Fixed
+- **`CLAUDE.md` gerado não traz mais o fluxo STATUS.md do mantenedor** (vazado na 1.4.0/1.4.1);
+  o `update` remove a seção de instalações existentes, sem tocar no texto do usuário.
+  `STATUS.md` saiu do `.gitignore` do template.
+- **`--help` nunca executa comando**: `update --help` / `-h` e `init --help` só mostram a ajuda.
+  Parser estrito (`node:util.parseArgs`): opção desconhecida, `--ide` sem id válido ou
+  argumento solto (`init minha-pasta`) falham com exit 1 **antes** de escrever qualquer arquivo.
+  `--ide claude-code` (com espaço) e `-yv` funcionam. `update --dry-run` = `--check`.
+- **`update` sem `AGENTS.md`** cria a ponte em vez de quebrar com ENOENT.
+- **Migração do `AGENTS.md` legado faz backup** em `AGENTS.md.bak` (ou `.bak-<timestamp>`).
+- **`.env.example` e `.gitignore` do usuário não são mais sobrescritos/ignorados**: recebem um
+  bloco `# opencrew:start … # opencrew:end` no fim; as linhas do usuário ficam intactas.
+  O bloco do `.gitignore` agora cobre `.claude/settings.local.json`, `crews/*/state.json` e
+  `crews/*/_investigations/`.
+- **Ctrl+C no prompt de IDEs não deixa instalação pela metade**: as IDEs são escolhidas antes
+  da primeira escrita; cancelamento sai com 130 e "Cancelled — nothing was written.". Uma
+  instalação interrompida (core sem stamp de versão) é **retomada** pelo próximo `init`.
+- Erros inesperados mostram uma linha `✗ <mensagem>` (stack só com `OPENCREW_DEBUG=1`).
+- Marcadores de bloco: um `start` órfão (fim apagado à mão) não faz mais a regravação engolir
+  linhas do usuário.
+- Skills: caminho do `image-ai-generator` corrigido (`{skill_path}/scripts/generate.py`, nota
+  `py -3` no Windows); `instagram-publisher` lê as imagens da pasta do run atual; o
+  `image-creator` renderiza JPEG quando o destino é Instagram.
+- Runner: o toggle do dashboard reconhece o formato `- **Dashboard:** enabled` gravado no
+  onboarding.
+
+### Security
+- **Publicar/enviar é sempre o último trecho do pipeline**: `… → Review → Final Approval
+  checkpoint → [Publish/Send]` (design), com o novo Gate 2c BLOCKING no build. Passos com
+  `side_effects: irreversible` rodam inline e **nunca** têm retry automático nem auto-correção
+  de veto — o runner avisa que a ação pode já ter acontecido e pergunta.
+- **`instagram-publisher`**: legenda via `--caption-file` (nunca interpolada no shell); só
+  aceita `.jpg`/`.jpeg` dentro de `crews/*/output/`; upload no imgBB expira em 24h; token da
+  Graph API no corpo dos POST, não na URL; fluxo preview → `--dry-run` → confirmação explícita
+  ("publish"/"publicar") → publicação única.
+
+### Changed
+- Template `templates/AGENTS.md` (o `system.md` instalado) compactado (−24%) sem mudar o roteamento.
+
+### Internal
+- Testes por cenário da spec (F1-01a…F1-13a); trava nova: nenhum arquivo de `templates/`
+  carrega conteúdo do mantenedor. `KNOWN_BROKEN` de referências zerado.
+
+### Added (governança do repositório — Fase 0)
 - Auditoria geral da v1.4.1 com roadmap por fases: `docs/auditoria/2026-10-02-auditoria-geral.md`.
 - Regras de desenvolvimento em `AGENTS.md` (project-standards T3, tabela Regra → Trava);
   `CLAUDE.md` da raiz vira apontador versionado.
@@ -17,12 +62,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `tests/verify.test.js` e `tests/check-size.test.js` (provetas).
 - `GLOSSARIO.md`; `IDEIAS.md` reformatado com triagem e `Alocação: →`.
 
-### Changed
+### Changed (governança do repositório — Fase 0)
 - Dogfood do mantenedor sai da raiz e vai para `sandbox/` (fora do git).
 - `publish.yml` confere a tag contra a versão do `package.json` e roda `npm run verify`;
   CI e publish usam só `npm ci` (sem fallback que esconde drift do lockfile).
 
-### Docs
+### Docs (Fase 0)
 - README: o dashboard não é instalado pelo `init`; `update` não atualiza as pontes de IDE
   (use `init --repair-bridges`); migração do `AGENTS.md` legado perde instruções extras;
   flags `upgrade`, `--ide`, `--all`/`-y`, `--repair-bridges` documentadas; contagens

@@ -20,7 +20,8 @@ Before starting execution:
     optional, opt-in feature that most installs never use (it requires running the
     separate dashboard app from source — see README). Scan the already-loaded
     `preferences.md` for a `Dashboard:` field:
-    - If it reads `Dashboard: enabled` → set `dashboard_enabled = true` for this run.
+    - If its value is `enabled` (as written by onboarding: `- **Dashboard:** enabled`, or the
+      plain form `Dashboard: enabled`) → set `dashboard_enabled = true` for this run.
     - Otherwise (`disabled`, missing, or preferences.md not configured yet) →
       set `dashboard_enabled = false`. This is the default.
     Store `dashboard_enabled` in working memory for the rest of this run. Every
@@ -546,7 +547,12 @@ Use the **stored transformed path** (after Output Path Transformation Steps 1 an
 
 **Rules:**
 - If ALL output files return `VALIDATION:PASS` → proceed to Veto Condition Enforcement.
-- If ANY output file returns `VALIDATION:FAIL`:
+- **Irreversible step** (`side_effects: irreversible` — publish, post, send) with ANY
+  `VALIDATION:FAIL` → NEVER re-execute it. Tell the user: "⚠️ {Agent Name} did not save its
+  output, but the action may already have happened (post published / email sent). Check
+  before retrying." Then offer: 1. Retry step (only after the user checked) · 2. Mark as done
+  and continue · 3. Abort pipeline.
+- If ANY output file returns `VALIDATION:FAIL` (any other step):
   1. **Retry once**: re-execute the entire step with the same input and context.
   2. After re-execution, run the validation again for all output files.
   3. If second attempt returns `VALIDATION:PASS` for all files → proceed normally.
@@ -612,6 +618,9 @@ After an agent completes a step (before moving to the next step):
    - Ask the agent to fix the specific issue (re-execute with targeted correction)
    - Maximum 2 veto fix attempts per step
    - After 2 failed attempts, present to user for manual decision
+   - **Never auto-fix an irreversible step** (`side_effects: irreversible`): re-executing it
+     would publish/send again. Report the veto, warn the user that
+     the action may already have happened, and let the user decide.
 4. If no veto conditions triggered: proceed to next step
 
 This creates an internal quality loop BEFORE the reviewer sees the content,
@@ -809,6 +818,9 @@ This archives the run state for the `runs` command while keeping crew history av
 ## Error Handling
 
 - If a subagent fails, retry once. If it fails again, inform the user and offer to skip the step or abort.
+- If an irreversible step (`side_effects: irreversible`) fails, NEVER retry it automatically:
+  the post/email may already have happened. Tell the user so, ask them to check, and let them
+  choose: retry, mark as done, or abort.
 - If a step file is missing, inform the user and suggest running `/opencrew edit {crew}` to fix.
 - If company.md is empty, stop and redirect to onboarding.
 - Never continue past a checkpoint without user input.

@@ -14,7 +14,7 @@ type: script
 version: "1.0.0"
 script:
   path: scripts/generate.py
-  runtime: python3
+  runtime: python
   invoke: "python3 {skill_path}/scripts/generate.py --prompt \"{prompt}\" --output \"{output}\" --mode \"{mode}\""
 env:
   - OPENROUTER_API_KEY
@@ -52,10 +52,14 @@ Use the Image Generator when you need to create visual assets from text prompts.
 
 ## Instructions
 
+`{skill_path}` is this skill's folder (normally `skills/image-ai-generator`). The commands below use
+`python3` (macOS/Linux). **On Windows** use `py -3` instead (or `python` if the `py` launcher is
+not installed).
+
 ### Single image generation
 
 ```bash
-python3 skills/image-generator/scripts/generate.py \
+python3 {skill_path}/scripts/generate.py \
   --prompt "A detailed description of the image to generate" \
   --output "crews/{crew}/output/{run_id}/assets/image-name.jpg" \
   --mode test
@@ -66,7 +70,7 @@ python3 skills/image-generator/scripts/generate.py \
 Use `--reference` to send a local image to the model as visual context. The model will incorporate the referenced image (e.g., a logo or mascot) into the generated output.
 
 ```bash
-python3 skills/image-generator/scripts/generate.py \
+python3 {skill_path}/scripts/generate.py \
   --prompt "A social media banner featuring the company logo prominently in the center" \
   --output "crews/{crew}/output/{run_id}/assets/banner.jpg" \
   --reference "crews/{crew}/assets/logo.png" \
@@ -78,7 +82,7 @@ Supported reference formats: PNG, JPEG, WEBP, GIF.
 ### Batch generation
 
 ```bash
-python3 skills/image-generator/scripts/generate.py \
+python3 {skill_path}/scripts/generate.py \
   --batch "crews/{crew}/output/{run_id}/assets/batch.json" \
   --mode production
 ```

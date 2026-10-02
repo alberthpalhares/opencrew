@@ -20,7 +20,8 @@ version: "1.0.0"
 script:
   path: scripts/publish.js
   runtime: node
-  invoke: "node --env-file=.env {skill_path}/scripts/publish.js --images \"{images}\" --caption \"{caption}\""
+  invoke: "node --env-file=.env {skill_path}/scripts/publish.js --images \"{images}\" --caption-file \"{caption_file}\""
+side_effects: irreversible
 env:
   - INSTAGRAM_ACCESS_TOKEN
   - INSTAGRAM_USER_ID
@@ -39,36 +40,53 @@ Use the Instagram Publisher when you need to publish carousel posts directly to 
 
 ### Workflow
 
-1. List JPEG files in `crews/{crew}/output/images/` sorted by name.
-   If no files found: stop and ask the user to add images before continuing.
-2. Present the image list to the user to confirm order (use your IDE's native interactive-choice mechanism if it has one; otherwise a numbered list).
-3. Extract the caption from the content draft:
-   - Use the hook slide text + CTA slide text
-   - Max 2200 characters (Instagram limit)
-4. Run the publish script:
+Publishing is **irreversible**: a post cannot be taken back once it is live. This step
+runs only at the end of the pipeline, after the Review and the Final Approval checkpoint,
+and is **never** retried automatically.
+
+1. Find the images produced by the rendering step **of this run** in
+   `crews/{crew}/output/{run_id}/` (use the latest `vN/` folder if there are versions),
+   JPEG only, sorted by name. If there are no `.jpg`/`.jpeg` files: stop and ask the user
+   (PNG renders must be re-rendered as JPEG — Instagram accepts JPEG only).
+2. Extract the caption from the approved content draft (hook slide text + CTA slide text,
+   max 2200 characters) and **write it to a file**:
+   `crews/{crew}/output/{run_id}/caption.txt`. Never put the caption inside a shell command.
+3. **Preview**: show the user the ordered image list and the full caption, and let them
+   confirm the order (use your IDE's native interactive-choice mechanism if it has one;
+   otherwise a numbered list).
+4. **Dry run** — validates images, credentials and containers without posting:
    ```
-   node --env-file=.env crews/{crew}/tools/publish.js \
+   node --env-file=.env {skill_path}/scripts/publish.js \
      --images "<comma-separated-ordered-paths>" \
-     --caption "<caption>"
+     --caption-file "crews/{crew}/output/{run_id}/caption.txt" \
+     --dry-run
    ```
-   Add `--dry-run` to test the full flow without actually publishing.
-5. On success: save the post URL and post ID to the step output file.
-6. On failure: display the error and ask the user how to proceed.
+   If it fails: show the error and stop.
+5. **Ask for explicit confirmation** before going live: the user must answer with the
+   word **publish** (or **publicar**). Any other answer — including silence, "ok" or an
+   ambiguous reply — means do not publish.
+6. **Live publish** — the same command without `--dry-run`. Run it **once**.
+7. On success: save the post URL and post ID to the step output file immediately.
+8. On failure or missing output: do NOT run the command again. Tell the user the post may
+   already be live, ask them to check the Instagram profile, and let them decide.
 
 ### Constraints
 
-- Images: JPEG only, 2-10 per carousel
+- Images: JPEG only (`.jpg`/`.jpeg`), 2-10 per carousel, inside `crews/*/output/` — the
+  script refuses anything else before uploading
+- Images are hosted on imgBB for 24h only (enough for Instagram to fetch them)
 - Caption: max 2200 characters
 - Requires Instagram Business account (not Personal or Creator)
 - Rate limit: 25 API-published posts per 24 hours
 
 ### Setup (first-time)
 
-Copy `.env.example` to `.env` and fill in the two required variables:
+Copy `.env.example` to `.env` and fill in the three required variables:
 
 ```
 INSTAGRAM_ACCESS_TOKEN=
 INSTAGRAM_USER_ID=
+IMGBB_API_KEY=
 ```
 
 #### INSTAGRAM_ACCESS_TOKEN
@@ -115,5 +133,5 @@ Pré-requisito: conta Instagram Business conectada a uma Página do Facebook, e 
 
 - **Publish Carousel** -- Upload images and publish a carousel post to Instagram
 - **Dry Run** -- Test the full publishing flow without actually posting (use `--dry-run` flag)
-- **Image Upload** -- Upload local JPEG images to imgBB (requires API key)
+- **Image Upload** -- Upload the crew's JPEG renders to imgBB for 24h (requires API key)
 - **Status Check** -- Monitor media container processing status before publishing

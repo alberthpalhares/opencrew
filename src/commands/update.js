@@ -2,10 +2,12 @@ import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
 import { copyDir, exists, writeFileSafe, readJson, writeBridgeFile, readFile } from '../lib/fsx.js';
+import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION, ideById } from '../lib/ides.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 // Update refreshes ONLY the framework. It never touches:
-//   crews/, _opencrew/_memory/, _opencrew/_browser_profile/, .env, IDE bridges.
+//   crews/, _opencrew/_memory/, _opencrew/_browser_profile/, .env, IDE bridges
+//   (one exception: the CLAUDE.md block leaked by 1.4.0/1.4.1 — see removeLeakedStatusSection).
 // Note: catalog skills (skills/<name>/ that ship with the package) ARE fully
 // overwritten below — user edits to a catalog skill's own files are not preserved.
 // Only skill directories that don't exist in the package's templates/skills/ at all
@@ -72,24 +74,49 @@ export async function update(opts = {}) {
   await writeFileSafe(path.join(target, '_opencrew', 'core', 'system.md'), systemContent);
   ok('_opencrew/core/system.md refreshed');
 
-  const agentsBridge = '# opencrew\n\n'
-    + 'The opencrew system definition lives at `_opencrew/core/system.md`.\n'
-    + 'Read that file and adopt the opencrew system role — follow all initialization,\n'
-    + 'command routing, and workflow instructions defined there.\n\n'
-    + 'Type `/opencrew` to open the main menu.\n';
+  await refreshAgentsBridge(target);
+  await removeLeakedStatusSection(target);
 
-  // If AGENTS.md is a legacy full-system doc (pre-v1.3), replace it entirely with the thin bridge.
-  const agentsPath = path.join(target, 'AGENTS.md');
-  const existingAgents = await readFile(agentsPath);
-  if (existingAgents.includes('# opencrew Instructions') && !existingAgents.includes('<!-- opencrew:start -->')) {
-    await writeFileSafe(agentsPath, agentsBridge);
-    ok('AGENTS.md (migrated from legacy full-system to thin bridge)');
-  } else {
-    await writeBridgeFile(agentsPath, agentsBridge);
-    ok('AGENTS.md refreshed');
-  }
-
+  // Stamp last: a crash above leaves the old version, so the next update retries.
   await fs.writeFile(versionFile, version + '\n');
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
   log(c.dim('Your crews, memory, IDE bridges and .env were left untouched.\n'));
+}
+
+// Root AGENTS.md: create it if missing; a legacy full-system doc (pre-v1.3) is backed up
+// byte for byte and replaced by the thin bridge; otherwise only the marked block changes.
+async function refreshAgentsBridge(target) {
+  const agentsPath = path.join(target, 'AGENTS.md');
+  if (!(await exists(agentsPath))) {
+    await writeBridgeFile(agentsPath, AGENTS_BRIDGE);
+    ok('AGENTS.md (bridge created)');
+    return;
+  }
+  const existing = await readFile(agentsPath);
+  if (existing.includes('# opencrew Instructions') && !existing.includes('<!-- opencrew:start -->')) {
+    const backup = await freeBackupPath(agentsPath);
+    await fs.copyFile(agentsPath, backup);
+    await writeFileSafe(agentsPath, AGENTS_BRIDGE);
+    ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${path.basename(backup)})`);
+    return;
+  }
+  await writeBridgeFile(agentsPath, AGENTS_BRIDGE);
+  ok('AGENTS.md refreshed');
+}
+
+async function freeBackupPath(file) {
+  const bak = `${file}.bak`;
+  if (!(await exists(bak))) return bak;
+  return `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+}
+
+// 1.4.0/1.4.1 shipped the maintainer's STATUS.md workflow inside CLAUDE.md's opencrew
+// block. Rewrite that block (only that block, only if the leak is there).
+async function removeLeakedStatusSection(target) {
+  const claudePath = path.join(target, 'CLAUDE.md');
+  if (!(await exists(claudePath))) return;
+  if (!(await readFile(claudePath)).includes(LEAKED_STATUS_SECTION)) return;
+  const bridge = ideById('claude-code').files.find((f) => f.path === 'CLAUDE.md');
+  await writeBridgeFile(claudePath, bridge.content);
+  ok('CLAUDE.md (removed the STATUS.md section shipped by mistake in 1.4.0/1.4.1)');
 }

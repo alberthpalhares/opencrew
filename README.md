@@ -150,8 +150,8 @@ meu-projeto/
 ├── CLAUDE.md                     ← ponte fina + suas instruções (merge)
 ├── GEMINI.md                     ← ponte fina (Gemini CLI)
 ├── .mcp.json                     ← servidor Playwright do OpenCrew
-├── .gitignore
-├── .env.example
+├── .gitignore                    ← bloco `# opencrew` no fim; suas linhas são mantidas
+├── .env.example                  ← idem
 │
 ├── _opencrew/
 │   ├── core/
@@ -220,8 +220,8 @@ comando grava as pontes de **todas** as IDEs suportadas).
 
 Se você está migrando de uma versão anterior a v1.3, o `update` detecta
 AGENTS.md legados (sistema completo de 150 linhas) e os substitui pela ponte
-fina. ⚠️ Até a v1.4.1, qualquer instrução sua adicionada a esse `AGENTS.md` legado é
-perdida na substituição — faça uma cópia antes.
+fina. Desde a v1.4.2 o arquivo original é copiado antes para `AGENTS.md.bak` (até a v1.4.1,
+instruções suas adicionadas a esse `AGENTS.md` legado eram perdidas).
 
 Para verificar se há atualização disponível sem aplicar:
 
@@ -257,7 +257,7 @@ npx @aksp/opencrew update --check
 |---|---|
 | `npx @aksp/opencrew init` | Instala o OpenCrew na pasta atual |
 | `npx @aksp/opencrew update` | Atualiza o framework |
-| `npx @aksp/opencrew update --check` | Verifica se há update disponível |
+| `npx @aksp/opencrew update --check` (ou `--dry-run`) | Verifica se há update disponível, sem alterar nada |
 | `npx @aksp/opencrew upgrade` | Atalho para `update` |
 | `npx @aksp/opencrew init --ide=claude-code,cursor` | Instala só as pontes das IDEs indicadas |
 | `npx @aksp/opencrew init --all` (ou `-y`) | Instala as pontes de todas as IDEs |

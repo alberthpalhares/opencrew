@@ -8,6 +8,7 @@
 | Crew | `crew` | Runtime | Equipe de agentes que produz um tipo de conteúdo; vive em `crews/{code}/` com `crew.yaml` e `pipeline.yaml` |
 | Agente | `agent` | Runtime | Persona com papel definido (`*.agent.md`); pode estender um agente base de `_opencrew/agents/` via `extends:` |
 | Passo | `step` | Runtime | Unidade do pipeline executada por um agente, inline ou como checkpoint |
+| Passo irreversível | `side_effects: irreversible` | Runtime | Passo cujo efeito sai do projeto e não se desfaz (publicar, enviar e-mail, postar); sempre no fim do pipeline, depois do Review e da aprovação final, e nunca repetido automaticamente |
 | Checkpoint | `checkpoint` | Runtime | Passo que para e pede decisão do usuário |
 | Execução | `run` | Runtime | Uma passada completa do pipeline de uma crew; identificada por `run_id`, saída em `output/{run_id}/` |
 | Skill | `skill` | Runtime | Capacidade externa (`skills/<nome>/SKILL.md`, às vezes com `scripts/`) que um agente pode usar |

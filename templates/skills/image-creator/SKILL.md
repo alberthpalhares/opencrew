@@ -46,7 +46,8 @@ Use the Visual Renderer when you need to generate production-ready images from H
 4. **Render** -- Use Playwright to:
    - `browser_navigate` to `http://localhost:8765/slide-01.html` (filename only, not full path)
    - `browser_resize` to target viewport dimensions
-   - `browser_take_screenshot` to save as PNG
+   - `browser_take_screenshot` to save as PNG — **except when the images will be published to
+     Instagram**: Instagram accepts JPEG only, so save with `type: "jpeg"` (`slide-01.jpg`)
 
 5. **Verify** -- Read the screenshot to confirm quality. Re-render if needed.
 
@@ -103,6 +104,7 @@ For multi-image outputs like carousels:
 3. Render each slide sequentially (step 4 repeated per slide)
 4. Stop the HTTP server **once** after all slides are done (step 6 of Core Workflow)
 5. Name output files with zero-padded numbers: slide-01.png, slide-02.png, slide-03.png
+   (`.jpg` when the destination is Instagram — see step 4)
 6. Keep all slides at the same viewport dimensions
 
 ### Best Practices

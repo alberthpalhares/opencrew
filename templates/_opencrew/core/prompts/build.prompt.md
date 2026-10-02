@@ -390,8 +390,15 @@ model_tier: fast      # ONLY for execution: subagent. fast = lightweight model; 
                       # Set fast for: investigator agents (data extraction, Sherlock subagents), researcher agents (web search, data gathering)
                       # Set powerful for: writer, creator, reviewer, strategy agents
                       # Omit model_tier for execution: inline steps
+side_effects: irreversible  # REQUIRED for any step that publishes, posts, sends email or otherwise
+                            # distributes outside the project (it cannot be undone). The Pipeline
+                            # Runner never retries these automatically, and Gate 2c places them last.
+                            # Omit for every other step.
 ---
 ```
+
+**Irreversible steps must run inline** (`execution: inline`), so the user sees the dry run and
+gives the explicit go-ahead in the main conversation.
 
 For **checkpoints**, use this frontmatter instead:
 ```yaml
@@ -571,6 +578,20 @@ If ANY check fails:
 3. Add the new step to the `checkpoints:` list in pipeline.yaml
 4. Generate a step file for the new checkpoint that asks the user to review and approve the preceding agent's output before the visual/publish step runs
 5. Re-validate Gate 2b. Max 2 fix attempts — after that, present to user for manual decision.
+
+### Gate 2c: Irreversible Steps Last (BLOCKING)
+
+For EACH step that publishes, posts, sends email or distributes outside the project:
+- [ ] Its frontmatter declares `side_effects: irreversible` and `execution: inline`
+- [ ] It comes AFTER the Review step (the reviewer has already approved the final content)
+- [ ] The IMMEDIATELY preceding step is a `type: checkpoint` (Final Approval) that itself comes after the Review
+- [ ] Only other irreversible steps follow it (nothing is created, rendered or reviewed after publishing)
+
+If ANY check fails:
+1. Add the missing `side_effects: irreversible` / `execution: inline` fields
+2. Move the irreversible step(s) to the end of the pipeline, after Review → Final Approval checkpoint
+   (create the Final Approval checkpoint if it does not exist), and renumber the steps
+3. Re-validate Gate 2c. Max 2 fix attempts — after that, present to user for manual decision.
 
 ### Gate 3: Pipeline Coherence (ADVISORY)
 

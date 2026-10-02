@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { IDES, ideById, allIdeIds } from '../src/lib/ides.js';
 
 test('every IDE has a unique id and at least one non-empty, relative bridge file', () => {
@@ -101,16 +102,17 @@ test('workflow, skill, and command bridge files have YAML frontmatter with name'
 // AGENTS.md rule 2: bridges ship to every user's project — no maintainer workflow inside.
 const MAINTAINER_MARKERS = [/STATUS\.md/, /Skill: \/status/, /\/ideias\b/, /gestão de sessão/i];
 
-test(
-  'bridge content carries no maintainer-only workflow (STATUS.md, /status, /ideias)',
-  { todo: 'CLAUDE_MD still ships the STATUS.md section — Alocação: → F1 (F1-01)' },
-  () => {
-    for (const ide of IDES) {
-      for (const f of ide.files) {
-        for (const rx of MAINTAINER_MARKERS) {
-          assert.doesNotMatch(f.content, rx, `${ide.id} -> ${f.path} leaks maintainer content (${rx})`);
-        }
+test('F1-01a: bridge content carries no maintainer-only workflow (STATUS.md, /status, /ideias)', () => {
+  for (const ide of IDES) {
+    for (const f of ide.files) {
+      for (const rx of MAINTAINER_MARKERS) {
+        assert.doesNotMatch(f.content, rx, `${ide.id} -> ${f.path} leaks maintainer content (${rx})`);
       }
     }
   }
-);
+});
+
+test('F1-01b: templates/gitignore carries no maintainer-only entries', async () => {
+  const gi = await readFile(new URL('../templates/gitignore', import.meta.url), 'utf8');
+  assert.doesNotMatch(gi, /STATUS\.md/);
+});

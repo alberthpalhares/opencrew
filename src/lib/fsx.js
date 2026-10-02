@@ -54,17 +54,21 @@ export async function writeFileSafe(p, content, { overwrite = true } = {}) {
  * Write a bridge file using marked-block strategy.
  * - File doesn't exist → creates with content wrapped in HTML markers
  * - File exists with markers → replaces only the block between markers
- * - File exists without markers → prepends marked block, preserves existing content
+ * - File exists without markers → adds the marked block (prepend or append), preserving
+ *   existing content byte for byte
  *
  * @param {string}   p       File path
  * @param {string}   block   Content to place between markers
  * @param {object}   opts
- * @param {string}   opts.marker  Marker name (default: 'opencrew')
+ * @param {string}   opts.marker    Marker name (default: 'opencrew')
+ * @param {'html'|'hash'} opts.comment  `<!-- x:start -->` (markdown) or `# x:start` (.gitignore, .env)
+ * @param {'prepend'|'append'} opts.position  Where a new block goes in an unmarked file
  * @returns {Promise<{written: boolean, merged: boolean}>}
  */
-export async function writeBridgeFile(p, block, { marker = 'opencrew' } = {}) {
-  const start = `<!-- ${marker}:start -->`;
-  const end = `<!-- ${marker}:end -->`;
+export async function writeBridgeFile(p, block, { marker = 'opencrew', comment = 'html', position = 'prepend' } = {}) {
+  const [start, end] = comment === 'hash'
+    ? [`# ${marker}:start`, `# ${marker}:end`]
+    : [`<!-- ${marker}:start -->`, `<!-- ${marker}:end -->`];
   const marked = `${start}\n${block.trimEnd()}\n${end}`;
 
   if (!(await exists(p))) {
@@ -77,9 +81,11 @@ export async function writeBridgeFile(p, block, { marker = 'opencrew' } = {}) {
 
   // Already has markers → replace just the block, keep everything else
   if (existing.includes(start) && existing.includes(end)) {
+    // Innermost block only: an orphan start marker (end deleted by hand) must never make
+    // the match swallow the user lines between it and the real block.
     const updated = existing.replace(
-      new RegExp(escapeRx(start) + '[\\s\\S]*?' + escapeRx(end), 'g'),
-      marked,
+      new RegExp(`${escapeRx(start)}(?:(?!${escapeRx(start)})[\\s\\S])*?${escapeRx(end)}`, 'g'),
+      () => marked,
     );
     if (updated !== existing) {
       await fs.writeFile(p, updated);
@@ -88,8 +94,11 @@ export async function writeBridgeFile(p, block, { marker = 'opencrew' } = {}) {
     return { written: false, merged: false };
   }
 
-  // User content exists → prepend block, preserve everything
-  await fs.writeFile(p, marked + '\n\n' + existing.trimStart());
+  // User content exists → add the block, preserve everything
+  const merged = position === 'append'
+    ? `${existing.trimEnd()}\n\n${marked}\n`
+    : `${marked}\n\n${existing.trimStart()}`;
+  await fs.writeFile(p, merged);
   return { written: true, merged: true };
 }
 

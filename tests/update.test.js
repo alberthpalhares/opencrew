@@ -116,3 +116,72 @@ test('update refreshes _opencrew/core/system.md and AGENTS.md bridge', async () 
   const agents = await fs.readFile(agentsPath, 'utf8');
   assert.ok(agents.includes('_opencrew/core/system.md'), 'AGENTS.md bridge should point to system.md');
 });
+
+// ── Fase 1 (specs/fase-1-hotfix.md) ───────────────────────────────────────
+
+const LEGACY_CLAUDE_BLOCK = '<!-- opencrew:start -->\n# opencrew — Project Instructions\n\n'
+  + 'Read `AGENTS.md`.\n\n## STATUS.md (gestão de sessão)\n\nThis project uses `STATUS.md`.\n'
+  + '> Skill: /status\n<!-- opencrew:end -->\n\n# My notes\nkeep me\n';
+
+test('F1-01c: update removes the leaked STATUS.md section from CLAUDE.md, keeping user text', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  const claudeMd = path.join(dir, 'CLAUDE.md');
+  await fs.writeFile(claudeMd, LEGACY_CLAUDE_BLOCK);
+
+  await withCwd(dir, () => update());
+
+  const after = await fs.readFile(claudeMd, 'utf8');
+  assert.doesNotMatch(after, /STATUS\.md/);
+  assert.doesNotMatch(after, /Skill: \/status/);
+  assert.match(after, /<!-- opencrew:start -->\n# opencrew — Project Instructions[\s\S]*<!-- opencrew:end -->/);
+  assert.ok(after.endsWith('# My notes\nkeep me\n'), 'user text outside the block must survive byte for byte');
+});
+
+test('F1-01d: update never creates a CLAUDE.md that did not exist', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['cursor'] }));
+  await withCwd(dir, () => update());
+  assert.equal(await exists(path.join(dir, 'CLAUDE.md')), false);
+});
+
+test('F1-03a: update without AGENTS.md creates the bridge and stamps the version', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  await fs.rm(path.join(dir, 'AGENTS.md'));
+  await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '0.0.1\n');
+
+  await withCwd(dir, () => update());
+
+  const agents = await fs.readFile(path.join(dir, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /_opencrew\/core\/system\.md/);
+  const pkg = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+  assert.equal((await fs.readFile(path.join(dir, '_opencrew', '.opencrew-version'), 'utf8')).trim(), pkg.version);
+});
+
+const LEGACY_AGENTS = '# opencrew Instructions\n\nYou are opencrew (pre-1.3 full system).\n\nMY OWN RULE: never use emojis.\n';
+
+test('F1-04a: legacy AGENTS.md is backed up byte for byte before being replaced', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  await fs.writeFile(path.join(dir, 'AGENTS.md'), LEGACY_AGENTS);
+
+  await withCwd(dir, () => update());
+
+  assert.equal(await fs.readFile(path.join(dir, 'AGENTS.md.bak'), 'utf8'), LEGACY_AGENTS);
+  assert.match(await fs.readFile(path.join(dir, 'AGENTS.md'), 'utf8'), /_opencrew\/core\/system\.md/);
+});
+
+test('F1-04b: an existing AGENTS.md.bak is never overwritten — a timestamped backup is made', async () => {
+  const dir = await mkTmp('update');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  await fs.writeFile(path.join(dir, 'AGENTS.md'), LEGACY_AGENTS);
+  await fs.writeFile(path.join(dir, 'AGENTS.md.bak'), 'older backup\n');
+
+  await withCwd(dir, () => update());
+
+  assert.equal(await fs.readFile(path.join(dir, 'AGENTS.md.bak'), 'utf8'), 'older backup\n');
+  const extra = (await fs.readdir(dir)).filter((f) => f.startsWith('AGENTS.md.bak-'));
+  assert.equal(extra.length, 1, 'exactly one timestamped backup');
+  assert.equal(await fs.readFile(path.join(dir, extra[0]), 'utf8'), LEGACY_AGENTS);
+});
