@@ -93,6 +93,13 @@ frontmatter `constraints:` do best-practice — com nome canônico — e é medi
 Mensagens, perguntas e relatórios mostrados ao usuário final são em português do Brasil, com
 acentos. Outros idiomas: tradução pelo modelo. **Trava:** sem trava — revisão humana (→ U5).
 
+### 14. Toda mudança chega a quem já usa
+Toda melhoria do runtime tem que chegar a um projeto que já tem uma versão antiga com um único
+`npx @aksp/opencrew@latest update`, sem perder dado do usuário. Se a mudança mora fora de
+`_opencrew/core/` ou dos skills do catálogo (o que o `update` renova), a mesma entrega inclui a
+migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no npm).
+**Trava:** `tests/upgrade.test.js` (simula um workspace pré-1.5 e atualiza).
+
 ## Regra → Trava
 
 | Regra | Trava | Tipo |
@@ -110,6 +117,7 @@ acentos. Outros idiomas: tradução pelo modelo. **Trava:** sem trava — revis�
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar.test.js`, `tests/runtime-contracts.test.js` | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
+| 14 Chega a quem já usa | `tests/upgrade.test.js` | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.
