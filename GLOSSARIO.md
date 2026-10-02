@@ -13,6 +13,9 @@
 | Bloqueio | `VERIFICACAO:BLOQUEADA` | Runtime | Falha objetiva do verificador (acima de um máximo, placeholder, termo proibido, `[PREENCHER]`); força REJECT na revisão |
 | Alerta | — | Runtime | Ponto a conferir (abaixo de um mínimo, afirmação em 1ª pessoa com dado); não bloqueia, mas limita a nota a 7/10 e aparece na aprovação final |
 | Marcador de dado faltante | `[PREENCHER: …]` | Runtime | O que o agente escreve no lugar de um dado real que não tem; a aprovação final pede ao usuário |
+| Fontes do projeto | `fontes:` (crew.yaml) | Runtime | Arquivos/pastas do projeto do usuário que a crew lê a cada run e trata como verdade (caminho relativo à raiz) |
+| Conferência de fontes | `conferir-fontes.mjs` | Runtime | Script que confere, no início do run, se os arquivos citados pela crew existem e sugere o novo caminho quando foram movidos |
+| Overlay local | `_opencrew/best-practices.local/` | Runtime | Best-practices do usuário (aprendidas ou criadas), lidas antes das do core e nunca tocadas pelo `update` |
 | Checkpoint | `checkpoint` | Runtime | Passo que para e pede decisão do usuário |
 | Execução | `run` | Runtime | Uma passada completa do pipeline de uma crew; identificada por `run_id`, saída em `output/{run_id}/` |
 | Skill | `skill` | Runtime | Capacidade externa (`skills/<nome>/SKILL.md`, às vezes com `scripts/`) que um agente pode usar |
