@@ -255,8 +255,8 @@ regra do corpo foi apagada: cada linha diz o que acontece hoje e para onde vai a
 | H2-18 | §13; §14 | A trava U1-05 só procura 1080×1440 em `instagram-feed.md` e em 5 arquivos de skills. Nos 4 arquivos da 4ª correção de 2026-10-02 (§14), uma volta do 1080×1440 passaria na porta; o `max_hashtags` segue coberto em todos os best-practices. Hoje não há resíduo | → R1 |
 | A-34, H2-09 | §3; §4 | Os comentários de `verificar.mjs` (cabeçalho e `main`) ainda citam só dois estados, e a nota de formato não encontrado cita só `_opencrew/core/best-practices/`, sem o overlay local | → R1 |
 | H2-07 | regra 7.4 | "Aceitar assim mesmo (fica registrado)" não registra nada: o `runs.md` só aceita Aprovado, Rejeitado, Publicado ou Abortado, e o estado da execução não vai a disco | → U3a |
-| H2-13, E-07 | regra 1; §11 | Máximos de `constraints:` sem medição: assunto de e-mail, mensagem de WhatsApp, hashtags do tweet, palavras por slide, título do YouTube e do artigo do LinkedIn. O script só carrega o formato de blog pedido, `instagram-feed`, `linkedin-post` e `twitter-post` | → U3a |
-| H2-16 | §4; regra 7.2 | O script só escreve no stdout; quem grava `verificacao-ciclo-{N}.md` é a IA, copiando a saída | → U3a |
+| H2-13, E-07 | regra 1; §11 | Máximos de `constraints:` sem medição: assunto de e-mail, mensagem de WhatsApp, hashtags do tweet, palavras por slide, título do YouTube e do artigo do LinkedIn. O script só carrega o formato de blog pedido, `instagram-feed`, `linkedin-post` e `twitter-post` | → U3a (assunto e prévia de e-mail, WhatsApp, thread); o resto → U5 |
+| H2-16 | §4; regra 7.2 | O script só escreve no stdout; quem grava `verificacao-ciclo-{N}.md` é a IA, copiando a saída | → U5 |
 | H2-05 | regra 8; §6 | Proibições sem aspas (as gravadas antes da 1.5.0) não viram trava; a nota fica só no relatório e a aprovação final não a mostra; o registro de fim de execução ainda não pede aspas | → U4 |
 | H2-17 | regra 6 | A contagem é a mesma em todos os canais; no X/Twitter cada emoji vale 2 e cada link vale 23 | → U5 |
 

@@ -192,7 +192,7 @@ Cada fase abre com o **portão de entrada** (varrer `Alocação: → Fase N` nes
 > | Trilha | Versão | Absorve |
 > |---|---|---|
 > | **R1 Reparos da 1.6.0: o verificador mede de verdade** | 1.6.1 | Defeitos do verificador, da conferência de fontes e do laço de revisão (lista no §7 da revisão); C-12 (`--repair-bridges` sem `--ide`, H3-02); de T-A10, só o `max_review_cycles` (H2-06) |
-> | **U3a Entrega por canal** | 1.7.0 | T-M21 (export e PDF); T-B3/D-01/D-06 (dashboard: decisão pendente do dono); bloco do `.gitignore` renovado pelo `update`; assunto de e-mail e WhatsApp medidos (spec U1 §11, H2-13); aviso de arquivo citado dentro das fontes; H2-07, H2-16, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20 |
+> | **U3a Entrega por canal** | 1.7.0 | T-M21 (export e PDF); T-B3/D-01/D-06 (dashboard: decisão pendente do dono); bloco do `.gitignore` renovado pelo `update`; assunto de e-mail e WhatsApp medidos (spec U1 §11, H2-13); aviso de arquivo citado dentro das fontes; H2-07, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20 |
 > | **U3b Documento Word** | 1.8.0 | Dor 6 do uso real: documento oficial em `.docx` (gerador próprio, em perfil fechado) |
 > | **R2 `update` e envio seguros** | a definir, depois da R1 | T-M4 (resto: `blotato` e `resend`, H1-04); H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19. Recomendada antes da U3a; a ordem entre as duas é decisão do dono |
 > | **U4 Modo equipe + histórico confiável** | 1.9.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 e o conserto (`repair`) de crews antigas (H1-01, H2-05, H3-03); T-M5 (H3-08); T-M14, T-M17..20, T-B6, T-B8 |
@@ -299,7 +299,8 @@ que ele não mede e responde `VERIFICACAO:OK`, e casos em que bloqueia texto cor
 | Nota máxima 7 com alerta e checklist só do que foi medido não chegam a crews já criadas | H2-08 | → R1 |
 | `--crew` inexistente passa; seções lidas de forma frágil; um caminho ruim derruba toda a checagem; fora da raiz do projeto responde `OK` | H2-10, H2-11, H2-12, Z-02 | → R1 |
 | Trava do U1-05 não cobre os 4 arquivos corrigidos depois | H2-18 | → R1 |
-| "Aceitar assim mesmo (fica registrado)" não registra; assunto de e-mail e WhatsApp sem medição; relatório salvo pela IA, não pelo script | H2-07, H2-13, H2-16 | → U3a |
+| "Aceitar assim mesmo (fica registrado)" não registra; assunto de e-mail e WhatsApp sem medição | H2-07, H2-13 | → U3a (o resto do H2-13: Reels, YouTube, artigo do LinkedIn, hashtags do tweet → U5) |
+| Relatório do laço de revisão salvo pela IA, não pelo script | H2-16 | → U5 |
 | Proibições antigas, sem aspas, não viram trava | H2-05 | → U4 |
 | Contagem de caracteres igual em todos os canais (no X, emoji e link pesam diferente) | H2-17 | → U5 |
 | Spec e glossário com dois estados do verificador (são três); status "implementada" sem execução real | H2-09, A-34, H2-14 | faxina de documentos de 2026-10-04; os dois comentários de `verificar.mjs` que ainda citam só dois estados (payload) → R1 |
