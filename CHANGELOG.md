@@ -3,6 +3,21 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.2] — 2026-10-05
+
+Correção da 1.6.1. Chega a quem já usa com um `npx @aksp/opencrew@latest update`.
+
+### Fixed
+- **Node 20: o verificador não esgota mais a memória com texto grande.** Um post, tweet ou
+  legenda de dezenas de milhares de caracteres numa peça só derrubava o verificador no Node 20,
+  sem relatório (o runner avisava que a verificação não rodou). A contagem de caracteres passou a
+  ser feita em janelas, com o mesmo resultado. O defeito vinha da 1.5.0; Node 22 e 24 não o
+  tinham.
+
+### Internal
+- Release: a tag só sai depois do CI verde nas quatro células (Ubuntu e Windows, Node 20 e 22).
+  A 1.6.1 foi publicada com o CI do Node 20 vermelho, porque a publicação roda só no Node 22.
+
 ## [1.6.1] — 2026-10-05
 
 Fase R1 "Reparos da 1.6.0: o verificador mede de verdade" (`specs/fase-r1-reparos-1-6-1.md`),

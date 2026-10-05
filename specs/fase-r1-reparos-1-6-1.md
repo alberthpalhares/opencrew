@@ -1,6 +1,6 @@
 # Spec — Fase R1: Reparos da 1.6.0 — o verificador mede de verdade (1.6.1)
 
-- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** implementada e publicada como 1.6.1 (2026-10-05); a correção R1-05m (§14) vai na 1.6.2
+- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** implementada e publicada como 1.6.1 (2026-10-05); correção R1-05m (§14) na 1.6.2
 - **Termos novos no GLOSSARIO.md:** sim — Peça, Formato declarado, Não medido, Não verificado, Nota informativa, Ciclo de revisão
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §3 e §7 (os IDs entre parênteses são de lá)
@@ -848,7 +848,7 @@ consertos sem cenário próprio têm teste com "R1 revisão:" no nome. Fora das 
 - Adiados, com destino na §11 e na §12: L2-06, L2-09, L2-14, L3-08, L3-09, L4-05, L6-06 e L7-10
   a L7-14.
 
-**Correção depois da publicação (2026-10-05; vai na 1.6.2).** O CI do `main` falhou no Node 20
+**Correção depois da publicação (2026-10-05; versão 1.6.2).** O CI do `main` falhou no Node 20
 (Ubuntu) logo depois da tag: `tests/verificar-contrato.test.js` morreu por falta de memória no
 primeiro teste de 200 mil caracteres.
 - Causa: `contar()` punha todos os segmentos do `Intl.Segmenter` numa lista, e no Node 20 cada
@@ -867,4 +867,6 @@ primeiro teste de 200 mil caracteres.
   CI, e com a ordem de leitura de pasta embaralhada, como no Linux. Nenhuma API posterior ao
   Node 20.0 no código próprio. Um achado fora desta fase, com destino na §11: o piso do Node
   prometido pelo pacote é mais baixo que o da dependência do `init` interativo.
-- Limite: não há Node 20 na máquina de desenvolvimento. A prova no Node 20 de verdade é o CI.
+- Não há Node 20 na máquina de desenvolvimento: a prova no Node 20 de verdade é o CI. Com a
+  correção, o CI ficou verde nas quatro células, com 464 testes em cada uma; o pior teste de
+  200 mil caracteres levou 442 ms no Ubuntu e 890 ms no Windows com Node 20 (limite: 2.000 ms).
