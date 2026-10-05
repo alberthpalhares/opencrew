@@ -1,6 +1,6 @@
 # Spec — Fase R1: Reparos da 1.6.0 — o verificador mede de verdade (1.6.1)
 
-- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** implementada (2026-10-05); release 1.6.1 aguardando a confirmação do dono
+- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** implementada e publicada como 1.6.1 (2026-10-05); a correção R1-05m (§14) vai na 1.6.2
 - **Termos novos no GLOSSARIO.md:** sim — Peça, Formato declarado, Não medido, Não verificado, Nota informativa, Ciclo de revisão
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §3 e §7 (os IDs entre parênteses são de lá)
@@ -508,6 +508,11 @@ caracteres; "125/70" é medido/limite. O grupo R1-10 continua o R1-01, que usou 
 - **R1-05l** (acrescentado na implementação, §14) DADO `--crew` em caminho absoluto de dentro do
   projeto e um termo proibido na memória da crew ENTÃO a memória é lida e o termo bloqueia, como
   com o caminho relativo.
+- **R1-05m** (acrescentado depois da publicação da 1.6.1, §14) DADO um texto de 100 mil
+  caracteres QUANDO os caracteres são contados ENTÃO o segmentador de grafemas nunca recebe o
+  texto inteiro de uma vez (no Node 20 isso esgotava a memória), E a contagem em janelas é
+  igual à do texto inteiro, com emoji composto, bandeira, acento combinado, `\r\n` e par
+  substituto caindo na borda de uma janela.
 
 **Conferência de fontes**
 - **R1-06a** DADO `- caminho: Docs/guia.md   # comentário` e `- caminho: "Docs/outro.md"`,
@@ -623,8 +628,8 @@ Os testes de R1-09a e R1-09b levam os dois IDs no nome: "F1-11a (R1-09a): …" e
 - [x] Conferências da seção 9 (1º e 2º itens) feitas antes da tag; o 3º item entra na jornada de
       referência (U0).
 - [ ] CHANGELOG 1.6.1; `npm version patch`; release (commit + tag) só com confirmação;
-      atualizar A e B só com autorização. Feitos: CHANGELOG e versão local. Faltam a tag e a
-      atualização dos dois projetos.
+      atualizar A e B só com autorização. Feitos: CHANGELOG, versão e release (tag `v1.6.1`,
+      publicada no npm em 2026-10-05). Falta a atualização dos dois projetos.
 
 **A porta não cobre:** uma IA seguindo as regras 18 a 21, e as partes do runner nas regras 1 e 11,
 numa execução real (→ U0).
@@ -645,6 +650,7 @@ numa execução real (→ U0).
 | Da revisão do código: descrição de foto entre colchetes que começa por Produto, Cliente, Evento, Cidade, Data, Nome, Link, Empresa ou Feira lida como placeholder; `BODY` e `CTA` de um bloco de e-mail ou WhatsApp somados ao post aberto antes; deixar de conferir a linha `Writes to` (L2-06, L3-09, L4-05) | → U3a — a entrega por canal define o que é peça de cada canal e onde a crew grava |
 | Da revisão do código: pasta de crew sem `crew.yaml` e `fontes:` em lista simples respondem "0 fontes" e `FONTES:OK` (L7-12) | → U4 — conserto de crews antigas: o build grava sempre `- caminho:` |
 | Da revisão do código: `=formato` com maiúsculas ou espaço lido como parte do caminho; arquivo enorme lido inteiro para saber se é binário; acento escrito como entidade HTML (L2-14, L7-13, L2-09) | → U5 — polimento |
+| Da conferência depois da publicação (§14): o pacote promete Node 20.0 ou mais novo, mas o `init` interativo (sem `--yes`, `--all` nem `--ide`) falha no Node 20.0 a 20.11, porque `@inquirer/checkbox` 5 importa `util.styleText`, que só existe a partir do 20.12. `init` com opção e `update` funcionam | → R2 — defeito do CLI, anterior a esta fase: escolher entre voltar a dependência para a linha 4.x e subir o piso do `engines` (README no mesmo commit), com teste que compare o piso do pacote com o das dependências |
 
 ## 12. Limites conhecidos
 - As regras 18 a 21, e as partes do runner nas regras 1 e 11, são seguidas pela IA; os testes
@@ -683,7 +689,8 @@ numa execução real (→ U0).
   fica na U5.
 - Os scripts seguem compatíveis com o Node 20.0: sem `readdir({ recursive: true })` (20.1),
   `import.meta.dirname` (20.11), `Object.groupBy` (21) e `fs.glob` (22). A leitura de `agents/`
-  usa caminhada própria, como a busca por nome.
+  usa caminhada própria, como a busca por nome. No Node 20 o `Intl.Segmenter` guarda uma cópia
+  da entrada em cada segmento: por isso os caracteres são contados em janelas (R1-05m).
 - No reparo, a IDE cujos arquivos de ponte próprios foram todos apagados não é detectada: ela só
   volta com `--ide`. O critério da detecção fica como está → R2 (H3-10).
 - As mensagens novas do `init --repair-bridges` saem em PT-BR; o resto do CLI continua em
@@ -840,3 +847,24 @@ consertos sem cenário próprio têm teste com "R1 revisão:" no nome. Fora das 
   errada (conferido alterando o código de propósito).
 - Adiados, com destino na §11 e na §12: L2-06, L2-09, L2-14, L3-08, L3-09, L4-05, L6-06 e L7-10
   a L7-14.
+
+**Correção depois da publicação (2026-10-05; vai na 1.6.2).** O CI do `main` falhou no Node 20
+(Ubuntu) logo depois da tag: `tests/verificar-contrato.test.js` morreu por falta de memória no
+primeiro teste de 200 mil caracteres.
+- Causa: `contar()` punha todos os segmentos do `Intl.Segmenter` numa lista, e no Node 20 cada
+  segmento carrega uma cópia da entrada inteira (memória ao quadrado). O código é o mesmo desde
+  a 1.5.0; foram os testes de desempenho da R1 que o mostraram. Só acontece no Node 20 e com
+  uma peça de dezenas de milhares de caracteres; nesse caso o runner avisa que a verificação não
+  rodou (regra 20).
+- Conserto: `grafemas()` conta em janelas de 1.024 caracteres, sem guardar os segmentos; o
+  resultado é o mesmo da contagem do texto inteiro (cenário R1-05m).
+- Por que a 1.6.1 saiu assim: o `publish.yml` roda só no Node 22, a tag foi enviada junto com o
+  `main`, sem esperar o CI, e as conferências locais rodam no Node 24. Daqui em diante: push do
+  `main`, CI verde nas quatro células (Ubuntu e Windows, Node 20 e 22) e só então a tag.
+- Conferência antes do novo push, por três lentes, com cada achado posto à prova: nada que
+  derrube o CI. A suíte passa com o custo do Node 20 simulado (cada segmento copiando a
+  entrada), com o checkout em CRLF e com a pasta temporária de nome curto, como no Windows do
+  CI, e com a ordem de leitura de pasta embaralhada, como no Linux. Nenhuma API posterior ao
+  Node 20.0 no código próprio. Um achado fora desta fase, com destino na §11: o piso do Node
+  prometido pelo pacote é mais baixo que o da dependência do `init` interativo.
+- Limite: não há Node 20 na máquina de desenvolvimento. A prova no Node 20 de verdade é o CI.

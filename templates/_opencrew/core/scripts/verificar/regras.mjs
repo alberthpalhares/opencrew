@@ -13,10 +13,41 @@ export const FALTA_INFO = 'Falta informação sua';
 export const NAO_MEDIDO = 'Não medido';
 export const NAO_VERIFICADO = 'Não verificado';
 
+const JANELA = 1024;
+
+/**
+ * Quantos grafemas o texto tem, contados em janelas e sem guardar os segmentos. No Node 20 cada
+ * segmento carrega uma cópia da entrada: com o texto inteiro de uma vez a memória cresce ao
+ * quadrado, e 200 mil caracteres derrubavam o processo. O último grafema de uma janela pode
+ * continuar na seguinte, por isso fica para ela; a janela nunca corta um par substituto.
+ */
+export function grafemas(texto, janela = JANELA) {
+  let total = 0;
+  let tamanho = janela;
+  for (let inicio = 0; inicio < texto.length;) {
+    let fim = Math.min(inicio + tamanho, texto.length);
+    if (fim < texto.length && texto.codePointAt(fim - 1) > 0xffff) fim++;
+    let quantos = 0;
+    let ultimo = 0;
+    for (const { index } of segmentador.segment(texto.slice(inicio, fim))) {
+      quantos++;
+      ultimo = index;
+    }
+    const acabou = fim === texto.length;
+    if (!acabou && quantos === 1) tamanho *= 2; // um grafema maior que a janela: tenta de novo
+    else {
+      total += acabou ? quantos : quantos - 1;
+      inicio = acabou ? fim : inicio + ultimo;
+      tamanho = janela;
+    }
+  }
+  return total;
+}
+
 /** Caracteres visíveis: sem marcadores de negrito/itálico; emoji conta 1; quebra de linha conta. */
 export function contar(texto) {
   const limpo = String(texto).replace(/\*\*|__/g, '').replace(/\*([^*\n]+)\*/g, '$1').trim();
-  return [...segmentador.segment(limpo)].length;
+  return grafemas(limpo);
 }
 
 export const item = (nome, medido, limite, nivel, detalhe = '') => ({ item: nome, medido, limite, nivel, detalhe });

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { verificar, formatarRelatorio } from '../templates/_opencrew/core/scripts/verificar.mjs';
+import { contar, grafemas } from '../templates/_opencrew/core/scripts/verificar/regras.mjs';
 import { projetoFalso, rodarMain, CREW, SAIDA, texto } from './_helpers.js';
 
 const SCRIPTS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../templates/_opencrew/core/scripts');
@@ -234,3 +235,34 @@ for (const [nome, [conteudo, formato, arquivo]] of Object.entries(ENTRADAS)) {
     assert.ok(performance.now() - inicio < 2000, `${Math.round(performance.now() - inicio)} ms`);
   });
 }
+
+// R1-05m: characters are counted in windows. Node 20 keeps a copy of the whole input in every
+// segment: with the whole text at once, 200 thousand characters ran the process out of memory.
+test('R1-05m: counting characters never hands the whole text to the segmenter', () => {
+  const original = Intl.Segmenter.prototype.segment;
+  let maior = 0;
+  Intl.Segmenter.prototype.segment = function segment(entrada) {
+    maior = Math.max(maior, entrada.length);
+    return original.call(this, entrada);
+  };
+  try {
+    assert.equal(contar('ação '.repeat(20_000)), 99_999); // the last space is trimmed
+  } finally {
+    Intl.Segmenter.prototype.segment = original;
+  }
+  assert.ok(maior <= 2048, `the segmenter got ${maior} characters at once`);
+});
+
+const PEDACOS = ['a', ' ', 'ç', 'e\u0301', '\r\n', '\n', '👍', '👍🏻', '👨‍👩‍👧‍👦', '🇧🇷', '1️⃣', '각',
+  '\u1100\u1161\u11A8', 'क्ष', 'नि', `z${'\u0301'.repeat(20)}`, '\uD83D', '\uDC4D', '\u200D', '🏳️‍🌈'];
+
+test('R1-05m: the count in windows equals the count of the whole text, whatever falls on a window edge', () => {
+  const inteiro = new Intl.Segmenter('pt', { granularity: 'grapheme' });
+  let semente = 7;
+  const sorteio = (n) => (semente = (semente * 48271) % 2147483647) % n;
+  for (let rodada = 0; rodada < 300; rodada++) {
+    const amostra = Array.from({ length: 60 }, () => PEDACOS[sorteio(PEDACOS.length)]).join('');
+    const esperado = [...inteiro.segment(amostra)].length;
+    for (const janela of [1, 2, 3, 5, 8, 13, 27, 64]) assert.equal(grafemas(amostra, janela), esperado, JSON.stringify([janela, amostra]));
+  }
+});
