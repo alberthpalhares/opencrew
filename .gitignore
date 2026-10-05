@@ -34,6 +34,8 @@ dashboard/test-results/
 RELATORIO-MELHORIAS.md
 ANALISE.md
 STATUS.md
+# Evidência bruta de revisões (cita caminhos locais e a estrutura dos projetos reais)
+docs/auditoria/*.local.json
 
 # OS / editor
 .DS_Store
