@@ -1,6 +1,6 @@
 # Spec — Fase R1: Reparos da 1.6.0 — o verificador mede de verdade (1.6.1)
 
-- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** aguardando aprovação
+- **Fase:** R1 · **Módulos:** Runtime (`templates/_opencrew/core/scripts/`, `runner.pipeline.md`) + CLI (`src/commands/init.js`, `src/lib/migrations.js`) + testes · **Status:** implementada (2026-10-05); release 1.6.1 aguardando a confirmação do dono
 - **Termos novos no GLOSSARIO.md:** sim — Peça, Formato declarado, Não medido, Não verificado, Nota informativa, Ciclo de revisão
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §3 e §7 (os IDs entre parênteses são de lá)
@@ -58,12 +58,12 @@ conhecidos" e "Fora de escopo" das specs F1, U1 e U2.
 |---|---|---|---|
 | pasta atual do comando | raiz do projeto | sim | contém `_opencrew/` |
 | `verificar.mjs --crew` | pasta | sim | dentro do projeto e existente |
-| `verificar.mjs --arquivo` | lista separada por vírgula; cada item é `caminho` ou `caminho=formato` | sim | todos os caminhos dentro do projeto; ao menos um existe; `=formato` só vale com minúsculas, dígitos e hífen (senão o item inteiro é o caminho) |
+| `verificar.mjs --arquivo` | lista separada por vírgula (a opção repetida soma à lista); cada item é `caminho` ou `caminho=formato` | sim | todos os caminhos dentro do projeto; ao menos um existe; `=formato` só vale com minúsculas, dígitos e hífen (senão o item inteiro é o caminho) |
 | `verificar.mjs --formato` | `blog-post` ou `blog-seo` | não | só escolhe os limites de blog do item sem `=formato` que tem título no frontmatter, como na 1.6.0; ausente: `blog-post`. Não conta como formato declarado |
 | `conferir-fontes.mjs --crew` | pasta | sim | dentro do projeto e existente |
 | `conferir-fontes.mjs --corrigir` | opção | não | — |
 | `init --repair-bridges` com `--ide=<ids>`, `--all` ou `--yes` | opções do CLI | não | `--ide` com id válido; sem `--ide` e sem `--all`: detecção (regra 22) |
-| `max_review_cycles` | número, no mesmo lugar em que o passo declara `on_reject` (frontmatter do passo ou a entrada dele no `pipeline.yaml`) | não | inteiro a partir de 1; ausente ou inválido: 3 |
+| `max_review_cycles` | número, no mesmo lugar em que o passo declara `on_reject` (frontmatter do passo ou a entrada dele no `pipeline.yaml`) | não | inteiro a partir de 1; ausente ou inválido: 3. Em crew nova, o build grava o valor pelo tier: Express 1, Standard 2, Full 3 |
 
 Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/legendas.md=instagram-feed"`.
 
@@ -84,21 +84,24 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
 - **Código de saída do verificador:** 0 quando ao menos um caminho da lista existe (se nenhum for
   texto, o status é `VERIFICACAO:OK`); 1 em erro de uso: opção obrigatória faltando, raiz sem
   `_opencrew/`, crew inexistente, crew ou algum caminho fora do projeto, nenhum caminho da lista
-  existe. Em erro de uso não há linha `VERIFICACAO:`.
+  existe. Em erro de uso não há linha `VERIFICACAO:`. Erro inesperado fora da verificação de um
+  arquivo também dá 1, sem linha de status ("Não consegui verificar: …", §6).
 - **Conferência de fontes:** última linha `FONTES:OK` ou `FONTES:PENDENTE`, sem mudança. Código 0
   quando conferiu; 1 em erro de uso (opção faltando, raiz sem `_opencrew/`, crew inexistente ou
   fora do projeto), sem linha `FONTES:` e sem escrever nada.
 - **`init --repair-bridges`:** resumo com as IDEs regravadas e as cópias de segurança feitas;
-  código 1 quando não há ponte detectada, nem `--ide`, nem `--all`.
+  código 1, sem escrever nada, quando a pasta não tem workspace do OpenCrew ou quando não há
+  ponte detectada, nem `--ide`, nem `--all`.
 
 ## 5. Regras de negócio
 
 **Verificador: reconhecer o que foi escrito**
 1. **Formato por arquivo.** Cada item da lista pode trazer o seu formato (`caminho=formato`): é o
    **formato declarado**. O runner passa o `format:` do passo que gerou o arquivo e deixa de
-   passar `--formato`. Passo sem `format:`, ou com `format:` de exportação (`pdf`, `csv`,
-   `formatted-post`), vai sem `=formato`. Com formato declarado, a palavra do canal fica
-   implícita: basta o cabeçalho dizer a peça (`## Legenda`, `## Post`, `## Carrossel`).
+   passar `--formato`. Passo sem `format:`, com `format:` de exportação (`pdf`, `csv`,
+   `formatted-post`) ou com `format:` que não é só minúsculas, dígitos e hífen vai sem
+   `=formato`. Com formato declarado, a palavra do canal fica implícita: basta o cabeçalho
+   dizer a peça (`## Legenda`, `## Post`, `## Carrossel`).
 2. **Seção nos dois jeitos de escrever.** Uma seção começa num cabeçalho markdown ou numa linha
    `=== RÓTULO ===` (a escrita com rótulos, que os best-practices ensinam).
    - A seção de cabeçalho vai até o próximo cabeçalho do mesmo nível ou de nível acima, ou até a
@@ -110,8 +113,9 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
      `=== HOOK ===` ou `=== TWEET ===` abre uma peça. `BODY`, `INSIGHTS` e `CTA` pertencem ao
      post aberto por último (sem `HOOK` antes, abrem o primeiro post); `HASHTAGS`, à legenda ou
      ao post aberto por último. Em blog vale a primeira ocorrência de cada rótulo.
-   - A linha `---` não encerra seção e não conta como texto. A contagem de caracteres é a da
-     regra 6 da U1: as quebras de linha contam.
+   - A linha `---` não encerra seção e não conta como texto; a linha que é só a cerca de um
+     bloco de código (três ou mais crases ou tis) também não conta. A contagem de caracteres é
+     a da regra 6 da U1: as quebras de linha contam.
 3. **O que é medido em cada formato** (fonte única; os nomes de limite são os de `constraints:`).
    **Peça** é o trecho do texto que tem limite próprio.
 
@@ -119,10 +123,10 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
    |---|---|---|---|
    | `blog-post`, `blog-seo` | título | frontmatter `title` ou `titulo`; senão `=== TITLE ===` ou `=== TITLE TAG ===` | `title_max_chars` |
    | | meta description | frontmatter `meta_description` ou `meta_descricao`; senão `=== META DESCRIPTION ===` | `meta_description_chars` |
-   | | links | corpo do arquivo | `min_internal_links`, `min_external_links` (alerta; só quando o formato declara) |
+   | | links | corpo do arquivo; imagem e link de âncora (`#…`) não contam | `min_internal_links`, `min_external_links` (alerta; só quando o formato declara) |
    | `instagram-feed` | legenda | `=== CAPTION ===`; cabeçalho com a palavra da peça | `caption_max_chars` |
    | | hashtags | dentro da legenda; em `=== HASHTAGS ===`; em seção com "hashtags" no cabeçalho, que soma à legenda anterior | `hashtags_max` |
-   | | slides | quantos números N diferentes aparecem em linhas que começam por "Slide N" (cabeçalho, negrito, item ou texto), dentro de `=== SLIDES ===` ou sob cabeçalho com a palavra da peça | `carousel_max_slides` |
+   | | slides | quantos números N diferentes aparecem em linhas que começam por "Slide N" ou "Slide #N" (cabeçalho, negrito, item ou texto; antes pode haver até 12 símbolos, como um emoji), dentro de `=== SLIDES ===` ou sob cabeçalho com a palavra da peça. Sem essa peça, num `=instagram-feed`, valem os cabeçalhos "Slide N" do arquivo inteiro, quando trazem 2 ou mais números | `carousel_max_slides` |
    | `linkedin-post` | post | o texto de `=== HOOK ===`, `=== BODY ===`, `=== INSIGHTS ===` e `=== CTA ===`, na ordem, unido por uma linha em branco; cabeçalho com a palavra do canal ou da peça, e sem a de slides | `post_max_chars` |
    | | hashtags | dentro do post; em `=== HASHTAGS ===`; em seção com "hashtags" no cabeçalho, que soma ao post anterior | `hashtags_max` |
    | `twitter-post` | tweet | `=== TWEET ===`: a seção inteira é um tweet; cabeçalho com a palavra do canal ou da peça: um tweet por parágrafo, como na 1.6.0 | `tweet_max_chars` |
@@ -131,7 +135,11 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
    `legenda` ou `caption`; slides = `carrossel`, `carousel` ou `slides`; post = `post`; tweet =
    `tweet`. As palavras casam inteiras (antes e depois não há letra nem dígito), com plural, sem
    diferenciar maiúsculas e acentos: "proposta" e "retweet" não casam. Um cabeçalho "Slide N" é
-   um slide, não um carrossel.
+   um slide, não um carrossel, mesmo com palavra de peça ou de canal no texto. Um cabeçalho que
+   começa por "hashtags" é só seção de hashtags: com a palavra de um canal, soma à peça desse
+   canal aberta por último (`## Hashtags LinkedIn` → o post do LinkedIn); as do Twitter não
+   somam a ninguém. Um cabeçalho que casa com legenda e com slides abre uma peça só: slides, se
+   o texto tem linha "Slide N"; senão, legenda.
 
    Qual linha da tabela vale em cada arquivo `.md` ou `.txt`:
    - **(a) Formato declarado da tabela:** são procuradas as peças desse formato, pelos rótulos e
@@ -141,10 +149,11 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
      pelo formato desse canal (ex.: `## Post LinkedIn` num `=instagram-feed`). Critérios da
      1.6.0: Instagram pede a palavra do canal e a da peça; LinkedIn e Twitter, só a do canal
      (cabeçalho de carrossel do LinkedIn não é post). Em `blog-post` e `blog-seo`, cabeçalho é
-     conteúdo: um `## Como postar no LinkedIn` não é post.
+     conteúdo: um `## Como postar no LinkedIn` não é post, e o relatório diz que essa seção não
+     foi medida (regra 6).
    - **(c) Formato declarado fora da tabela** (`instagram-reels`, `twitter-thread`,
-     `email-newsletter`…): vale só (b). Os rótulos não são lidos, e o `title:` do frontmatter não
-     é medido como blog.
+     `email-newsletter`…): vale só (b). Os rótulos não são lidos (a linha de rótulo é texto
+     comum e não encerra a seção), e o `title:` do frontmatter não é medido como blog.
    - **(d) Sem formato declarado:** vale (b); cada rótulo inconfundível abre uma peça do seu
      formato (`CAPTION` e `SLIDES` → `instagram-feed`; `HOOK` → `linkedin-post`; `TWEET` →
      `twitter-post`); e `title` ou `titulo` no frontmatter é medido como blog, pelos limites de
@@ -171,6 +180,8 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
      como na 1.6.0.
    - Formato declarado fora da tabela, com best-practice, e nenhuma peça medida no arquivo: "Não
      medido — o verificador ainda não mede os limites do formato…", sem nível.
+   - Blog declarado com seção cujo cabeçalho casaria com outro canal: "Não medido — seção de
+     outro canal num arquivo de blog: {cabeçalho}", sem nível, uma linha por cabeçalho.
    - `✅ Nada a apontar.` só aparece quando ao menos uma peça foi medida e o arquivo não tem
      bloqueio, alerta nem linha "Não medido". Arquivo sem peça medida, sem linha "Não medido" e
      sem achado recebe `⚪ Nada a apontar nas checagens gerais (limites não medidos)`; sem
@@ -196,6 +207,9 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
    - Não é texto: `.png .jpg .jpeg .gif .webp .bmp .ico .svg .pdf .doc .docx .xls .xlsx .ods
      .pptx .mp3 .wav .ogg .mp4 .mov .webm .zip .css .js .json` e qualquer arquivo com conteúdo
      binário (contém byte nulo). Saem juntos na linha "Não verificado — não é texto" (§4).
+   - `.md`, `.txt`, `.html` e `.htm` gravados em UTF-16 com a marca de início são lidos
+     normalmente; com byte nulo e sem a marca, viram o alerta "Não verificado — o arquivo não
+     está em UTF-8" (§6).
    - Os demais são texto (`.md`, `.txt`, `.csv`, `.yaml`…).
 10. **Termo proibido é palavra inteira.** Compara sem diferenciar maiúsculas e acentos. Antes do
     termo, e depois dele ou do seu plural simples (`s`, `es`), não pode haver letra nem dígito;
@@ -207,8 +221,10 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
     - Marcadores: `prefira`, `preferir`, `use`, `usar`, `utilize`, `utilizar`, `→`, `->`, e `por`
       quando vem logo antes de um termo entre aspas.
     - O marcador só vale como palavra inteira, fora das aspas, depois do primeiro termo, e quando
-      a palavra anterior não é negação (`não`, `nunca`, `nem`, `jamais`, `sem`, `evite`,
-      `evitar`).
+      não há negação entre as 3 palavras antes dele, sem atravessar o termo entre aspas anterior.
+      Negações: `não`, `nunca`, `nem`, `jamais`, `sem`, `evite`, `evitar`, `proibido`,
+      `proibida`, `proibidos`, `proibidas`, `vetado`, `vetada`, `parar`, `pare`, `deixar`,
+      `deixe`.
     - `em vez de`, `ao invés de` e `no lugar de` não são marcadores: nessa linha todos os termos
       entre aspas continuam proibidos, como na 1.6.0.
     - Uma nota informativa lista os termos lidos como preferidos (§6).
@@ -217,8 +233,9 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
       checkpoint e na atualização da memória no fim da execução.
 12. **O overlay local soma, não substitui.** Os limites são os do core, com as chaves que o
     arquivo de `_opencrew/best-practices.local/` declarar por cima. Overlay sem `constraints:`
-    usa os do core e gera nota informativa (§6). Formato da tabela cujo arquivo só existe no
-    overlay usa os limites dele.
+    usa os do core e gera nota informativa (§6). Limite do overlay que não é número inteiro é
+    ignorado: vale o do core, com nota informativa (§6). Formato da tabela cujo arquivo só
+    existe no overlay usa os limites dele.
 
 **Verificador e conferência: contrato**
 13. **Raiz e crew conferidas** nos dois scripts, nesta ordem: opção obrigatória faltando; pasta
@@ -228,23 +245,31 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
 14. **Verifica o que der.** Item da lista que não existe, que é pasta ou que dá erro ao ler ou ao
     aplicar uma regra vira alerta "Não verificado — {motivo}", e os outros seguem. Link
     malformado é ignorado na contagem de links. Caminho absoluto dentro do projeto é aceito.
-    Fora os casos da regra 13, o código só é 1 quando nenhum caminho da lista existe.
+    Item repetido na lista (mesmo caminho e mesmo formato) é verificado uma vez. Fora os casos
+    da regra 13 e o erro inesperado (§4), o código só é 1 quando nenhum caminho da lista existe.
 
 **Conferência de fontes**
 15. `caminho:` aceita aspas e comentário no fim da linha.
 16. A coleta também lê todos os `.md` dentro de `agents/` da crew, em qualquer nível (agentes e
-    tasks).
+    tasks). O caminho relativo citado ali é procurado na crew, na raiz e, por fim, na pasta do
+    arquivo que cita e, para `agents/X.agent.md`, em `agents/X/`. Não é caminho: comando entre
+    crases (`node …`, `npx …`, `git …`) e nome com marcador de modelo (`AAAA-MM-DD`; R1-06j).
 17. **Mensagens verdadeiras** (textos na §6). `--corrigir` troca os caminhos de sugestão única
     e, se sobra pendência sem sugestão única, diz quantas; "Nada a corrigir." só sem pendência.
-    Pasta citada sem barra final também é procurada como pasta. Quando a busca por nome para no
-    limite de itens, o relatório diz que foi parcial e não afirma "nem nada com esse nome no
-    projeto".
+    A troca vale só onde o caminho foi lido (o texto inteiro entre crases; no `crew.yaml`, o
+    valor de `caminho:`), nunca num pedaço de outro texto. Pasta citada sem barra final também
+    é procurada como pasta. Quando a busca por nome para no limite de itens, o relatório diz
+    que foi parcial e não afirma "nem nada com esse nome no projeto". Em dois casos não há
+    sugestão única, só candidato listado: busca parcial; e caminho de destino (linha
+    `Writes to` de um agente), para o `--corrigir` nunca apontar a gravação para um arquivo que
+    já existe.
 
 **Runner**
 18. **Laço de revisão com fim.** **Ciclo** = uma passada do revisor. Máximo de ciclos:
     `max_review_cycles` (§3); sem ele, 3. Se a última passada permitida também rejeita, o runner
-    para e mostra ao usuário o relatório (com bloqueio) ou o parecer do revisor (sem bloqueio),
-    com as opções *1. Corrigir eu mesmo · 2. Aceitar assim mesmo · 3. Abortar*. A opção 2 perde
+    para, e o status do último relatório escolhe o que mostrar: `VERIFICACAO:BLOQUEADA`, os
+    bloqueios; qualquer outro (inclusive `AGUARDANDO_USUARIO`), o parecer do revisor. As opções
+    são *1. Corrigir eu mesmo · 2. Aceitar assim mesmo · 3. Abortar*. A opção 2 perde
     o "(fica registrado no histórico da execução)": nada é gravado até a U3a (H2-07). O parecer
     do revisor vai ao redator em toda rejeição.
 19. **Regras do revisor em toda execução.** Em todo passo com `on_reject`, o runner injeta este
@@ -261,9 +286,12 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
 20. **Script que não rodou não passa em silêncio.** Sem Node, com erro ou sem linha de status,
     o runner avisa e segue: "⚠️ A verificação automática não rodou: {motivo}" ou "⚠️ A
     conferência de fontes não rodou: {motivo}". A aprovação final repete o aviso. A conferência
-    roda antes de carregar as fontes; depois de `--corrigir`, as fontes são relidas.
+    roda antes de carregar as fontes; depois de `--corrigir`, o runner relê o `crew.yaml` e os
+    agentes já carregados e só então carrega as fontes. Se o resultado ainda for
+    `FONTES:PENDENTE`, pergunta de novo, só com "Seguir assim mesmo" e "Parar".
 21. A aprovação final mostra a quantidade e a lista dos itens não medidos ou não verificados
-    (arquivo — motivo).
+    (arquivo — motivo): os mesmos que o Z do resumo conta. Em seguida mostra as linhas de
+    "Notas" do relatório, como o verificador as escreveu.
 
 **CLI**
 22. `init --repair-bridges` sem `--ide` e sem `--all` usa a mesma detecção do `update` e regrava
@@ -271,8 +299,10 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
     `--ide`, vale a lista pedida (também quando vem junto com `--all`). `--all` sozinho regrava
     as 9, por escolha explícita. Sem ponte detectada, sem `--ide` e sem `--all`, para com erro
     (§6). O resumo lista cada cópia de segurança, com o
-    caminho em `.opencrew-backup/<data>/`. A precedência das opções no `init` comum não muda
-    (C-11 → U5).
+    caminho em `.opencrew-backup/<data>/`. O reparo não instala: numa pasta sem workspace do
+    OpenCrew, para com erro antes de qualquer escrita, com qualquer opção (§6). Num workspace
+    sem `manifest.json`, não cria o manifesto: quem cria é o `update`. A precedência das opções
+    no `init` comum não muda (C-11 → U5).
 
 ## 6. Erros e casos-limite
 | Situação | Comportamento | Mensagem |
@@ -285,28 +315,37 @@ Exemplo: `--arquivo "crews/x/output/r1/v2/post.md=blog-seo,crews/x/output/r1/v3/
 | Um item da lista não existe | alerta; os outros são verificados | "⚠️ Não verificado — arquivo não encontrado" |
 | Pasta na lista | alerta; os outros seguem | "⚠️ Não verificado — é uma pasta" |
 | Erro ao ler o arquivo ou ao aplicar uma regra | alerta; os outros seguem | "⚠️ Não verificado — erro ao verificar: {mensagem}" |
+| `.md`, `.txt`, `.html` ou `.htm` com byte nulo e sem a marca de UTF-16 | alerta; os outros seguem | "⚠️ Não verificado — o arquivo não está em UTF-8" |
+| Erro inesperado fora da verificação de um arquivo | código 1, sem status | "Não consegui verificar: {mensagem}" |
 | Arquivo que não é texto | uma linha só, sem nível, fora do resumo | "⚪ Não verificado — não é texto (N): {lista}" |
 | Formato declarado sem best-practice | nota informativa; rodam as checagens gerais | "Formato "{id}" não encontrado em `_opencrew/best-practices.local/` nem em `_opencrew/core/best-practices/`." |
 | Overlay local sem `constraints:` | usa os limites do core; nota informativa | "O arquivo `_opencrew/best-practices.local/{id}.md` não declara limites (`constraints:`); usei os do core." |
+| Limite do overlay local que não é número inteiro | vale o do core; nota informativa | "O arquivo `_opencrew/best-practices.local/{id}.md` tem um limite que não é número inteiro (`{chave}: {valor}`); usei o do core." |
 | Formato da tabela declarado, peça principal não achada | alerta | "⚠️ Não medido — não encontrei {peça} neste arquivo (formato {id})"; {peça}: "o título", "legenda nem slides", "o post" ou "o tweet" |
 | Peça achada, formato sem o limite | sem nível; conta em Z | "⚪ Não medido — {peça}: sem limite definido no formato {id}"; {peça}: "título", "meta description", "legenda", "hashtags", "slides", "post" ou "tweet" |
 | Formato declarado fora da tabela, com best-practice, e nada medido no arquivo | sem nível; conta em Z | "⚪ Não medido — o verificador ainda não mede os limites do formato {id}" |
+| Blog declarado com seção de outro canal | sem nível; conta em Z; a seção não é medida | "⚪ Não medido — seção de outro canal num arquivo de blog: {cabeçalho}" |
 | Arquivo sem formato declarado e sem achado | não conta em Z | "⚪ Nada a apontar nas checagens gerais (formato não informado: limites não medidos)" |
 | Arquivo com formato declarado, sem procura de peça (`.html`, `.csv`, formato sem best-practice) e sem achado | não conta em Z | "⚪ Nada a apontar nas checagens gerais (limites não medidos)" |
 | `{{variável}}` em e-mail ou WhatsApp | nota informativa, sem bloqueio | "Variável de personalização {{…}}: confira se a sua ferramenta de envio troca pelo dado real." |
 | Linha de proibição com termo preferido | o termo preferido não bloqueia; nota informativa | "Termos lidos como preferidos (não bloqueiam): "…"" |
 | `--corrigir` com pendência sem sugestão única | esses itens não mudam; os de sugestão única são trocados | "Não há correção automática para {N} pendência(s): escolha um candidato ou corrija o caminho na crew." |
-| Busca por nome parou no limite de itens | segue; o relatório avisa | "Procurei só nos primeiros {limite} itens do projeto; pode existir um arquivo com esse nome que eu não vi." |
+| Busca por nome parou no limite de itens | segue; o relatório avisa; o candidato visto é listado ("Encontrei 1 candidato: …"), sem virar sugestão | "Procurei só nos primeiros {limite} itens do projeto; pode existir um arquivo com esse nome que eu não vi." |
+| Lista com mais de 20 candidatos ou nomes da pasta esperada | mostra os 20 primeiros; a contagem segue completa | "… e mais {N}" |
 | Script não rodou (sem Node, erro ou sem linha de status) | o runner avisa, segue e repete o aviso na aprovação final | "⚠️ A verificação automática não rodou: {motivo}" ou "⚠️ A conferência de fontes não rodou: {motivo}" |
-| Limite de ciclos sem bloqueio | o runner para e mostra o parecer e as três opções | "A revisão não aprovou o texto depois de {N} ciclos. Motivo: {parecer resumido}" |
+| Limite de ciclos, último relatório `VERIFICACAO:BLOQUEADA` | o runner para e mostra os bloqueios e as três opções | "⚠️ A revisão ainda encontra bloqueios depois de {N} ciclos:" |
+| Limite de ciclos, qualquer outro status | o runner para e mostra o parecer e as três opções | "A revisão não aprovou o texto depois de {N} ciclos. Motivo: {parecer resumido}" |
 | `--repair-bridges` sem ponte detectada, sem `--ide` e sem `--all` | código 1, nada escrito | "Não encontrei pontes de IDE aqui. Use `--ide=<id>` para escolher. Ids válidos: {lista}." |
+| `--repair-bridges` numa pasta sem workspace do OpenCrew | código 1, nada escrito, com qualquer opção | "Não encontrei um workspace do OpenCrew nesta pasta. O reparo não instala: para instalar, rode `npx @aksp/opencrew@latest init`." |
 
 ## 7. Segurança
 O verificador só lê dentro do projeto. A conferência recusa `--crew` de fora (regra 13) e só lê o
 conteúdo e escreve em arquivos da crew; `--corrigir` guarda `.bak`. Para um caminho absoluto ou
 com `..` citado pela crew, ela continua testando se existe e, quando falta, listando os nomes da
 pasta esperada, mesmo fora do projeto, sem ler conteúdo (regra 2 da U2, sem mudança). Nenhum
-acesso à rede. Nada é apagado.
+acesso à internet. Nada é apagado. Dois limites, só com link ou caminho de rede criados pelo
+próprio usuário (§12): a checagem de "dentro do projeto" compara o texto dos caminhos e não
+resolve links; e um caminho de rede (`\\servidor\…`) citado pela crew é testado como os outros.
 
 ## 8. Cenários BDD
 Nos cenários, "num `=formato`" quer dizer que o arquivo vai na lista com esse formato declarado;
@@ -466,6 +505,9 @@ caracteres; "125/70" é medido/limite. O grupo R1-10 continua o R1-01, que usou 
   é uma pasta" e o arquivo é verificado.
 - **R1-05k** DADO o verificador sem `--crew` ou sem `--arquivo` ENTÃO código 1, "Falta a opção
   obrigatória …" e a linha de uso, que cita `caminho=formato`.
+- **R1-05l** (acrescentado na implementação, §14) DADO `--crew` em caminho absoluto de dentro do
+  projeto e um termo proibido na memória da crew ENTÃO a memória é lida e o termo bloqueia, como
+  com o caminho relativo.
 
 **Conferência de fontes**
 - **R1-06a** DADO `- caminho: Docs/guia.md   # comentário` e `- caminho: "Docs/outro.md"`,
@@ -485,6 +527,12 @@ caracteres; "125/70" é medido/limite. O grupo R1-10 continua o R1-01, que usou 
   mensagem do verificador e nenhuma linha `FONTES:`.
 - **R1-06h** DADO `conferir-fontes.mjs --crew crews/nao-existe` ENTÃO código 1, "Crew não
   encontrada: crews/nao-existe" e nenhuma linha `FONTES:`.
+- **R1-06i** (acrescentado na implementação, §14) DADO a conferência sem `--crew` ENTÃO código 1,
+  "Falta a opção obrigatória --crew." e a linha de uso.
+- **R1-06j** (acrescentado depois da conferência no Projeto A, §14) DADO um caminho com marcador
+  de modelo entre crases num arquivo de agente (`Relatorios/AAAA-MM-DD_resumo.pdf`,
+  `Relatorios/YYYY-MM-DD-nota.md`) ENTÃO ele não é conferido: nenhuma pendência e `FONTES:OK`;
+  DADO `Relatorios/2026-03-03_resumo.pdf` inexistente ENTÃO pendência.
 
 **Runner (contratos de prompt)**
 - **R1-07a** o runner passa `caminho=formato` com o `format:` do passo de cada arquivo, não passa
@@ -543,30 +591,40 @@ Os testes de R1-09a e R1-09b levam os dois IDs no nome: "F1-11a (R1-09a): …" e
 "F1-01d (R1-09b): …".
 
 ## 9. O que o humano confere na tela
-- [ ] Antes da tag, sem atualizar nada: a partir da pasta do Projeto A, rodar o verificador deste
+- [x] Antes da tag, sem atualizar nada: a partir da pasta do Projeto A, rodar o verificador deste
       repositório (só leitura) nas saídas da última execução, com `=linkedin-post` e `=blog-seo`.
       Cada post aparece medido em separado, não há "Nada a apontar" sem medição e nenhum bloqueio
       é falso. Depois do `update` autorizado, repetir com o script instalado.
-- [ ] No Projeto A, antes da tag: rodar a conferência de fontes deste repositório (sem
+      Feito em 2026-10-05 (§14): seis posts medidos um a um, título e meta do blog no limite,
+      nenhum bloqueio falso; só os `[PREENCHER]` de verdade. A repetição com o script instalado
+      fica para depois do `update`.
+- [x] No Projeto A, antes da tag: rodar a conferência de fontes deste repositório (sem
       `--corrigir`) e ver que nenhuma pendência nova vem de texto de agente ou de task que não é
       caminho.
+      Feito em 2026-10-05 (§14): numa crew, 39 fontes conferidas, nenhuma pendência; na outra,
+      uma pendência falsa vinda de um arquivo de agente (caminho de destino com modelo de data
+      no nome). Virou o cenário R1-06j e foi corrigido antes da tag. Repetido com o código
+      final: as duas crews dão `FONTES:OK` (39 e 33 fontes), e o verificador segue sem bloqueio
+      falso.
 - [ ] Rodar uma crew até a revisão: o relatório aparece antes do parecer e o revisor cita os
       números dele (jornada de referência, U0).
 
 ## 10. Critérios de aceite
-- [ ] Cenários com teste de mesmo ID, vistos vermelhos antes do código — menos R1-09a a R1-09d,
+- [x] Cenários com teste de mesmo ID, vistos vermelhos antes do código — menos R1-09a a R1-09d,
       que já passam hoje e ficam como trava de regressão (ver cada um falhar com uma alteração
-      provisória, desfeita em seguida).
-- [ ] `npm run verify` verde; os testes U1 e U2 existentes continuam passando (as pastas de teste
+      provisória, desfeita em seguida). Os 101 IDs da seção 8 têm teste; os consertos da revisão
+      do código sem cenário próprio levam "R1 revisão:" no nome do teste (§14).
+- [x] `npm run verify` verde; os testes U1 e U2 existentes continuam passando (as pastas de teste
       da conferência ganham `_opencrew/`).
-- [ ] Os comentários de cabeçalho e a linha de uso de `verificar.mjs` citam os três estados e
+- [x] Os comentários de cabeçalho e a linha de uso de `verificar.mjs` citam os três estados e
       `caminho=formato`; os dos dois scripts citam os códigos de saída desta spec (A-34, H2-09).
-- [ ] Specs F1, U1 e U2, README (linhas do `init --repair-bridges`), `GLOSSARIO.md`, `AGENTS.md`
+- [x] Specs F1, U1 e U2, README (linhas do `init --repair-bridges`), `GLOSSARIO.md`, `AGENTS.md`
       (tabela Regra → Trava) e a ajuda do CLI (`src/cli.js`) corrigidos no mesmo commit (regra 9).
-- [ ] Conferências da seção 9 (1º e 2º itens) feitas antes da tag; o 3º item entra na jornada de
+- [x] Conferências da seção 9 (1º e 2º itens) feitas antes da tag; o 3º item entra na jornada de
       referência (U0).
 - [ ] CHANGELOG 1.6.1; `npm version patch`; release (commit + tag) só com confirmação;
-      atualizar A e B só com autorização.
+      atualizar A e B só com autorização. Feitos: CHANGELOG e versão local. Faltam a tag e a
+      atualização dos dois projetos.
 
 **A porta não cobre:** uma IA seguindo as regras 18 a 21, e as partes do runner nas regras 1 e 11,
 numa execução real (→ U0).
@@ -578,11 +636,15 @@ numa execução real (→ U0).
 | Registrar o "aceitar assim mesmo" (H2-07) | → U3a — a entrega grava o aceite |
 | Relatório do laço de revisão gravado pelo script (H2-16) | → U5 — custo de tokens; não desliga a trava |
 | Medir assunto e prévia de e-mail, WhatsApp e cada tweet de thread; contar legenda e post com as hashtags no fim; em artigo, e-mail e roteiro, cabeçalho é conteúdo (H2-13) | → U3a — a tabela de formatos cresce com a entrega por canal |
-| Hashtags do tweet, título do YouTube, título do artigo do LinkedIn e legenda de Reels (H2-13) | → U5 — até lá aparecem como não medido |
+| Hashtags do tweet, título do YouTube, título do artigo do LinkedIn e legenda de Reels (H2-13) | → U5 — até lá não são medidos. Os formatos fora da tabela aparecem como "não medido"; as hashtags do tweet não geram linha (o formato não declara limite para elas) |
 | Tabela única canal → arquivos | → U3a — nasce com a pasta por canal |
 | Mudar a escrita com rótulos dos best-practices | → U5 — o verificador e a entrega leem os dois jeitos de escrever |
 | Proibições antigas sem aspas; `fontes:` e regras em crews antigas (H2-05, H3-03, H1-01) | → U4 — conserto de crews antigas |
 | Contagem por canal do X/Twitter; arquivo de acréscimo no overlay local e aviso no `update`; best-practice do overlay visível na criação; oferta de trocar caminho absoluto por relativo; precedência de `-y` e `--ide` no `init` comum (H2-17, H3-01, H3-07, H3-16, C-11) | → U5 — polimento: nenhum deles desliga a trava |
+| Da revisão do código: checagem de "dentro do projeto" sem resolver links; caminho de rede testado pela conferência; reparo sem a guarda de versão do `update`; caracteres de shell em caminho ou em texto que o runner passa a um script (L7-10, L7-11, L6-06, L7-14) | → R2 — `update` e envio seguros: mesma família de defeito, e nenhum acontece sem link, caminho de rede ou nome fora do padrão criados pelo usuário |
+| Da revisão do código: descrição de foto entre colchetes que começa por Produto, Cliente, Evento, Cidade, Data, Nome, Link, Empresa ou Feira lida como placeholder; `BODY` e `CTA` de um bloco de e-mail ou WhatsApp somados ao post aberto antes; deixar de conferir a linha `Writes to` (L2-06, L3-09, L4-05) | → U3a — a entrega por canal define o que é peça de cada canal e onde a crew grava |
+| Da revisão do código: pasta de crew sem `crew.yaml` e `fontes:` em lista simples respondem "0 fontes" e `FONTES:OK` (L7-12) | → U4 — conserto de crews antigas: o build grava sempre `- caminho:` |
+| Da revisão do código: `=formato` com maiúsculas ou espaço lido como parte do caminho; arquivo enorme lido inteiro para saber se é binário; acento escrito como entidade HTML (L2-14, L7-13, L2-09) | → U5 — polimento |
 
 ## 12. Limites conhecidos
 - As regras 18 a 21, e as partes do runner nas regras 1 e 11, são seguidas pela IA; os testes
@@ -612,8 +674,13 @@ numa execução real (→ U0).
 - Telefone falso de 8 ou 9 dígitos repetidos, fora de link, não é pego.
 - Caminho citado fora de crases (em passos, agentes e tasks) não é conferido → sem fase — o
   build grava os caminhos entre crases (limite herdado da U2).
+- Caminho com marcador de modelo no nome (`AAAA-MM-DD`, `{…}`, `<…>`, `*`) não é conferido: é
+  nome a preencher, não arquivo. Caminho de destino sem marcador, citado entre crases num
+  agente e ainda inexistente, continua virando pendência: a saída é "Seguir assim mesmo"
+  → U3a (a entrega declara o destino no `crew.yaml`, fora da conferência).
 - "Aceitar assim mesmo" continua sem registrar nada → U3a (H2-07).
-- O runner (916 linhas, alvo 400) ganha cerca de 25 linhas; a divisão fica na U5.
+- O runner foi de 917 para 945 linhas (alvo 400) e o `build.prompt.md` ganhou 2 (673); a divisão
+  fica na U5.
 - Os scripts seguem compatíveis com o Node 20.0: sem `readdir({ recursive: true })` (20.1),
   `import.meta.dirname` (20.11), `Object.groupBy` (21) e `fs.glob` (22). A leitura de `agents/`
   usa caminhada própria, como a busca por nome.
@@ -621,14 +688,32 @@ numa execução real (→ U0).
   volta com `--ide`. O critério da detecção fica como está → R2 (H3-10).
 - As mensagens novas do `init --repair-bridges` saem em PT-BR; o resto do CLI continua em
   inglês → U5.
+- Arquivo `=twitter-post` sem cabeçalho nem rótulo, com várias opções de tweet separadas por
+  linha em branco, é medido como um tweet só (regra 5): escrever cada opção sob
+  `=== TWEET ===` resolve → U5 (L3-08).
+- Descrição de foto entre colchetes que começa por uma das palavras de placeholder
+  (`[Produto sobre a mesa…]`) ainda bloqueia → U3a (L2-06).
+- `max_review_cycles` só entra em crew nova, e só quando o desenho da crew tem tier; crew já
+  criada segue no padrão 3 → U4.
+- Blog que fala de redes sociais (`## Como postar no LinkedIn`) sai com uma linha "Não medido"
+  por cabeçalho e sem "✅ Nada a apontar.": o relatório prefere dizer a mais.
+- Negação perto do marcador cancela a troca mesmo em frase afirmativa ("deixe claro e use
+  "x""): os dois termos ficam proibidos, e a forma canônica resolve.
+- Caminho relativo citado por dois agentes com o mesmo texto é conferido uma vez: se existe ao
+  lado de um deles, vale para os dois. A lista "Na pasta esperada existem" olha só a crew e a
+  raiz.
+- Arquivo em UTF-32 ou em Latin-1 é lido como está, sem aviso → U5.
+- Links e caminhos de rede (§7): a checagem de "dentro do projeto" não resolve junção nem link
+  simbólico, e a conferência testa caminho de rede citado pela crew → R2 (L7-10, L7-11).
 
 ## 13. Travas que esta spec deixa
 `tests/verificar-pecas.test.js` (novo: R1-01a a R1-01m) · `tests/verificar-formatos.test.js`
 (novo: R1-01n a R1-01z, R1-10) · `tests/verificar-regras.test.js` (novo: R1-02 a R1-04) ·
-`tests/verificar-contrato.test.js` (novo: R1-05) · `tests/conferir-fontes.test.js` (R1-06) ·
-`tests/runtime-contracts-r1.test.js` (novo: R1-07, R1-09c) · `tests/init-repair.test.js` (novo:
-R1-08) · `tests/template-refs.test.js` (R1-09a) · `tests/update.test.js` (R1-09b) ·
-`tests/init.test.js` (R1-09d) · `tests/upgrade.test.js` (R1-upg).
+`tests/verificar-contrato.test.js` (novo: R1-05) · `tests/conferir-fontes.test.js` e
+`tests/conferir-fontes-r1.test.js` (novo) (R1-06) · `tests/runtime-contracts-r1.test.js` (novo:
+R1-07, R1-09c) · `tests/init-repair.test.js` (novo: R1-08) · `tests/template-refs.test.js`
+(R1-09a) · `tests/update.test.js` (R1-09b) · `tests/init.test.js` (R1-09d) ·
+`tests/upgrade.test.js` (R1-upg: importa do workspace atualizado os dois scripts entregues).
 
 Tamanho (regra 6 do AGENTS.md): os arquivos de teste novos existem porque `verificar.test.js`
 (194 linhas), `runtime-contracts.test.js` (215) e `init.test.js` (302) passariam do alvo de 300;
@@ -647,4 +732,111 @@ sem crew (U3b), o modo da entrega, sem o padrão `blog-post` para item sem forma
 de imagens (U3a).
 
 ## 14. Correções
-(preenchida durante a implementação)
+Leituras adotadas na implementação (2026-10-05), onde a spec não fechava o caso.
+
+**Verificador**
+- Relatório: as linhas "Não medido" e "Não verificado" saem como item de lista (`- ⚠️ …`,
+  `- ⚪ …`). Os arquivos que não são texto saem numa linha só, no fim de "**Notas:**", e ficam no
+  campo `naoTexto` do resultado.
+- Formato declarado sem best-practice segue a regra 3 (c): a seção com palavra de canal continua
+  medida. Notas de formato só saem para formato de fato usado (o declarado ou o de uma peça
+  achada); a 1.6.0 avisava dos quatro formatos padrão em toda execução.
+- Regra 3, plural das palavras de canal e de peça: só `s` (mais "carrosséis"); com `es`,
+  "postes" casaria com "post". Na regra 10 o plural é `s`/`es`, como escrito. Carrossel sem
+  nenhuma linha "Slide N" não é peça.
+- Hashtags: `## Hashtags` sem palavra de canal soma à legenda ou ao post aberto por último; com
+  a palavra de um canal, soma à peça desse canal (regra 3). Hashtags sem dono viram peça solta
+  com formato declarado e são ignoradas sem ele. Âncora de URL (`…/pagina#secao`) não é hashtag.
+- Post do LinkedIn com rótulos: o texto é unido na ordem em que os rótulos aparecem no arquivo.
+  Sem formato declarado, `BODY`, `INSIGHTS` e `CTA` só entram depois de um `HOOK`.
+- Linha `---`: só a linha some; as linhas em branco em volta contam como quebra.
+- "Não medido — {peça}: sem limite…" sai uma vez por peça e formato em cada arquivo.
+- Regra 11: numa linha com "em vez de", "ao invés de" ou "no lugar de", nenhum marcador vale;
+  todos os termos entre aspas ficam proibidos, mesmo com "use" ou "prefira" na linha.
+- Para não haver expressão regular lenta, há teto no que cabe dentro de cada marcação:
+  `[Nome …]` até 200 caracteres, `{{…}}` até 100, termo da memória até 200, alvo de link até
+  2.000. `[PREENCHER: …]` não tem teto; só o detalhe mostrado é cortado em 300 caracteres.
+- HTML: tag de bloco vira quebra de linha; os valores de `href`, `src` e `alt` vão para o fim do
+  texto; comentário HTML fica de fora; só as entidades básicas são decodificadas.
+- A linha de uso cita os três estados pelo nome, sem o texto "VERIFICACAO:", para o erro de uso
+  não imprimir nada parecido com uma linha de status.
+- Nome do item com várias peças: "Post LinkedIn — post 2 (texto do cabeçalho) — caracteres"; com
+  rótulos, "Post LinkedIn — post 2 — caracteres". Tweets são numerados pelo arquivo inteiro.
+- API: `verificar()` lança erro com a mensagem de uso (o `main` valida antes e devolve 1);
+  `lerLimites` devolve `{ limites, nota }`; `lerSecoes`, `regrasBlog` e `regrasCanais` deixaram
+  de existir (não tinham outro consumidor).
+- Cenário novo R1-05l: `--crew` em caminho absoluto de dentro do projeto passava na validação e
+  a memória da crew não era lida (achado na integração, corrigido com teste).
+
+**Conferência de fontes**
+- Cenário novo R1-06i: opção faltando dá "Falta a opção obrigatória --crew." e a linha de uso.
+  `--crew` seguido de outra opção conta como faltando; `--crew` apontando para um arquivo dá
+  "Crew não encontrada".
+- Regra 17: todo caminho sem barra final casa com arquivo ou pasta de mesmo nome (não só os de
+  `fontes:`); a sugestão de pasta sai com barra final. Quando a busca para no limite, a frase
+  de busca parcial vai em toda linha de pendência.
+- Regra 15: o que está entre aspas é lido ao pé da letra; comentário só começa em espaço + `#`.
+- "Não há correção automática para {N}…": N conta toda pendência sem sugestão única.
+- Regra 16: caminho citado num agente ou numa task é resolvido na ordem da U2 (crew, raiz,
+  absoluto) e, depois, na pasta de quem cita e em `agents/X/` (para `agents/X.agent.md`). Passo
+  e `crew.yaml` não ganham a pasta própria.
+- **Conferência no Projeto A (§9), 2026-10-05:** a leitura nova de `agents/` gerou uma pendência
+  falsa numa crew real: um arquivo de agente citava, entre crases, o caminho de destino dos
+  arquivos que a crew grava, com modelo de data no nome. A 1.6.0 dava `FONTES:OK`; a versão nova
+  pararia toda execução para perguntar. Cenário novo R1-06j: caminho com marcador de modelo não
+  é conferido. O limite que sobra está na §12.
+
+**Runner**
+- Regra 20: os passos de início trocaram de ordem (a conferência de fontes passou a ser o 1c e a
+  carga das fontes o 1d). Depois de `--corrigir`, o runner relê o `crew.yaml` e os agentes já
+  carregados; o 1d carrega as fontes dos caminhos corrigidos.
+- Regra 21: a linha da aprovação final é `Verificação automática: {N} bloqueios, {M} alertas,
+  {Z} não medidos`, seguida da lista `{arquivo} — {motivo}` e das linhas de "Notas".
+- Regra 19: o bloco do revisor é o item 4g de "Agent Loading", logo depois do bloco de veracidade.
+- Crew sem passo de revisão não tem aprovação final: nela o aviso de script que não rodou
+  aparece só no início.
+- `max_review_cycles`: o `build.prompt.md` grava o campo no passo de revisão, pelo tier da crew
+  (Express 1, Standard 2, Full 3). O `design.prompt.md` não cita o campo; sem tier no desenho,
+  ele fica ausente e vale o padrão 3.
+- Regra 1: o runner só passa `=formato` quando o `format:` do passo tem só minúsculas, dígitos
+  e hífen; com outro texto, o item iria inteiro como caminho e o arquivo ficaria sem
+  verificação. A pasta da crew vai entre aspas nos dois comandos.
+- Limite de ciclos quando o verificador não rodou (sem relatório nem status): o runner não tem
+  texto próprio; vale a mensagem do parecer do revisor.
+
+**CLI**
+- O erro do reparo sem ponte sai como erro de uso: depois da mensagem em PT-BR vem a linha padrão
+  do CLI, em inglês ("Run npx @aksp/opencrew help for usage.") → U5 (CLI em PT-BR).
+- Resumo das cópias: "{N} cópia(s) de segurança feita(s) antes de regravar:" e uma linha por
+  cópia, com o caminho em `.opencrew-backup/<data>/`.
+- Ponte de bloco marcado (`CLAUDE.md`, `GEMINI.md`…) editada dentro do bloco é regravada sem
+  cópia, como no `update` → R2.
+- `init --repair-bridges` numa pasta sem workspace para com erro de uso (código 1, nada
+  escrito), também com `--yes`, `--all` e `--ide`. Workspace com o core e sem o carimbo de
+  versão continua sendo reparado. A dica do `init` e a tabela do README citam
+  `npx @aksp/opencrew@latest`.
+- O teste do R1-09b ficou com o nome em inglês, como os demais.
+
+**Conferência no Projeto A (§9), verificador, 2026-10-05:** com o script deste repositório, só
+leitura: seis posts de LinkedIn medidos um a um (a 1.6.0 mostrava as linhas sem dizer qual post
+era qual e uma medição vazia do título do arquivo), título e meta description do blog no limite,
+links contados, nenhum bloqueio falso; o estado final foi `AGUARDANDO_USUARIO`, só pelos
+`[PREENCHER]` que existem de fato.
+
+**Revisão do código antes da tag (2026-10-05).** Sete leituras independentes do código, cada
+achado posto à prova antes de valer, e duas rodadas de conserto com teste visto vermelho. O que
+mudou de comportamento está nas regras 1 a 3, 6, 9, 11, 12, 14, 16 a 18 e 20 a 22 e na §6. Os
+consertos sem cenário próprio têm teste com "R1 revisão:" no nome. Fora das regras:
+- Verificador: título e meta description em bloco YAML (`>-`, `|`) ou entre aspas em duas linhas
+  são medidos inteiros; primeira linha `---` usada como separador não é lida como frontmatter;
+  limite do overlay com comentário ou entre aspas vale como número; termo proibido de duas
+  palavras casa com quebra de linha ou dois espaços no meio; proibição em lista numerada, com
+  `+` ou sob cabeçalho de nível 2 a 4 é lida; `src="data:…"` fica fora das checagens; o detalhe
+  do placeholder é cortado em 160 caracteres e o cabeçalho no nome do item, em 120.
+- Os dois scripts imprimem o relatório também com o projeto aberto por junção ou link de pasta
+  (antes saíam em silêncio, com código 0).
+- Conferência: no relatório sem pendência nem alerta, o resumo vem logo depois do título.
+- Testes: os de R1-02, R1-03, R1-06, R1-08 e R1-10 foram reforçados onde passavam com a regra
+  errada (conferido alterando o código de propósito).
+- Adiados, com destino na §11 e na §12: L2-06, L2-09, L2-14, L3-08, L3-09, L4-05, L6-06 e L7-10
+  a L7-14.

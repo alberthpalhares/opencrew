@@ -138,7 +138,8 @@ test('F1-01c: update removes the leaked STATUS.md section from CLAUDE.md, keepin
   assert.ok(after.endsWith('# My notes\nkeep me\n'), 'user text outside the block must survive byte for byte');
 });
 
-test('F1-01d: update never creates a CLAUDE.md that did not exist', async () => {
+// A deleted CLAUDE.md of an INSTALLED Claude Code does come back (U2 rule 11) — not covered here.
+test('F1-01d (R1-09b): update gives no CLAUDE.md to an IDE that is not installed (Cursor-only workspace)', async () => {
   const dir = await mkTmp('update');
   await withCwd(dir, () => init({ ide: ['cursor'] }));
   await withCwd(dir, () => update());

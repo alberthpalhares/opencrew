@@ -103,7 +103,8 @@ ${c.bold('Options for init')}
   --ide=a,b       Preselect IDEs (skip the prompt). Valid: ${allIdeIds().join(', ')}
   --all           Configure every supported IDE
   --yes, -y       Non-interactive; accept defaults
-  --repair-bridges  Regenerate IDE bridge files in an existing workspace
+  --repair-bridges  Rewrite the bridges of the IDEs already installed in an existing
+                    workspace (with --ide: only those; with --all: every IDE)
 
 ${c.bold('Options for update')}
   --check         Report whether an update is available without making changes

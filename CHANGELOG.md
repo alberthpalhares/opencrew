@@ -3,6 +3,66 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.1] — 2026-10-05
+
+Fase R1 "Reparos da 1.6.0: o verificador mede de verdade" (`specs/fase-r1-reparos-1-6-1.md`),
+vinda da revisão das specs (`docs/auditoria/2026-10-04-revisao-specs.md`). Chega a quem já usa com
+um `npx @aksp/opencrew@latest update`.
+
+### Fixed
+- **O verificador mede o texto escrito com rótulos**, do jeito que os próprios best-practices
+  ensinam (`=== CAPTION ===`, `=== HASHTAGS ===`, `=== SLIDES ===`, `=== HOOK ===`, `=== TWEET ===`,
+  `=== TITLE ===`). Antes respondia "Nada a apontar" sem medir.
+- **"Não medido" é dito**: com o formato informado e a peça principal não achada, o relatório
+  alerta em vez de aprovar em silêncio. O resumo passa a ser
+  `X bloqueios, Y alertas, Z não medidos`.
+- **Bloqueios falsos**: cor hexadecimal (`#666666`), número comum, CEP e "XXX Congresso" não são
+  mais "Placeholder"; `{{name}}` em e-mail e WhatsApp vira nota; termo proibido vale como palavra
+  inteira ("IA" não bloqueia "dia a dia"); o termo que o usuário mandou preferir não é proibido.
+- **Arquivo local sem limites não desliga o verificador**: os limites de
+  `_opencrew/best-practices.local/` somam aos do core, chave a chave.
+- **Erros que passavam por OK**: rodar fora da pasta do projeto ou com crew inexistente agora dá
+  erro (código 1), sem linha de status; um arquivo ausente na lista não derruba a verificação dos
+  outros; imagem e `.docx` não são lidos como texto; no HTML, só o texto visível e os links;
+  arquivo de texto fora do UTF-8 vira alerta "Não verificado" (UTF-16 com marca é lido).
+- **Relatório que não saía**: com o projeto aberto por junção ou link de pasta, os dois scripts
+  terminavam sem imprimir nada.
+- **Várias peças no mesmo arquivo** são medidas uma a uma (três posts não viram uma soma); a linha
+  `---` não encerra mais a seção; slides contados nas escritas comuns ("📌 Slide 2", "Slide #3").
+  Título e meta description em bloco YAML (`>-`, `|`) são medidos inteiros; `[PREENCHER: …]`
+  longo não escapa; imagem e link de âncora não contam como link.
+- **Conferência de fontes**: enxerga `caminho:` com comentário ou aspas e os arquivos de `agents/`
+  (agentes e tasks); recusa crew de fora do projeto; mensagens corrigidas ("Não há correção
+  automática…", aviso de busca parcial); caminho com marcador de modelo (`AAAA-MM-DD`) e comando
+  entre crases não são conferidos; o `--corrigir` troca só o caminho citado (antes trocava
+  qualquer trecho igual) e nunca aponta o destino de gravação de um agente para um arquivo que
+  já existe.
+- **`init --repair-bridges`** sem `--ide` regrava só as IDEs instaladas (antes criava as pontes
+  das 9); `--all` regrava todas; o resumo lista as cópias de segurança. Numa pasta sem workspace,
+  para com erro em vez de instalar; num workspace sem manifesto, não cria um.
+
+### Changed
+- **Runner**: passa o formato de cada arquivo ao verificador (`caminho=formato`); laço de revisão
+  com 3 ciclos por padrão (`max_review_cycles`) e saída também quando não há bloqueio; regras do
+  revisor injetadas em toda execução (valem para crews já criadas); avisa quando um script não
+  rodou; a conferência de fontes roda antes de carregar as fontes; a aprovação final mostra o que
+  ficou sem medir e as notas do relatório.
+- Crew nova recebe o limite de ciclos de revisão pelo tier: Express 1, Standard 2, Full 3.
+- Em blog, a seção com cabeçalho de outro canal ("Como postar no LinkedIn") não é medida como
+  post, e o relatório diz isso ("Não medido").
+- Hashtags sob um cabeçalho que cita o canal ("Hashtags LinkedIn") somam à peça desse canal.
+- "Aceitar assim mesmo" não promete mais registro: o registro chega com a entrega por canal.
+- Texto solto depois de uma linha `---` passa a contar na peça de cima. Telefone falso de 8 ou 9
+  dígitos, fora de link, deixa de ser pego.
+
+### Internal
+- Scripts do runtime em módulos (`verificar/`, `conferir-fontes/`, `comum.mjs`); leitor de peças
+  exportado para a próxima fase. Todos os cenários R1 com teste de mesmo ID; teste de upgrade
+  1.6.0 → 1.6.1.
+- Revisão do código antes da tag: sete leituras independentes e duas rodadas de conserto com
+  teste; o que ficou adiado tem destino na spec (§11 e §12).
+- Revisão das specs (265 achados) e faxina de documentos; specs R1, U3a e U3b.
+
 ## [1.6.0] — 2026-10-02
 
 Trilha U2 "Crew que conhece o projeto" + U6 "Convivência" (`specs/fase-u2-crew-que-conhece-o-projeto.md`).
@@ -32,6 +92,7 @@ Trilha U2 "Crew que conhece o projeto" + U6 "Convivência" (`specs/fase-u2-crew-
 - Migração do formato de memória faz `memories.md.bak` e avisa (fim do reset silencioso); regra única
   sobre o que vai para a memória (só feedback explícito).
 - `_build/discovery.yaml` agora em `crews/{code}/_build/`; build grava caminhos relativos à raiz.
+
 ## [1.5.0] — 2026-10-02
 
 Trilha U1 "Revisor com dentes" — primeira melhoria vinda do uso real

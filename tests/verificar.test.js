@@ -130,6 +130,11 @@ test('U1-01l: when the only blocks are [PREENCHER], the status waits for the use
   const comPlaceholder = await arquivo(raiz, 'misto.md', '[PREENCHER: dado] e ligue para [Telefone].\n');
   const r2 = await verificar({ raiz, crew: 'crews/teste', arquivos: [comPlaceholder] });
   assert.equal(r2.status, 'BLOQUEADA', 'a real block still wins');
+  // A long request is still a request (the 1.6.0 saw it): the detail shown is cut, not the search.
+  const longo = await arquivo(raiz, 'longo.md', `Depoimento: [PREENCHER: ${texto(340)}].\n`);
+  const r3 = await verificar({ raiz, crew: 'crews/teste', arquivos: [longo] });
+  assert.equal(r3.status, 'AGUARDANDO_USUARIO');
+  assert.ok(bloqueios(r3)[0].detalhe.length <= 301 && bloqueios(r3)[0].detalhe.endsWith('…'));
 });
 
 test('U1-01h: a markdown link is not a placeholder; [Empresa X] is', async () => {

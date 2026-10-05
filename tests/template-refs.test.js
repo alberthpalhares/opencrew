@@ -20,7 +20,8 @@ const RUNTIME_PATHS = [
 
 // Known-broken references, each with a destination. Remove the entry when fixed —
 // the last test fails if a listed reference starts resolving.
-// Format: 'ref or skill: path' → 'Alocação: → Fase N (item)'. Emptied by F1-11.
+// Format: 'ref or skill: path' → 'Alocação: → Fase N (item)'. Emptied by F1-11 and kept
+// empty by the F1-11a (R1-09a) test below.
 const KNOWN_BROKEN = {};
 
 function walk(dir) {
@@ -85,6 +86,11 @@ test('no file in templates/ carries the maintainer workflow (STATUS.md, /status,
     for (const rx of markers) if (rx.test(text)) leaks.push(`${path.relative(root, file)} (${rx})`);
   }
   assert.deepEqual(leaks, []);
+});
+
+// specs/fase-1-hotfix.md F1-11a, locked by R1-09a: a broken reference is fixed, not listed.
+test('F1-11a (R1-09a): the KNOWN_BROKEN list is empty', () => {
+  assert.deepEqual(Object.keys(KNOWN_BROKEN), []);
 });
 
 test('KNOWN_BROKEN only lists references that are still broken', () => {

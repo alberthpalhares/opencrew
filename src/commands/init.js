@@ -6,6 +6,7 @@ import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest } fr
 import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
 import { pickIdes as promptIdes } from '../lib/prompts.js';
 import { UsageError } from '../lib/errors.js';
+import { repairIdeIds, backupSummary, recordRepair, NO_BRIDGES_FOUND, NO_WORKSPACE } from '../lib/migrations.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 const STAMP = path.join('_opencrew', '.opencrew-version');
@@ -22,25 +23,13 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   const version = pkg.version;
   const state = await workspaceState(target);
 
-  // --repair-bridges mode: regenerate IDE bridge files in an existing workspace.
-  if (opts['repair-bridges'] && state !== 'none') {
-    const ids = await resolveIdes(opts, async () => allIdeIds());
-    log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
-    log(c.dim(`Target: ${target}\n`));
-    const previous = await readManifest(target);
-    const repairCtx = newDelivery(target, previous);
-    await writeBridges(target, ids, { overwrite: true, ctx: repairCtx });
-    await writeManifest(target, version, { ...(previous?.files ?? {}), ...repairCtx.files });
-
-    log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
-    log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
-    return;
-  }
+  if (opts['repair-bridges'] && state === 'none') throw new UsageError(NO_WORKSPACE); // before any write
+  if (opts['repair-bridges']) return repairBridges(target, version, opts);
 
   if (state === 'complete') {
     warn('An opencrew workspace already exists here.');
-    info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew update')}`);
-    info(`To repair IDE bridges, use: ${c.cyan('npx @aksp/opencrew init --repair-bridges')}`);
+    info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew@latest update')}`);
+    info(`To repair IDE bridges, use: ${c.cyan('npx @aksp/opencrew@latest init --repair-bridges')}`);
     info(`To reinstall from scratch, delete _opencrew/ first, then run init again.`);
     return;
   }
@@ -104,6 +93,25 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 }
 
 /**
+ * --repair-bridges: rewrite IDE bridge files in an existing workspace. --ide wins (even next
+ * to --all); --all alone means every IDE; otherwise only the IDEs `update` would detect.
+ */
+async function repairBridges(target, version, opts) {
+  const ids = await resolveIdes({ ide: opts.ide }, () => repairIdeIds(target, opts));
+  if (!ids.length) throw new UsageError(NO_BRIDGES_FOUND); // before the first write
+  log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
+  log(c.dim(`Target: ${target}\n`));
+  const ctx = newDelivery(target, await readManifest(target));
+  await writeBridges(target, ids, { overwrite: true, ctx });
+  await recordRepair(ctx, version); // only where a manifest already exists
+  const [copied, ...copies] = backupSummary(ctx);
+  if (copied) warn(copied);
+  for (const copy of copies) log(copy);
+  log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
+  log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
+}
+
+/**
  * Copy the framework payload into `target` without overwriting anything.
  * Never copies the version stamp: only a finished init writes it.
  * @returns {Promise<number>} files written
@@ -130,8 +138,8 @@ async function workspaceState(target) {
 
 /**
  * Decide which IDEs to configure. --all / --yes → every IDE; --ide → validated list;
- * nothing → `fallback()` (the interactive prompt). Throws UsageError if --ide names no
- * valid IDE.
+ * nothing → `fallback()` (the interactive prompt; in repair mode, the detection). Throws
+ * UsageError if --ide names no valid IDE.
  */
 async function resolveIdes(opts, fallback) {
   if (opts.all || opts.yes) return allIdeIds();

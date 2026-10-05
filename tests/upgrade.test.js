@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
 import { exists } from '../src/lib/fsx.js';
@@ -77,4 +78,47 @@ test('U2-upg: update from a 1.5.0 workspace delivers U2 without touching user da
   assert.equal(await exists(path.join(dir, '_opencrew', 'core', 'scripts', 'conferir-fontes.mjs')), true);
   assert.match(await fs.readFile(path.join(dir, '.claude', 'skills', 'opencrew', 'SKILL.md'), 'utf8'), /ONLY when the user types/);
   assert.equal(await fs.readFile(path.join(dir, '_opencrew', '_memory', 'company.md'), 'utf8'), '# Acme — dados reais');
+});
+
+// ── 1.6.0 → 1.6.1 (R1): the checker measures what the best-practices teach ────────────
+
+const CHECKER_160 = '// 1.6.0 (simulado): não mede a escrita com rótulos\nexport const verificar = async () => ({ status: \'OK\' });\n';
+
+test('R1-upg: update from a 1.6.0 workspace delivers the checker that measures labelled text', async () => {
+  const dir = await mkTmp('upgrade160');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  const core = path.join(dir, '_opencrew', 'core');
+  // 1.6.0: no shared module, no piece reader, no reviewer block in the runner.
+  await fs.rm(path.join(core, 'scripts'), { recursive: true, force: true });
+  await fs.mkdir(path.join(core, 'scripts'), { recursive: true });
+  await fs.writeFile(path.join(core, 'scripts', 'verificar.mjs'), CHECKER_160);
+  await fs.writeFile(path.join(core, 'runner.pipeline.md'), '# Pipeline Runner (1.6.0)\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '1.6.0\n');
+  // User data: a local overlay with no limits, and a crew output written with labels.
+  const overlay = path.join(dir, '_opencrew', 'best-practices.local', 'instagram-feed.md');
+  const saida = path.join(dir, 'crews', 'minha-crew', 'output', 'legendas.md');
+  await fs.mkdir(path.dirname(overlay), { recursive: true });
+  await fs.mkdir(path.dirname(saida), { recursive: true });
+  await fs.writeFile(overlay, '# Instagram — minhas notas\n\nPrefira tom direto.\n');
+  await fs.writeFile(saida, `=== CAPTION ===\n${'a'.repeat(2300)}\n`);
+
+  await withCwd(dir, () => update());
+
+  // Imported from the WORKSPACE, not from templates/: proves every module arrived together.
+  const entregue = pathToFileURL(path.join(core, 'scripts', 'verificar.mjs')).href;
+  const { verificar: verificarEntregue } = await import(`${entregue}?r1-upg`);
+  const arquivo = 'crews/minha-crew/output/legendas.md';
+  const r = await verificarEntregue({ raiz: dir, crew: 'crews/minha-crew', arquivos: [{ arquivo, formato: 'instagram-feed' }] });
+  assert.equal(r.status, 'BLOQUEADA');
+  const legenda = r.arquivos[0].itens.find((i) => i.nivel === 'bloqueio');
+  assert.deepEqual([legenda.medido, legenda.limite], [2300, 2200]);
+  assert.ok(r.notas.some((n) => n.includes('best-practices.local/instagram-feed.md')), 'note about the overlay without limits');
+  assert.match(await fs.readFile(path.join(core, 'runner.pipeline.md'), 'utf8'), /--- REGRAS DO REVISOR ---/);
+  assert.equal(await fs.readFile(overlay, 'utf8'), '# Instagram — minhas notas\n\nPrefira tom direto.\n');
+  assert.equal(await fs.readFile(saida, 'utf8'), `=== CAPTION ===\n${'a'.repeat(2300)}\n`);
+
+  // The sources checker too: its shared module and its own folder arrived with it.
+  const fontesEntregue = pathToFileURL(path.join(core, 'scripts', 'conferir-fontes.mjs')).href;
+  const { conferir } = await import(`${fontesEntregue}?r1-upg`);
+  assert.equal((await conferir({ raiz: dir, crew: 'crews/minha-crew' })).status, 'OK');
 });

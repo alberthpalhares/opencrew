@@ -232,32 +232,38 @@ da faxina de 2026-10-04)
   comportamento do script, não a obediência do modelo → jornada de referência (U0).
 - Detecção de seções depende de cabeçalhos ("Legenda Instagram", "Post LinkedIn"); cabeçalhos
   muito diferentes não são verificados → U3a padroniza a estrutura de saída por canal.
+  Feito em parte na R1 (1.6.1): com formato declarado, basta o cabeçalho dizer a peça (R1-01w), a
+  escrita com rótulos é lida (R1-01a) e o arquivo sem peça reconhecida sai como "Não medido"
+  (R1-01e). Sem formato declarado, a detecção continua dependendo das palavras do cabeçalho
+  → U3a na entrega e → U4 no laço de revisão (§12 da spec R1, H2-03).
 
 **Achados da revisão de 2026-10-04** (`docs/auditoria/2026-10-04-revisao-specs.md`, §3 e §7).
-Defeitos do que está publicado (1.6.0). Em alguns o código não faz o que esta spec promete (H2-07,
+Defeitos da 1.6.0. Em alguns o código não faz o que esta spec promete (H2-07,
 H2-10, H2-11): a promessa continua valendo. Nos outros o código segue a regra como ela está
 escrita, e o que falha é a regra, o alcance dela, a trava ou um texto do script (bloqueio falso,
 medição que não acontece, regra que não chega a crews antigas, comentário desatualizado). Nenhuma
-regra do corpo foi apagada: cada linha diz o que acontece hoje e para onde vai a correção.
+regra do corpo foi apagada: cada linha diz o que acontece na 1.6.0 e para onde vai a correção.
+Atualização de 2026-10-05: nas linhas com "feito na R1 (1.6.1)" o defeito foi corrigido, e o
+cenário citado é a trava; o que vale agora está na §14 (entrada de 2026-10-05).
 
-| Achado | Onde | O que acontece hoje | Destino |
+| Achado | Onde | O que acontece na 1.6.0 | Destino |
 |---|---|---|---|
-| H2-01 | regra 2; §6 | Texto no formato que os próprios best-practices ensinam (`=== TITLE ===`, `=== CAPTION ===`, `=== HASHTAGS ===`) não é reconhecido: nada é medido e o relatório diz "Nada a apontar", com `VERIFICACAO:OK`. Blog só é medido com frontmatter `title`/`titulo` | → R1 |
-| H2-02 | regra 3; §3 × regra 7.1 | Cor hexadecimal com seis dígitos iguais (`#666666`, `#000000`) vira "Placeholder" e força REJECT. O runner manda verificar todas as saídas e o script não confere o tipo do arquivo (a §3 diz `.md`) | → R1 |
-| E-07 | regra 3 | `{{…}}` é sempre bloqueio, mas os best-practices de WhatsApp e de newsletter mandam usar `{{name}}` | → R1 |
-| H2-15 | regra 3 | Bloqueio falso em texto verdadeiro: "XXX Congresso" (numeral romano) e qualquer número com seis ou mais dígitos iguais seguidos, como "2000000" ou um CEP sem hífen terminado em 000000 | → R1 |
-| H2-04 | regra 4 | O termo proibido casa dentro de outra palavra ("IA" bloqueia "dia a dia"); toda aspa da linha vira termo proibido, inclusive o termo que o usuário mandou preferir | → R1 |
-| H2-11 | regra 2 | Uma linha `---` encerra a seção: 12 slides separados por `---` contam 1/10 e as hashtags depois do separador contam 0. Um cabeçalho-pai que também tenha "legenda" e "instagram" (ex.: "Legendas para Instagram") soma as legendas-filhas e gera bloqueio falso. Slide só conta em cabeçalho de nível 3 a 6 (`### Slide N`) ou em negrito (`**Slide N`), sob um cabeçalho com "instagram" e "carrossel". Não há cenário de carrossel nem de tweet | → R1 |
-| H2-10 | §3; §6 | `--crew` inexistente não é erro (exit 0, com a nota "a crew não tem memories.md"); `--formato` sem best-practice correspondente vira só nota (exit 0); a mensagem "sem limite definido no formato" não existe (o item some do relatório); arquivo em `best-practices.local/` sem `constraints:` desliga os limites do formato, sem recuar para o core; arquivo com BOM não tem o frontmatter lido | → R1 |
-| H2-12 | §4; §6 | Tudo ou nada: um caminho inexistente na lista dá exit 1 e nenhum arquivo é verificado; uma pasta na lista, ou um link malformado num post de blog (com o site no `company.md`), derruba o script com exceção, sem mensagem em PT-BR | → R1 |
-| H2-06 | regra 7.4 | `max_review_cycles` não é definido em nenhum arquivo do payload; o runner só trata o limite de ciclos "com bloqueio" (limite atingido sem bloqueio ficou sem instrução) | → R1 |
-| H2-08 | regra 9 | "Nota máxima 7/10 com alerta" e "checklist só com o que foi medido" moram no `review.md`, lido só na criação da crew: crews criadas antes da 1.5.0 não recebem essas duas regras com o `update` | → R1 |
-| H2-18 | §13; §14 | A trava U1-05 só procura 1080×1440 em `instagram-feed.md` e em 5 arquivos de skills. Nos 4 arquivos da 4ª correção de 2026-10-02 (§14), uma volta do 1080×1440 passaria na porta; o `max_hashtags` segue coberto em todos os best-practices. Hoje não há resíduo | → R1 |
-| A-34, H2-09 | §3; §4 | Os comentários de `verificar.mjs` (cabeçalho e `main`) ainda citam só dois estados, e a nota de formato não encontrado cita só `_opencrew/core/best-practices/`, sem o overlay local | → R1 |
-| H2-07 | regra 7.4 | "Aceitar assim mesmo (fica registrado)" não registra nada: o `runs.md` só aceita Aprovado, Rejeitado, Publicado ou Abortado, e o estado da execução não vai a disco | → U3a |
-| H2-13, E-07 | regra 1; §11 | Máximos de `constraints:` sem medição: assunto de e-mail, mensagem de WhatsApp, hashtags do tweet, palavras por slide, título do YouTube e do artigo do LinkedIn. O script só carrega o formato de blog pedido, `instagram-feed`, `linkedin-post` e `twitter-post` | → U3a (assunto e prévia de e-mail, WhatsApp, thread); o resto → U5 |
+| H2-01 | regra 2; §6 | Texto no formato que os próprios best-practices ensinam (`=== TITLE ===`, `=== CAPTION ===`, `=== HASHTAGS ===`) não é reconhecido: nada é medido e o relatório diz "Nada a apontar", com `VERIFICACAO:OK`. Blog só é medido com frontmatter `title`/`titulo` | feito na R1 (1.6.1) — R1-01a, R1-01c, R1-01d; sem medição, o relatório diz "Não medido" (R1-01e) |
+| H2-02 | regra 3; §3 × regra 7.1 | Cor hexadecimal com seis dígitos iguais (`#666666`, `#000000`) vira "Placeholder" e força REJECT. O runner manda verificar todas as saídas e o script não confere o tipo do arquivo (a §3 diz `.md`) | feito na R1 (1.6.1) — R1-02a (cor); só texto é verificado: R1-02b, R1-02c, R1-02f |
+| E-07 | regra 3 | `{{…}}` é sempre bloqueio, mas os best-practices de WhatsApp e de newsletter mandam usar `{{name}}` | feito na R1 (1.6.1) — R1-02e: em formato `email-*` ou `whatsapp-*` vira nota informativa; nos demais continua bloqueio (R1-02j) |
+| H2-15 | regra 3 | Bloqueio falso em texto verdadeiro: "XXX Congresso" (numeral romano) e qualquer número com seis ou mais dígitos iguais seguidos, como "2000000" ou um CEP sem hífen terminado em 000000 | feito na R1 (1.6.1) — R1-02d; em link continua bloqueio (R1-02h) |
+| H2-04 | regra 4 | O termo proibido casa dentro de outra palavra ("IA" bloqueia "dia a dia"); toda aspa da linha vira termo proibido, inclusive o termo que o usuário mandou preferir | feito na R1 (1.6.1) — R1-03a a R1-03i |
+| H2-11 | regra 2 | Uma linha `---` encerra a seção: 12 slides separados por `---` contam 1/10 e as hashtags depois do separador contam 0. Um cabeçalho-pai que também tenha "legenda" e "instagram" (ex.: "Legendas para Instagram") soma as legendas-filhas e gera bloqueio falso. Slide só conta em cabeçalho de nível 3 a 6 (`### Slide N`) ou em negrito (`**Slide N`), sob um cabeçalho com "instagram" e "carrossel". Não há cenário de carrossel nem de tweet | feito na R1 (1.6.1) — R1-01h (`---`), R1-01g e R1-01r (título-pai), R1-01b e R1-01s (slides), R1-01j e R1-01p (tweet) |
+| H2-10 | §3; §6 | `--crew` inexistente não é erro (exit 0, com a nota "a crew não tem memories.md"); `--formato` sem best-practice correspondente vira só nota (exit 0); a mensagem "sem limite definido no formato" não existe (o item some do relatório); arquivo em `best-practices.local/` sem `constraints:` desliga os limites do formato, sem recuar para o core; arquivo com BOM não tem o frontmatter lido | feito na R1 (1.6.1) — R1-05b (crew), R1-04c (limite ausente), R1-04a (overlay sem `constraints:`), R1-01i (BOM); formato sem best-practice continua nota, com código 0, e o arquivo sai como "limites não medidos" (R1-05g) |
+| H2-12 | §4; §6 | Tudo ou nada: um caminho inexistente na lista dá exit 1 e nenhum arquivo é verificado; uma pasta na lista, ou um link malformado num post de blog (com o site no `company.md`), derruba o script com exceção, sem mensagem em PT-BR | feito na R1 (1.6.1) — R1-05c, R1-05j, R1-05e, R1-05h |
+| H2-06 | regra 7.4 | `max_review_cycles` não é definido em nenhum arquivo do payload; o runner só trata o limite de ciclos "com bloqueio" (limite atingido sem bloqueio ficou sem instrução) | feito na R1 (1.6.1) — R1-07b (padrão 3; contrato de prompt); o `build.prompt.md` grava o campo em crew nova, pelo tier (Express 1, Standard 2, Full 3); crew já criada segue no padrão 3 → U4 |
+| H2-08 | regra 9 | "Nota máxima 7/10 com alerta" e "checklist só com o que foi medido" moram no `review.md`, lido só na criação da crew: crews criadas antes da 1.5.0 não recebem essas duas regras com o `update` | feito na R1 (1.6.1) — R1-07c: o runner injeta as regras em todo passo com `on_reject`; o runner chega com o `update` (R1-upg) |
+| H2-18 | §13; §14 | A trava U1-05 só procura 1080×1440 em `instagram-feed.md` e em 5 arquivos de skills. Nos 4 arquivos da 4ª correção de 2026-10-02 (§14), uma volta do 1080×1440 passaria na porta; o `max_hashtags` segue coberto em todos os best-practices. Hoje não há resíduo | feito na R1 (1.6.1) — R1-09c |
+| A-34, H2-09 | §3; §4 | Os comentários de `verificar.mjs` (cabeçalho e `main`) ainda citam só dois estados, e a nota de formato não encontrado cita só `_opencrew/core/best-practices/`, sem o overlay local | feito na R1 (1.6.1) — comentários com os três estados (critério da §10 da spec R1); linha de uso: R1-05k; nota com o overlay local: R1-05g |
+| H2-07 | regra 7.4 | "Aceitar assim mesmo (fica registrado)" não registra nada: o `runs.md` só aceita Aprovado, Rejeitado, Publicado ou Abortado, e o estado da execução não vai a disco | → U3a (gravar o aceite); o "(fica registrado)" saiu do texto da opção na R1 (1.6.1) — R1-07b |
+| H2-13, E-07 | regra 1; §11 | Máximos de `constraints:` sem medição: assunto de e-mail, mensagem de WhatsApp, hashtags do tweet, palavras por slide, título do YouTube e do artigo do LinkedIn. O script só carrega o formato de blog pedido, `instagram-feed`, `linkedin-post` e `twitter-post` | → U3a (assunto e prévia de e-mail, WhatsApp, thread); o resto → U5. Na R1 (1.6.1), formato declarado fora da tabela passa a sair como "Não medido" (R1-01y) |
 | H2-16 | §4; regra 7.2 | O script só escreve no stdout; quem grava `verificacao-ciclo-{N}.md` é a IA, copiando a saída | → U5 |
-| H2-05 | regra 8; §6 | Proibições sem aspas (as gravadas antes da 1.5.0) não viram trava; a nota fica só no relatório e a aprovação final não a mostra; o registro de fim de execução ainda não pede aspas | → U4 |
+| H2-05 | regra 8; §6 | Proibições sem aspas (as gravadas antes da 1.5.0) não viram trava; a nota fica só no relatório e a aprovação final não a mostra; o registro de fim de execução ainda não pede aspas | → U4; o registro de fim de execução passou a pedir aspas, na forma canônica: feito na R1 (1.6.1) — R1-07f |
 | H2-17 | regra 6 | A contagem é a mesma em todos os canais; no X/Twitter cada emoji vale 2 e cada link vale 23 | → U5 |
 
 Destinos: R1 = reparos da 1.6.0 (1.6.1) · U3a = entrega por canal (1.7.0) · U4 = modo equipe +
@@ -298,3 +304,68 @@ histórico confiável (1.9.0) · U5 = rápido, barato e em PT-BR (contínuo).
 - 2026-10-04 — Status e caixas das §9 e §10 (H2-14): marcado só o que a conferência de 2026-10-02
   e a publicação da 1.5.0 provam. A execução real com o verificador no laço de revisão continua
   pendente (U0).
+- 2026-10-05 — R1 (1.6.1): `specs/fase-r1-reparos-1-6-1.md` corrigiu os achados da §12 marcados
+  "feito na R1", cada um com teste. O corpo desta spec fica como contrato da 1.5.0. Onde a R1
+  mudou a regra de propósito, vale o que está abaixo.
+  - §3 e regra 7.1 — formato por arquivo: cada item de `--arquivo` pode ser `caminho=formato`. O
+    runner passa o `format:` do passo que gerou o arquivo e deixou de passar `--formato`
+    (R1-07a, R1-01f). `--formato` continua aceito: só escolhe os limites de blog do item sem
+    `=formato` que tem título no frontmatter.
+  - §3, §4, §6 e §7 — erro de uso: código 1, sem linha `VERIFICACAO:`, com opção obrigatória
+    faltando, pasta sem `_opencrew/`, crew inexistente, crew ou caminho fora do projeto, ou
+    nenhum caminho da lista existente (R1-05a, R1-05b, R1-05d, R1-05i, R1-05k). Caminho absoluto
+    de dentro do projeto é aceito (R1-05f). O U1-01j continua valendo quando nenhum caminho
+    existe.
+  - §4 e §6 — verifica o que der: item ausente, pasta ou erro numa regra vira alerta "Não
+    verificado", e os outros arquivos seguem (R1-05c, R1-05j, R1-05h). Link malformado fica fora
+    da contagem de links (R1-05e). Arquivo que não é texto sai numa linha só, sem bloqueio
+    (R1-02c, R1-02f, R1-02g). Em HTML valem o texto visível e os links (R1-02b, R1-02k).
+  - §4 — relatório: o resumo passou a ser "X bloqueios, Y alertas, Z não medidos". Entraram as
+    linhas "Não medido — …" e "Não verificado — …" e a seção "Notas" (R1-01e, R1-04c). "✅ Nada a
+    apontar." só aparece quando ao menos uma peça foi medida; sem medição, o relatório diz que os
+    limites não foram medidos (R1-01o, R1-04e).
+  - Regra 2 — o que é medido: a escrita com rótulos (`=== CAPTION ===`, `=== HOOK ===`,
+    `=== TITLE ===`, `=== TWEET ===`) é medida (R1-01a, R1-01c, R1-01d, R1-01p). Com formato
+    declarado, basta o cabeçalho dizer a peça (R1-01w). Em blog declarado, cabeçalho é conteúdo
+    (R1-01m). O título-pai não soma os filhos (R1-01g, R1-01r). A linha `---` não encerra a seção
+    (R1-01h). Os slides são contados nas escritas comuns (R1-01b). O BOM é ignorado (R1-01i).
+  - Regra 3 — placeholders (alterada pela regra 8 da R1): dígitos repetidos só bloqueiam em link
+    ou com 10 dígitos ou mais; cor hexadecimal nunca; "XXX" seguido de palavra iniciada por
+    maiúscula é numeral romano (R1-02a, R1-02d, R1-02h, R1-02i). `{{variável}}` em formato
+    `email-*` ou `whatsapp-*` vira nota informativa; nos demais continua bloqueio (R1-02e, R1-02j).
+  - Regra 4 — termos proibidos (regras 10 e 11 da R1): o termo casa como palavra inteira, com o
+    plural simples; sigla em maiúsculas compara diferenciando maiúsculas (R1-03a, R1-03c a
+    R1-03f). O termo que vem depois de um marcador de troca ("prefira", "use", "→", ou "por" logo
+    antes de um termo entre aspas) é preferido, não proibido, e sai numa nota (R1-03b, R1-03g a
+    R1-03i).
+  - §3 e §6 — limites: o overlay local soma aos limites do core, chave a chave, em vez de
+    substituí-los; overlay sem `constraints:` usa os do core e gera nota (R1-04a, R1-04b, R1-04d).
+    Peça achada em formato sem o limite sai como "Não medido — …: sem limite definido no formato
+    …" (R1-04c). Formato declarado sem best-practice continua nota, com código 0, e a nota cita o
+    overlay local e o core (R1-05g).
+  - Regra 7.4 e U1-02c — fim do laço: ciclo é uma passada do revisor; o máximo é
+    `max_review_cycles`, com padrão 3. No limite, o usuário recebe as três opções: com o último
+    relatório em `VERIFICACAO:BLOQUEADA`, vê os bloqueios; com qualquer outro status, o parecer
+    do revisor. A opção 2 é só "Aceitar assim mesmo", sem "(fica registrado)" (R1-07b); gravar o
+    aceite → U3a (H2-07). Em crew nova, o `build.prompt.md` grava o campo pelo tier (Express 1,
+    Standard 2, Full 3); crew já criada segue no padrão 3 → U4.
+  - Regra 9 — revisor: o runner injeta as quatro regras do revisor em todo passo com `on_reject`
+    (R1-07c). Crew criada antes da 1.5.0 as recebe com o `update`, que entrega o runner (R1-upg).
+  - Regra 8 e §6 — aprovação final: mostra também a quantidade e a lista dos itens não medidos ou
+    não verificados, as linhas de "Notas" do relatório, e repete o aviso de verificação que não
+    rodou (R1-07d, R1-07e).
+  - Revisão do código antes da tag (§14 da spec R1): cabeçalho que começa por "hashtags" soma à
+    peça do canal que ele cita; em blog declarado, a seção de outro canal sai como "Não medido";
+    a negação vale até 3 palavras antes do marcador de troca; limite do overlay que não é número
+    inteiro é ignorado, com nota; arquivo `.md`, `.txt` ou `.html` fora do UTF-8 vira alerta "Não
+    verificado" (UTF-16 com marca é lido); `[PREENCHER: …]` é visto com qualquer tamanho.
+  - §13 — travas: a procura do 1080×1440 varre todo o `templates/`, fora
+    `skills/opencrew-skill-creator/` (R1-09c). Entraram `tests/verificar-pecas.test.js`,
+    `tests/verificar-formatos.test.js`, `tests/verificar-regras.test.js`,
+    `tests/verificar-contrato.test.js` e `tests/runtime-contracts-r1.test.js`;
+    `tests/upgrade.test.js` ganhou o R1-upg (1.6.0 → 1.6.1).
+  - A-34, H2-09 — os comentários de cabeçalho e a linha de uso de `verificar.mjs` citam os três
+    estados, `caminho=formato` e os códigos de saída (linha de uso: R1-05k).
+  - As regras do runner (7, 8 e 9) continuam sendo texto de prompt: os testes R1-07 garantem o
+    texto, não a obediência do modelo → U0. O que a §12 manda para U3a, U4 e U5 continua lá; os
+    limites novos estão na §12 da spec R1.

@@ -230,7 +230,9 @@ referência, com o dono). O teste citado cobre o mesmo comportamento, sem a conf
 
 ## 10. Critérios de aceite
 - [ ] Todos os cenários F1-01a…F1-13a com teste de mesmo ID, visto vermelho antes do conserto.
-      — pendente: o F1-11a não tem teste com o ID (H1-17) → R1; os outros 38 têm.
+      — os 39 têm teste de mesmo ID: o do F1-11a (H1-17) foi feito na R1 (1.6.1) — R1-09a. Ele
+      nasceu verde (a lista já estava vazia): é trava de regressão, e vê-lo falhar com uma
+      alteração provisória é critério da §10 da spec R1.
 - [x] `npm run verify` verde (exit 0), sem teste `todo` e com `KNOWN_BROKEN` vazio. (A tag
       `v1.4.2` só publica depois do `npm run verify`; a 1.4.2 está no npm.)
 - [ ] O que a porta não cobre foi conferido: execução real de uma crew com publicação em
@@ -300,8 +302,8 @@ Acrescentados em 2026-10-04 (revisão `docs/auditoria/2026-10-04-revisao-specs.m
 ## 13. Travas que esta spec deixa
 - `tests/ides.test.js`: pontes sem conteúdo do mantenedor (deixa de ser `todo`).
 - `tests/template-refs.test.js`: `KNOWN_BROKEN` vazio — qualquer caminho novo quebrado reprova.
-  A lista está vazia, mas nenhum teste exige isso e o F1-11a não tem teste com o ID
-  (H1-17) → R1.
+  O teste "F1-11a (R1-09a): …" passou a exigir a lista vazia (H1-17): feito na R1 (1.6.1) —
+  R1-09a.
 - `tests/cli.test.js`: `--help` em todo comando não escreve nada; opção desconhecida reprova.
 - `tests/update.test.js` (F1-01c, F1-01d, F1-03a, F1-04a, F1-04b) e `tests/ides.test.js`
   (F1-01a, F1-01b): comportamento do `update` e conteúdo das pontes.
@@ -335,7 +337,8 @@ Acrescentados em 2026-10-04 (revisão `docs/auditoria/2026-10-04-revisao-specs.m
   com `.claude/skills/opencrew/SKILL.md` presente, um `CLAUDE.md` apagado volta. Continua
   valendo que IDE não instalada não ganha `CLAUDE.md` (U2-07b). O teste F1-01d passa porque
   instala só o Cursor; o nome dele ("update never creates a CLAUDE.md that did not exist")
-  afirma mais do que o código faz. Correção do nome do teste → R1.
+  afirma mais do que o código faz. Correção do nome do teste: feita na R1 (1.6.1) — R1-09b
+  (entrada de 2026-10-05, abaixo).
 - 2026-10-04 — Status (H1-12): o critério 3 da §10 não foi conferido no release (auditoria de
   fim de fase, 2026-10-02) e não há registro de conferência posterior, nem das cinco
   conferências da §9. Ficam pendentes → U0 (jornada de referência, com o dono). A fase segue
@@ -353,3 +356,18 @@ Acrescentados em 2026-10-04 (revisão `docs/auditoria/2026-10-04-revisao-specs.m
     §12 (H1-11, H1-18);
   - §12: limites que a revisão achou, cada um com destino (H1-02, H1-04, H1-06, H1-10, H1-15,
     H1-19).
+- 2026-10-05 — R1 (1.6.1): F1-01d (H1-05): só o teste mudou de nome; o `update` não mudou. O
+  teste passou a se chamar "F1-01d (R1-09b): update gives no CLAUDE.md to an IDE that is not
+  installed (Cursor-only workspace)" e diz o que testa: IDE não instalada não ganha `CLAUDE.md`.
+  O `CLAUDE.md` apagado de uma IDE instalada continua voltando no `update` (regra 11 da U2;
+  decisão 12 da spec R1); esse caso não tem teste próprio. O texto do F1-01d na §8 fica como
+  contrato histórico, com esta ressalva.
+- 2026-10-05 — R1 (1.6.1): F1-11a (H1-17): ganhou teste com o ID, "F1-11a (R1-09a): the
+  KNOWN_BROKEN list is empty", em `tests/template-refs.test.js`. A lista vazia passou a ser
+  exigida por teste (§10 e §13).
+- 2026-10-05 — R1 (1.6.1): regra 4 e F1-06 (`.gitignore`): o teste "init preserves an existing
+  .gitignore (overwrite:false)", de `tests/init.test.js`, foi substituído pelo R1-09d. O nome
+  antigo citava `overwrite:false`, que não é como o `.gitignore` é escrito desde esta fase
+  (bloco marcado). O R1-09d diz o que o teste prova: num workspace completo, o `init` roda de
+  novo e sai sem escrever nada, e o `.gitignore` editado não muda. O bloco marcado segue travado
+  pelos testes F1-06a a F1-06c, em `tests/init-safety.test.js`.

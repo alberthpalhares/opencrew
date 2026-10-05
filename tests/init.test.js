@@ -5,7 +5,7 @@ import path from 'node:path';
 import { init } from '../src/commands/init.js';
 import { exists, readFile } from '../src/lib/fsx.js';
 import { packageJsonPath } from '../src/lib/paths.js';
-import { mkTmp, withCwd } from './_helpers.js';
+import { mkTmp, withCwd, snapshot } from './_helpers.js';
 
 test('init scaffolds the core framework files', async () => {
   const dir = await mkTmp('init');
@@ -96,16 +96,18 @@ test('init preserves an existing .mcp.json (overwrite:false)', async () => {
   assert.equal(await fs.readFile(mcpFile, 'utf8'), '{"mcpServers":{"custom":{}}}');
 });
 
-test('init preserves an existing .gitignore (overwrite:false)', async () => {
+test('R1-09d: init on a complete workspace exits without writing — an edited .gitignore does not change', async () => {
   const dir = await mkTmp('init');
   await withCwd(dir, () => init({ ide: ['claude-code'] }));
 
   const giFile = path.join(dir, '.gitignore');
   await fs.writeFile(giFile, 'my-custom-ignore/\n');
+  const before = await snapshot(dir);
 
   await withCwd(dir, () => init({ ide: ['claude-code'] }));
 
   assert.equal(await fs.readFile(giFile, 'utf8'), 'my-custom-ignore/\n');
+  assert.deepEqual(await snapshot(dir), before, 'init wrote nothing at all');
 });
 
 test('init writes .opencrew-version matching package.json', async () => {
@@ -258,45 +260,4 @@ test('init writes workflow and skill bridge files with YAML frontmatter', async 
   assert.ok(ocCmd.startsWith('---'), '.opencode/commands/opencrew.md should start with ---');
 });
 
-test('init --repair-bridges regenerates IDE bridge files in an existing workspace', async () => {
-  const dir = await mkTmp('init');
-
-  // First, create a workspace with the old (broken) workflow file.
-  await withCwd(dir, () => init({ all: true }));
-
-  // Simulate the bug: strip frontmatter from the antigravity workflow file.
-  const workflowPath = path.join(dir, '.agent', 'workflows', 'opencrew.md');
-  let workflow = await readFile(workflowPath);
-  assert.ok(workflow.startsWith('---'), 'sanity: should have frontmatter after init');
-  // Remove the frontmatter block.
-  workflow = workflow.replace(/^---[\s\S]*?\n---\n/, '');
-  await fs.writeFile(workflowPath, workflow);
-
-  // Verify it's broken.
-  const broken = await readFile(workflowPath);
-  assert.ok(!broken.startsWith('---'), 'sanity: frontmatter should be removed');
-
-  // Now repair.
-  await withCwd(dir, () => init({ 'repair-bridges': true }));
-
-  // Verify it was fixed.
-  const repaired = await readFile(workflowPath);
-  assert.ok(repaired.startsWith('---'), 'repair-bridges should restore frontmatter');
-  assert.match(repaired, /name:\s*opencrew/, 'repair-bridges should add name field');
-
-  // Non-bridge files should NOT be touched.
-  assert.equal(await exists(path.join(dir, '_opencrew', 'core', 'system.md')), true,
-    'framework files should still exist');
-});
-
-test('init --repair-bridges deduplicates shared paths', async () => {
-  const dir = await mkTmp('init');
-  await withCwd(dir, () => init({ all: true }));
-
-  // The shared .agents/skills/opencrew/SKILL.md should exist and be valid.
-  const skillPath = path.join(dir, '.agents', 'skills', 'opencrew', 'SKILL.md');
-  assert.equal(await exists(skillPath), true);
-  const content = await readFile(skillPath);
-  assert.ok(content.startsWith('---'), 'shared skill should have frontmatter');
-  assert.match(content, /name:\s*opencrew/, 'shared skill should have name: opencrew');
-});
+// The `init --repair-bridges` tests live in tests/init-repair.test.js.

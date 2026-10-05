@@ -20,7 +20,7 @@ apagar o que ele personalizou — convivendo com outros sistemas de agentes no m
 | F2: C-01 | `update` não entrega diretórios novos (agentes-base, config, templates de crew) | U2-05 |
 | F2: C-08 + atualização de 2026-10-02 | Skill de catálogo editada pelo usuário sobrescrita sem cópia (aconteceu no Projeto A) | U2-06 |
 | F2: C-10 | Pontes das IDEs nunca atualizadas | U2-07 |
-| F2: C-12 | `--repair-bridges` sem `--ide` cria pontes para IDEs não escolhidas | **não feito** (constava em U2-07) → R1 (H3-02) |
+| F2: C-12 | `--repair-bridges` sem `--ide` cria pontes para IDEs não escolhidas | **não feito** nesta fase (constava em U2-07); feito na R1 (1.6.1) — R1-08a, R1-08d (H3-02) |
 | F2: C-09 | Downgrade silencioso via cache do `npx` | U2-06 |
 | F2: C-13 | `.mcp.json` existente sem merge | U2-09 |
 | T-A7 | Best-practices aprendidas gravadas em `core/` (o `update` apaga) | U2-04 |
@@ -113,9 +113,10 @@ apagar o que ele personalizou — convivendo com outros sistemas de agentes no m
 | Ponte de IDE com frontmatter editada pelo usuário | cópia de segurança antes de substituir | listada no resumo |
 
 ## 7. Segurança
-`conferir-fontes.mjs` deve ler e escrever só dentro do projeto. Hoje (1.6.0) a escrita fica dentro
-do projeto quando `--crew` aponta para uma pasta dele, que é o que o runner passa (`crews/{name}`);
-o script não valida `--crew` (seção 12, H3-17 e I-14 → R1). Na leitura, ele testa a existência de
+`conferir-fontes.mjs` deve ler e escrever só dentro do projeto. Na 1.6.0 a escrita ficava dentro
+do projeto quando `--crew` apontava para uma pasta dele, que é o que o runner passa
+(`crews/{name}`); o script não validava `--crew` (seção 12, H3-17 e I-14: feito na R1 (1.6.1) —
+R1-06c; `--crew` de fora do projeto é recusado). Na leitura, ele testa a existência de
 caminhos absolutos citados, dentro ou fora do projeto, e, quando o arquivo falta, lista os nomes
 da pasta esperada, mesmo fora do projeto (regra 2). `--corrigir` só troca strings de caminho
 nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga arquivo do usuário.
@@ -203,7 +204,7 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 | Busca semântica dentro das fontes | → U5 (custo) |
 | C-11, T-M9, C-20..27 | → U5 |
 | Modo equipe / tarefas avulsas no histórico | → U4 |
-| C-12 (`--repair-bridges` sem `--ide`): constava como herdado e não foi feito (H3-02) | → R1 |
+| C-12 (`--repair-bridges` sem `--ide`): constava como herdado e não foi feito (H3-02) | feito na R1 (1.6.1) — R1-08a, R1-08d |
 | T-M5 (Regra de Ouro): constava como herdado e não foi feito (H3-08) | → U4 — depende de histórico confiável |
 
 ## 12. Limites conhecidos
@@ -217,21 +218,26 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 
 **Achados da revisão de 2026-10-04** (`docs/auditoria/2026-10-04-revisao-specs.md`): pontos em que
 o código não cumpre a spec, ou em que a spec não previu o caso. Nenhuma promessa foi retirada;
-cada item tem destino.
+cada item tem destino. Atualização de 2026-10-05: os itens com "feito na R1 (1.6.1)" descrevem a
+1.6.0 e foram corrigidos; o cenário citado é a trava, e o que vale agora está na seção 14.
 
 Conferência de fontes e runner (regras 1, 2 e 7):
 - **H3-04** — `fontes:` com comentário na mesma linha (o formato do exemplo do `build.prompt.md`)
   ou com apóstrofo no caminho não é conferida. Caminhos citados em tasks e em arquivos de agente
-  também não: a coleta só lê `crew.yaml` e `pipeline/steps/*.md` → R1.
+  também não: a coleta só lê `crew.yaml` e `pipeline/steps/*.md`. Feito na R1 (1.6.1) — R1-06a
+  (comentário, aspas e apóstrofo), R1-06b (tasks e arquivos de agente).
 - **H3-05** — o runner carrega as fontes antes de conferi-las, não diz o que fazer se o script
   não rodar (sem Node) ou sair com código 1 e sem linha `FONTES:*` (erro de uso, crew não
-  encontrada) e não manda reler as fontes depois do `--corrigir` → R1.
+  encontrada) e não manda reler as fontes depois do `--corrigir`. Feito na R1 (1.6.1) — R1-07i
+  (confere antes de carregar; relê depois do `--corrigir`), R1-07h (avisa quando o script não
+  roda); contrato de prompt.
 - **H3-15** — `--corrigir` com pendência sem sugestão única responde "Nada a corrigir." e depois
   `FONTES:PENDENTE`; pasta de `fontes:` escrita sem barra final e movida não recebe sugestão;
   passado o limite de 20.000 entradas, o relatório diz "nem nada com esse nome no projeto" sem
-  avisar que parou de procurar → R1.
+  avisar que parou de procurar. Feito na R1 (1.6.1) — R1-06d (`--corrigir`), R1-06e (pasta sem
+  barra final), R1-06f (busca parcial).
 - **H3-17, I-14** — `--crew` não é validado: apontando para fora do projeto, o script lê a crew
-  de fora e, com `--corrigir`, altera os arquivos dela (seção 7) → R1.
+  de fora e, com `--corrigir`, altera os arquivos dela (seção 7). Feito na R1 (1.6.1) — R1-06c.
 - **H3-16** — o alerta "não é portátil" não vira oferta de correção, embora o `--corrigir` já
   troque esses caminhos → U5.
 - **H3-03** — `fontes:` só é perguntada na criação da crew. Crew criada antes da 1.6.0 só ganha
@@ -242,14 +248,18 @@ Memória e overlay local (regras 3 a 6):
   mas a memória equivalente é pulada e os modelos de memória não têm a seção → U4.
 - **H3-01** — o verificador usa só os `constraints:` do primeiro arquivo que existir, sem mesclar
   com o core. Arquivo local sem `constraints:` desliga os limites do formato, sem nota; a cópia
-  inteira que o runner manda fazer congela os limites, e correções do core deixam de chegar
-  → R1 (mescla com o core e nota) e → U5 (arquivo de acréscimo e aviso no `update`).
+  inteira que o runner manda fazer congela os limites, e correções do core deixam de chegar.
+  Mescla com o core e nota: feito na R1 (1.6.1) — R1-04a, R1-04b. A cópia inteira continua
+  valendo por cima do core, chave a chave; arquivo de acréscimo e aviso no `update` → U5.
 - **H3-07** — best-practice criada no overlay não é vista por discovery, design e build, que leem
   só o core; na skill, remover e validar ainda operam no core → U5.
 
 `update`, pontes e `.mcp.json` (regras 8 a 14):
 - **H3-02** — `init --repair-bridges` sem `--ide` cria as pontes das 9 IDEs (C-12 não feito) e
-  não lista a cópia de segurança que faz → R1.
+  não lista a cópia de segurança que faz. Feito na R1 (1.6.1) — R1-08a e R1-08d (usa a detecção
+  do `update`), R1-08b (lista a cópia), R1-08c (sem ponte detectada: erro), R1-08e (`--all`
+  regrava as 9). Ponte de bloco marcado editada dentro do bloco continua regravada sem cópia
+  → R2 (§14 da spec R1).
 - **H3-10, H1-06** — a detecção de IDE aceita qualquer arquivo de ponte que contenha a palavra
   "opencrew". Um `CLAUDE.md`, `GEMINI.md`, `QWEN.md` ou `.github/copilot-instructions.md` do
   usuário que só cita o OpenCrew ganha o bloco e os demais arquivos de ponte daquela IDE, contra
@@ -298,11 +308,12 @@ U2-04a…d, U2-07a, U2-08a) · `tests/verificar.test.js` (U2-04d) · `tests/upgr
   seção 8; os testes já existiam. Seções 9 e 10 marcadas só com o que está provado (H3-18).
   Os termos Manifesto e Cópia de segurança (regra 9) entraram no `GLOSSARIO.md` (H3-21).
 - 2026-10-04 — Seção 2: C-12 e T-M5 constavam como herdados e cobertos e não foram feitos
-  (H3-02 → R1; H3-08 → U4). O que o código não cumpre está na seção 12, com destino.
+  (H3-02: feito na R1 (1.6.1) — R1-08; H3-08 → U4). O que o código não cumpre está na seção 12,
+  com destino.
 - 2026-10-04 — Seção 7: a frase "só lê/escreve dentro do projeto" afirmava mais do que o script
   garante. Vale para a escrita, e só quando `--crew` aponta para o projeto, porque `--crew` não é
-  validado (H3-17, I-14 → R1). A conferência de existência alcança caminhos absolutos de fora do
-  projeto e lista a pasta esperada (regra 2).
+  validado (H3-17, I-14: feito na R1 (1.6.1) — R1-06c). A conferência de existência alcança
+  caminhos absolutos de fora do projeto e lista a pasta esperada (regra 2).
 - 2026-10-04 — Regra 2, pastas ignoradas e limite: ao procurar um arquivo pelo nome, o script
   ignora também `_build` e tudo que começa com ponto (não só `.git`), e para de indexar em 20.000
   entradas (H3-15).
@@ -314,3 +325,50 @@ U2-04a…d, U2-07a, U2-08a) · `tests/verificar.test.js` (U2-04d) · `tests/upgr
 - 2026-10-04 — Regra 14, `.mcp.json`: além do merge, o `update` cria o arquivo quando ele não
   existe (a partir do template) e repõe o servidor `playwright` quando ele foi removido. Servidor
   que já tem `--output-dir` não é tocado; JSON inválido não é alterado e gera aviso (H3-09).
+- 2026-10-05 — R1 (1.6.1): `specs/fase-r1-reparos-1-6-1.md` corrigiu os achados da seção 12
+  marcados "feito na R1", cada um com teste. Onde a R1 mudou o que esta spec descreve, vale o que
+  está abaixo.
+  - Seção 2 e regra 11 — C-12 (H3-02): `init --repair-bridges` sem `--ide` e sem `--all` usa a
+    mesma detecção do `update` e regrava só as pontes das IDEs instaladas, também com `--yes`
+    (R1-08a, R1-08d). Com `--ide`, vale a lista pedida (R1-08f). `--all` sozinho regrava as 9
+    (R1-08e). Sem ponte detectada, sem `--ide` e sem `--all`, o comando para com código 1 e não
+    escreve nada (R1-08c). O resumo lista cada cópia de segurança, com o caminho em
+    `.opencrew-backup/<data>/` (R1-08b). A cópia vale para ponte de arquivo inteiro; ponte de
+    bloco marcado editada dentro do bloco é regravada sem cópia, como no `update` → R2. O reparo
+    não instala: numa pasta sem workspace do OpenCrew, para com código 1 e não escreve nada; num
+    workspace sem `manifest.json`, não cria o manifesto (quem cria é o `update`).
+  - Seção 3 e regra 2 — coleta (H3-04): `caminho:` aceita aspas e comentário no fim da linha
+    (R1-06a). A conferência lê também todos os `.md` de `agents/` da crew, em qualquer nível:
+    agentes e tasks (R1-06b). O caminho relativo citado ali também é procurado na pasta de quem
+    cita e, para `agents/X.agent.md`, em `agents/X/`. Não é conferido como caminho: comando entre
+    crases (`node …`, `npx …`) e nome com marcador de modelo, como `AAAA-MM-DD` (R1-06j).
+  - Seção 6 — mensagens (H3-15): `--corrigir` troca os caminhos de sugestão única e, se sobra
+    pendência sem sugestão única, diz quantas; "Nada a corrigir." só aparece sem pendência
+    (R1-06d). Pasta citada sem barra final também é procurada como pasta (R1-06e). Quando a busca
+    por nome para no limite de itens, o relatório diz que foi parcial (R1-06f). Nesse caso, e
+    quando o caminho é o destino de gravação de um agente (linha `Writes to`), o candidato único
+    é só listado: não vira sugestão, e o `--corrigir` não troca. A troca do `--corrigir` vale só
+    onde o caminho foi lido (entre crases ou no valor de `caminho:`), nunca num pedaço de outro
+    texto. Listas longas mostram os 20 primeiros nomes e "… e mais N".
+  - Seções 4 e 7 — contrato (H3-17, I-14): a conferência recusa `--crew` de fora do projeto antes
+    de ler ou escrever (R1-06c). Também sai com código 1, sem linha `FONTES:`, numa pasta sem
+    `_opencrew/` ou com crew inexistente (R1-06g, R1-06h). Os caminhos citados pela crew
+    continuam sendo testados dentro e fora do projeto, sem leitura de conteúdo (regra 2).
+  - Regras 1 e 2 — runner (H3-05): a conferência roda antes de carregar as fontes; depois do
+    `--corrigir`, o runner relê o `crew.yaml` e os agentes já carregados e, se ainda houver
+    pendência, pergunta de novo só com "Seguir assim mesmo" e "Parar" (R1-07i). Se o script não roda (sem Node, erro ou sem
+    linha `FONTES:`), o runner avisa, segue e repete o aviso na aprovação final (R1-07h). É
+    contrato de prompt: a obediência do modelo → U0.
+  - Regra 6 e U2-04d — overlay local (H3-01): os limites são os do core, com as chaves que o
+    arquivo do overlay declarar por cima; o verificador deixou de usar só o primeiro arquivo que
+    existir. Overlay sem `constraints:` usa os limites do core e gera nota (R1-04a, R1-04b,
+    R1-upg). A cópia inteira no overlay continua valendo por cima do core, chave a chave; o
+    arquivo de acréscimo e o aviso no `update` → U5.
+  - Seção 13 — travas: `tests/conferir-fontes.test.js` ganhou os cenários R1-06, divididos com o
+    novo `tests/conferir-fontes-r1.test.js`. São novos também
+    `tests/init-repair.test.js` (R1-08), `tests/verificar-regras.test.js` (R1-04) e
+    `tests/runtime-contracts-r1.test.js` (R1-07h, R1-07i); `tests/upgrade.test.js` ganhou o
+    R1-upg (1.6.0 → 1.6.1).
+  - Continua fora: o que a seção 12 manda para R2, U4 e U5, e os limites da §12 da spec R1. No
+    reparo, a IDE que teve todos os arquivos de ponte próprios apagados não é detectada: só volta
+    com `--ide` (critério da detecção → R2, H3-10).

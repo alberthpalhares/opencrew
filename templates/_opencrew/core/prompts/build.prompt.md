@@ -410,6 +410,8 @@ side_effects: irreversible  # REQUIRED for any step that publishes, posts, sends
                             # distributes outside the project (it cannot be undone). The Pipeline
                             # Runner never retries these automatically, and Gate 2c places them last.
                             # Omit for every other step.
+max_review_cycles: {N}  # ONLY for the review step: write it next to its `on_reject`.
+                        # By crew tier (`crew.tier` in design.yaml): Express 1, Standard 2, Full 3.
 ---
 ```
 

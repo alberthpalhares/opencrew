@@ -230,11 +230,19 @@ o que você fez:
 - **Versão mais nova instalada?** O `update` não volta para uma versão mais antiga (cache do
   `npx`): ele para e pede `npx @aksp/opencrew@latest update`.
 
-Para regravar as pontes de IDEs específicas (ou adicionar uma IDE nova):
+Para regravar as pontes de IDE num workspace que já existe:
 
 ```bash
-npx @aksp/opencrew init --repair-bridges --ide=claude-code
+npx @aksp/opencrew@latest init --repair-bridges                    # só as IDEs que você já tem instaladas
+npx @aksp/opencrew@latest init --repair-bridges --ide=claude-code  # só as indicadas (ou uma IDE nova)
+npx @aksp/opencrew@latest init --repair-bridges --all              # as 9 IDEs
 ```
+
+Sem `--ide` e sem `--all`, o `init --repair-bridges` usa a mesma detecção do `update` (aqui o
+`--yes` não escolhe IDE); se não encontra nenhuma ponte, para com erro e pede `--ide=<id>`.
+O reparo não instala: numa pasta sem workspace do OpenCrew ele para com erro e pede o `init`.
+Ponte de arquivo inteiro que você editou (ex.: `.claude/skills/opencrew/SKILL.md`) é copiada
+antes para `.opencrew-backup/<data>/`, e o resumo do `init --repair-bridges` lista cada cópia.
 
 Se você está migrando de uma versão anterior a v1.3, o `update` detecta
 AGENTS.md legados (sistema completo de 150 linhas) e os substitui pela ponte
@@ -274,12 +282,12 @@ npx @aksp/opencrew update --check
 | Comando | O que faz |
 |---|---|
 | `npx @aksp/opencrew init` | Instala o OpenCrew na pasta atual |
-| `npx @aksp/opencrew update` | Atualiza o framework |
+| `npx @aksp/opencrew@latest update` | Atualiza o framework |
 | `npx @aksp/opencrew update --check` (ou `--dry-run`) | Verifica se há update disponível, sem alterar nada |
 | `npx @aksp/opencrew upgrade` | Atalho para `update` |
 | `npx @aksp/opencrew init --ide=claude-code,cursor` | Instala só as pontes das IDEs indicadas |
 | `npx @aksp/opencrew init --all` (ou `-y`) | Instala as pontes de todas as IDEs |
-| `npx @aksp/opencrew init --repair-bridges` | Regrava as pontes de IDE num workspace existente |
+| `npx @aksp/opencrew@latest init --repair-bridges` | Regrava as pontes das IDEs já instaladas num workspace existente (`--ide=a,b`: só as indicadas; `--all`: as 9) |
 | `npx @aksp/opencrew version` | Mostra a versão instalada |
 | `npx @aksp/opencrew help` | Mostra ajuda dos comandos CLI |
 

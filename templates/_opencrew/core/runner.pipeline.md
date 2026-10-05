@@ -85,16 +85,9 @@ Before starting execution:
         ```
    - Do not pause execution for this migration (the one-line notice above is enough).
 
-1c. **Project sources (`fontes:`)** — if `crew.yaml` has a `fontes:` list (files or folders of
-    the user's project, paths relative to the project root), read them now: a file in full up to
-    ~300 lines, otherwise its headings plus the passages relevant to this run's task; a folder as
-    its file list. Treat them as the **truth of the project**: when they disagree with the
-    briefing, the research or your own assumptions, the sources take precedence over them
-    (as fontes valem sobre o briefing e a pesquisa) — and say so when it matters.
-
-1d. **Source check** — before the first step, run:
+1c. **Source check** — before loading the project sources (1d), run:
     ```bash
-    node _opencrew/core/scripts/conferir-fontes.mjs --crew crews/{name}
+    node _opencrew/core/scripts/conferir-fontes.mjs --crew "crews/{name}"
     ```
     If the last line is `FONTES:PENDENTE` (a cited file was moved, renamed or deleted), show the
     report and ask — never continue silently with a missing source:
@@ -106,8 +99,19 @@ Before starting execution:
     2. Seguir assim mesmo
     3. Parar
     ```
-    On 1, run the same command with `--corrigir` and show the new result. Not-portable alerts
-    (absolute paths) are mentioned once, without stopping.
+    On 1, run the same command with `--corrigir`, show the new result and re-read `crew.yaml` and
+    any agent file already loaded (it may have changed them); 1d then loads the sources from the
+    corrected paths. If the new result still ends in `FONTES:PENDENTE`, ask again with options 2 and
+    3 only. Not-portable alerts (absolute paths) are mentioned once, without stopping. If the script
+    did not run (no Node, an error, or no `FONTES:` status line), tell the user "⚠️ A conferência de
+    fontes não rodou: {motivo}" and continue; the final approval repeats the warning.
+
+1d. **Project sources (`fontes:`)** — if `crew.yaml` has a `fontes:` list (files or folders of
+    the user's project, paths relative to the project root), read them now: a file in full up to
+    ~300 lines, otherwise its headings plus the passages relevant to this run's task; a folder as
+    its file list. Treat them as the **truth of the project**: when they disagree with the
+    briefing, the research or your own assumptions, the sources take precedence over them
+    (as fontes valem sobre o briefing e a pesquisa) — and say so when it matters.
 
 2. Read `crews/{name}/pipeline/pipeline.yaml` for the pipeline definition
 3. **Resolve skills**: Read `crew.yaml` → `skills` section. For each non-native skill (anything other than web_search, web_fetch):
@@ -349,6 +353,16 @@ Before executing any step that references an agent:
       - Faltou um dado real? Escreva [PREENCHER: o que falta] no lugar — o usuário completa
         na aprovação final. Um [PREENCHER] honesto vale mais que um exemplo inventado.
       ```
+   g. **Reviewer rules (always)** — for every step with `on_reject:`, inject at the same point:
+      ```
+      --- REGRAS DO REVISOR ---
+      - Copie os valores medidos do relatório; nunca estime contagens.
+      - Bloqueio no relatório é REJECT, seja qual for a nota — menos [PREENCHER], que o usuário
+        resolve na aprovação final.
+      - Alerta não resolvido nem justificado limita a nota a 7/10.
+      - O checklist só marca o que o relatório confirma; item "não medido" ou "não verificado" é
+        dito assim, nunca como aprovado.
+      ```
 
 ### Context Compression (Summary-Based Handoff)
 
@@ -564,7 +578,8 @@ Apply this transformation consistently for every write in this step.
   a fact, a format), write it to `crews/{name}/_memory/memories.md` in the matching section
   **before the next step** (antes do próximo passo) — not only at the end of the run, which may
   never come. A term the user asked to remove goes to `## Proibições Explícitas` **between
-  quotes** (entre aspas: `- Nunca usar "termo"`), so the automatic checker blocks it next time.
+  quotes** (entre aspas), in the canonical form — `- Nunca usar "termo"` or, with a replacement,
+  `- Nunca usar "termo" → usar "outro"` — so the automatic checker blocks it next time.
 - **Correction vs. company profile**: if the correction contradicts `_opencrew/_memory/company.md`
   (e.g. the organization's name, the main audience), ask: "Isso vale para todas as crews?
   Atualizo o perfil da empresa?" — change `company.md` only after a yes.
@@ -678,36 +693,48 @@ catching obvious issues early and reducing review cycle waste.
 When a step has `on_reject: {step-id}` (a review step):
 
 1. **Automatic check BEFORE the reviewer runs** — run the checker on **all outputs** (todas as
-   saídas) of every non-checkpoint step from the `on_reject` step up to the step right before
-   the review, using the transformed paths of this run (run_id/vN):
+   saídas) of every non-checkpoint step from the `on_reject` step up to the step right before the
+   review, using the transformed paths of this run (run_id/vN). Each item is `caminho=formato`, with
+   the `format:` of the step that generated that file; a step with no `format:`, with an export
+   format (`pdf`, `csv`, `formatted-post`) or with one outside `[a-z0-9-]+` goes without `=formato`:
    ```bash
-   node _opencrew/core/scripts/verificar.mjs --crew crews/{name} --arquivo "{path1},{path2},…" --formato {blog format id of those steps, if any}
+   node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path1}={format1},{path2},…"
    ```
    Save the full output to `crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md` and inject it
    into the reviewer's context as `--- VERIFICAÇÃO AUTOMÁTICA ---`. The reviewer must copy the
-   measured values from it (see best-practices `review.md`). If the command itself fails (no
-   Node, unexpected error), tell the user "⚠️ A verificação automática não rodou: {motivo}" and
-   continue with the normal review.
+   measured values from it (see best-practices `review.md`). If the checker did not run (no Node,
+   an error, or no `VERIFICACAO:` status line), tell the user, continue with the normal review and
+   repeat it at the final approval: "⚠️ A verificação automática não rodou: {motivo}".
 2. **A block cannot be approved** — if the last line of the checker output is
    `VERIFICACAO:BLOQUEADA`, the verdict is **REJECT** regardless of the score (qualquer que seja a
    nota). Send the report (blocks first) to the writer together with the reviewer's feedback.
    If the last line is `VERIFICACAO:AGUARDANDO_USUARIO`, the only blocks are `[PREENCHER: …]`
    (real data only the user has): do NOT reject for them — the reviewer judges the rest, and the
    final approval below collects the missing data from the user.
-3. Track the review cycle count. If the reviewer rejects, go back to the referenced step.
-4. If max_review_cycles is reached with blocks remaining, present the report to the user:
+3. Track the review cycle count: a **cycle** is one pass of the reviewer. The maximum is
+   `max_review_cycles`, an integer from 1 declared where the step declares `on_reject` (the step
+   frontmatter or its `pipeline.yaml` entry); absent or invalid: 3. On every rejection, with or
+   without a block, send the reviewer's feedback to the writer and go back to the referenced step.
+4. If the last allowed pass also rejects, stop; the status of the last report picks the message, as
+   in item 2 — `VERIFICACAO:BLOQUEADA`: the blocks; any other status: the reviewer's feedback, also
+   with `VERIFICACAO:AGUARDANDO_USUARIO` (its only blocks are `[PREENCHER: …]`). Same three options:
    ```
-   ⚠️ A revisão ainda encontra bloqueios depois de {N} ciclos:
+   {if VERIFICACAO:BLOQUEADA} ⚠️ A revisão ainda encontra bloqueios depois de {N} ciclos:
    {lista de bloqueios do relatório}
+   {any other status} A revisão não aprovou o texto depois de {N} ciclos. Motivo: {parecer resumido}
 
    1. Corrigir eu mesmo (eu edito o texto e você verifica de novo)
-   2. Aceitar assim mesmo (fica registrado no histórico da execução)
+   2. Aceitar assim mesmo
    3. Abortar
    ```
 5. **Final approval checkpoint** (the checkpoint after the review): show the summary of the last
-   report — `Verificação automática: {N} bloqueios, {M} alertas` — plus the list of alerts. If the
-   approved text still contains `[PREENCHER: …]`, ask the user for each missing piece of real
-   information and write it into the text before approving.
+   report — `Verificação automática: {N} bloqueios, {M} alertas, {Z} não medidos` — plus the list
+   of alerts and the {Z} items not measured or not verified (the `Não medido` and `Não verificado`
+   lines under each file, not the "não é texto" line of **Notas**), one per line as
+   `{arquivo} — {motivo}`, then the lines under `**Notas:**` in that report, as they are written,
+   and repeat every "não rodou" warning of this run (checker and source check). If the approved
+   text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
+   and write it into the text before approving.
 
 ### Dashboard Handoff (between steps)
 
@@ -796,7 +823,8 @@ This archives the run state for the `runs` command while keeping crew history av
      - Writing style choices → `## Estilo de Escrita`
      - Visual/design preferences → `## Design Visual`
      - Content structure choices → `## Estrutura de Conteúdo`
-     - Explicit rejections or prohibitions → `## Proibições Explícitas`
+     - Explicit rejections or prohibitions → `## Proibições Explícitas`, in the canonical form
+       (`- Nunca usar "termo"` or `- Nunca usar "termo" → usar "outro"`)
      - Crew-specific technical patterns → `## Técnico (específico do crew)`
 
    **Never write to `memories.md`:**

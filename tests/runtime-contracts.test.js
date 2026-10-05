@@ -91,7 +91,7 @@ test('U1-02b: VERIFICACAO:BLOQUEADA forces REJECT whatever the score', () => {
   assert.match(s, /(qualquer que seja|regardless of) (a nota|the score)/i);
 });
 
-test('U1-02c: at the cycle limit the user gets fix / accept-on-record / abort', () => {
+test('U1-02c: at the cycle limit the user gets fix / accept / abort', () => {
   const s = reviewLoops();
   assert.match(s, /Corrigir eu mesmo/);
   assert.match(s, /Aceitar assim mesmo/);

@@ -1,10 +1,11 @@
 // What `update` does beyond refreshing _opencrew/core and the catalog skills, so that every
-// improvement reaches people who already use OpenCrew (AGENTS.md rule 14).
+// improvement reaches people who already use OpenCrew (AGENTS.md rule 14). The IDE detection
+// is shared with `init --repair-bridges`, whose helpers live here too.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { exists, writeBridgeFile } from './fsx.js';
-import { IDES } from './ides.js';
-import { deliverFile } from './manifest.js';
+import { IDES, allIdeIds } from './ides.js';
+import { deliverFile, writeManifest } from './manifest.js';
 
 /** Semver compare (no pre-release tags): >0 if a > b, <0 if a < b, 0 if equal. */
 export function compareVersions(a, b) {
@@ -44,6 +45,42 @@ export async function detectInstalledIdes(target) {
     }
   }
   return found;
+}
+
+/**
+ * IDE ids `init --repair-bridges` rewrites when --ide is not given: every IDE with --all,
+ * otherwise the ones `update` would detect. --yes chooses nothing here.
+ */
+export async function repairIdeIds(target, { all } = {}) {
+  if (all) return allIdeIds();
+  return (await detectInstalledIdes(target)).map((ide) => ide.id);
+}
+
+/** `init --repair-bridges` found no bridge and got neither --ide nor --all. */
+export const NO_BRIDGES_FOUND =
+  `Não encontrei pontes de IDE aqui. Use \`--ide=<id>\` para escolher. Ids válidos: ${allIdeIds().join(', ')}.`;
+
+/** `init --repair-bridges` in a folder that is not a workspace: the repair never installs. */
+export const NO_WORKSPACE =
+  'Não encontrei um workspace do OpenCrew nesta pasta. O reparo não instala: para instalar, rode `npx @aksp/opencrew@latest init`.';
+
+/**
+ * Add the bridges a repair rewrote to the manifest — only when the workspace has one. Without
+ * it (installed up to 1.5.0) none is created: a bridges-only manifest would make the next
+ * `update` call every older file "edited by you" and hide its first-protected-update notice.
+ */
+export async function recordRepair(ctx, version) {
+  if (ctx.manifest) await writeManifest(ctx.target, version, { ...ctx.manifest.files, ...ctx.files });
+}
+
+/** Summary lines of a delivery's backup copies, each with its path in .opencrew-backup/<date>/. */
+export function backupSummary(ctx) {
+  if (!ctx.copied.length) return [];
+  const dir = path.relative(ctx.target, ctx.backupDir).split(path.sep).join('/');
+  return [
+    `${ctx.copied.length} cópia(s) de segurança feita(s) antes de regravar:`,
+    ...ctx.copied.map((file) => `    ${dir}/${file}`),
+  ];
 }
 
 /** Rewrite the bridges of the installed IDEs only (frontmatter files whole, others by block). */

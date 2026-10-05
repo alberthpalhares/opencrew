@@ -44,7 +44,7 @@ o projeto de cada usuário. **Trava:** `tests/ides.test.js` + `tests/package.tes
 `init` e `update` nunca sobrescrevem, sem backup ou confirmação, arquivo que o usuário
 possa ter editado (`crews/`, `_opencrew/_memory/`, `.env*`, `.gitignore`, `.mcp.json`,
 `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`). Arquivo compartilhado recebe **bloco marcado**
-(`opencrew:start/end`). **Trava:** `tests/init.test.js`, `tests/init-safety.test.js`,
+(`opencrew:start/end`). **Trava:** `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`,
 `tests/update.test.js`, `tests/update-u2.test.js`.
 
 ### 4. Referências do payload existem
@@ -89,7 +89,8 @@ git — regra deste projeto; diverge de propósito da skill project-standards).
 Todo limite que o produto promete (tamanho de título, legenda, post, hashtags, slides) mora no
 frontmatter `constraints:` do best-practice — com nome canônico — e é medido por
 `_opencrew/core/scripts/verificar.mjs` antes do revisor. Limite só escrito em prosa é intenção.
-**Trava:** `tests/verificar.test.js` + `tests/runtime-contracts.test.js` (U1-05).
+**Trava:** `tests/verificar*.test.js` + `tests/runtime-contracts.test.js` (U1-05) e
+`tests/runtime-contracts-r1.test.js`.
 
 ### 13. Texto que o usuário vê: PT-BR correto
 Mensagens, perguntas e relatórios mostrados ao usuário final são em português do Brasil, com
@@ -108,7 +109,7 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 |---|---|---|
 | 1 Ciclo | sem trava — revisão humana | — |
 | 2 Payload sem mantenedor | `tests/ides.test.js`, `tests/package.test.js` | Reprova |
-| 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/update.test.js`, `tests/update-u2.test.js` | Reprova |
+| 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`, `tests/update.test.js`, `tests/update-u2.test.js` | Reprova |
 | 4 Referências existem | `tests/template-refs.test.js` | Reprova |
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
 | 6 Tamanho | `scripts/check-size.js` | Alerta |
@@ -117,7 +118,7 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 | 9 Doc que mente | sem trava — revisão humana | — |
 | 10 Quando travar | sem trava — revisão humana | — |
 | 11 Continuidade | sem trava — revisão humana | — |
-| 12 Limite medido | `tests/verificar.test.js`, `tests/runtime-contracts.test.js` | Reprova |
+| 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js` | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
 | 14 Chega a quem já usa | `tests/upgrade.test.js` | Reprova |
 
