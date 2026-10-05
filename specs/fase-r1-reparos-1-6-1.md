@@ -601,8 +601,11 @@ Os testes de R1-09a e R1-09b levam os dois IDs no nome: "F1-11a (R1-09a): …" e
       Cada post aparece medido em separado, não há "Nada a apontar" sem medição e nenhum bloqueio
       é falso. Depois do `update` autorizado, repetir com o script instalado.
       Feito em 2026-10-05 (§14): seis posts medidos um a um, título e meta do blog no limite,
-      nenhum bloqueio falso; só os `[PREENCHER]` de verdade. A repetição com o script instalado
-      fica para depois do `update`.
+      nenhum bloqueio falso; só os `[PREENCHER]` de verdade. Repetido em 2026-10-05 com o script
+      instalado, depois do `update` autorizado (1.6.0 → 1.6.2, pelo npm): mesmo resultado, e o
+      erro de uso fora da pasta do projeto sai com código 1. O `update` escreveu 18 arquivos do
+      framework e não alterou crew, memória nem ponte. No Projeto B a atualização fica pendente:
+      a unidade dele não estava montada.
 - [x] No Projeto A, antes da tag: rodar a conferência de fontes deste repositório (sem
       `--corrigir`) e ver que nenhuma pendência nova vem de texto de agente ou de task que não é
       caminho.
@@ -610,7 +613,7 @@ Os testes de R1-09a e R1-09b levam os dois IDs no nome: "F1-11a (R1-09a): …" e
       uma pendência falsa vinda de um arquivo de agente (caminho de destino com modelo de data
       no nome). Virou o cenário R1-06j e foi corrigido antes da tag. Repetido com o código
       final: as duas crews dão `FONTES:OK` (39 e 33 fontes), e o verificador segue sem bloqueio
-      falso.
+      falso. Com a conferência instalada pelo `update` (1.6.2), o resultado é o mesmo.
 - [ ] Rodar uma crew até a revisão: o relatório aparece antes do parecer e o revisor cita os
       números dele (jornada de referência, U0).
 
@@ -629,7 +632,8 @@ Os testes de R1-09a e R1-09b levam os dois IDs no nome: "F1-11a (R1-09a): …" e
       referência (U0).
 - [ ] CHANGELOG 1.6.1; `npm version patch`; release (commit + tag) só com confirmação;
       atualizar A e B só com autorização. Feitos: CHANGELOG, versão e release (tag `v1.6.1`,
-      publicada no npm em 2026-10-05). Falta a atualização dos dois projetos.
+      publicada no npm em 2026-10-05) e, depois, a 1.6.2 (§14). Projeto A atualizado para a
+      1.6.2 com autorização; falta o Projeto B.
 
 **A porta não cobre:** uma IA seguindo as regras 18 a 21, e as partes do runner nas regras 1 e 11,
 numa execução real (→ U0).
