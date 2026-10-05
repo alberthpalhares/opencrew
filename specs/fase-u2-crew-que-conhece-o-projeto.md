@@ -1,7 +1,7 @@
 # Spec — Fase U2: Crew que conhece o projeto (+ U6 Convivência) — 1.6.0
 
-- **Fase:** U2 · **Módulos:** CLI (`src/commands/update.js`, `src/lib/ides.js`) + Runtime (`templates/`) · **Status:** implementada (2026-10-02)
-- **Termos novos no GLOSSARIO.md:** sim — Fontes do projeto, Conferência de fontes, Overlay local
+- **Fase:** U2 · **Módulos:** CLI (`src/commands/update.js`, `src/commands/init.js`, `src/lib/ides.js`, `src/lib/manifest.js`, `src/lib/migrations.js`) + Runtime (`templates/`) · **Status:** implementada (2026-10-02)
+- **Termos novos no GLOSSARIO.md:** sim — Fontes do projeto, Conferência de fontes, Overlay local; em 2026-10-04 (H3-21), Manifesto e Cópia de segurança
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 
 ## 1. Objetivo
@@ -14,11 +14,13 @@ apagar o que ele personalizou — convivendo com outros sistemas de agentes no m
 |---|---|---|
 | Uso real, dor 3 | Decisão já registrada no projeto ignorada; correção que não chega ao `company.md` | U2-01, U2-04 |
 | Uso real, dor 5 | Caminhos absolutos quebrados após reorganizar (Projeto B); logo com nome diferente, falha silenciosa (Projeto A) | U2-02, U2-03 |
-| Uso real, dor 4 + T-M5, T-M6, T-M10 | Correções não registradas; memória resetada sem backup; regras contraditórias | U2-04 |
+| Uso real, dor 4 + T-M6, T-M10 | Correções não registradas; memória resetada sem backup; regras contraditórias | U2-04 |
+| T-M5 | Regra de Ouro: a promoção procura repetições em `memories.md`, que não guarda dados de run; os modelos de memória não têm a seção | **não feito** (constava em U2-04) → U4 (H3-08) |
 | Uso real, dor 8 (U6) + C-14, C-17 | `AGENTS.md` dividido com outro sistema; "adote o papel" global; restos `opensquad`; `_build/` e logs na raiz | U2-08, U2-09 |
 | F2: C-01 | `update` não entrega diretórios novos (agentes-base, config, templates de crew) | U2-05 |
 | F2: C-08 + atualização de 2026-10-02 | Skill de catálogo editada pelo usuário sobrescrita sem cópia (aconteceu no Projeto A) | U2-06 |
-| F2: C-10, C-12 | Pontes das IDEs nunca atualizadas; `--repair-bridges` cria pontes para IDEs não escolhidas | U2-07 |
+| F2: C-10 | Pontes das IDEs nunca atualizadas | U2-07 |
+| F2: C-12 | `--repair-bridges` sem `--ide` cria pontes para IDEs não escolhidas | **não feito** (constava em U2-07) → R1 (H3-02) |
 | F2: C-09 | Downgrade silencioso via cache do `npx` | U2-06 |
 | F2: C-13 | `.mcp.json` existente sem merge | U2-09 |
 | T-A7 | Best-practices aprendidas gravadas em `core/` (o `update` apaga) | U2-04 |
@@ -111,7 +113,11 @@ apagar o que ele personalizou — convivendo com outros sistemas de agentes no m
 | Ponte de IDE com frontmatter editada pelo usuário | cópia de segurança antes de substituir | listada no resumo |
 
 ## 7. Segurança
-`conferir-fontes.mjs` só lê/escreve dentro do projeto; `--corrigir` só troca strings de caminho
+`conferir-fontes.mjs` deve ler e escrever só dentro do projeto. Hoje (1.6.0) a escrita fica dentro
+do projeto quando `--crew` aponta para uma pasta dele, que é o que o runner passa (`crews/{name}`);
+o script não valida `--crew` (seção 12, H3-17 e I-14 → R1). Na leitura, ele testa a existência de
+caminhos absolutos citados, dentro ou fora do projeto, e, quando o arquivo falta, lista os nomes
+da pasta esperada, mesmo fora do projeto (regra 2). `--corrigir` só troca strings de caminho
 nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga arquivo do usuário.
 
 ## 8. Cenários BDD
@@ -127,6 +133,8 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 - **U2-02e** DADO `--corrigir` ENTÃO os caminhos sugeridos (únicos) são trocados, com `.bak`, e a
   nova conferência dá `FONTES:OK`.
 - **U2-02f** DADO caminhos relativos à crew (`pipeline/data/x.md`) que existem ENTÃO `FONTES:OK`.
+- **U2-02 CLI** (teste sem letra) DADO uma crew sem pendência QUANDO o script roda com
+  `--corrigir` ENTÃO relatório em PT-BR, "Nada a corrigir.", última linha `FONTES:OK` e código 0.
 **Runtime (contratos de prompt)**
 - **U2-01a** runner carrega `fontes:` no início e diz que elas valem sobre briefing/pesquisa.
 - **U2-03a** runner roda `conferir-fontes.mjs` no início e oferece as 3 opções em pendência.
@@ -144,6 +152,11 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 - **U2-06b** DADO workspace sem manifesto (1.5.0) e um arquivo de core igual ao pacote ENTÃO nenhuma
   cópia desnecessária.
 - **U2-06c** DADO instalado 9.0.0 e pacote 1.6.0 ENTÃO o `update` para (exit 1) sem escrever nada.
+- **U2-06d** DADO workspace sem manifesto e uma skill de catálogo que só difere do pacote na quebra
+  de linha (CRLF no lugar de LF) QUANDO `update` ENTÃO nenhuma cópia em `.opencrew-backup/` e o
+  resumo não diz "que você tinha editado".
+- **U2-06e** DADO workspace sem manifesto e uma skill de catálogo com conteúdo diferente do pacote
+  QUANDO `update` ENTÃO o resumo diz "diferentes do pacote novo", e não "que você tinha editado".
 - **U2-07b** DADO só a ponte do Claude Code instalada QUANDO `update` ENTÃO ela é atualizada e
   nenhuma outra IDE ganha ponte.
 - **U2-08a** o texto das pontes e do bloco do `AGENTS.md` só ativa com `/opencrew`/crews e aponta
@@ -156,18 +169,32 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 - **U2-upg** `tests/upgrade.test.js`: um workspace 1.5.0 atualizado recebe tudo de U2.
 
 ## 9. O que o humano confere na tela
-- [ ] No Projeto B: `node _opencrew/core/scripts/conferir-fontes.mjs --crew crews/<crew>`
+- [x] No Projeto B: `node _opencrew/core/scripts/conferir-fontes.mjs --crew crews/<crew>`
       depois do `update` → aparecem os caminhos absolutos que quebraram, com o novo caminho
       relativo sugerido. Rodar com `--corrigir` só se concordar.
+      Feito em 2026-10-02 (seção 14): 5 caminhos, cada um com o novo lugar. Depois, com
+      autorização do dono, o `--corrigir` trocou os 5.
 - [ ] No Projeto A: a mesma conferência aponta o logo com nome diferente e lista os PNGs da pasta.
+      Conferência rodada em 2026-10-02 (seção 14): as 9 fontes da crew estão OK e o logo não
+      aparece, porque o nome errado está dentro do manual de marca (uma fonte), não nos arquivos
+      da crew — pendente: conferir arquivos citados dentro das fontes → U3a.
 - [ ] Rodar uma crew: ao corrigir algo num checkpoint, abrir `crews/<crew>/_memory/memories.md`
       e ver a correção gravada antes do fim do run.
+      — pendente: não há execução real de crew registrada com esta conferência → jornada de
+      referência (U0), com o dono (H3-18).
 
 ## 10. Critérios de aceite
 - [ ] Cenários com teste de mesmo ID, vistos vermelhos antes do código.
-- [ ] `npm run verify` verde; `tests/upgrade.test.js` cobre 1.5.0 → 1.6.0.
+      Conferido em 2026-10-04: todo cenário da seção 8 tem teste de mesmo ID (H3-13) —
+      pendente: não há registro de que foram vistos vermelhos antes do código (não se refaz depois).
+- [x] `npm run verify` verde; `tests/upgrade.test.js` cobre 1.5.0 → 1.6.0.
+      O publish da 1.6.0 (tag `v1.6.0`, 2026-10-02) roda `npm run verify`; o teste é o U2-upg.
 - [ ] Conferência da seção 9 (dois primeiros itens, só leitura sem `--corrigir`).
-- [ ] CHANGELOG 1.6.0; release (commit + tag) com confirmação; atualizar A e B com autorização.
+      Feita em 2026-10-02 (seção 14): no Projeto B, como esperado; no Projeto A a conferência rodou
+      e não apontou o logo (seção 9) — pendente: conferir arquivos citados dentro das fontes → U3a.
+- [x] CHANGELOG 1.6.0; release (commit + tag) com confirmação; atualizar A e B com autorização.
+      1.6.0 publicada em 2026-10-02 (tag no GitHub e npm); A e B atualizados pelo npm, com
+      autorização do dono, sem dado alterado.
 
 ## 11. Fora de escopo → destino
 | O que não entra | Alocação |
@@ -176,15 +203,75 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 | Busca semântica dentro das fontes | → U5 (custo) |
 | C-11, T-M9, C-20..27 | → U5 |
 | Modo equipe / tarefas avulsas no histórico | → U4 |
+| C-12 (`--repair-bridges` sem `--ide`): constava como herdado e não foi feito (H3-02) | → R1 |
+| T-M5 (Regra de Ouro): constava como herdado e não foi feito (H3-08) | → U4 — depende de histórico confiável |
 
 ## 12. Limites conhecidos
-- Regras 1, 3, 4 e 7 são seguidas pela IA; os testes garantem o texto e o script → jornada de
-  referência (U0).
-- Caminhos citados fora de crases nos passos não são conferidos.
+- Regras 1 a 7 são, no todo ou em parte, texto de prompt seguido pela IA (inclusive a oferta das
+  3 opções da regra 2, a migração com `.bak` da regra 5 e o aprendizado fora do core da regra 6);
+  os testes garantem o texto e o script → jornada de referência (U0). A jornada precisa conferir,
+  em execução real: a conferência de fontes rodou; a correção entrou em `memories.md` antes do fim
+  do run; a pergunta do perfil apareceu quando cabia (H3-18).
+- Caminhos citados fora de crases nos passos não são conferidos → sem fase — o build grava os
+  caminhos do projeto entre crases; a R1 mantém este limite declarado (§12 da spec R1).
+
+**Achados da revisão de 2026-10-04** (`docs/auditoria/2026-10-04-revisao-specs.md`): pontos em que
+o código não cumpre a spec, ou em que a spec não previu o caso. Nenhuma promessa foi retirada;
+cada item tem destino.
+
+Conferência de fontes e runner (regras 1, 2 e 7):
+- **H3-04** — `fontes:` com comentário na mesma linha (o formato do exemplo do `build.prompt.md`)
+  ou com apóstrofo no caminho não é conferida. Caminhos citados em tasks e em arquivos de agente
+  também não: a coleta só lê `crew.yaml` e `pipeline/steps/*.md` → R1.
+- **H3-05** — o runner carrega as fontes antes de conferi-las, não diz o que fazer se o script
+  não rodar (sem Node) ou sair com código 1 e sem linha `FONTES:*` (erro de uso, crew não
+  encontrada) e não manda reler as fontes depois do `--corrigir` → R1.
+- **H3-15** — `--corrigir` com pendência sem sugestão única responde "Nada a corrigir." e depois
+  `FONTES:PENDENTE`; pasta de `fontes:` escrita sem barra final e movida não recebe sugestão;
+  passado o limite de 20.000 entradas, o relatório diz "nem nada com esse nome no projeto" sem
+  avisar que parou de procurar → R1.
+- **H3-17, I-14** — `--crew` não é validado: apontando para fora do projeto, o script lê a crew
+  de fora e, com `--corrigir`, altera os arquivos dela (seção 7) → R1.
+- **H3-16** — o alerta "não é portátil" não vira oferta de correção, embora o `--corrigir` já
+  troque esses caminhos → U5.
+- **H3-03** — `fontes:` só é perguntada na criação da crew. Crew criada antes da 1.6.0 só ganha
+  fontes com edição manual do `crew.yaml`; o runner e o fluxo de edição não perguntam → U4.
+
+Memória e overlay local (regras 3 a 6):
+- **H3-08** — T-M5 (Regra de Ouro) não foi feito: a promoção conta repetições em `memories.md`,
+  mas a memória equivalente é pulada e os modelos de memória não têm a seção → U4.
+- **H3-01** — o verificador usa só os `constraints:` do primeiro arquivo que existir, sem mesclar
+  com o core. Arquivo local sem `constraints:` desliga os limites do formato, sem nota; a cópia
+  inteira que o runner manda fazer congela os limites, e correções do core deixam de chegar
+  → R1 (mescla com o core e nota) e → U5 (arquivo de acréscimo e aviso no `update`).
+- **H3-07** — best-practice criada no overlay não é vista por discovery, design e build, que leem
+  só o core; na skill, remover e validar ainda operam no core → U5.
+
+`update`, pontes e `.mcp.json` (regras 8 a 14):
+- **H3-02** — `init --repair-bridges` sem `--ide` cria as pontes das 9 IDEs (C-12 não feito) e
+  não lista a cópia de segurança que faz → R1.
+- **H3-10, H1-06** — a detecção de IDE aceita qualquer arquivo de ponte que contenha a palavra
+  "opencrew". Um `CLAUDE.md`, `GEMINI.md`, `QWEN.md` ou `.github/copilot-instructions.md` do
+  usuário que só cita o OpenCrew ganha o bloco e os demais arquivos de ponte daquela IDE, contra
+  a regra 11. O resumo cita o Codex sempre que existe `.agents/skills/opencrew/SKILL.md` → R2.
+- **H3-06** — ponte sem marcador (instalações até a 1.2.2) recebe o bloco novo e mantém, abaixo
+  dele, o texto antigo que manda "adotar o papel", sem cópia; o U2-upg não cobre esse caso → R2.
+- **H3-09** — `.mcp.json`: o `update` cria o arquivo que não existe, repõe o servidor `playwright`
+  removido e regrava o arquivo sem cópia; a versão fixada do Playwright não é renovada → R2.
+- **H3-11** — agentes-base, `config/`, `_investigations/` e templates de crew nunca recebem
+  melhoria, mesmo sem edição do usuário: é o efeito do `overwrite: false` da regra 8 (o código faz
+  o que a regra manda). Template de crew apagado volta a cada `update` → R2.
+- **H3-14** — manifesto ilegível não gera o aviso da seção 6 (com cópia, aparece "Primeira
+  atualização com proteção", que é falso); `{"files": null}` derruba o `update`; sem teste → R2.
+- **H3-19** — "restos antigos" (regra 13) só olha 5 pastas (`.gemini/skills`, `.claude/skills`,
+  `.agents/skills`, `.agent/workflows`, `.agent/rules`) e só `.md` que cita `_opensquad/`;
+  `_build/` e logs já existentes na raiz não geram aviso → R2.
 
 ## 13. Travas que esta spec deixa
-`tests/conferir-fontes.test.js` · `tests/update.test.js` (U2-05…U2-09) · `tests/runtime-contracts.test.js`
-(U2-01…U2-07) · `tests/upgrade.test.js` (1.5.0 → 1.6.0) · alerta de tamanho para o novo script.
+`tests/conferir-fontes.test.js` (U2-02a…f, U2-02 CLI) · `tests/update-u2.test.js` (U2-05a,
+U2-06a…e, U2-07b, U2-08b, U2-09a, U2-09b) · `tests/runtime-contracts.test.js` (U2-01a, U2-03a,
+U2-04a…d, U2-07a, U2-08a) · `tests/verificar.test.js` (U2-04d) · `tests/upgrade.test.js` (U2-upg,
+1.5.0 → 1.6.0) · alerta de tamanho para o novo script.
 
 ## 14. Correções
 - 2026-10-02 — Regra 9: o manifesto e as cópias de segurança também cobrem `system.md` e as
@@ -203,3 +290,27 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
   "diferentes do pacote novo" em vez de "você editou" (U2-06e). Resultado: 8 cópias (os arquivos
   que mudaram na 1.6.0 + o editado), não 72.
 - 2026-10-02 — Mensagens novas do `update` em PT-BR; o resto do CLI continua em inglês até a U5.
+- 2026-10-04 — Faxina de documentos depois da revisão das specs
+  (`docs/auditoria/2026-10-04-revisao-specs.md`); nenhum código mudou. Não houve auditoria de fim
+  de fase da U2: a revisão (lente H3) cumpre esse papel (H3-12). Corrigidos o cabeçalho (faltavam
+  `init.js`, `manifest.js` e `migrations.js`) e a seção 13, que apontava os cenários do `update`
+  para `tests/update.test.js` (A-35, C-24, H3-13). U2-06d, U2-06e e "U2-02 CLI" ganharam texto na
+  seção 8; os testes já existiam. Seções 9 e 10 marcadas só com o que está provado (H3-18).
+  Os termos Manifesto e Cópia de segurança (regra 9) entraram no `GLOSSARIO.md` (H3-21).
+- 2026-10-04 — Seção 2: C-12 e T-M5 constavam como herdados e cobertos e não foram feitos
+  (H3-02 → R1; H3-08 → U4). O que o código não cumpre está na seção 12, com destino.
+- 2026-10-04 — Seção 7: a frase "só lê/escreve dentro do projeto" afirmava mais do que o script
+  garante. Vale para a escrita, e só quando `--crew` aponta para o projeto, porque `--crew` não é
+  validado (H3-17, I-14 → R1). A conferência de existência alcança caminhos absolutos de fora do
+  projeto e lista a pasta esperada (regra 2).
+- 2026-10-04 — Regra 2, pastas ignoradas e limite: ao procurar um arquivo pelo nome, o script
+  ignora também `_build` e tudo que começa com ponto (não só `.git`), e para de indexar em 20.000
+  entradas (H3-15).
+- 2026-10-04 — Regra 2, alerta "não é portátil": caminho absoluto que existe não muda o status,
+  que fica `FONTES:OK` (teste U2-02b); o runner cita o alerta uma vez, sem parar (H3-16).
+- 2026-10-04 — Regra 11, critério real da detecção: conta como instalada a IDE que tem um arquivo
+  de ponte próprio contendo a palavra "opencrew" (maiúsculas ou minúsculas); o marcador
+  `opencrew:start` não é exigido (H3-10, H1-06).
+- 2026-10-04 — Regra 14, `.mcp.json`: além do merge, o `update` cria o arquivo quando ele não
+  existe (a partir do template) e repõe o servidor `playwright` quando ele foi removido. Servidor
+  que já tem `--output-dir` não é tocado; JSON inválido não é alterado e gera aviso (H3-09).

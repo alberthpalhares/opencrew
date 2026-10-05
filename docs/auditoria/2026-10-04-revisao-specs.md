@@ -1,7 +1,8 @@
 # Revisão das specs — 2026-10-04
 
 > **Pedido do dono:** revisar as specs antes de aprovar a U3 (`specs/fase-u3-entrega-no-projeto.md`).
-> **Status:** sugestões aguardando análise do dono. Nenhuma spec e nenhum código foram alterados.
+> **Status:** o dono aceitou as recomendações em 2026-10-04 ("sigo suas recomendações"). O destino
+> de cada achado está no §7. Até aquela data, nenhuma spec e nenhum código tinham sido alterados.
 >
 > **Método:** 11 revisores independentes, um por lente (coerência interna, runtime, CLI,
 > viabilidade técnica, produto, saídas reais, coerência entre documentos, as três specs já
@@ -253,3 +254,31 @@ usaria esse mesmo verificador como porta da entrega.
   falso do `titulo:` (§2.2). O restante se apoia na conferência dos revisores.
 - **Evidência bruta** (com caminhos locais e a estrutura dos projetos reais): arquivo local, fora
   do git, `docs/auditoria/2026-10-04-revisao-specs.achados.local.json`.
+
+## 7. Destino de cada achado (decisão do dono, 2026-10-04)
+
+O dono aceitou as recomendações: corrigir primeiro o publicado, fazer a faxina de documentos e
+reescrever a U3 em duas entregas, com as decisões D1 a D5. Todo achado do índice tem um destino
+abaixo. Regra geral para o que não estiver citado pelo ID: verificador, conferência de fontes e
+laço de revisão → R1; `update`, pontes e envio → R2; entrega, canais e publicação → U3a;
+documento Word → U3b; memória, histórico e conserto de crews antigas → U4; custo, infraestrutura
+e polimento → U5.
+
+| Destino | Versão | O que é | Achados |
+|---|---|---|---|
+| **R1 — Reparos da 1.6.0: o verificador mede de verdade** | 1.6.1 | `specs/fase-r1-reparos-1-6-1.md` | H2-01, H2-02, H2-04, H2-06, H2-08, H2-10, H2-11, H2-12, H2-15, H2-18, E-07 (o bloqueio de `{{…}}`), H3-01 (mescla com o core e nota), H3-02, H3-04, H3-05, H3-15, H3-17, I-14, Z-02, H1-05 (nome do teste), H1-17 (teste com o ID) |
+| **U3a — Entrega por canal** | 1.7.0 | `specs/fase-u3a-entrega-por-canal.md` | Os achados A a G, I e Z sobre entrega, canais, destino, imagens, export, LEIA-ME, regras 10 e 11; e das specs antigas: H2-07, H2-13, H2-16, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20, E-07 (medir assunto de e-mail e WhatsApp) |
+| **U3b — Documento Word** | 1.8.0 | `specs/fase-u3b-documento-word.md` | Os achados sobre DOCX (D-01 a D-17, A-21, A-22, A-31, B-16, B-22, C-17, C-18, E-05, E-12, E-13, E-21, F-13, F-18, F-19, F-20, G-19, I-03, I-08, Z-06) |
+| **R2 — `update` e envio seguros** | a definir, depois da R1 | sem spec ainda | H1-04, H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19 |
+| **U4 — Modo equipe + histórico confiável** | 1.9.0 | sem spec ainda | H1-01, H2-05, H3-03, H3-08, e o conserto (`repair`) de crews antigas |
+| **U5 — Rápido, barato e em PT-BR** | contínuo | sem spec ainda | H2-17, H3-07, H3-16, H1-19, H3-01 (arquivo de acréscimo e aviso no `update`), G-29, dependência sem uso |
+| **Só documento** | — | faxina de 2026-10-04 | A-34, A-35, A-36, C-24, G-15, G-20, G-25, H1-11, H1-12, H1-14, H1-16, H1-18, H2-09, H2-14, H3-12, H3-13, H3-18, H3-21 |
+
+Visto durante a faxina de documentos, sem ID no índice: a skill `image-ai-generator` manda
+passar o texto do prompt na linha de comando (`--prompt "…"`), a mesma classe de risco que a F1
+fechou para a legenda do Instagram → R2. Os comentários de `verificar.mjs` que ainda citam dois
+estados (A-34, H2-09) → R1.
+
+Dois pontos ficaram em aberto para o dono: se a R2 vem antes ou depois da U3a (são defeitos, não
+funcionalidade; recomendo antes) e a decisão do dashboard (publicar ou remover), que a spec U3a
+traz como decisão pendente.

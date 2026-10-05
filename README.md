@@ -204,7 +204,7 @@ meu-projeto/
 
 > O dashboard visual (`dashboard/index.html`) **não é instalado** pelo `init` — ele vive
 > só no repositório do OpenCrew e ainda é experimental (decisão de publicar ou remover:
-> Fase 4 da auditoria em `docs/auditoria/`).
+> fase U3a — ver `IDEIAS.md` no repositório).
 
 ---
 

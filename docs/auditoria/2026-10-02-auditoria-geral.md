@@ -166,10 +166,10 @@ copiada no design; timeouts do Sherlock 2×.
 Cada fase abre com o **portão de entrada** (varrer `Alocação: → Fase N` neste relatório e no
 `IDEIAS.md`) e fecha com a **auditoria de fim de fase** (`governance.md` §7).
 
-> **Emenda (2026-10-02, depois da F1):** o diagnóstico de **uso real**
-> (`docs/jornada/2026-10-02-uso-real.md`) mudou a ordem. As trilhas de experiência "U" vêm
-> primeiro; os itens técnicos das fases F2–F4 entram na trilha que os usa. A tabela acima vale
-> como inventário; a ordem de execução é esta:
+> **Emenda (2026-10-02, depois da F1; substituída pela de 2026-10-04, logo abaixo):** o
+> diagnóstico de **uso real** (`docs/jornada/2026-10-02-uso-real.md`) mudou a ordem. As trilhas
+> de experiência "U" vêm primeiro; os itens técnicos das fases F2–F4 entram na trilha que os
+> usa. A tabela acima vale como inventário; a ordem de execução é esta:
 >
 > | Trilha | Versão | Absorve da tabela acima |
 > |---|---|---|
@@ -179,6 +179,63 @@ Cada fase abre com o **portão de entrada** (varrer `Alocação: → Fase N` nes
 > | **U4 Modo equipe + histórico confiável** | 1.8.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 |
 > | **U5 Rápido, barato e em PT-BR** | contínuo | T-A1, T-A8, T-A9, T-A12, T-M11, T-B13, runner dividido, C-18/C-19 (infra) |
 > | **U0 Processo** | sempre | jornada de referência (`docs/jornada/roteiro-de-teste.md`) antes de cada release |
+
+> **Emenda (2026-10-04, depois da revisão das specs):** a revisão de 2026-10-04
+> (`docs/auditoria/2026-10-04-revisao-specs.md`) achou defeitos no que já está publicado (1.6.0)
+> e não recomendou aprovar a spec da U3 como estava. O dono aceitou as recomendações. A ordem de
+> execução passa a ser a da tabela abaixo; o destino de cada achado da revisão (IDs A a I, H1 a
+> H3 e Z) está no §7 daquele relatório. Nesta emenda, C-xx, D-xx e T-xx são sempre achados deste
+> documento (§2; T-B14 e T-B15, §5); da revisão só aparecem IDs G, H1, H2 e H3. Onde este
+> documento diz F2, F3 ou F4 (legenda e coluna "Dono" do §2, §1, tabela do §3 e §5), vale o
+> destino desta emenda.
+>
+> | Trilha | Versão | Absorve |
+> |---|---|---|
+> | **R1 Reparos da 1.6.0: o verificador mede de verdade** | 1.6.1 | Defeitos do verificador, da conferência de fontes e do laço de revisão (lista no §7 da revisão); C-12 (`--repair-bridges` sem `--ide`, H3-02); de T-A10, só o `max_review_cycles` (H2-06) |
+> | **U3a Entrega por canal** | 1.7.0 | T-M21 (export e PDF); T-B3/D-01/D-06 (dashboard: decisão pendente do dono); bloco do `.gitignore` renovado pelo `update`; assunto de e-mail e WhatsApp medidos (spec U1 §11, H2-13); aviso de arquivo citado dentro das fontes; H2-07, H2-16, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20 |
+> | **U3b Documento Word** | 1.8.0 | Dor 6 do uso real: documento oficial em `.docx` (gerador próprio, em perfil fechado) |
+> | **R2 `update` e envio seguros** | a definir, depois da R1 | T-M4 (resto: `blotato` e `resend`, H1-04); H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19. Recomendada antes da U3a; a ordem entre as duas é decisão do dono |
+> | **U4 Modo equipe + histórico confiável** | 1.9.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 e o conserto (`repair`) de crews antigas (H1-01, H2-05, H3-03); T-M5 (H3-08); T-M14, T-M17..20, T-B6, T-B8 |
+> | **U5 Rápido, barato e em PT-BR** | contínuo | T-A1, T-A8, T-A9, T-A12, T-M11, T-B13, runner dividido, C-18/C-19 (infra); C-11, C-20..23, C-25..27, T-M9 e busca semântica nas fontes (spec U2 §11; ela escreve "C-20..27", mas o C-24 saiu na F1); C-15, T-M1 (segredos em texto puro), T-M7, T-M8, T-M12, T-M13, T-M15, T-B1, T-B4, T-B5, T-B7, T-B9..B11, T-B14; D-08 (restante), poda e duplicação, estrutura `src/modules/` prevista na F2 (não feita; sem rastro, H3-12); H2-17, H3-07, H3-16, H1-19, G-29, H3-01 (arquivo de acréscimo) |
+> | **U0 Processo** | sempre | jornada de referência (`docs/jornada/roteiro-de-teste.md`) antes de cada release. Pendente, com o dono: uma execução real com o verificador no laço de revisão (H2-14) e a conferência manual de publicação no Instagram (F1-10e, H1-12); o roteiro ainda não confere fontes, correção gravada nem pergunta do perfil (H3-18) |
+>
+> **Já feito:** na 1.4.2, os itens da F1 (ver §5). Conferido no código da 1.6.0: da 1.5.0, o
+> Instagram em 4:5 com no máximo 10 slides (U1-05) e as proibições da memória lidas pelo
+> verificador (parte do T-M5); da 1.6.0, C-01, C-08, C-09, C-10, C-13, C-14, T-A7, T-M6, T-M10 e
+> T-M16, e o C-17 pelo caminho da spec U2 (U2-08): o bloco continua no início do arquivo, mas só
+> vale com `/opencrew` e cede a prioridade às outras instruções do projeto. Ficaram com ressalva:
+> C-01 (H3-11 → R2), C-10 (H3-10 → R2), C-13 (H3-09 → R2), C-17 (H3-06 → R2) e T-A7 (H3-01 → R1 e
+> U5; H3-07 → U5). A emenda de 2026-10-02 dava a U2 como dona da "F2 inteira" e do T-M5: a
+> própria spec U2 adiou C-11, T-M9 e C-20..27 (→ U5; desses, o C-24 já tinha saído na F1), e C-12
+> e T-M5 constavam como cobertos sem terem sido feitos (H3-02 → R1; H3-08 → U4; H3-12).
+>
+> **Achados do §2 que estavam sem trilha** (G-25). Conferidos no código da 1.6.0: todos continuam
+> valendo.
+>
+> | ID | Destino | Motivo |
+> |---|---|---|
+> | T-M4 (resto) | R2 | `blotato` e `resend` enviam sem prévia nem confirmação (H1-04) |
+> | T-M5 | U4 | a Regra de Ouro precisa de histórico confiável para contar ocorrências (H3-08) |
+> | T-M7 | U5 | polimento: skill gerada em `skills/.custom/` não conta como instalada |
+> | T-M8 | U5 | segurança de instalação: scripts buscados no `main`, que muda |
+> | T-M12 | U5 | polimento: arquivo "para todas as IDEs" cita ferramenta de uma só |
+> | T-M13 | U5 | polimento: instruções opostas sobre `mkdir` |
+> | T-M14 | U4 | formato de crew: modelo aparece na lista como se fosse crew |
+> | T-M15 | U5 | polimento: lista de formatos do discovery (junto do H3-07) |
+> | T-M17 | U4 | formato de crew: no tier Express, "o redator se revisa" × revisor obrigatório |
+> | T-M18 | U4 | formato de crew: ordem da criação, junto de T-A2 |
+> | T-M19 | U4 | formato de crew: `id` do agente, junto de T-A10 |
+> | T-M20 | U4 | formato de crew: agentes-base fora do formato do Build |
+> | T-B4 | U5 | polimento: comandos do `system.md` sem definição |
+> | T-B5 | U5 | polimento: saída de checkpoint com formato fixo |
+> | T-B6 | U4 | histórico: o comando `runs` não existe; tempo e marcadores vão junto |
+> | T-B7 | U5 | polimento: instruções opostas no discovery |
+> | T-B8 | U4 | formato de crew: `extends:` e quem faz o merge |
+> | T-B9 | U5 | polimento: papel Publisher ligado a um scraper |
+> | T-B10 | U5 | polimento: frontmatter das skills |
+> | T-B11 | U5 | custo: robustez do `generate.py`, junto de T-A12 |
+> | C-15 | U5 | superfície do CLI: a mensagem final manda digitar `/opencrew` em IDE sem o comando |
+> | T-B14 | U5 | infraestrutura: Node mínimo, junto de C-18 (H1-19) |
 
 ## 4. Estado do IDEIAS.md
 
@@ -207,18 +264,71 @@ T-M2, T-M3, T-B2, T-B12), todos com teste de mesmo ID da spec. Porta: 152 testes
 | 3. Verde pelo motivo errado | F1-02a passaria mesmo com `update` executado (reescrita idêntica) | o teste grava stamp antigo antes do snapshot |
 | 3. Verde pelo motivo errado | F1-01d e F1-13a já passavam antes do conserto | aceitos como guarda de regressão (comportamento já correto) |
 | 5. Guarda menor que a promessa | Marcador órfão: a 2ª escrita apagava linhas do usuário | regex do bloco mais interno + F1-06c com duas escritas |
-| 5. Guarda menor que a promessa | `template-refs` não varre os `.js`/`.py` das skills | → F3 (junto com a validação de esquema) |
+| 5. Guarda menor que a promessa | `template-refs` não varre os `.js`/`.py` das skills | → U4 (junto com a validação de esquema, T-A10; era "F3") |
 | 7. Doc que o código não sustenta | README dizia "até a v1.4.1 se perde" / sem `--dry-run` / sem bloco no `.gitignore` | README corrigido no mesmo commit |
 | 8. Travas com proveta | `verify` (proveta em `verify.test.js`), conteúdo do mantenedor (plantado), `KNOWN_BROKEN` (teste de lista obsoleta) | — |
 | 9. Aprendizados | Pipe do PowerShell mascarou exit code **2 vezes** na sessão | padrão anotado no STATUS; a porta não usa pipe (`spawnSync` direto) |
 
 **Achados novos** (entram na tabela §2 na próxima revisão):
 - T-B14 (baixa) — `publish.js` e outros scripts `.js` das skills usam ESM; num projeto do
-  usuário sem `"type": "module"` só rodam em Node ≥ 22.12 (detecção de sintaxe). → F4,
-  junto com `engines` (C-18).
+  usuário sem `"type": "module"` só rodam em Node ≥ 22.12 (detecção de sintaxe). → U5,
+  junto com `engines` (C-18) (era "F4"; H1-19).
 - T-B15 (baixa) — crews criadas antes da 1.4.2 mantêm "publicar antes do Review" até serem
-  recriadas. → F3 (`/opencrew repair` reordena passos irreversíveis).
+  recriadas. → U4 (`/opencrew repair` reordena passos irreversíveis) (era "F3"; H1-01).
 
 **Não coberto pela porta e não conferido nesta sessão:** a execução real de uma crew por uma IA
 seguindo F1-08/F1-09 e o fluxo de confirmação do Instagram (F1-10e). Conferência manual no
 `sandbox/` → dono do repositório, antes ou logo depois do release.
+Situação em 2026-10-04: não há registro dessa conferência (H1-12). Segue pendente, com o dono,
+na jornada de referência (U0).
+
+### U1 — Revisor com dentes, 1.5.0 (auditoria feita em 2026-10-04)
+
+Nenhuma auditoria de fim de fase foi escrita ao fechar a U1. A revisão das specs de 2026-10-04
+(lente H2: spec × código, com segundo revisor) cumpre esse papel; o relatório é
+`docs/auditoria/2026-10-04-revisao-specs.md` (§3, §4 e §7). Resultado: o verificador existe, roda
+antes do revisor e pegou os defeitos reais do Projeto A na conferência offline. Mas há casos em
+que ele não mede e responde `VERIFICACAO:OK`, e casos em que bloqueia texto correto.
+
+| Constatação da revisão | Achados | Destino |
+|---|---|---|
+| Texto no formato que os próprios best-practices ensinam (`=== CAPTION ===`) não é medido | H2-01 | → R1 |
+| Bloqueio falso: cor hexadecimal, `{{name}}` que os guias mandam usar, "XXX Congresso", CEP | H2-02, E-07, H2-15 | → R1 |
+| Termo proibido casa dentro de outra palavra; o termo que o usuário mandou preferir vira proibido | H2-04 | → R1 |
+| `max_review_cycles` sem definição; a saída do laço sem bloqueio sumiu | H2-06 | → R1 |
+| Nota máxima 7 com alerta e checklist só do que foi medido não chegam a crews já criadas | H2-08 | → R1 |
+| `--crew` inexistente passa; seções lidas de forma frágil; um caminho ruim derruba toda a checagem; fora da raiz do projeto responde `OK` | H2-10, H2-11, H2-12, Z-02 | → R1 |
+| Trava do U1-05 não cobre os 4 arquivos corrigidos depois | H2-18 | → R1 |
+| "Aceitar assim mesmo (fica registrado)" não registra; assunto de e-mail e WhatsApp sem medição; relatório salvo pela IA, não pelo script | H2-07, H2-13, H2-16 | → U3a |
+| Proibições antigas, sem aspas, não viram trava | H2-05 | → U4 |
+| Contagem de caracteres igual em todos os canais (no X, emoji e link pesam diferente) | H2-17 | → U5 |
+| Spec e glossário com dois estados do verificador (são três); status "implementada" sem execução real | H2-09, A-34, H2-14 | faxina de documentos de 2026-10-04; os dois comentários de `verificar.mjs` que ainda citam só dois estados (payload) → R1 |
+
+**Não coberto pela porta e não conferido:** uma IA rodando o verificador dentro do laço de revisão
+e respeitando o REJECT forçado. Não há execução real registrada (H2-14) → jornada de referência
+(U0), com o dono.
+
+### U2 — Crew que conhece o projeto, 1.6.0 (auditoria feita em 2026-10-04)
+
+Nenhuma auditoria de fim de fase foi escrita ao fechar a U2. A revisão de 2026-10-04 (lente H3)
+cumpre esse papel; mesmo relatório. Resultado: `fontes:`, conferência de fontes, overlay local e
+`update` com cópia de segurança estão no código e têm teste. Os Projetos A e B foram atualizados
+para a 1.6.0 pelo npm, com autorização do dono, sem dado alterado; no Projeto B a conferência com
+`--corrigir` foi rodada com autorização (5 caminhos corrigidos).
+
+| Constatação da revisão | Achados | Destino |
+|---|---|---|
+| Overlay local: arquivo sem `constraints:` desliga o verificador do formato; a cópia inteira congela os limites | H3-01 | → R1 (mescla com o core e nota); → U5 (arquivo de acréscimo, aviso no `update`) |
+| `--repair-bridges` sem `--ide` cria pontes das 9 IDEs (C-12 constava como coberto) | H3-02 | → R1 |
+| Conferência não vê `fontes:` com comentário na linha, nem tasks e agentes; falha do script e recarga sem regra; mensagens que enganam; `--crew` de fora do projeto é aceito | H3-04, H3-05, H3-15, H3-17, I-14 | → R1 |
+| `update`: a palavra "opencrew" num arquivo do usuário cria ponte de IDE não instalada; `.mcp.json` recriado e regravado sem cópia; ponte sem marcador (até a 1.2.2) segue mandando "adotar o papel" | H3-10, H1-06, H3-09, H3-06 | → R2 |
+| `update`: agentes-base e modelos de crew nunca recebem melhoria, e modelo apagado volta; manifesto corrompido sem aviso; restos antigos só em 5 pastas | H3-11, H3-14, H3-19 | → R2 |
+| `fontes:` não chega a crews que já existem; a Regra de Ouro (T-M5) constava como herdada e segue quebrada | H3-03, H3-08 | → U4 |
+| Best-practice criada no overlay não é vista por discovery, design e build; o alerta "não é portátil" nunca vira oferta de correção | H3-07, H3-16 | → U5 |
+| Decisão do dashboard alocada na U3 e não herdada pela spec | H3-20 | → U3a |
+| Spec com arquivos de teste errados; itens adiados sem rastro; termos fora do glossário | H3-13, H3-12, H3-21 | faxina de documentos de 2026-10-04 |
+| O roteiro da jornada U0 não tem passo nem métrica para o que a spec manda conferir nela (fontes conferidas no início, correção gravada, pergunta do perfil) | H3-18 | → U0 (`docs/jornada/roteiro-de-teste.md`), pendente |
+
+**Não coberto pela porta e não conferido:** as regras que a IA segue ao executar (fontes lidas no
+início, correção gravada no checkpoint, pergunta do perfil da empresa). Não há execução real
+registrada → jornada de referência (U0), com o dono.

@@ -23,7 +23,8 @@ Duas camadas com regras diferentes:
 - **Payload** (`templates/`) — prompts e skills que a IA do usuário executa.
 
 ## Stack
-Node.js ≥ 20 (ESM) · deps: `@inquirer/checkbox` · testes: `node:test` · lint: ESLint 9 ·
+Node.js ≥ 20 (ESM) · deps: `@inquirer/checkbox` (+ `@inquirer/confirm`, sem uso em `src/`;
+remoção: C-22 da auditoria de 2026-10-02 → U5) · testes: `node:test` · lint: ESLint 9 ·
 CI: GitHub Actions (Ubuntu + Windows, Node 20/22) · publish: tag `v*` → npm.
 
 ## Regras inegociáveis
@@ -43,7 +44,8 @@ o projeto de cada usuário. **Trava:** `tests/ides.test.js` + `tests/package.tes
 `init` e `update` nunca sobrescrevem, sem backup ou confirmação, arquivo que o usuário
 possa ter editado (`crews/`, `_opencrew/_memory/`, `.env*`, `.gitignore`, `.mcp.json`,
 `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`). Arquivo compartilhado recebe **bloco marcado**
-(`opencrew:start/end`). **Trava:** `tests/init.test.js`, `tests/update.test.js`.
+(`opencrew:start/end`). **Trava:** `tests/init.test.js`, `tests/init-safety.test.js`,
+`tests/update.test.js`, `tests/update-u2.test.js`.
 
 ### 4. Referências do payload existem
 Todo caminho de `_opencrew/...` ou `skills/<x>/...` citado num prompt existe em
@@ -106,7 +108,7 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 |---|---|---|
 | 1 Ciclo | sem trava — revisão humana | — |
 | 2 Payload sem mantenedor | `tests/ides.test.js`, `tests/package.test.js` | Reprova |
-| 3 Não destruir dado | `tests/init.test.js`, `tests/update.test.js` | Reprova |
+| 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/update.test.js`, `tests/update-u2.test.js` | Reprova |
 | 4 Referências existem | `tests/template-refs.test.js` | Reprova |
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
 | 6 Tamanho | `scripts/check-size.js` | Alerta |

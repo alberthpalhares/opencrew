@@ -1,6 +1,6 @@
 # Spec — Fase 1: hotfix 1.4.2 ("parar de causar dano")
 
-- **Fase:** 1 · **Módulos:** CLI (`src/`, `bin/`) + Runtime (`templates/`) · **Status:** implementada (2026-10-02)
+- **Fase:** 1 · **Módulos:** CLI (`src/`, `bin/`) + Runtime (`templates/`) · **Status:** implementada (2026-10-02); conferência manual de publicação pendente (§10)
 - **Termos novos no GLOSSARIO.md:** sim — `side_effects` (passo irreversível); adicionar antes do código
 - **Modelo sugerido:** execução Sonnet 5.5 · médio (alternativa econômica: Haiku 4.5 para F1-11/F1-12/F1-13)
 
@@ -47,6 +47,8 @@ Varredura de `Alocação: → F1` / dono `F1` em `docs/auditoria/2026-10-02-audi
 - `CLAUDE.md` de instalações existentes: a seção "STATUS.md (gestão de sessão)" sai do bloco
   opencrew no próximo `update`.
 - Códigos de saída: 0 sucesso · 1 erro de uso ou de execução · 130 cancelado pelo usuário.
+  `update --check` e `update --dry-run` também saem com 1 quando há atualização disponível
+  (não é erro).
 
 ## 5. Regras de negócio
 1. **Nenhuma escrita antes da validação.** Opções, IDs de IDE e a escolha interativa de IDEs
@@ -68,8 +70,9 @@ Varredura de `Alocação: → F1` / dono `F1` em `docs/auditoria/2026-10-02-audi
    falha ou saída ausente → o runner pergunta ao usuário, informando que a ação pode já ter
    acontecido.
 8. **Publicação no Instagram:** preview (imagens + legenda) → `--dry-run` → o usuário digita
-   a confirmação explícita → publicação real. A legenda vai por arquivo (`--caption-file`),
-   nunca interpolada no shell.
+   a confirmação explícita → publicação real. A legenda vai por arquivo (`--caption-file`);
+   o `SKILL.md` nunca manda interpolá-la no shell (garantia de prompt; o script ainda aceita
+   `--caption`: §12).
 9. **Upload público só de imagem da crew:** `publish.js` aceita apenas `.jpg`/`.jpeg` dentro
    de `crews/*/output/`; upload no imgBB com expiração de 1 dia; o token do Instagram vai no
    corpo dos POST, não na URL.
@@ -78,19 +81,20 @@ Varredura de `Alocação: → F1` / dono `F1` em `docs/auditoria/2026-10-02-audi
 
 | Situação | Comportamento esperado | Mensagem ao usuário |
 |---|---|---|
-| `opencrew update --foo` | exit 1, nada escrito | `Unknown option '--foo' for "update".` + dica `opencrew update --help` |
+| `opencrew update --foo` | exit 1, nada escrito | `Unknown option '--foo' for "update".` + dica `Run npx @aksp/opencrew help for usage.` |
 | `opencrew init minha-pasta` | exit 1, nada escrito | `init does not take a directory — cd into the project folder first.` |
 | `opencrew init --ide=bogus` | exit 1, nada escrito | `Unknown IDE "bogus". Valid: claude-code, codex, …` |
 | `--ide=cursor,bogus` | segue só com cursor | aviso `Unknown IDE "bogus" — skipped.` |
 | Ctrl+C no prompt de IDE | exit 130, nada escrito | `Cancelled — nothing was written.` |
 | Erro inesperado (EPERM, disco cheio) | exit 1, sem stack trace (stack só com `OPENCREW_DEBUG=1`) | `✗ <mensagem>` |
 | `update` sem `AGENTS.md` | cria a ponte e conclui | `AGENTS.md (bridge created)` |
-| `AGENTS.md` legado + `AGENTS.md.bak` já existe | backup em `AGENTS.md.bak-<timestamp>` | `AGENTS.md backed up to <arquivo>` |
+| `AGENTS.md` legado + `AGENTS.md.bak` já existe | backup em `AGENTS.md.bak-<timestamp>` | `AGENTS.md (migrated from legacy full-system to thin bridge — backed up to <arquivo>)` |
 | `.gitignore` sem marcador de fim (editado à mão) | acrescenta bloco novo no fim; não apaga nada | — |
 | `publish.js` com `.env`, `.png` ou caminho fora de `crews/*/output/` | recusa antes de qualquer upload | `Refusing to upload <path>: only .jpg/.jpeg files inside crews/*/output/ are allowed.` |
 
 ## 7. Segurança
-- Nada vindo de conteúdo pesquisado (legenda, títulos) é interpolado em comando de shell.
+- Nada vindo de conteúdo pesquisado (legenda, títulos) é interpolado em comando de shell. É
+  garantia de prompt (F1-10e): o `publish.js` ainda aceita `--caption` (§12).
 - Nenhum arquivo fora de `crews/*/output/` e nenhum não-JPEG pode ser enviado ao imgBB.
 - Token fora da URL nos POST (logs de proxy/servidor não o registram).
 - `.claude/settings.local.json`, `crews/*/state.json` e `crews/*/_investigations/` entram
@@ -134,17 +138,19 @@ Varredura de `Alocação: → F1` / dono `F1` em `docs/auditoria/2026-10-02-audi
   para `AGENTS.md.bak-<timestamp>` e o `.bak` antigo fica intacto.
 
 **F1-05 — `.env.example` preservado**
-- **F1-05a** DADO um `.env.example` do usuário QUANDO `init` roda ENTÃO o conteúdo original
-  continua no topo, byte a byte, seguido do bloco `# opencrew:start … # opencrew:end`.
+- **F1-05a** DADO um `.env.example` do usuário QUANDO `init` roda ENTÃO as linhas originais
+  continuam no topo, com o mesmo texto e na mesma ordem (quebras de linha: §12), seguidas do
+  bloco `# opencrew:start … # opencrew:end`.
 - **F1-05b** DADO o caso F1-05a QUANDO o bloco é escrito duas vezes (idempotência) ENTÃO
   existe exatamente um bloco opencrew.
 - **F1-05c** DADO uma pasta sem `.env.example` QUANDO `init` roda ENTÃO o arquivo é criado com
   as variáveis do template.
 
 **F1-06 — `.gitignore` protegido**
-- **F1-06a** DADO um `.gitignore` do usuário QUANDO `init` roda ENTÃO o conteúdo original fica
-  intacto e o bloco opencrew no fim contém `.env`, `_opencrew/_browser_profile/`,
-  `.claude/settings.local.json`, `crews/*/state.json` e `crews/*/_investigations/`.
+- **F1-06a** DADO um `.gitignore` do usuário QUANDO `init` roda ENTÃO nenhuma linha original
+  muda (quebras de linha: §12) e o bloco opencrew no fim contém `.env`,
+  `_opencrew/_browser_profile/`, `.claude/settings.local.json`, `crews/*/state.json` e
+  `crews/*/_investigations/`.
 - **F1-06b** idempotência: duas escritas → um único bloco.
 - **F1-06c** DADO um bloco opencrew sem marcador de fim QUANDO o bloco é escrito ENTÃO nenhuma
   linha do usuário é apagada.
@@ -205,52 +211,110 @@ Varredura de `Alocação: → F1` / dono `F1` em `docs/auditoria/2026-10-02-audi
 ## 9. O que o humano confere na tela
 Num terminal, numa pasta de teste vazia (ex.: `D:\tmp\teste-opencrew`):
 - [ ] Rodar `node "<repo>\bin\opencrew.js" update --help`: aparece a ajuda e **nenhum**
-      arquivo é criado na pasta.
+      arquivo é criado na pasta. — pendente: sem registro (teste: F1-02a, F1-02b)
 - [ ] Criar um `.gitignore` com a linha `minha-regra` e um `.env.example` com
       `MINHA_CHAVE=`, rodar `node "<repo>\bin\opencrew.js" init --ide=claude-code`, abrir os
       dois arquivos: as linhas originais continuam no topo, e o bloco `# opencrew` está no fim.
-- [ ] Abrir o `CLAUDE.md` gerado: **não** pode aparecer "STATUS.md".
+      — pendente: sem registro (teste: F1-05a, F1-06a)
+- [ ] Abrir o `CLAUDE.md` gerado: **não** pode aparecer "STATUS.md". — pendente: sem registro
+      (teste: F1-01a)
 - [ ] Apagar a pasta, rodar `init` sem `--ide`, apertar Ctrl+C na lista de IDEs: aparece
-      "Cancelled — nothing was written." e a pasta continua vazia.
+      "Cancelled — nothing was written." e a pasta continua vazia. — pendente: sem registro
+      (teste: F1-07a)
 - [ ] No `sandbox/`, abrir `skills/instagram-publisher/SKILL.md`: o comando usa
-      `--caption-file` e o fluxo pede confirmação explícita antes de publicar.
+      `--caption-file` e o fluxo pede confirmação explícita antes de publicar. — pendente: sem
+      registro (teste: F1-10e)
+
+Pendências acima (H1-12): nenhuma das cinco conferências manuais tem registro → U0 (jornada de
+referência, com o dono). O teste citado cobre o mesmo comportamento, sem a conferência humana.
 
 ## 10. Critérios de aceite
 - [ ] Todos os cenários F1-01a…F1-13a com teste de mesmo ID, visto vermelho antes do conserto.
-- [ ] `npm run verify` verde (exit 0), sem teste `todo` e com `KNOWN_BROKEN` vazio.
+      — pendente: o F1-11a não tem teste com o ID (H1-17) → R1; os outros 38 têm.
+- [x] `npm run verify` verde (exit 0), sem teste `todo` e com `KNOWN_BROKEN` vazio. (A tag
+      `v1.4.2` só publica depois do `npm run verify`; a 1.4.2 está no npm.)
 - [ ] O que a porta não cobre foi conferido: execução real de uma crew com publicação em
       `--dry-run` no `sandbox/` (F1-08/F1-09/F1-10e), seção 9 feita à mão.
-- [ ] CHANGELOG 1.4.2 escrito; `npm version patch`; push/tag **só com confirmação do dono**.
+      — pendente: sem registro (H1-12) → U0 (jornada de referência, com o dono).
+- [x] CHANGELOG 1.4.2 escrito; `npm version patch`; push/tag **só com confirmação do dono**.
+      (1.4.2 publicada com tag no GitHub e no npm em 2026-10-02.)
 
 ## 11. Fora de escopo → destino
 
 | O que não entra | Alocação |
 |---|---|
-| `update` refrescar o bloco do `.gitignore`/`.env.example` de instalações existentes | → F2 — junto com o refresh das pontes (C-10) |
+| `update` refrescar o bloco do `.gitignore`/`.env.example` de instalações existentes | → U3a — o refresh das pontes (C-10) saiu na 1.6.0 (U2) sem estes blocos |
 | Linha `STATUS.md` já gravada no `.gitignore` de quem instalou 1.4.0/1.4.1 | → sem fase — inofensiva; o usuário pode apagar |
-| Regra preview/dry-run/confirmação em `blotato` e `resend` | → F3 — T-M4, junto com a injeção da best-practice de publicação |
-| Proteção de diretório-alvo (home/raiz do disco) e `init [dir]` | → F4 — C-20 |
+| Regra preview/dry-run/confirmação em `blotato` e `resend` | → R2 — T-M4 (H1-04); ver §12 |
+| Proteção de diretório-alvo (home/raiz do disco) e `init [dir]` | → U5 — C-20 |
 | Converter PNG→JPEG no `publish.js` | → sem fase — exigiria dependência nativa; resolvido na origem (screenshot JPEG) |
 
 ## 12. Limites conhecidos
 - F1-08/F1-09 mudam **prompts**: os testes garantem que o texto da regra existe e está no
-  lugar certo, não que todo modelo de IA a siga. Conferência manual no `sandbox/`.
+  lugar certo, não que todo modelo de IA a siga. Conferência manual no `sandbox/`: pendente,
+  sem registro (H1-12) → U0.
 - Crews criadas antes da 1.4.2 mantêm o pipeline antigo (publicar antes do Review) até
-  serem recriadas ou editadas: → F3 — `/opencrew repair` passa a reordenar passos irreversíveis.
+  serem recriadas ou editadas. Elas também ficam sem a regra 7: seus passos de publicação não
+  têm `side_effects: irreversible`, o runner só protege passo com essa marca e o `update` não
+  altera `crews/` (H1-01). No Instagram, a confirmação explícita e o "não repetir" chegam pelo
+  `update`, porque estão na skill do catálogo; em `blotato` e `resend`, não (ver abaixo).
+  → U4 (T-B15) — `/opencrew repair` passa a reordenar passos irreversíveis.
 - Os GET à Graph API continuam com o token na query (padrão da API): → sem fase — risco
   baixo, sem log de corpo.
+
+Acrescentados em 2026-10-04 (revisão `docs/auditoria/2026-10-04-revisao-specs.md`):
+- Regra 3 (H1-02): o `update` trata workspace com core e sem stamp como versão antiga, não
+  como instalação interrompida. Ele atualiza e grava o stamp; depois disso o `init` responde
+  `An opencrew workspace already exists here.` e não retoma. Ficam faltando `.gitignore` e
+  `.env.example` (só o `init` os escreve). As pontes de IDE voltam com
+  `init --repair-bridges --ide=<ide>`. → U3a.
+- Regra 6 e F1-08b (H1-10): com dois passos de publicação no fim (ex.: Instagram e e-mail), os
+  Gates 2b e 2c do `build.prompt.md` se contradizem. Cada passo irreversível exige um
+  checkpoint imediatamente antes e, ao mesmo tempo, só aceita passos irreversíveis depois
+  dele. O teste F1-08b só confere as palavras do gate. → U3a.
+- Regra 8 (H1-15): a spec não define o `--dry-run`. Hoje ele já envia as imagens ao imgBB
+  (públicas por 24h) e cria os contêineres no Instagram; só não chama `media_publish`. Isso
+  acontece antes de o usuário digitar a confirmação, e o comando real repete o envio e os
+  contêineres. O `SKILL.md` descreve o teste como validação "sem postar". → U3a.
+- Regra 8 e §7 (H1-11): o `publish.js` ainda aceita `--caption` (legado). O script não tem
+  como impedir a interpolação: quem executa `$(…)` é o shell, antes do Node. A garantia é de
+  prompt: nenhum texto do payload manda usar `--caption`, e o F1-10e trava o `SKILL.md`.
+  → sem fase — decisão de 2026-10-04 (só documento); remover a opção faria falhar crews
+  antigas cujo passo copiou o comando da 1.4.1.
+- `blotato` e `resend` (H1-04, T-M4): publicam e enviam sem prévia, sem confirmação explícita
+  e sem `side_effects: irreversible` no `SKILL.md`; só o Instagram ganhou a regra 8. Em crew
+  nova, o Gate 2c ainda obriga a marca no passo e o checkpoint de Aprovação Final antes dele.
+  Em crew antiga, a única barreira é o checkpoint que o Gate 2b já exigia antes de todo passo
+  que publica; sem a marca no passo, a regra 7 (sem retry automático) não vale. → R2.
+- F1-01d (H1-06): um `CLAUDE.md` do usuário que só cita a palavra "opencrew" faz o `update`
+  tratar o Claude Code como instalado. O bloco opencrew entra no arquivo e
+  `.claude/skills/opencrew/SKILL.md` é criado. → R2.
+- F1-05a e F1-06a (H1-18): o bloco é escrito com LF. Em arquivo CRLF, a última linha do
+  usuário perde o `\r` e o arquivo fica com quebras misturadas; linhas em branco no fim somem.
+  O texto das linhas não muda. Os testes só usam LF. → U5 (C-26).
+- `publish.js` é ESM com extensão `.js` (H1-19, T-B14): num projeto com `package.json`
+  `"type": "commonjs"` ele falha com `SyntaxError`. Sem `"type"`, depende da detecção
+  automática de sintaxe do Node, que as versões mais antigas aceitas pelo `engines`
+  (`>=20.0.0`) não têm (não testado em Node antigo). → U5.
 
 ## 13. Travas que esta spec deixa
 - `tests/ides.test.js`: pontes sem conteúdo do mantenedor (deixa de ser `todo`).
 - `tests/template-refs.test.js`: `KNOWN_BROKEN` vazio — qualquer caminho novo quebrado reprova.
+  A lista está vazia, mas nenhum teste exige isso e o F1-11a não tem teste com o ID
+  (H1-17) → R1.
 - `tests/cli.test.js`: `--help` em todo comando não escreve nada; opção desconhecida reprova.
-- `tests/init.test.js`: nenhum arquivo do usuário (`.gitignore`, `.env.example`) perde conteúdo.
+- `tests/update.test.js` (F1-01c, F1-01d, F1-03a, F1-04a, F1-04b) e `tests/ides.test.js`
+  (F1-01a, F1-01b): comportamento do `update` e conteúdo das pontes.
+- `tests/init-safety.test.js` (F1-05 a F1-07c): nenhum arquivo do usuário (`.gitignore`,
+  `.env.example`) perde conteúdo.
 - `tests/instagram-publisher.test.js` (novo): validação de caminho/extensão, token fora da URL.
-- `tests/docs.test.js`: contrato "irreversível = último trecho, sem retry automático".
+- `tests/runtime-contracts.test.js` (F1-08, F1-09): contrato "irreversível = último trecho,
+  sem retry automático".
 
 ## 14. Correções
 - 2026-10-02 — F1-01c: o bloco regravado do `CLAUDE.md` continua apontando para `AGENTS.md`
-  (não direto para `system.md`); o teste confere o cabeçalho da ponte. Apontar direto → F4 (C-14).
+  (não direto para `system.md`); o teste confere o cabeçalho da ponte. Apontar direto → U2
+  (C-14): feito na 1.6.0, as pontes apontam para `_opencrew/core/system.md` (teste U2-08a).
 - 2026-10-02 — F1-02a/F1-02d: o teste grava um stamp antigo antes do snapshot. Sem isso, um
   `update` indevido reescreveria arquivos com conteúdo idêntico e o teste passaria pelo motivo
   errado.
@@ -266,3 +330,26 @@ Num terminal, numa pasta de teste vazia (ex.: `D:\tmp\teste-opencrew`):
   virou a constante única `AGENTS_BRIDGE` em `src/lib/ides.js` (C-23 parcial).
 - 2026-10-02 — Trava ampliada na auditoria de fim de fase: o teste "sem conteúdo do mantenedor"
   passou a varrer todo o `templates/`, não só as pontes.
+- 2026-10-04 — F1-01d (H1-05): deixou de valer como está escrito. Desde a 1.6.0 (regra 11 da
+  U2), o `update` detecta a IDE por qualquer arquivo de ponte próprio dela e regrava todos:
+  com `.claude/skills/opencrew/SKILL.md` presente, um `CLAUDE.md` apagado volta. Continua
+  valendo que IDE não instalada não ganha `CLAUDE.md` (U2-07b). O teste F1-01d passa porque
+  instala só o Cursor; o nome dele ("update never creates a CLAUDE.md that did not exist")
+  afirma mais do que o código faz. Correção do nome do teste → R1.
+- 2026-10-04 — Status (H1-12): o critério 3 da §10 não foi conferido no release (auditoria de
+  fim de fase, 2026-10-02) e não há registro de conferência posterior, nem das cinco
+  conferências da §9. Ficam pendentes → U0 (jornada de referência, com o dono). A fase segue
+  "implementada": código e testes estão na 1.4.2.
+- 2026-10-04 — Faxina de documento, sem mudança de código (revisão
+  `docs/auditoria/2026-10-04-revisao-specs.md`):
+  - destinos "F2", "F3" e "F4", que deixaram de existir, trocados em §11, §12 e §14
+    (H1-14, H1-01);
+  - §4 e §6 alinhadas ao CLI: `update --check` sai com 1 quando há atualização, e as duas
+    mensagens da tabela são as que o CLI imprime desde a 1.4.2 (H1-16). As mensagens do CLI
+    desta fase seguem em inglês → U5;
+  - §13: F1-05 a F1-07c estão em `tests/init-safety.test.js` (o F1-07d, em `tests/cli.test.js`)
+    e F1-08/F1-09 em `tests/runtime-contracts.test.js`, não nos arquivos citados antes (H1-17);
+  - regra 8, §7, F1-05a e F1-06a: frases ajustadas ao que o código faz; a diferença está em
+    §12 (H1-11, H1-18);
+  - §12: limites que a revisão achou, cada um com destino (H1-02, H1-04, H1-06, H1-10, H1-15,
+    H1-19).
