@@ -143,6 +143,12 @@ enxuto — todos apontam para a mesma fonte.
 | `QWEN.md` (ponte) + `.agents/skills/opencrew/SKILL.md` | Qwen Code |
 | `AGENTS.md` (ponte) + `.trae/rules/opencrew.md` | Trae |
 
+> **Claude Cowork (modo alternativo):** o Cowork não reconhece o comando `/opencrew` (ele não lê
+> skills de dentro da pasta do projeto). Funciona assim: abra a pasta do projeto e peça, em texto:
+> *"Leia o arquivo `_opencrew/core/system.md` deste projeto e siga as instruções dele. Mostre o
+> menu principal."* Depois use frases como "rodar a crew blog-semanal" no lugar dos comandos com `/`.
+
+
 > ⚠️ **Importante:** `CLAUDE.md`, `GEMINI.md` e os demais arquivos de IDE são
 > pontes geradas automaticamente. Eles são finos (5-10 linhas) e usam blocos
 > marcados (`<!-- opencrew:start/end -->`) que permitem **merge não-destrutivo**
