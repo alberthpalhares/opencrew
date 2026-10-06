@@ -1,6 +1,6 @@
 # Spec — Fase R2: update e envio seguros (1.6.3)
 
-- **Fase:** R2 · **Módulos:** CLI (`src/commands/`, `src/lib/`) + Payload (skills de envio, `runner.pipeline.md`, `skills.engine.md`, `core/scripts/`) + CI (`.github/workflows/`) + testes · **Status:** aguardando aprovação do dono
+- **Fase:** R2 · **Módulos:** CLI (`src/commands/`, `src/lib/`) + Payload (skills de envio, `runner.pipeline.md`, `skills.engine.md`, `core/scripts/`) + CI (`.github/workflows/`) + testes · **Status:** aprovada pelo dono (2026-10-05); implementada (2026-10-06); release 1.6.3 aguardando a confirmação do dono
 - **Termos novos no GLOSSARIO.md:** sim — Skill de envio, Nome seguro, Não conferido, Texto legado; "Cópia de segurança" e "Manifesto" passam a citar bloco marcado e `.mcp.json`
 - **Modelo sugerido:** execução Sonnet 5.5 · médio (componentes A e B, que mexem em arquivo do usuário: alto)
 - **Origem:** itens "→ R2" da spec R1 (§11 e §12), com os mesmos IDs: H e L vêm de `docs/auditoria/2026-10-04-revisao-specs.md` e da revisão do código da R1; C, da auditoria de 2026-10-02. Comportamento de hoje conferido no código da 1.6.2
@@ -479,4 +479,33 @@ validação do manifesto, em `manifest.js`. No payload: `comum.mjs` recebe a reg
 tabela Regra → Trava do `AGENTS.md` ganha os arquivos novos nas regras 3, 8 e 14.
 
 ## 14. Correções
-Nenhuma até aqui.
+
+Leituras adotadas na implementação (2026-10-06), onde a spec não fechava o caso.
+- Registro de bloco: fica em `files` do manifesto, com a chave `<arquivo>#opencrew` e o hash do
+  bloco. Quando o `init` faz cópia, lista as cópias, como o reparo.
+- O `init` comum não tira texto legado (a regra 3 fala de `update` e reparo). O aviso de texto
+  editado sai também quando fora do bloco só sobrou o título, e volta a cada `update`.
+- Guarda do reparo: vem antes da validação de `--ide`; carimbo vazio conta como sem carimbo.
+- `blotato` também pede a palavra `apagar`. Cancelar e-mail agendado, criar ou alterar contato e
+  verificar domínio não pedem palavra. O `instagram-publisher` segue aceitando `publish` ou
+  `publicar`, como na F1.
+- Aspas: havia um quinto comando do runner sem aspas (`mkdir` da pasta da execução); ganhou.
+  URL sem aspas continua nos quatro prompts `sherlock-<rede>.md`, que a regra 20 não lista → U5.
+- `generate.py`: com `--prompt` e `--prompt-file` juntos, vale o arquivo; os arquivos são lidos
+  antes da chave da API.
+- Rede e site: `caminho: https://…` em `fontes:` segue como pendência, como hoje; `www.` e
+  `mailto:` viram alerta mesmo com pasta de mesmo nome. Caminho de rede em `--crew` e `--arquivo`
+  é recusado pelo texto, sem tocar o disco.
+- "Corrigidos" conta caminhos; arquivo pulado ganha uma linha só. A guarda de escrita confere
+  também a pasta onde o `.bak` é gravado.
+- Node: a checagem do piso fica depois da leitura dos argumentos (opção errada ainda responde o
+  erro de uso). No `publish.yml`, o ensaio é um passo próprio, sem o token.
+- Resumo: "já estavam em dia" só sai quando nenhuma ponte foi atualizada nem criada; a lista de
+  `crews/` inclui o `.gitkeep`; a linha do `playwright` que aponta para `_opensquad/` não entra
+  no total de restos. Texto fora da §6: "AGENTS.md criado com o bloco do OpenCrew."
+- Tamanho: o runner foi a 965 linhas e o skills engine a 495; `generate.py` a 211.
+- Não feito: a rodada de revisão do código por lentes independentes (feita na R1) não foi
+  repetida aqui. Nada rodou em Node 20.17 nem em Ubuntu antes do push: a prova é o CI.
+- Achados de passagem, sem conserto nesta fase: a migração do `AGENTS.md` anterior à 1.3 grava a
+  ponte sem marcador e o `update` seguinte duplica o texto → U5; `__pycache__` criado ao compilar
+  o `generate.py` no repositório entraria no pacote → U5 (barrar no teste do pacote).

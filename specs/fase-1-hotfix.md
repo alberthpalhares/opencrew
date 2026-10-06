@@ -371,3 +371,4 @@ Acrescentados em 2026-10-04 (revisão `docs/auditoria/2026-10-04-revisao-specs.m
   (bloco marcado). O R1-09d diz o que o teste prova: num workspace completo, o `init` roda de
   novo e sai sem escrever nada, e o `.gitignore` editado não muda. O bloco marcado segue travado
   pelos testes F1-06a a F1-06c, em `tests/init-safety.test.js`.
+- 2026-10-06 — R2 (1.6.3): os itens "→ R2" desta spec (confirmação em `blotato` e `resend`, detecção de IDE) foram tratados em `specs/fase-r2-update-e-envio-seguros.md`. O que entrou está nas regras de lá; o que não entrou tem destino na §11 de lá.

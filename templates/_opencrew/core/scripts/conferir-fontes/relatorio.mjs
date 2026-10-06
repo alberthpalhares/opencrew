@@ -1,7 +1,7 @@
 // Relatório da conferência de fontes e as mensagens ao usuário (PT-BR).
-// Spec: specs/fase-r1-reparos-1-6-1.md, regra 17 e seção 6 (repositório do OpenCrew).
-import path from 'node:path';
-import { barra } from './busca.mjs';
+// Specs: specs/fase-r1-reparos-1-6-1.md, regra 17 e seção 6, e
+// specs/fase-r2-update-e-envio-seguros.md, regras 24 a 26 e seção 6 (repositório do OpenCrew).
+import { relativoAoProjeto } from '../comum.mjs';
 
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
@@ -10,6 +10,9 @@ export const MSG = {
   corrigidos: (n) => `${plural(n, 'caminho corrigido', 'caminhos corrigidos')} (cópia .bak ao lado de cada arquivo alterado).\n`,
   semCorrecaoAutomatica: (n) => `Não há correção automática para ${n} pendência(s): escolha um candidato ou corrija o caminho na crew.`,
   buscaParcial: (limite) => `Procurei só nos primeiros ${limite} itens do projeto; pode existir um arquivo com esse nome que eu não vi.`,
+  linkParaFora: (arquivo) => `Não corrigi \`${arquivo}\`: é um link que aponta para fora da crew. O caminho citado nele continua como estava.`,
+  crewLigadaParaFora: (crew) => `Não corrigi nada: a pasta \`${crew}\` é um link que aponta para fora do projeto.`,
+  naoConferi: (motivo) => `Não consegui conferir: ${motivo}`,
 };
 
 const MAX_NOMES = 20;
@@ -37,16 +40,25 @@ function linhaDoAlerta(i, onde) {
   return `- ⚠️ \`${i.ref}\` é um caminho absoluto (não é portátil — quebra em outro computador).${sugestao} (${onde})`;
 }
 
+/** Caminho de rede ou endereço de site: a citação aparece, e o relatório diz que não foi testada. */
+function linhaDoNaoConferido(i, onde) {
+  return `- ⚠️ \`${i.ref}\` é um caminho de rede ou um endereço de site: não conferi se existe (a conferência não acessa a rede). (${onde})`;
+}
+
+// Os dois estados de alerta (não mudam o status); qualquer outro estado apontado é pendência.
+const LINHA_DO_ALERTA = { 'nao-portatil': linhaDoAlerta, 'nao-conferido': linhaDoNaoConferido };
+
 export function formatar(r) {
   const aviso = r.buscaParcial ? MSG.buscaParcial(r.limite) : '';
   const contar = (estado) => r.refs.filter((i) => i.estado === estado).length;
   const apontados = r.refs.filter((x) => x.estado !== 'ok');
   const linhas = [`## Conferência de fontes — ${r.crew}`, ''];
   for (const i of apontados) {
-    const onde = `citado em ${i.citadoEm.map((a) => barra(path.relative(r.raiz, a))).join(', ')}`;
-    linhas.push(i.estado === 'nao-portatil' ? linhaDoAlerta(i, onde) : linhaDaPendencia(i, onde, aviso));
+    const onde = `citado em ${i.citadoEm.map((a) => relativoAoProjeto(r.raiz, a)).join(', ')}`;
+    linhas.push((LINHA_DO_ALERTA[i.estado] ?? linhaDaPendencia)(i, onde, aviso));
   }
   if (apontados.length) linhas.push(''); // sem pendência nem alerta, uma linha em branco só
-  linhas.push(`**Resumo: ${r.refs.length} fontes — ${contar('ok')} ok, ${contar('faltando')} pendentes, ${contar('nao-portatil')} alertas**`, '');
+  const alertas = contar('nao-portatil') + contar('nao-conferido');
+  linhas.push(`**Resumo: ${r.refs.length} fontes — ${contar('ok')} ok, ${contar('faltando')} pendentes, ${alertas} alertas**`, '');
   return linhas.join('\n');
 }

@@ -24,15 +24,19 @@
 | Overlay local | `_opencrew/best-practices.local/` | Runtime | Best-practices do usuário (aprendidas ou criadas), lidas antes das do core e nunca tocadas pelo `update` |
 | Checkpoint | `checkpoint` | Runtime | Passo que para e pede decisão do usuário |
 | Execução | `run` | Runtime | Uma passada completa do pipeline de uma crew; identificada por `run_id`, saída em `output/{run_id}/` |
+| Skill de envio | `side_effects: irreversible` no SKILL.md | Runtime | Skill do catálogo que publica ou envia para fora do projeto (`instagram-publisher`, `blotato`, `resend`): mostra a prévia e só age depois da palavra do usuário |
+| Nome seguro | seção do runner | Runtime | Caminho que pode entrar num comando: letras, dígitos, espaço e `. _ - / \ : ( )`; com outro caractere o runner não monta o comando |
+| Não conferido | alerta da conferência de fontes | Runtime | Citação de caminho de rede ou de endereço de site: a conferência não acessa a rede, avisa e não para a execução |
 | Skill | `skill` | Runtime | Capacidade externa (`skills/<nome>/SKILL.md`, às vezes com `scripts/`) que um agente pode usar |
 | Best-practice | `best-practice` | Runtime | Guia por formato ou disciplina em `_opencrew/core/best-practices/`, indexado em `_catalog.yaml`; a versão do usuário mora no overlay local, que o runner e o verificador leem antes da do core |
 | Tier da crew | `tier` | Runtime | Profundidade do pipeline: Express / Standard / Full (não confundir com o tier project-standards do repo) |
 | Sistema | `system.md` | Runtime | Definição completa do runtime; fonte: `templates/AGENTS.md`, instalada em `_opencrew/core/system.md` |
 | Ponte | `bridge` | CLI | Arquivo fino por IDE que aponta para o sistema; gerado de `src/lib/ides.js` |
+| Texto legado | — | CLI | Texto que as versões até a 1.2.2 gravavam como arquivo inteiro nas pontes sem marcador; o `update` o retira, com cópia, quando está idêntico ao gerado |
 | Bloco marcado | `opencrew:start/end` | CLI | Trecho delimitado por marcadores que o CLI pode regravar sem tocar no resto do arquivo do usuário |
 | Workspace | `workspace` | CLI | Projeto do usuário com o OpenCrew instalado (`_opencrew/core` + stamp de versão) |
 | Payload | `templates/` | CLI | Tudo o que o `init` copia para o projeto do usuário |
 | Stamp de versão | `.opencrew-version` | CLI | Versão do OpenCrew instalada no workspace |
-| Manifesto | `_opencrew/manifest.json` | CLI | Registro (caminho → hash) dos arquivos que o OpenCrew entregou, gravado pelo `init`, pelo `update` e pelo `init --repair-bridges`; é por ele que o `update` distingue o arquivo que o usuário editou do que só está antigo (não confundir com o `crew-party.csv`, o manifesto de agentes de uma crew) |
-| Cópia de segurança | `.opencrew-backup/<data>/` | CLI | Pasta onde o `update` (e o `init --repair-bridges`) guarda, antes de substituir, o arquivo do framework (core, skill do catálogo, ponte de arquivo inteiro) que o usuário editou — ou, sem manifesto, todo arquivo diferente do pacote novo; o resumo do `update` e o do `init --repair-bridges` listam o que foi copiado |
+| Manifesto | `_opencrew/manifest.json` | CLI | Registro (caminho → hash) dos arquivos que o OpenCrew entregou, gravado pelo `init`, pelo `update` e pelo `init --repair-bridges`; é por ele que o `update` distingue o arquivo que o usuário editou do que só está antigo; registra também cada bloco marcado e que o `.mcp.json` já foi entregue (não confundir com o `crew-party.csv`, o manifesto de agentes de uma crew) |
+| Cópia de segurança | `.opencrew-backup/<data>/` | CLI | Pasta onde o `update` (e o `init --repair-bridges`) guarda, antes de substituir, o arquivo do framework (core, skill do catálogo, ponte de arquivo inteiro) que o usuário editou, o arquivo inteiro cujo bloco marcado ou texto legado vai mudar, e o `.mcp.json` antes de ser regravado — ou, sem manifesto, todo arquivo diferente do pacote novo; o resumo do `update` e o do `init --repair-bridges` listam o que foi copiado |
 | Sandbox | `sandbox/` | Repo | Workspace local do mantenedor para testar o runtime; fora do git |

@@ -4,11 +4,16 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { init, installPayload } from '../src/commands/init.js';
-import { exists, writeBridgeFile } from '../src/lib/fsx.js';
+import { exists } from '../src/lib/fsx.js';
+import { deliverBlock } from '../src/lib/blocos.js';
+import { newDelivery } from '../src/lib/manifest.js';
 import { packageJsonPath } from '../src/lib/paths.js';
 import { mkTmp, withCwd, exitPromptError } from './_helpers.js';
 
 const BLOCK = /# opencrew:start\r?\n[\s\S]*?\r?\n# opencrew:end/g;
+// R2 (rule 4): the one writer of marked blocks; in .gitignore / .env.example it uses `#`
+// markers and appends (was fsx.writeBridgeFile with { comment: 'hash', position: 'append' }).
+const writeBlock = (dir, file, content) => deliverBlock(newDelivery(dir, null), file, content);
 
 test('F1-05a: an existing .env.example keeps its content on top, opencrew block appended', async () => {
   const dir = await mkTmp('safe');
@@ -27,8 +32,8 @@ test('F1-05b: writing the .env.example block twice leaves exactly one block', as
   const dir = await mkTmp('safe');
   const file = path.join(dir, '.env.example');
   await fs.writeFile(file, 'MY_KEY=\n');
-  await writeBridgeFile(file, 'A=1', { comment: 'hash', position: 'append' });
-  await writeBridgeFile(file, 'A=2', { comment: 'hash', position: 'append' });
+  await writeBlock(dir, '.env.example', 'A=1');
+  await writeBlock(dir, '.env.example', 'A=2');
   const after = await fs.readFile(file, 'utf8');
   assert.equal(after.match(BLOCK).length, 1);
   assert.equal(after, 'MY_KEY=\n\n# opencrew:start\nA=2\n# opencrew:end\n');
@@ -71,8 +76,8 @@ test('F1-06c: an orphan start marker (end deleted by hand) never makes user line
   const file = path.join(dir, '.gitignore');
   const original = 'dist/\n# opencrew:start\n.env\nmine/\n';
   await fs.writeFile(file, original);
-  await writeBridgeFile(file, '.env', { comment: 'hash', position: 'append' });
-  await writeBridgeFile(file, '.env\nnew/', { comment: 'hash', position: 'append' }); // second run
+  await writeBlock(dir, '.gitignore', '.env');
+  await writeBlock(dir, '.gitignore', '.env\nnew/'); // second run
   const after = await fs.readFile(file, 'utf8');
   for (const line of original.trimEnd().split(/\r?\n/)) {
     assert.ok(after.split(/\r?\n/).includes(line), `user line lost: ${line}`);

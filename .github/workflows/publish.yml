@@ -11,14 +11,32 @@ name: Publish to npm
 # exists". Creating a Release for an *already-pushed* tag is safe and won't
 # trigger this workflow at all (harmless, just means no separate Release
 # entry gets made — create one manually from the tag if you want one).
+#
+# Nothing is published before the CI matrix (ci.yml: Ubuntu and Windows, the Node
+# floor and Node 22, plus the security audit) is green for the same commit.
+#
+# Running this workflow by hand is a rehearsal by default: `dry_run` is on, and
+# the last step becomes `npm publish --dry-run`. Do not rehearse with a
+# pre-release tag (v1.2.3-rc.0): it matches `v*` and would be published.
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Rehearsal: run everything and end with npm publish --dry-run (nothing is published)'
+        type: boolean
+        default: true
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   publish:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,7 +70,15 @@ jobs:
       - name: Sanity check (pack)
         run: npm pack --dry-run
 
+      # Manual run with dry_run on (the default): rehearsal, no token, nothing published.
+      - name: Publish (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: npm publish --dry-run --access public
+
+      # A pushed tag, or a manual run with dry_run switched off. The two conditions are
+      # exact opposites: one of the two steps runs, never both.
       - name: Publish
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

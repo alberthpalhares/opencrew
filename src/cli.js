@@ -5,33 +5,8 @@ import { allIdeIds } from './lib/ides.js';
 import { UsageError, isPromptCancel } from './lib/errors.js';
 import { init } from './commands/init.js';
 import { update } from './commands/update.js';
+import { nodeBelowFloor } from './lib/node-version.js';
 import { c, log, err, warn, info } from './lib/ui.js';
-
-// Extract the minimum required Node version from an engines.node range string.
-// Handles: ">=20.0.0", "^20.5", ">=18.0.0 || >=20.0.0", plain "20.0.0".
-function minNodeVersion(range) {
-  // Split on || and take the lowest version (user is expected to meet at least one).
-  const parts = range.split(/\s*\|\|\s*/);
-  let lowest = null;
-  for (const part of parts) {
-    const v = part.replace(/[^0-9.]/g, '');
-    if (!v) continue;
-    if (!lowest || lt(v, lowest)) lowest = v;
-  }
-  return lowest;
-}
-
-// Simple semver comparison (no prerelease tags). Returns true if a < b.
-function lt(a, b) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
-  for (let i = 0; i < 3; i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
-    if (na !== nb) return na < nb;
-  }
-  return false; // equal
-}
 
 const OPTION_SPEC = {
   help: { type: 'boolean', short: 'h' },
@@ -128,11 +103,15 @@ export function reportError(e) {
   }
   err(e?.message ?? String(e));
   if (e instanceof UsageError) info(`Run ${c.cyan('npx @aksp/opencrew help')} for usage.`);
-  else if (process.env.OPENCREW_DEBUG) console.error(e?.stack);
+  else if (process.env.OPENCREW_DEBUG) console.error(e?.cause ? e : e?.stack); // with a cause: both stacks
   return 1;
 }
 
-export async function run(argv, { commands = { init, update } } = {}) {
+/**
+ * @param {string[]} argv
+ * @param {{ commands?: object, nodeVersion?: string }} deps  injectable for tests
+ */
+export async function run(argv, { commands = { init, update }, nodeVersion = process.versions.node } = {}) {
   let command, opts;
   try {
     ({ command, opts } = parseArgs(argv));
@@ -154,16 +133,14 @@ export async function run(argv, { commands = { init, update } } = {}) {
     return;
   }
 
-  // Validate Node version against engines.node requirement.
-  if (engines.node) {
-    const required = minNodeVersion(engines.node);
-    const current = process.versions.node;
-    if (required && lt(current, required)) {
-      warn(`opencrew requires Node.js ${engines.node}. You have v${current}.`);
-      info(`Upgrade Node or use a compatible version.`);
-      process.exitCode = 1;
-      return;
-    }
+  // Below the floor of engines.node every command stops here — --version and help too —
+  // before anything is written (spec R2, rule 27).
+  const tooOld = nodeBelowFloor(engines.node, nodeVersion);
+  if (tooOld) {
+    err(tooOld[0]);
+    info(tooOld[1]);
+    process.exitCode = 1;
+    return;
   }
 
   // --version / --help never run a command (they may follow any command).

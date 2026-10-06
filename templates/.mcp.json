@@ -1,5 +1,5 @@
 {
-  "_comment": "The Playwright MCP version is pinned for stability. To upgrade: npx @playwright/mcp@latest --version, then update the version below and run 'npx @aksp/opencrew update' to refresh.",
+  "_comment": "Versão do Playwright MCP fixada por estabilidade. Para trocar, edite a versão abaixo e reinicie a IDE. O `update` do OpenCrew não altera a versão que está neste arquivo.",
   "mcpServers": {
     "playwright": {
       "command": "npx",

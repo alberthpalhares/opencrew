@@ -111,12 +111,12 @@ Browser sessions are stored as JSON files in `_opencrew/_browser_profile/`:
 
 **Loading a session (Playwright CLI):**
 ```bash
-npx playwright open --load-storage=_opencrew/_browser_profile/{platform}.json {url}
+npx playwright open --load-storage=_opencrew/_browser_profile/{platform}.json "{url}"
 ```
 
 **Saving a session (Playwright CLI):**
 ```bash
-npx playwright open --save-storage=_opencrew/_browser_profile/{platform}.json {url}
+npx playwright open --save-storage=_opencrew/_browser_profile/{platform}.json "{url}"
 ```
 
 When using MCP browser tools or other automation APIs, use these JSON files as the source of truth for session state — load the stored cookies/localStorage at the start of each investigation and save after login when the user consents.
@@ -210,7 +210,7 @@ On the first investigation for a given platform, Sherlock may encounter a login 
 
 4. **Step 1 — Open browser for login (NO session saving):**
    ```bash
-   npx playwright open {platform-url}
+   npx playwright open "{platform-url}"
    ```
    Use a **5-minute timeout** on this command. The user needs time to complete login + any verification (email, SMS, 2FA).
 
@@ -220,7 +220,7 @@ On the first investigation for a given platform, Sherlock may encounter a login 
    Ask: "Want me to save this session for next time?"
    If yes:
    ```bash
-   npx playwright open --save-storage=_opencrew/_browser_profile/{platform}.json {platform-url}
+   npx playwright open --save-storage=_opencrew/_browser_profile/{platform}.json "{platform-url}"
    ```
    This command completes quickly since the browser already has the authenticated cookies.
 
@@ -231,7 +231,7 @@ On the first investigation for a given platform, Sherlock may encounter a login 
 
 After the first login, load the session file at the start of each investigation:
 ```bash
-npx playwright open --load-storage=_opencrew/_browser_profile/{platform}.json {url}
+npx playwright open --load-storage=_opencrew/_browser_profile/{platform}.json "{url}"
 ```
 
 Still check for login walls on each run (platforms may expire sessions) and re-prompt the user if needed.

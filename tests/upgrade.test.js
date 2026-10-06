@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
@@ -121,4 +122,73 @@ test('R1-upg: update from a 1.6.0 workspace delivers the checker that measures l
   const fontesEntregue = pathToFileURL(path.join(core, 'scripts', 'conferir-fontes.mjs')).href;
   const { conferir } = await import(`${fontesEntregue}?r1-upg`);
   assert.equal((await conferir({ raiz: dir, crew: 'crews/minha-crew' })).status, 'OK');
+});
+
+// ── 1.6.2 → 1.6.3 (R2): sending skills ask first, safe names, sources never touch the network ─
+
+const SKILL_162 = (nome) => `---\nname: ${nome}\ndescription: skill de envio (1.6.2, simulada)\n---\n\n# ${nome}\n\nEnvia direto.\n`;
+const FONTES_162 = '// 1.6.2 (simulado): testa no disco tudo o que a crew cita\nexport const conferir = async () => ({ status: \'OK\', refs: [] });\n';
+const REDE = '\\\\servidor\\pasta\\arq.md';
+const sha256 = (texto) => createHash('sha256').update(texto).digest('hex');
+// The user's own data, written by hand below: path → content.
+const DADOS = {
+  'crews/minha-crew/crew.yaml': 'name: "minha-crew"\n',
+  'crews/minha-crew/agents/redator.agent.md': `# Redator\n\nLeia \`${REDE}\` antes de escrever.\n`,
+  'crews/minha-crew/_memory/memories.md': '## Proibições Explícitas\n\n- Nunca usar "preço baixo"\n',
+  '_opencrew/_memory/company.md': '# Acme — dados reais',
+  '_opencrew/best-practices.local/instagram-feed.md': '# Instagram — minhas notas\n',
+  '.env': 'RESEND_API_KEY=chave-de-teste\n',
+};
+
+async function workspace162() {
+  const dir = await mkTmp('upgrade162');
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  const antigos = {
+    'skills/blotato/SKILL.md': SKILL_162('blotato'),
+    'skills/resend/SKILL.md': SKILL_162('resend'),
+    '_opencrew/core/runner.pipeline.md': '# Pipeline Runner (1.6.2)\n',
+    '_opencrew/core/scripts/conferir-fontes.mjs': FONTES_162,
+  };
+  for (const [arquivo, texto] of Object.entries({ ...antigos, ...DADOS })) {
+    await fs.mkdir(path.dirname(path.join(dir, arquivo)), { recursive: true });
+    await fs.writeFile(path.join(dir, arquivo), texto);
+  }
+  // 1.6.2: the block of .gitignore had no `.opencrew-backup/`; the manifest recorded the files
+  // as delivered, and neither the marked blocks nor the .mcp.json.
+  const gitignore = path.join(dir, '.gitignore');
+  await fs.writeFile(gitignore, (await fs.readFile(gitignore, 'utf8')).replace('.opencrew-backup/\n', ''));
+  const manifesto = path.join(dir, '_opencrew', 'manifest.json');
+  const registro = JSON.parse(await fs.readFile(manifesto, 'utf8'));
+  for (const chave of Object.keys(registro.files)) if (chave.endsWith('#opencrew') || chave === '.mcp.json') delete registro.files[chave];
+  for (const [arquivo, texto] of Object.entries(antigos)) registro.files[arquivo] = sha256(texto);
+  await fs.writeFile(manifesto, JSON.stringify({ ...registro, version: '1.6.2' }, null, 2) + '\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '1.6.2\n');
+  return dir;
+}
+
+test('R2-upg: update from a 1.6.2 workspace delivers R2 without touching user data', async () => {
+  const dir = await workspace162();
+  await withCwd(dir, () => update());
+  const ler = (arquivo) => fs.readFile(path.join(dir, arquivo), 'utf8');
+
+  for (const [skill, palavra] of [['blotato', 'publicar'], ['resend', 'enviar']]) {
+    const texto = await ler(`skills/${skill}/SKILL.md`);
+    assert.match(texto, /^side_effects: irreversible\s*$/m, skill);
+    assert.ok(texto.includes(`responda com a palavra ${palavra}. Qualquer outra resposta cancela.`), `${skill}: confirmation block`);
+  }
+  assert.match(await ler('_opencrew/core/runner.pipeline.md'), /^## Safe names in commands \(nome seguro\)\s*$/m);
+  assert.match(await ler('.gitignore'), /# opencrew:start\n[\s\S]*^\.opencrew-backup\/$[\s\S]*# opencrew:end/m);
+
+  // Imported from the WORKSPACE, not from templates/: the delivered check and its modules.
+  const entregue = pathToFileURL(path.join(dir, '_opencrew', 'core', 'scripts', 'conferir-fontes.mjs')).href;
+  const { conferir, main } = await import(`${entregue}?r2-upg`);
+  const r = await conferir({ raiz: dir, crew: 'crews/minha-crew' });
+  assert.deepEqual(r.refs.map((x) => [x.ref, x.estado]), [[REDE, 'nao-conferido']]);
+  const linhas = [];
+  assert.equal(await main(['--crew', 'crews/minha-crew'], { cwd: dir, escrever: (s) => linhas.push(s) }), 0);
+  const relatorio = linhas.join('\n');
+  assert.ok(relatorio.includes(`\`${REDE}\` é um caminho de rede ou um endereço de site: não conferi se existe`), relatorio);
+  assert.match(relatorio, /FONTES:OK/);
+
+  for (const [arquivo, texto] of Object.entries(DADOS)) assert.equal(await ler(arquivo), texto, arquivo);
 });

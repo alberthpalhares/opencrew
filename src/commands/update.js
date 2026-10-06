@@ -1,23 +1,37 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { exists, writeFileSafe, readJson, writeBridgeFile, readFile } from '../lib/fsx.js';
-import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION, ideById } from '../lib/ides.js';
-import { readManifest, writeManifest, newDelivery, deliverTree, deliverFile } from '../lib/manifest.js';
-import { compareVersions, detectInstalledIdes, refreshBridges, mergeMcp, findLegacyBridges } from '../lib/migrations.js';
+import { exists, writeFileSafe, readJson, readFile } from '../lib/fsx.js';
+import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION } from '../lib/ides.js';
+import { readManifest, manifestUnreadable, UNREADABLE, writeManifest, newDelivery, deliverTree, deliverFile } from '../lib/manifest.js';
+import { deliverBlock, deliverBridges, blockHas } from '../lib/blocos.js';
+import { detectInstalledIdes } from '../lib/deteccao.js';
+import { withoutLegacy } from '../lib/legado.js';
+import { updateMcp } from '../lib/mcp.js';
+import { compareVersions, installedVersion, findLeftovers } from '../lib/migrations.js';
+import { say, recreatedLines, updateSummary, UNTOUCHED } from '../lib/resumo.js';
 import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
+
+const tpl = (...p) => path.join(templatesDir, ...p);
 
 // `update` brings EVERY improvement to people who already use OpenCrew (AGENTS.md rule 14),
 // without losing what they made:
 //   - _opencrew/core and catalog skills are replaced — a file the user edited is copied to
 //     .opencrew-backup/<date>/ first (manifest of hashes; none = copy whatever differs);
-//   - new framework folders (agents, config, crew templates) arrive without overwriting;
-//   - bridges of the IDEs already installed are refreshed (never new IDEs);
-//   - crews/, _opencrew/_memory/, _opencrew/best-practices.local/ and .env are never touched.
+//   - new framework folders (agents, config, crew templates) arrive without overwriting — a
+//     crew template the user deleted comes back, and the output lists it;
+//   - bridges of the IDEs already installed are refreshed (never new IDEs — an IDE is proved by
+//     a file, src/lib/deteccao.js), and so are the opencrew blocks of AGENTS.md and .gitignore
+//     — a block the user edited is copied first; the text bridges had up to 1.2.2 leaves the
+//     outside of the block, with a copy, only when it is still exactly what was generated;
+//   - the Playwright server of .mcp.json is delivered once (the manifest records it) and never
+//     put back; the file is copied before any rewrite (src/lib/mcp.js);
+//   - the crews the user created, _opencrew/_memory/, _opencrew/best-practices.local/ and .env
+//     are never touched.
+// Every step returns what it did, and the summary only says that (src/lib/resumo.js).
 export async function update(opts = {}) {
   const target = process.cwd();
-  const pkg = await readJson(packageJsonPath);
-  const version = pkg.version;
+  const { version } = await readJson(packageJsonPath);
 
   if (!(await exists(path.join(target, '_opencrew', 'core')))) {
     warn('No opencrew workspace found here.');
@@ -25,15 +39,15 @@ export async function update(opts = {}) {
     return;
   }
 
-  const versionFile = path.join(target, '_opencrew', '.opencrew-version');
-  const current = (await exists(versionFile))
-    ? (await fs.readFile(versionFile, 'utf8')).trim()
-    : 'unknown';
-  const newer = current !== 'unknown' && compareVersions(current, version) > 0;
-
+  const current = (await installedVersion(target)) ?? 'unknown';
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
+  if (canApply(opts, current, version)) await apply(target, version);
+}
 
+/** `--check` only reports, and a package older than the workspace stops: false = write nothing. */
+function canApply(opts, current, version) {
+  const newer = current !== 'unknown' && compareVersions(current, version) > 0;
   if (opts.check) {
     if (current === version) ok(`Up to date (v${version}).`);
     else if (newer) info(`A versão instalada (v${current}) é mais nova que este pacote (v${version}).`);
@@ -42,22 +56,44 @@ export async function update(opts = {}) {
       info(`Run ${c.cyan('npx @aksp/opencrew update')} to apply.`);
       process.exitCode = 1;
     }
-    return;
+    return false;
   }
-
   if (newer) {
     err(`Você tem a v${current} instalada e este pacote é a v${version} (mais antigo). Nada foi alterado.`);
     info(`Use ${c.cyan('npx @aksp/opencrew@latest update')}.`);
     process.exitCode = 1;
-    return;
   }
+  return !newer;
+}
 
+async function apply(target, version) {
+  // A manifest that exists but cannot be used is said so, then treated as none (R2 rule 12).
   const manifest = await readManifest(target);
+  const unreadable = !manifest && (await manifestUnreadable(target));
+  if (unreadable) warn(UNREADABLE.update);
   const ctx = newDelivery(target, manifest);
-  const tpl = (...p) => path.join(templatesDir, ...p);
-  const dest = (...p) => path.join(target, ...p);
 
   step('Refreshing framework');
+  const crews = await refreshFramework(ctx);
+  ok(`Framework and catalog skills refreshed (${ctx.written} files written)`);
+  say(recreatedLines(crews));
+
+  step('Refreshing IDE bridges');
+  const done = { unreadable, ...(await refreshBridges(ctx)) };
+  done.mcp = await updateMcp(ctx, await readFile(tpl('.mcp.json')));
+  done.leftovers = await findLeftovers(target);
+  say(updateSummary(ctx, done));
+
+  await writeManifest(target, version, ctx.files);
+  // Stamp last: a crash above leaves the old version, so the next update retries.
+  await fs.writeFile(path.join(target, '_opencrew', '.opencrew-version'), version + '\n');
+  log(`\n${c.green(c.bold('Updated to v' + version))}.`);
+  log(c.dim(`${UNTOUCHED}\n`));
+}
+
+/** @returns what `deliverTree` did to each crew template (only the missing ones are written). */
+async function refreshFramework(ctx) {
+  const dest = (...p) => path.join(ctx.target, ...p);
   await deliverTree(ctx, tpl('_opencrew', 'core'), dest('_opencrew', 'core'), { overwrite: true });
   await deliverFile(ctx, dest('_opencrew', 'core', 'system.md'), await fs.readFile(tpl('AGENTS.md')), { overwrite: true });
   await deliverTree(ctx, tpl('skills'), dest('skills'), { overwrite: true });
@@ -65,74 +101,41 @@ export async function update(opts = {}) {
   for (const dir of ['agents', 'config', '_investigations']) {
     await deliverTree(ctx, tpl('_opencrew', dir), dest('_opencrew', dir), { overwrite: false });
   }
-  await deliverTree(ctx, tpl('crews'), dest('crews'), { overwrite: false });
-  ok(`Framework and catalog skills refreshed (${ctx.written} files written)`);
-
-  step('Refreshing IDE bridges');
-  await refreshAgentsBridge(target);
-  const ides = await detectInstalledIdes(target);
-  await refreshBridges(ctx, ides);
-  ok(ides.length ? `Bridges refreshed: ${ides.map((i) => i.label).join(', ')}` : 'No IDE bridges found to refresh');
-  await removeLeakedStatusSection(target);
-
-  const mcp = await mergeMcp(target, tpl('.mcp.json'));
-  if (mcp === 'updated' || mcp === 'created') ok(`.mcp.json (Playwright: ${mcp === 'created' ? 'created' : 'saída em _opencrew/logs/playwright/'})`);
-  if (mcp === 'invalid') warn('.mcp.json não é um JSON válido — não alterado. Confira o arquivo.');
-
-  for (const legacy of await findLegacyBridges(target)) {
-    warn(`Ponte antiga encontrada: ${legacy} (aponta para _opensquad/, que não existe neste projeto). Pode apagar com segurança.`);
-  }
-
-  if (ctx.copied.length) {
-    const rel = path.relative(target, ctx.backupDir).split(path.sep).join('/');
-    const what = manifest ? 'que você tinha editado' : 'diferentes do pacote novo';
-    warn(`${ctx.copied.length} arquivo(s) ${what} foram copiados para ${rel}/ antes de serem substituídos:`);
-    for (const f of ctx.copied.slice(0, 15)) log(`    ${f}`);
-    if (ctx.copied.length > 15) log(`    … e mais ${ctx.copied.length - 15}`);
-    if (!manifest) info('Primeira atualização com proteção: sem registro anterior, guardamos tudo o que diferia. Daqui em diante, só o que você editar.');
-  }
-
-  await writeManifest(target, version, ctx.files);
-  // Stamp last: a crash above leaves the old version, so the next update retries.
-  await fs.writeFile(versionFile, version + '\n');
-  log(`\n${c.green(c.bold('Updated to v' + version))}.`);
-  log(c.dim('Your crews, memory, local best-practices and .env were left untouched.\n'));
+  return deliverTree(ctx, tpl('crews'), dest('crews'), { overwrite: false });
 }
 
-// Root AGENTS.md: create it if missing; a legacy full-system doc (pre-v1.3) is backed up
-// byte for byte and replaced by the thin bridge; otherwise only the marked block changes.
-async function refreshAgentsBridge(target) {
-  const agentsPath = path.join(target, 'AGENTS.md');
-  if (!(await exists(agentsPath))) {
-    await writeBridgeFile(agentsPath, AGENTS_BRIDGE);
-    ok('AGENTS.md (bridge created)');
-    return;
-  }
-  const existing = await readFile(agentsPath);
+/** AGENTS.md, .gitignore and the bridges of the IDEs installed: what happened to each. */
+async function refreshBridges(ctx) {
+  const agents = await refreshAgentsBridge(ctx);
+  // The copies in .opencrew-backup/ stay out of the user's git (R2 rule 7).
+  const gitignore = await deliverBlock(ctx, '.gitignore', await readFile(tpl('gitignore')));
+  const ides = await detectInstalledIdes(ctx.target);
+  // 1.4.0/1.4.1 shipped the maintainer's STATUS.md workflow inside CLAUDE.md's opencrew block.
+  // It leaves with the block; the same title outside the block is the user's and stays.
+  const leaked = () => blockHas(ctx.target, 'CLAUDE.md', LEAKED_STATUS_SECTION);
+  const hadLeak = await leaked();
+  const bridges = await withoutLegacy(ctx, ides, () => deliverBridges(ctx, ides)); // R2 rule 3 (src/lib/legado.js)
+  return { agents, gitignore, ides, bridges, leak: hadLeak && !(await leaked()) };
+}
+
+// Root AGENTS.md: a legacy full-system doc (pre-v1.3) is backed up byte for byte and replaced by
+// the thin bridge (said here; returns null); otherwise only the marked block is delivered (a
+// block the user edited is copied first — src/lib/blocos.js) and its result goes to the summary.
+async function refreshAgentsBridge(ctx) {
+  const agentsPath = path.join(ctx.target, 'AGENTS.md');
+  const existing = (await exists(agentsPath)) ? await readFile(agentsPath) : '';
   if (existing.includes('# opencrew Instructions') && !existing.includes('<!-- opencrew:start -->')) {
     const backup = await freeBackupPath(agentsPath);
     await fs.copyFile(agentsPath, backup);
     await writeFileSafe(agentsPath, AGENTS_BRIDGE);
     ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${path.basename(backup)})`);
-    return;
+    return null;
   }
-  await writeBridgeFile(agentsPath, AGENTS_BRIDGE);
-  ok('AGENTS.md refreshed');
+  return deliverBlock(ctx, 'AGENTS.md', AGENTS_BRIDGE);
 }
 
 async function freeBackupPath(file) {
   const bak = `${file}.bak`;
   if (!(await exists(bak))) return bak;
   return `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-}
-
-// 1.4.0/1.4.1 shipped the maintainer's STATUS.md workflow inside CLAUDE.md's opencrew
-// block. Rewrite that block (only that block, only if the leak is there).
-async function removeLeakedStatusSection(target) {
-  const claudePath = path.join(target, 'CLAUDE.md');
-  if (!(await exists(claudePath))) return;
-  if (!(await readFile(claudePath)).includes(LEAKED_STATUS_SECTION)) return;
-  const bridge = ideById('claude-code').files.find((f) => f.path === 'CLAUDE.md');
-  await writeBridgeFile(claudePath, bridge.content);
-  ok('CLAUDE.md (removed the STATUS.md section shipped by mistake in 1.4.0/1.4.1)');
 }

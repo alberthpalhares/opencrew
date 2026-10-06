@@ -372,3 +372,5 @@ U2-04a…d, U2-07a, U2-08a) · `tests/verificar.test.js` (U2-04d) · `tests/upgr
   - Continua fora: o que a seção 12 manda para R2, U4 e U5, e os limites da §12 da spec R1. No
     reparo, a IDE que teve todos os arquivos de ponte próprios apagados não é detectada: só volta
     com `--ide` (critério da detecção → R2, H3-10).
+- 2026-10-06 — R2 (1.6.3): os itens "→ R2" da seção 12 e desta seção (detecção de IDE, Codex no resumo, texto antigo das pontes, `.mcp.json`, manifesto ilegível, restos antigos, bloco editado sem cópia) foram tratados em `specs/fase-r2-update-e-envio-seguros.md`. O que entrou está nas regras de lá; o que não entrou tem destino na §11 de lá.
+  A regra 11 passa a valer pelo arquivo de ponte, não pela palavra "opencrew"; a regra 14 passa a entregar o servidor Playwright uma única vez; modelo de crew apagado continua voltando (→ U5).

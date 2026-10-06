@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson, writeBridgeFile, readFile } from '../src/lib/fsx.js';
+import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson, readFile } from '../src/lib/fsx.js';
+import { deliverBlock } from '../src/lib/blocos.js';
+import { newDelivery } from '../src/lib/manifest.js';
 
 async function mkTmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
@@ -139,25 +141,25 @@ test('readFile returns file content as string', async () => {
   assert.equal(await readFile(p), 'hello world');
 });
 
-test('writeBridgeFile creates file with markers when file does not exist', async () => {
+// Marked blocks: R2 (rule 4) replaced fsx.writeBridgeFile by the one writer, blocos.deliverBlock
+// (file = path relative to the project root; `action` instead of { written, merged }).
+test('deliverBlock creates file with markers when file does not exist', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
   const p = path.join(dir, 'bridge.md');
-  const result = await writeBridgeFile(p, '# Test Bridge');
-  assert.equal(result.written, true);
-  assert.equal(result.merged, false);
+  const result = await deliverBlock(newDelivery(dir, null), 'bridge.md', '# Test Bridge');
+  assert.equal(result.action, 'created');
   const content = await fs.readFile(p, 'utf8');
   assert.ok(content.includes('<!-- opencrew:start -->'));
   assert.ok(content.includes('# Test Bridge'));
   assert.ok(content.includes('<!-- opencrew:end -->'));
 });
 
-test('writeBridgeFile replaces block when markers exist, preserves other content', async () => {
+test('deliverBlock replaces block when markers exist, preserves other content', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
   const p = path.join(dir, 'bridge.md');
   await fs.writeFile(p, '<!-- opencrew:start -->\nold content\n<!-- opencrew:end -->\n\n# User Stuff\nmy notes');
-  const result = await writeBridgeFile(p, 'new content');
-  assert.equal(result.written, true);
-  assert.equal(result.merged, false);
+  const result = await deliverBlock(newDelivery(dir, null), 'bridge.md', 'new content');
+  assert.equal(result.action, 'updated');
   const content = await fs.readFile(p, 'utf8');
   assert.ok(content.includes('new content'));
   assert.ok(!content.includes('old content'));
@@ -165,13 +167,12 @@ test('writeBridgeFile replaces block when markers exist, preserves other content
   assert.ok(content.includes('my notes'));
 });
 
-test('writeBridgeFile prepends block when file exists without markers', async () => {
+test('deliverBlock prepends block when file exists without markers', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencrew-fsx-'));
   const p = path.join(dir, 'bridge.md');
   await fs.writeFile(p, '# My Project\n\nSome content.');
-  const result = await writeBridgeFile(p, '# Bridge');
-  assert.equal(result.written, true);
-  assert.equal(result.merged, true);
+  const result = await deliverBlock(newDelivery(dir, null), 'bridge.md', '# Bridge');
+  assert.equal(result.action, 'added');
   const content = await fs.readFile(p, 'utf8');
   const openStart = content.indexOf('<!-- opencrew:start -->');
   const openEnd = content.indexOf('<!-- opencrew:end -->');

@@ -1,6 +1,7 @@
 // Validações e mensagens de erro de uso comuns aos scripts do runtime (verificar,
 // conferir-fontes…). Node puro, sem dependências.
-// Spec: specs/fase-r1-reparos-1-6-1.md, regra 13 (repositório do OpenCrew).
+// Specs: specs/fase-r1-reparos-1-6-1.md, regra 13, e specs/fase-r2-update-e-envio-seguros.md,
+// regra 23 (repositório do OpenCrew).
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,10 +13,54 @@ export const MSG = {
   crewNaoEncontrada: (crew) => `Crew não encontrada: ${crew}`,
 };
 
-/** O caminho (relativo à raiz ou absoluto) fica dentro da raiz do projeto? */
-export function dentroDoProjeto(raiz, caminho) {
-  const rel = path.relative(raiz, path.resolve(raiz, caminho));
+/** Caminho de rede: começa por duas barras (`\\` ou `//`), em qualquer sistema. Nunca vai ao disco. */
+export const ehDeRede = (caminho) => /^[\\/]{2}/.test(caminho);
+
+/** Pelo texto: `alvo` é a `pasta` ou fica dentro dela? */
+function contem(pasta, alvo) {
+  const rel = path.relative(pasta, alvo);
   return !(rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel));
+}
+
+/**
+ * Lugar real de um caminho: link, junção e nome curto resolvidos. O trecho que ainda não existe é
+ * juntado, como foi escrito, à pasta mais funda que existe. Caminho de rede não é consultado: vale
+ * o texto.
+ */
+export function lugarReal(caminho) {
+  const abs = path.resolve(caminho);
+  if (ehDeRede(caminho) || ehDeRede(abs)) return abs;
+  try {
+    return realpathSync.native(abs);
+  } catch {
+    const pai = path.dirname(abs);
+    return pai === abs ? abs : path.join(lugarReal(pai), path.basename(abs));
+  }
+}
+
+/** Pelo lugar real: `caminho` é a `pasta` ou fica dentro dela? */
+export const realDentroDe = (pasta, caminho) => contem(lugarReal(pasta), lugarReal(caminho));
+
+/**
+ * O caminho (relativo à raiz ou absoluto) fica dentro do projeto? Sim quando o texto ou o lugar
+ * real diz "dentro"; não, só quando os dois dizem "fora" (regra 23). Raiz e caminho são resolvidos
+ * pela mesma função, e o lugar real só é consultado quando o texto diz "fora". Caminho de rede só
+ * vale pelo texto, com o projeto também na rede: o disco não é tocado, em nenhum sistema.
+ */
+export function dentroDoProjeto(raiz, caminho) {
+  const alvo = path.resolve(raiz, caminho);
+  if (ehDeRede(caminho)) return ehDeRede(raiz) && contem(raiz, alvo);
+  return contem(raiz, alvo) || realDentroDe(raiz, alvo);
+}
+
+/**
+ * Caminho de dentro do projeto, relativo à raiz e com `/`: pelo texto quando o texto já fica
+ * dentro; senão, pelo lugar real (link, junção ou nome curto que leva ao projeto).
+ */
+export function relativoAoProjeto(raiz, caminho) {
+  const alvo = path.resolve(raiz, caminho);
+  const [de, para] = contem(raiz, alvo) ? [raiz, alvo] : [lugarReal(raiz), lugarReal(alvo)];
+  return path.relative(de, para).split(path.sep).join('/');
 }
 
 /**

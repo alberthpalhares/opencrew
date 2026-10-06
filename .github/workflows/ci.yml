@@ -3,11 +3,15 @@ name: CI
 # Runs the test suite on every push and pull request against main.
 # This is the safety net for src/lib/fsx.js and the init/update commands —
 # the code that reads and writes files inside a user's project.
+#
+# Also reusable (workflow_call): publish.yml calls this file and only publishes
+# after every cell of the matrix and the security audit are green.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   test:
@@ -15,7 +19,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node-version: ['20', '22']
+        # The first entry is the floor of engines.node in package.json — the lowest Node the
+        # package promises. tests/release-gate.test.js keeps the two in step.
+        node-version: ['20.17.0', '22']
     steps:
       - uses: actions/checkout@v4
 

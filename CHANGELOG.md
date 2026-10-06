@@ -3,6 +3,57 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.3] — 2026-10-06
+
+**O Node mínimo subiu para o 20.17, numa versão de correção.** O pacote dizia 20.0, mas a lista
+de IDEs do `init` só abria a partir do 20.12 e as dependências só garantem o 20.17. Quem está no
+Node 20.0 a 20.16 precisa atualizar o Node antes de rodar `init` ou `update` (saída de emergência:
+`npx @aksp/opencrew@1.6.2 update`).
+
+Fase R2 "update e envio seguros" (`specs/fase-r2-update-e-envio-seguros.md`): só defeitos já
+achados em revisão. Chega a quem já usa com um `npx @aksp/opencrew@latest update`.
+
+### Changed
+- **`blotato` e `resend` pedem confirmação antes de agir.** Mostram a prévia (contas ou
+  destinatários, texto, quando) e só publicam, enviam, agendam ou apagam depois da palavra
+  `publicar`, `enviar` ou `apagar`. Crew que hoje envia sem perguntar vai parar e pedir. Em falha,
+  não repetem sozinhas.
+- **`.mcp.json`: o servidor Playwright é entregue uma última vez.** Depois, se você o remover ou
+  apagar o arquivo, o `update` não repõe. A versão fixada não é trocada, e o arquivo é copiado
+  antes de qualquer regravação, mantendo a indentação.
+- **Primeiro `update` para esta versão copia o `.gitignore`** para `.opencrew-backup/`, mesmo sem
+  edição sua: o bloco do OpenCrew mudou (passa a ignorar `.opencrew-backup/`) e as versões
+  anteriores não registravam o bloco.
+- **O reparo de pontes só roda com o pacote na mesma versão do projeto.** Com outra versão, para
+  sem alterar nada e pede o `update`.
+- As frases do resumo do `update` saem em português e só afirmam o que foi feito.
+
+### Fixed
+- **Ponte de IDE que você não instalou**: um `CLAUDE.md`, `GEMINI.md`, `QWEN.md` ou
+  `copilot-instructions.md` seu que só citava "opencrew" fazia o `update` criar a ponte e pôr um
+  bloco no seu arquivo. A IDE agora se prova pelo arquivo de ponte. O resumo não cita mais o
+  Codex sem ele estar instalado.
+- **Bloco do OpenCrew editado por dentro** (em `AGENTS.md`, `CLAUDE.md`, `.gitignore`…) era
+  regravado sem cópia. Agora o arquivo inteiro é copiado antes, e o fim de linha é mantido.
+- **Texto antigo das pontes** (instalações até a 1.2.2), que mandava adotar o papel do OpenCrew
+  sempre, é retirado, com cópia, quando está idêntico ao gerado; se foi editado, só aviso.
+- **Manifesto ilegível** vira aviso e a atualização segue; `.mcp.json` fora do formato não derruba
+  mais o `update` no meio.
+- **A dica de reinstalar** não manda mais apagar `_opencrew/`, que guarda a sua memória.
+- **Restos do OpenSquad**: o aviso não promete mais "apagar com segurança" para arquivo que pode
+  ser seu, e cobre mais sete caminhos. Nada é apagado.
+- **Texto do usuário em linha de comando**: o prompt de imagem vai por arquivo (`--prompt-file`),
+  nome de arquivo com caractere inseguro não entra em comando, e caminhos e URLs vão entre aspas.
+- **Conferência de fontes**: o `--corrigir` não grava mais fora da crew por um link; caminho de
+  rede e endereço de site citados viram alerta "não conferido", sem tocar a rede e sem parar a
+  execução; erro de leitura sai com mensagem.
+- **Publicação**: a tag só publica depois do CI verde (Ubuntu e Windows, Node 20.17 e 22) e da
+  auditoria de segurança. Três das cinco últimas versões saíram com o CI vermelho.
+
+### Internal
+- CLI em módulos novos (`blocos`, `deteccao`, `legado`, `mcp`, `resumo`, `node-version`); 47
+  cenários R2 com teste de mesmo ID; teste de upgrade 1.6.2 → 1.6.3.
+
 ## [1.6.2] — 2026-10-05
 
 Correção da 1.6.1. Chega a quem já usa com um `npx @aksp/opencrew@latest update`.
