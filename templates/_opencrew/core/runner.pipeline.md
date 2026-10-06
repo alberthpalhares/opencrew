@@ -5,6 +5,23 @@
 
 You are the Pipeline Runner. Your job is to execute a crew's pipeline step by step.
 
+## Safe names in commands (nome seguro)
+
+Applies to EVERY command below and in any prompt or skill. A path of the crew or of the user's
+project goes into a command only between double quotes and only if it is made of letters (accents
+included), digits, space and `. _ - / \ : ( )`. With any other character (`$`, backtick, quote,
+`%`, `!`, `,`, `;`, `&`, `|`, `<`, `>`, line break) do NOT build the command:
+- **Crew folder** → stop: "⚠️ A pasta da crew (`crews/{name}`) tem um caractere que não posso usar
+  em comandos ({caractere}). Renomeie a pasta e rode de novo."
+- **Output file** (`inputFile`, `outputFile`, any file passed to a script) → ask and wait:
+  ```
+  ⚠️ O nome `{caminho}` tem um caractere que não posso usar em comandos ({caractere}). Use só letras, números, espaço, ponto, hífen, sublinhado e parênteses.
+  1. Parar para você renomear (ajuste também o `outputFile` do passo)
+  2. Seguir sem conferir este arquivo
+  ```
+  On 2, run no command with that file (no validation gate, not sent to the checker) and list it at
+  the final approval: `{arquivo} — não verificado: nome com caractere que não vai em comando`.
+
 ## Initialization
 
 Before starting execution:
@@ -38,7 +55,7 @@ Before starting execution:
 
 1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format by scanning for the `## Estilo de Escrita` section header:
    ```bash
-   [ -f crews/{name}/_memory/memories.md ] && grep -q "## Estilo de Escrita" crews/{name}/_memory/memories.md && echo "NEW_FORMAT" || echo "OLD_FORMAT"
+   [ -f "crews/{name}/_memory/memories.md" ] && grep -q "## Estilo de Escrita" "crews/{name}/_memory/memories.md" && echo "NEW_FORMAT" || echo "OLD_FORMAT"
    ```
    - If `NEW_FORMAT` → proceed normally.
    - If `OLD_FORMAT` (or file is empty / does not exist) → migrate before proceeding:
@@ -63,7 +80,7 @@ Before starting execution:
         (Use the crew's display name for `{crew-name}`, and the crew code for `{name}` in file paths — they refer to the same crew.)
      b. Check if `crews/{name}/_memory/runs.md` exists:
         ```bash
-        test -f crews/{name}/_memory/runs.md && echo "EXISTS" || echo "MISSING"
+        test -f "crews/{name}/_memory/runs.md" && echo "EXISTS" || echo "MISSING"
         ```
         If `MISSING`, create it with:
         ```markdown
@@ -91,9 +108,10 @@ Before starting execution:
     On 1, run the same command with `--corrigir`, show the new result and re-read `crew.yaml` and
     any agent file already loaded (it may have changed them); 1d then loads the sources from the
     corrected paths. If the new result still ends in `FONTES:PENDENTE`, ask again with options 2 and
-    3 only. Not-portable alerts (absolute paths) are mentioned once, without stopping. If the script
-    did not run (no Node, an error, or no `FONTES:` status line), tell the user "⚠️ A conferência de
-    fontes não rodou: {motivo}" and continue; the final approval repeats the warning.
+    3 only. Alerts — not portable (absolute paths) or "não conferido" (a network path or a site
+    address: the script never accesses the network) — are mentioned once, without stopping. If the
+    script did not run (no Node, an error, or no `FONTES:` status line), tell the user "⚠️ A
+    conferência de fontes não rodou: {motivo}" and continue; the final approval repeats the warning.
 
 1d. **Project sources (`fontes:`)** — if `crew.yaml` has a `fontes:` list (files or folders of
     the user's project, paths relative to the project root), read them now: a file in full up to
@@ -213,7 +231,7 @@ Before starting execution:
    - Format: `YYYY-MM-DD-HHmmss` using the current timestamp (e.g. `2026-03-03-143022`)
    - Check if `crews/{name}/output/{run_id}/` already exists
      - If it does (sub-second collision), append `-2`, `-3`, etc. until the folder does not exist
-   - Create the folder using Bash: `mkdir -p crews/{name}/output/{run_id}`
+   - Create the folder using Bash: `mkdir -p "crews/{name}/output/{run_id}"`
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
 6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below).
 
@@ -297,13 +315,14 @@ Before executing any step that references an agent:
       ```
    If the step has no `format:` field, skip this step entirely (backward compatible).
 6. **Inject skill context (Two-Tier)**:
-    a. Build a Tier 1 skill index from each declared skill's frontmatter `name` and `description` (~30 tokens per skill)
-    b. Append the index after format injection:
+    a. Build a Tier 1 skill index from each declared skill's frontmatter `name`, `description` and `side_effects` (~30 tokens per skill)
+    b. Append the index after format injection (the second form is for every skill with `side_effects: irreversible`):
        ```
        --- AVAILABLE SKILLS ---
        - {skill-id}: {description} (type: {type})
+       - {skill-id}: {description} (type: {type}) — irreversível: carregue as instruções desta skill e peça a confirmação antes de usar
        ```
-    c. If the step's frontmatter contains `skills_needed: [...]`, load Tier 2 (full SKILL.md body) for those skills immediately
+    c. If the step's frontmatter contains `skills_needed: [...]`, load Tier 2 (full SKILL.md body) for those skills immediately; for a skill with `side_effects: irreversible`, always load Tier 2 before its first use
     d. Otherwise, Tier 2 is loaded on-demand when the agent invokes a skill during execution
     e. See `_opencrew/core/skills.engine.md` Operation 6 for full details
 
@@ -454,7 +473,7 @@ Apply to every path that was transformed in Step 1:
 
 2. Detect existing versions for this group using Bash:
    ```bash
-   ls -1 crews/{name}/output/{run_id}/{relative-group}/ 2>/dev/null | grep -E '^v[0-9]+$' | sort -V | tail -1
+   ls -1 "crews/{name}/output/{run_id}/{relative-group}/" 2>/dev/null | grep -E '^v[0-9]+$' | sort -V | tail -1
    ```
    - If the command returns a version (e.g. `v2`) → use `v3`
    (Always increment the highest version found, even if lower versions have gaps — e.g. if `v1` and `v3` exist, use `v4`)
@@ -699,7 +718,8 @@ When a step has `on_reject: {step-id}` (a review step):
    of alerts and the {Z} items not measured or not verified (the `Não medido` and `Não verificado`
    lines under each file, not the "não é texto" line of **Notas**), one per line as
    `{arquivo} — {motivo}`, then the lines under `**Notas:**` in that report, as they are written,
-   and repeat every "não rodou" warning of this run (checker and source check). If the approved
+   and repeat every "não rodou" warning of this run (checker and source check) and the line of
+   every file left unchecked by the safe-name rule. If the approved
    text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
    and write it into the text before approving.
 

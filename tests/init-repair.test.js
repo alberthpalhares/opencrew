@@ -116,7 +116,8 @@ for (const flags of [[], ['--yes']]) {
 test('R1-08d: --yes chooses no IDE in repair — only the installed Claude Code bridge is rewritten', async () => {
   const dir = await workspace();
   const claudeMd = path.join(dir, 'CLAUDE.md');
-  await fs.writeFile(claudeMd, '<!-- opencrew:start -->\nbloco antigo\n<!-- opencrew:end -->\n\n# Minhas notas\n');
+  const anterior = '<!-- opencrew:start -->\nbloco antigo\n<!-- opencrew:end -->\n\n# Minhas notas\n';
+  await fs.writeFile(claudeMd, anterior);
 
   const { out, code } = await reparar(dir, '--yes');
 
@@ -125,8 +126,13 @@ test('R1-08d: --yes chooses no IDE in repair — only the installed Claude Code 
   const depois = await readFile(claudeMd);
   assert.match(depois, /opencrew — Project Instructions/);
   assert.ok(depois.endsWith('# Minhas notas\n'), 'user text outside the block survives');
-  assert.equal(await exists(path.join(dir, '.opencrew-backup')), false, 'no whole-file bridge was edited: no copy');
-  assert.doesNotMatch(out, /cópia\(s\) de segurança/);
+  // R2 rule 4 (spec R2 §10): a block that differs from its record is copied, whole file, first.
+  const datas = await fs.readdir(path.join(dir, '.opencrew-backup'));
+  assert.equal(datas.length, 1);
+  const copia = `.opencrew-backup/${datas[0]}/CLAUDE.md`;
+  assert.equal(await readFile(path.join(dir, copia)), anterior, 'the copy holds the file as it was');
+  assert.match(out, /1 cópia\(s\) de segurança/);
+  assert.ok(out.includes(`${copia} (só o bloco do OpenCrew foi regravado; o resto do arquivo não mudou)`), out);
 });
 
 test('R1-08e: --all alone writes the bridges of the 9 IDEs', async () => {

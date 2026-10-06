@@ -72,7 +72,7 @@ dentro da sua IDE.**
 
 ### Pré-requisitos
 
-- **Node.js 20+** ([baixar](https://nodejs.org/))
+- **Node.js 20.17 ou mais novo** ([baixar](https://nodejs.org/))
 - Uma IDE de IA com acesso a arquivos locais: **Claude Code**, **Cursor**,
   **Codex (OpenAI)**, **Gemini CLI**, **Google Antigravity**, **OpenCode**,
   **VS Code + Copilot**, **Qwen Code** ou **Trae**.
@@ -262,14 +262,24 @@ o que você fez:
 
 | O que é atualizado | O que NUNCA é tocado |
 |---|---|
-| `_opencrew/core/` (framework) e skills do catálogo | `crews/` (suas crews) |
-| Pastas novas do framework (agentes-base, config) — só o que falta | `_opencrew/_memory/` (perfil, preferências) |
+| `_opencrew/core/` (framework) e skills do catálogo | As crews que você criou em `crews/` |
+| Pastas novas do framework (agentes-base, config) e modelos de crew — só o que falta | `_opencrew/_memory/` (perfil, preferências) |
 | Pontes das IDEs **que você já tem instaladas** (nunca cria de IDE nova) | `_opencrew/best-practices.local/` (suas best-practices) |
-| Bloco `<!-- opencrew -->` do `AGENTS.md`/`CLAUDE.md` (o resto do arquivo fica intacto) | `.env` (suas chaves) |
-| Servidor Playwright no `.mcp.json` (outros servidores intactos) | |
+| Bloco do OpenCrew em `AGENTS.md`, `CLAUDE.md` e `.gitignore` (o resto do arquivo fica intacto) | `.env` (suas chaves) |
+| Servidor Playwright no `.mcp.json`, entregue uma vez (outros servidores intactos) | |
 
-- **Editou um arquivo do framework ou um skill do catálogo?** Antes de substituir, o `update`
-  guarda a sua versão em `.opencrew-backup/<data>/` e lista o que copiou.
+- **Editou um arquivo do framework, um skill do catálogo ou o bloco do OpenCrew?** Antes de
+  substituir, o `update` guarda o arquivo inteiro em `.opencrew-backup/<data>/` e lista o que
+  copiou. Essa pasta fica fora do git (entra no bloco do `.gitignore`). No primeiro `update` para
+  a 1.6.3 há cópia do `.gitignore` mesmo sem edição sua: as versões anteriores não registravam o
+  bloco.
+- **Apagou um modelo de crew ou um skill do catálogo?** Ele volta no `update`, e a saída diz o
+  que foi entregue de novo.
+- **Removeu o servidor Playwright do `.mcp.json`?** O `update` o entrega uma única vez; se você
+  remover de novo, não volta. A versão fixada no arquivo não é trocada.
+- **Uma IDE só conta como instalada pelo arquivo de ponte dela**, não por um arquivo seu que cite
+  o OpenCrew. Texto antigo das pontes (instalações até a 1.2.2) é retirado, com cópia, quando
+  está idêntico ao que o OpenCrew gravou.
 - **Versão mais nova instalada?** O `update` não volta para uma versão mais antiga (cache do
   `npx`): ele para e pede `npx @aksp/opencrew@latest update`.
 
@@ -284,6 +294,8 @@ npx @aksp/opencrew@latest init --repair-bridges --all              # as 9 IDEs
 Sem `--ide` e sem `--all`, o `init --repair-bridges` usa a mesma detecção do `update` (aqui o
 `--yes` não escolhe IDE); se não encontra nenhuma ponte, para com erro e pede `--ide=<id>`.
 O reparo não instala: numa pasta sem workspace do OpenCrew ele para com erro e pede o `init`.
+Ele também só roda com o pacote na mesma versão do projeto: com outra versão, para sem alterar
+nada e pede o `update`.
 Ponte de arquivo inteiro que você editou (ex.: `.claude/skills/opencrew/SKILL.md`) é copiada
 antes para `.opencrew-backup/<data>/`, e o resumo do `init --repair-bridges` lista cada cópia.
 

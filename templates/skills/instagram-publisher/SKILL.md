@@ -74,6 +74,10 @@ and is **never** retried automatically.
 
 - Images: JPEG only (`.jpg`/`.jpeg`), 2-10 per carousel, inside `crews/*/output/` — the
   script refuses anything else before uploading
+- File names: the image paths and the caption file follow the safe-name rule (nome seguro) of
+  `_opencrew/core/runner.pipeline.md` — letters, digits, space and `. _ - / \ : ( )`. With any
+  other character (a comma included: it splits the `--images` list) do not run the command: ask
+  the user to rename the file
 - Images are hosted on imgBB for 24h only (enough for Instagram to fetch them)
 - Caption: max 2200 characters
 - Requires Instagram Business account (not Personal or Creator)

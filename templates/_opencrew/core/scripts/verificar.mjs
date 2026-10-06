@@ -11,10 +11,11 @@
 // obrigatória faltando, pasta sem `_opencrew/`, crew inexistente, crew ou caminho fora do
 // projeto, nenhum caminho da lista existe) ou erro que impediu a verificação inteira; com
 // código 1 não há linha VERIFICACAO:.
-// Specs: fase-u1-revisor-com-dentes.md e fase-r1-reparos-1-6-1.md (repositório do OpenCrew).
+// Specs: fase-u1-revisor-com-dentes.md, fase-r1-reparos-1-6-1.md e fase-r2-update-e-envio-seguros.md
+// (regra 23: "dentro do projeto" pelo texto ou pelo lugar real), no repositório do OpenCrew.
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { erroDeUso, ehPrincipal } from './comum.mjs';
+import { erroDeUso, ehPrincipal, relativoAoProjeto } from './comum.mjs';
 import { USO, lerArgs, lerItemDaLista } from './verificar/argumentos.mjs';
 import { lerItem } from './verificar/arquivos.mjs';
 import { lerLimites, lerDominioDoSite, semFrontmatter } from './verificar/leitura.mjs';
@@ -102,9 +103,11 @@ function semRepetidas(raiz, entradas) {
   });
 }
 
-/** Caminho absoluto de dentro do projeto aparece no relatório como o relativo. */
+/** No relatório, o absoluto de dentro do projeto (também por link, junção ou nome curto) sai como o relativo. */
 function nomeNoRelatorio(raiz, arquivo) {
-  return path.isAbsolute(arquivo) ? path.relative(raiz, arquivo).split(path.sep).join('/') : arquivo;
+  const relativo = relativoAoProjeto(raiz, arquivo);
+  const comoEscrito = !path.isAbsolute(arquivo) && path.resolve(raiz, relativo) === path.resolve(raiz, arquivo);
+  return comoEscrito ? arquivo : relativo;
 }
 
 function resumir(arquivos, naoTexto, notas) {

@@ -31,7 +31,7 @@ docs/auditoria/        audit reports (finding → phase → guard)
 scripts/               verify.js (the gate), check-size.js, version stamping
 tests/                 test suite (node:test, zero deps)
 sandbox/               your local dogfood workspace (gitignored, create it yourself)
-.github/workflows/     CI (Ubuntu + Windows, Node 20/22) + npm publish
+.github/workflows/     CI (Ubuntu + Windows, Node 20.17/22) + npm publish
 ```
 
 ## Golden rules
@@ -79,9 +79,11 @@ development rules.
    `templates/_opencrew/.opencrew-version` to match automatically; CI
    (`scripts/check-version-sync.js`) fails the build if the two ever drift apart.
 3. `git push --tags` — this is what actually triggers `publish.yml` (it fires on
-   `push: tags: v'*'`; `npm version` above already created the tag locally). CI checks
-   the tag against `package.json`, runs `npm run verify`, then `npm publish`. You normally don't need to run `npm publish`
-   by hand.
+   `push: tags: v'*'`; `npm version` above already created the tag locally). Push `main`
+   first and wait for CI to be green: the publish workflow runs the same CI matrix (Ubuntu and
+   Windows, Node 20.17 and 22, plus `npm audit`) before publishing, and nothing is published if
+   one cell fails. It then checks the tag against `package.json` and runs `npm publish`. A manual
+   run (`workflow_dispatch`) is a rehearsal by default (`dry_run`): it does not publish.
 
 ## Forking
 

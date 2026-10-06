@@ -50,7 +50,7 @@ Transform markdown content into a PDF file using Playwright (already available i
 4. Write the HTML to a temporary file: `crews/{crew-name}/output/{run_id}/export/temp.html`
 5. Use Playwright to render the HTML as PDF:
    ```bash
-   npx playwright open --viewport=1240,1754 crews/{crew-name}/output/{run_id}/export/temp.html
+   npx playwright open --viewport=1240,1754 "crews/{crew-name}/output/{run_id}/export/temp.html"
    ```
    Then use the print-to-PDF functionality.
 6. Save the PDF to the step's `outputFile` path

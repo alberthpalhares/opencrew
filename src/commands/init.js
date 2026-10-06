@@ -1,17 +1,19 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { exists, writeFileSafe, readJson, writeBridgeFile } from '../lib/fsx.js';
-import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest } from '../lib/manifest.js';
+import { exists, readJson } from '../lib/fsx.js';
+import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest, manifestUnreadable, UNREADABLE } from '../lib/manifest.js';
+import { deliverBlock, deliverBridges } from '../lib/blocos.js';
+import { createMcp } from '../lib/mcp.js';
 import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
 import { pickIdes as promptIdes } from '../lib/prompts.js';
 import { UsageError } from '../lib/errors.js';
-import { repairIdeIds, backupSummary, recordRepair, NO_BRIDGES_FOUND, NO_WORKSPACE } from '../lib/migrations.js';
+import { withoutLegacy, legacyLines } from '../lib/legado.js';
+import { repairIdeIds, repairVersionGuard, backupSummary, recordRepair, NO_BRIDGES_FOUND, NO_WORKSPACE } from '../lib/migrations.js';
+import { ALREADY_INSTALLED } from '../lib/resumo.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 const STAMP = path.join('_opencrew', '.opencrew-version');
-// .gitignore / .env.example belong to the user: opencrew only owns a marked block at the end.
-const SHARED_BLOCK = { comment: 'hash', position: 'append' };
 
 /**
  * @param {object} opts  parsed CLI options
@@ -28,9 +30,8 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   if (state === 'complete') {
     warn('An opencrew workspace already exists here.');
-    info(`To update only the framework, use: ${c.cyan('npx @aksp/opencrew@latest update')}`);
+    info(ALREADY_INSTALLED); // R2 rule 15: never tells the user to delete _opencrew/
     info(`To repair IDE bridges, use: ${c.cyan('npx @aksp/opencrew@latest init --repair-bridges')}`);
-    info(`To reinstall from scratch, delete _opencrew/ first, then run init again.`);
     return;
   }
 
@@ -56,23 +57,22 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   await deliverFile(ctx, path.join(target, '_opencrew', 'core', 'system.md'), await tpl('AGENTS.md'), { overwrite: true });
   ok('_opencrew/core/system.md (full system definition)');
 
-  const agentsResult = await writeBridgeFile(path.join(target, 'AGENTS.md'), AGENTS_BRIDGE);
-  if (agentsResult.merged) info('AGENTS.md (merged — existing content preserved)');
+  const agents = await deliverBlock(ctx, 'AGENTS.md', AGENTS_BRIDGE);
+  if (agents.action === 'added') info('AGENTS.md (merged — existing content preserved)');
   else ok('AGENTS.md (bridge to system.md)');
 
-  const mcpWritten = await writeFileSafe(path.join(target, '.mcp.json'), await tpl('.mcp.json'), {
-    overwrite: false,
-  });
-  info(mcpWritten ? '.mcp.json' : '.mcp.json (kept existing)');
+  // Created here → recorded in the manifest as delivered; the user's own file is kept as it is.
+  info((await createMcp(ctx, await tpl('.mcp.json'))) ? '.mcp.json' : '.mcp.json (kept existing)');
 
+  // .gitignore / .env.example belong to the user: opencrew only owns a marked block at the end.
   for (const [file, template] of [['.env.example', '.env.example'], ['.gitignore', 'gitignore']]) {
-    const res = await writeBridgeFile(path.join(target, file), await tpl(template), SHARED_BLOCK);
-    info(res.merged ? `${file} (opencrew block added at the end — your lines kept)` : file);
+    const res = await deliverBlock(ctx, file, await tpl(template));
+    info(res.action === 'added' ? `${file} (opencrew block added at the end — your lines kept)` : file);
   }
 
   // 3. IDE bridge files.
   step('Configuring AI IDEs');
-  await writeBridges(target, ids, { overwrite: false, ctx });
+  await writeBridges(ctx, ids, false);
 
   if (ids.includes('claude-code')) {
     warn(`opencrew ships its own Playwright MCP server (.mcp.json) — disable Claude Code's`);
@@ -83,6 +83,7 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   // version stamp LAST: it is what marks the install as complete.
   await writeManifest(target, version, ctx.files);
   await fs.writeFile(path.join(target, STAMP), version + '\n');
+  reportBackups(ctx); // a reinstall over blocks the user edited copies those files first
 
   // 5. Done.
   log(`\n${c.green(c.bold('Done!'))} opencrew is installed.\n`);
@@ -95,20 +96,30 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 /**
  * --repair-bridges: rewrite IDE bridge files in an existing workspace. --ide wins (even next
  * to --all); --all alone means every IDE; otherwise only the IDEs `update` would detect.
+ * Only with the package at the version of the workspace (R2 rule 6), whatever the options.
  */
 async function repairBridges(target, version, opts) {
+  const otherVersion = await repairVersionGuard(target, version);
+  if (otherVersion) throw new Error(otherVersion); // before any write; exit 1, no usage hint
   const ids = await resolveIdes({ ide: opts.ide }, () => repairIdeIds(target, opts));
   if (!ids.length) throw new UsageError(NO_BRIDGES_FOUND); // before the first write
   log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — repairing IDE bridges`);
   log(c.dim(`Target: ${target}\n`));
   const ctx = newDelivery(target, await readManifest(target));
-  await writeBridges(target, ids, { overwrite: true, ctx });
-  await recordRepair(ctx, version); // only where a manifest already exists
+  await withoutLegacy(ctx, ids.map(ideById), () => writeBridges(ctx, ids, true)); // R2 rule 3
+  for (const line of legacyLines(ctx)) warn(line);
+  if (await manifestUnreadable(target)) warn(UNREADABLE.repair); // R2 rule 12: copied as with none
+  await recordRepair(ctx, version); // only where a manifest already exists (and can be read)
+  reportBackups(ctx);
+  log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
+  log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
+}
+
+/** Say where the backup copies of this run are (nothing when none was made). */
+function reportBackups(ctx) {
   const [copied, ...copies] = backupSummary(ctx);
   if (copied) warn(copied);
   for (const copy of copies) log(copy);
-  log(`\n${c.green(c.bold('Done!'))} IDE bridges regenerated.\n`);
-  log(`${c.bold('Next step:')} Restart your IDE, then type ${c.cyan('/opencrew')} to verify.\n`);
 }
 
 /**
@@ -155,31 +166,17 @@ async function resolveIdes(opts, fallback) {
 }
 
 /**
- * Write IDE bridge files to the target directory.
- * @param {string} target — project root
- * @param {string[]} ids — validated IDE ids to configure
- * @param {{ overwrite: boolean }} opts
+ * Write the bridge files of the IDEs `ids` (validated) and say what happened to each.
+ * `overwrite`: replace a whole-file bridge that differs (repair) or keep it (init).
  */
-async function writeBridges(target, ids, { overwrite, ctx }) {
-  const writtenPaths = new Set();
-
-  for (const id of ids) {
-    const ide = ideById(id);
-    for (const f of ide.files) {
-      if (writtenPaths.has(f.path)) {
-        info(`${f.path} (shared path — written once)`);
-        continue;
-      }
-      writtenPaths.add(f.path);
-      const fp = path.join(target, f.path);
-      const hasFrontmatter = f.content.startsWith('---');
-      if (hasFrontmatter) {
-        await deliverFile(ctx, fp, f.content, { overwrite });
-      } else {
-        const result = await writeBridgeFile(fp, f.content);
-        if (result.merged) info(`${f.path} (merged — existing content preserved)`);
-        else if (result.written && overwrite) info(`${f.path} (regenerated)`);
-      }
+async function writeBridges(ctx, ids, overwrite) {
+  const ides = ids.map(ideById);
+  const written = await deliverBridges(ctx, ides, { overwrite });
+  for (const ide of ides) {
+    for (const f of written.filter((w) => w.ide === ide)) {
+      if (f.shared) info(`${f.file} (shared path — written once)`);
+      else if (f.action === 'added') info(`${f.file} (merged — existing content preserved)`);
+      else if (f.block && f.action !== 'kept' && overwrite) info(`${f.file} (regenerated)`);
     }
     ok(`${ide.label} → ${ide.files.map((f) => f.path).join(', ')}`);
   }

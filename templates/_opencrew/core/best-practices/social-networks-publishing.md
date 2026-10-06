@@ -11,7 +11,7 @@ version: "1.0.0"
 ## Compact Rules
 
 1. Never publish live content without explicit user confirmation.
-2. Always execute and report a successful dry-run before offering the live publish option.
+2. With `instagram-publisher`, execute and report a successful dry-run before offering the live publish option; `blotato` has no dry-run: send nothing to it, not even media, before the user answers with the word `publicar`.
 3. Validate all platform-specific constraints (image format, caption length) before API calls.
 4. Adapt and format content natively for each target platform; do not cross-post raw text.
 5. Report publishing results immediately, including success (with URL) or failure details.
@@ -19,7 +19,7 @@ version: "1.0.0"
 7. Track API usage and proactively warn users if approaching rate limits.
 8. Fall back gracefully if a required publishing skill is missing; list available alternatives.
 9. Inform the user and seek permission before converting image formats (e.g., PNG to JPEG).
-10. Display a structured preview (platform, images, caption, hashtags, validations) before dry-run.
+10. Display a structured preview (platform, images, caption, hashtags, validations) before anything is sent (the `instagram-publisher` dry-run included).
 11. Do not silently truncate captions; ask the user to shorten them if limits are exceeded.
 12. Request user direction (continue or abort) if one platform fails in a multi-platform batch.
 
@@ -29,9 +29,9 @@ version: "1.0.0"
 
 ## Core Principles
 
-1. **Never publish without explicit user confirmation.** This is the cardinal rule. Before any live post, present the full preview (platform, images, caption, hashtags) and wait for the user to confirm. A dry-run is not confirmation. The user must explicitly say "publish" or "go ahead" before any live API call is made.
+1. **Never publish without explicit user confirmation.** This is the cardinal rule. Before any live post, present the full preview (platform, images, caption, hashtags) and wait for the user to confirm. A dry-run is not confirmation. The user must answer with the confirmation word the publishing skill asks for (e.g. `publicar`) before any live API call is made; any other answer means do not publish.
 
-2. **Dry-run first, always.** The first execution of any publishing workflow must be a dry-run (test mode). This validates that credentials are configured, images meet requirements, captions are within limits, and the API connection works. Only after a successful dry-run should the user be offered the option to publish for real.
+2. **Dry-run first, where the skill has one (`instagram-publisher`).** There, the first execution of the publishing workflow must be a dry-run (test mode). This validates that credentials are configured, images meet requirements, captions are within limits, and the API connection works. Only after a successful dry-run should the user be offered the option to publish for real. `blotato` has no dry-run: send nothing to it, not even media, before the user answers with the word `publicar` — its upload is part of the publication.
 
 3. **Validate platform requirements before attempting to publish.** Every platform has specific constraints. Validate all of them before making any API call. If validation fails, report the specific issue and suggest a fix before proceeding.
 
@@ -107,12 +107,12 @@ Every platform has specific constraints that must be validated before making any
    Status: All validations passed
    ```
 
-5. **Execute dry-run.** Run the publishing workflow in test mode:
+5. **Execute dry-run (`instagram-publisher` only).** Run the publishing workflow in test mode:
    - Instagram: `--dry-run` flag on the publish script
-   - Blotato: validate API connection and media upload without posting
-   - Report dry-run results: credentials OK, media uploaded, container created, ready to publish.
+   - Blotato: no dry-run. Skip this step: nothing is uploaded or sent before the confirmation word (step 6)
+   - Report the `instagram-publisher` dry-run results: credentials OK, media uploaded, container created, ready to publish.
 
-6. **Request final confirmation.** Present the dry-run results and ask the user to confirm the live publish. Do not proceed without explicit approval.
+6. **Request final confirmation.** Present the dry-run results (Blotato: the preview) and ask for the skill's confirmation word. Do not proceed without it.
 
 7. **Publish and report.** Execute the live publish. Report the result immediately:
    - Success: post URL, post ID, platform, timestamp
@@ -130,7 +130,7 @@ Every platform has specific constraints that must be validated before making any
 ## Quality Criteria
 
 - [ ] User confirmation was received before any live publish (not just dry-run)
-- [ ] Dry-run was executed and passed before live publish
+- [ ] Dry-run was executed and passed before live publish (`instagram-publisher`); nothing was sent to Blotato before the confirmation word
 - [ ] All platform-specific validations passed (image format, dimensions, caption length, image count)
 - [ ] Publish preview was presented with complete details (platform, images, caption, validation status)
 - [ ] Successful publishes include post URL/permalink and post ID
@@ -213,7 +213,7 @@ Skill:   blotato (multi-platform)
 
 PLATFORM 1/3: Instagram
   Validation: All checks passed
-  Dry-run:    Passed
+  Preview:    Confirmed with the word "publicar"
   Publish:    Published successfully
   Post URL:   https://www.instagram.com/p/DEF456abc/
   Post ID:    ig_17899506834567890
@@ -221,7 +221,7 @@ PLATFORM 1/3: Instagram
 
 PLATFORM 2/3: LinkedIn
   Validation: All checks passed
-  Dry-run:    Passed
+  Preview:    Confirmed with the word "publicar"
   Publish:    FAILED
   Error:      403 Forbidden — "Publishing permission not granted"
   HTTP Status: 403
@@ -245,7 +245,7 @@ PLATFORM 3/3: X/Twitter
   [User chooses: b, provides short caption]
 
   Validation: All checks passed (short caption: 142 chars)
-  Dry-run:    Passed
+  Preview:    Confirmed with the word "publicar"
   Publish:    Published successfully
   Post URL:   https://x.com/brandname/status/1234567890123456789
   Post ID:    tw_1234567890123456789
@@ -276,7 +276,7 @@ SUMMARY
 
 5. **Never report success without a URL.** "Published successfully" without a post URL is not verifiable. Every successful publish must include the post permalink. If the API does not return a URL, report that as a limitation.
 
-6. **Never assume credentials are valid.** Always verify credentials during the dry-run phase. Tokens expire, permissions get revoked, accounts get disconnected. A credential check is part of every publish workflow.
+6. **Never assume credentials are valid.** Always verify credentials before publishing (the dry-run with `instagram-publisher`; listing the accounts, read-only, with `blotato`). Tokens expire, permissions get revoked, accounts get disconnected. A credential check is part of every publish workflow.
 
 7. **Never publish the same raw caption across all platforms without adaptation.** Instagram, LinkedIn, and X/Twitter have different formatting conventions, character limits, and audience expectations. At minimum, verify the caption fits the platform constraints. Ideally, suggest platform-specific adaptations.
 
@@ -284,7 +284,7 @@ SUMMARY
 
 1. **Present a structured preview before every publish.** Show: platform, account, images (with dimensions and format), caption (with character count), hashtags, and validation status. The user must see exactly what will be published.
 
-2. **Run a dry-run before every live publish.** Test the full workflow without posting. Verify credentials, upload media, create containers, validate everything. Report dry-run results before requesting confirmation.
+2. **Run a dry-run before every live publish with `instagram-publisher`.** Test the full workflow without posting. Verify credentials, upload media, create containers, validate everything. Report dry-run results before requesting confirmation. With `blotato` there is no dry-run: the preview and the confirmation word come before any upload.
 
 3. **Report results immediately after each publish.** Do not batch results. After each platform publish (success or failure), report the outcome with all relevant details before moving to the next platform.
 

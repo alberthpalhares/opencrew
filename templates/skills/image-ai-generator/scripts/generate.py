@@ -4,14 +4,16 @@ Image Generator — opencrew Skill
 Generates images via Openrouter API using AI image models.
 
 Usage:
-  # Single image
-  python3 generate.py --prompt "description" --output "path/to/image.jpg" --mode test
+  # Single image (the prompt is read from a UTF-8 text file, never typed in the command)
+  python3 generate.py --prompt-file "path/to/prompt.txt" --output "path/to/image.jpg" --mode test
 
   # Single image with reference (logo/mascot)
-  python3 generate.py --prompt "description" --output "path/to/image.jpg" --reference "path/to/logo.png" --mode production
+  python3 generate.py --prompt-file "path/to/prompt.txt" --output "path/to/image.jpg" --reference "path/to/logo.png" --mode production
 
-  # Batch (JSON file with list of {prompt, output} objects)
+  # Batch (UTF-8 JSON file with list of {prompt, output} objects)
   python3 generate.py --batch "path/to/batch.json" --mode production
+
+--prompt "text" is still accepted (legacy): the shell may rewrite $, quotes and backticks in it.
 """
 
 import argparse
@@ -30,6 +32,42 @@ MODELS = {
 }
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+
+def fail(message):
+    """Tell the user what went wrong and exit with code 1, without a traceback."""
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def read_prompt_file(path):
+    """Read the prompt from a UTF-8 text file (BOM accepted); it never goes through the shell."""
+    if not os.path.isfile(path):
+        fail(f"Arquivo de prompt não encontrado: {path}")
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            prompt = f.read().strip()
+    except (OSError, ValueError) as e:
+        fail(f"Não consegui ler o arquivo de prompt {path}: {e}. Grave o arquivo em UTF-8.")
+    if not prompt:
+        fail(f"O arquivo de prompt está vazio: {path}")
+    return prompt
+
+
+def read_batch(path):
+    """Read the batch list from a UTF-8 JSON file (BOM accepted)."""
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            batch = json.load(f)
+    except (OSError, ValueError) as e:
+        fail(f"Não consegui ler o lote {path}: {e}. Grave o arquivo em UTF-8.")
+    ok = isinstance(batch, list) and all(
+        isinstance(i, dict) and all(isinstance(i.get(k), str) and i[k].strip() for k in ("prompt", "output"))
+        for i in batch
+    )
+    if not ok:
+        fail(f'O lote {path} tem de ser uma lista de itens com "prompt" e "output". Nada foi gerado.')
+    return batch
 
 
 def load_api_key():
@@ -130,7 +168,8 @@ def generate_image(prompt, output_path, mode, api_key, reference_image=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate images via Openrouter API")
-    parser.add_argument("--prompt", help="Text prompt for single image generation")
+    parser.add_argument("--prompt-file", help="UTF-8 text file with the prompt for single image generation")
+    parser.add_argument("--prompt", help="Legacy: prompt typed in the command (use --prompt-file)")
     parser.add_argument("--output", help="Output file path for single image")
     parser.add_argument("--batch", help="Path to JSON batch file")
     parser.add_argument("--mode", choices=["test", "production"], default="test",
@@ -138,8 +177,13 @@ def main():
     parser.add_argument("--reference", help="Path to reference image to include in the prompt")
     args = parser.parse_args()
 
-    if not args.prompt and not args.batch:
-        parser.error("Either --prompt or --batch is required")
+    if args.prompt_file and args.batch:
+        fail("Use só um: --prompt-file ou --batch.")
+    if not (args.prompt_file or args.prompt or args.batch):
+        parser.error("Either --prompt-file or --batch is required")
+    # The input files are read first: a bad file stops here, before the key and any API call.
+    items = read_batch(args.batch) if args.batch else None
+    prompt = read_prompt_file(args.prompt_file) if args.prompt_file else args.prompt
 
     api_key = load_api_key()
     model = MODELS[args.mode]
@@ -147,8 +191,6 @@ def main():
 
     if args.batch:
         # Batch mode
-        with open(args.batch, "r") as f:
-            items = json.load(f)
         print(f"Generating {len(items)} images...\n")
         success = 0
         for i, item in enumerate(items, 1):
@@ -167,7 +209,7 @@ def main():
         if not args.output:
             parser.error("--output is required for single image generation")
         print(f"Generating: {os.path.basename(args.output)}...")
-        ok = generate_image(args.prompt, args.output, args.mode, api_key, reference_image=args.reference)
+        ok = generate_image(prompt, args.output, args.mode, api_key, reference_image=args.reference)
         sys.exit(0 if ok else 1)
 
 

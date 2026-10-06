@@ -14,6 +14,7 @@ Every opencrew skill consists of a `SKILL.md` file with YAML frontmatter and a M
 | `version` | Yes | Semver version string (e.g., `1.0.0`) |
 | `categories` | No | Classification tags array (e.g., `["social-media", "content"]`) |
 | `env` | No | Required environment variable names array |
+| `side_effects` | No | `irreversible` for a skill that publishes or sends (a post, an e-mail). Its body must then show a preview, wait for a confirmation word and make one single call, never repeated after a failure. A skill that only costs money does not use it |
 
 ### Type: mcp
 

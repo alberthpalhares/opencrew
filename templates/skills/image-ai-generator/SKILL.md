@@ -15,7 +15,7 @@ version: "1.0.0"
 script:
   path: scripts/generate.py
   runtime: python
-  invoke: "python3 {skill_path}/scripts/generate.py --prompt \"{prompt}\" --output \"{output}\" --mode \"{mode}\""
+  invoke: "python3 {skill_path}/scripts/generate.py --prompt-file \"{prompt_file}\" --output \"{output}\" --mode \"{mode}\""
 env:
   - OPENROUTER_API_KEY
 categories: [assets, images, ai, generation]
@@ -56,11 +56,22 @@ Use the Image Generator when you need to create visual assets from text prompts.
 `python3` (macOS/Linux). **On Windows** use `py -3` instead (or `python` if the `py` launcher is
 not installed).
 
+**The prompt goes in a file.** Write it with your file-writing tool, in UTF-8, next to the image
+(`crews/{crew}/output/{run_id}/assets/image-name.prompt.txt`). Never put the prompt inside a shell
+command: write it to a file and pass `--prompt-file`. The shell rewrites `$`, quotes and backticks
+in a typed text (a price like "R$50" reaches the model wrong, and the image is still charged). The
+old `--prompt` option is still accepted, for crews created before; do not use it.
+
+**File names.** Every path in the command (`--prompt-file`, `--output`, `--reference`, `--batch`)
+follows the safe-name rule (nome seguro) of `_opencrew/core/runner.pipeline.md` — letters, digits,
+space and `. _ - / \ : ( )`, between double quotes. With any other character do not run the
+command: ask the user to rename the file.
+
 ### Single image generation
 
 ```bash
 python3 {skill_path}/scripts/generate.py \
-  --prompt "A detailed description of the image to generate" \
+  --prompt-file "crews/{crew}/output/{run_id}/assets/image-name.prompt.txt" \
   --output "crews/{crew}/output/{run_id}/assets/image-name.jpg" \
   --mode test
 ```
@@ -71,7 +82,7 @@ Use `--reference` to send a local image to the model as visual context. The mode
 
 ```bash
 python3 {skill_path}/scripts/generate.py \
-  --prompt "A social media banner featuring the company logo prominently in the center" \
+  --prompt-file "crews/{crew}/output/{run_id}/assets/banner.prompt.txt" \
   --output "crews/{crew}/output/{run_id}/assets/banner.jpg" \
   --reference "crews/{crew}/assets/logo.png" \
   --mode production
@@ -87,7 +98,8 @@ python3 {skill_path}/scripts/generate.py \
   --mode production
 ```
 
-The batch JSON file should contain:
+Write the batch JSON file with your file-writing tool, in UTF-8 (the prompts inside it never go
+through the shell). It should contain:
 ```json
 [
   {"prompt": "Description of image 1", "output": "path/to/image1.jpg"},
@@ -115,13 +127,14 @@ Each item can optionally include a `"reference": "path/to/ref.png"` field.
 
 ## Available operations
 
-- **Single generation** — Generate one image from a text prompt
+- **Single generation** — Generate one image from a text prompt saved in a file
 - **Batch generation** — Generate multiple images from a JSON batch file
 - **Mode selection** — Choose between test (cheap) and production (high-quality) models
 - **Reference image** — Send a logo/mascot/brand asset as visual context for the generation
 
 ## Error handling
 
+- If the prompt file is missing or empty, or the batch file cannot be read (not UTF-8, invalid JSON), the script says so in one line and exits with code 1. Show the message to the user; nothing was generated or charged.
 - If `OPENROUTER_API_KEY` is not set, the script exits with an error message. Set it in your `.env` file or environment.
 - If the API returns an error, the script prints the error code and body, then exits with code 1.
 - If no image is found in the API response, the script reports which model was used and exits with code 1.

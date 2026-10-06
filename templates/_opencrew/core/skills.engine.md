@@ -54,6 +54,7 @@ Frontmatter fields:
   - `dependencies`: Array of npm/pip packages to install
 - `env` (array): List of required environment variable names
 - `categories` (array): Classification tags (e.g., scraping, design, analytics)
+- `side_effects` (string, optional): `irreversible` for a skill that publishes or sends — read by Operation 6
 
 Body: Markdown instructions injected into agent context at runtime.
 
@@ -382,7 +383,7 @@ For each skill declared in an agent's `.agent.md` frontmatter `skills:` field:
 1. **Skip native skills**: `web_search` and `web_fetch` do not need instruction injection —
    they are handled natively.
 
-2. **Read each skill's SKILL.md** frontmatter only: Extract `name`, `description`, and `type` fields.
+2. **Read each skill's SKILL.md** frontmatter only: Extract `name`, `description`, `type` and `side_effects` fields.
 
 3. **Build the Tier 1 index** and append after all agent instructions:
    ```
@@ -394,8 +395,9 @@ For each skill declared in an agent's `.agent.md` frontmatter `skills:` field:
    you are invoking and the system will load its full instructions.
 
    - {skill-id}: {description from frontmatter} (type: {type})
-   - {skill-id}: {description from frontmatter} (type: {type})
+   - {skill-id}: {description from frontmatter} (type: {type}) — irreversível: carregue as instruções desta skill e peça a confirmação antes de usar
    ```
+   The second form is for every skill with `side_effects: irreversible`.
 
 4. **Tier 2 loading** — When the step's instructions explicitly reference a skill
    (e.g., the step file says "use image-creator to render the slides"), OR when the
@@ -412,7 +414,9 @@ For each skill declared in an agent's `.agent.md` frontmatter `skills:` field:
 5. **Step-level skill hints**: If the step's frontmatter contains a `skills_needed:` field
    (e.g., `skills_needed: [image-creator]`), load Tier 2 for those skills immediately
    without waiting for the agent to request them. This allows the Architect to pre-declare
-   which skills a step will need.
+   which skills a step will need. A skill with `side_effects: irreversible` always gets Tier 2
+   before its first use, even when no step names it: an MCP tool can be called without the body,
+   and the confirmation rules live there.
 
 6. **Missing skill handling**: If a skill listed in an agent's frontmatter was not resolved
    during Operation 5, skip it silently — the user was already warned during resolution.

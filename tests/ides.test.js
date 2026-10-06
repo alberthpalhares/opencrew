@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { IDES, ideById, allIdeIds } from '../src/lib/ides.js';
+import { USER_FILE_TITLES } from '../src/lib/deteccao.js';
 
 test('every IDE has a unique id and at least one non-empty, relative bridge file', () => {
   const ids = IDES.map((i) => i.id);
@@ -115,4 +116,23 @@ test('F1-01a: bridge content carries no maintainer-only workflow (STATUS.md, /st
 test('F1-01b: templates/gitignore carries no maintainer-only entries', async () => {
   const gi = await readFile(new URL('../templates/gitignore', import.meta.url), 'utf8');
   assert.doesNotMatch(gi, /STATUS\.md/);
+});
+
+// spec R2, rule 1: the detection of the installed IDEs tells an instruction file OpenCrew
+// shares with the user by its path (no "opencrew" in it) and by the title generated in it
+// since 1.0.0. Both are written out here: a path or a title changed in ides.js would hide,
+// without any other test failing, the installs made by the versions that wrote the old one.
+const TITULOS_GERADOS = {
+  'CLAUDE.md': '# opencrew — Project Instructions',
+  '.github/copilot-instructions.md': '# opencrew — Copilot Instructions',
+  'GEMINI.md': '# opencrew — Gemini CLI',
+  'QWEN.md': '# opencrew — Qwen Code',
+};
+
+test('R2-01d: the 4 paths shared with the user and the 4 generated titles are the ones written out here', () => {
+  const divididos = IDES.flatMap((ide) => ide.files).filter((f) => !f.path.includes('opencrew'));
+  const gerados = Object.fromEntries(divididos.map((f) => [f.path, f.content.split('\n')[0]]));
+  assert.deepEqual(gerados, TITULOS_GERADOS, 'what src/lib/ides.js generates today');
+  assert.equal(divididos.length, 4, 'each of the 4 paths belongs to one IDE');
+  assert.deepEqual({ ...USER_FILE_TITLES }, TITULOS_GERADOS, 'what the detection has fixed in the code');
 });

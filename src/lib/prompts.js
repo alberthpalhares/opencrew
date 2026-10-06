@@ -3,7 +3,30 @@
 import { IDES, allIdeIds } from './ides.js';
 import { warn } from './ui.js';
 
-export async function pickIdes({ preselected } = {}) {
+const loadCheckbox = () => import('@inquirer/checkbox');
+
+/**
+ * Load the list's library. Only the import is guarded (spec R2, rule 28): on a Node where it
+ * does not load, the user gets the way out; Ctrl+C on the open list still passes through.
+ */
+async function openIdeList(load) {
+  try {
+    return await load();
+  } catch (e) {
+    throw new Error(
+      `Não consegui abrir a lista de IDEs neste Node (v${process.versions.node}).\n`
+      + 'Atualize o Node em https://nodejs.org/ ou escolha as IDEs no próprio comando: '
+      + 'npx @aksp/opencrew init --ide=claude-code (ou --all para todas). Nada foi alterado nesta pasta.',
+      { cause: e },
+    );
+  }
+}
+
+/**
+ * @param {{ preselected?: string[] }} [opts]
+ * @param {{ load?: () => Promise<object> }} [deps]  injectable for tests
+ */
+export async function pickIdes({ preselected } = {}, { load = loadCheckbox } = {}) {
   const validIds = new Set(allIdeIds());
   const isTTY = process.stdin.isTTY && process.stdout.isTTY;
 
@@ -23,7 +46,7 @@ export async function pickIdes({ preselected } = {}) {
     warn(`Non-interactive terminal — configuring IDEs: ${chosen.join(', ')}`);
     return chosen;
   }
-  const { default: checkbox, Separator } = await import('@inquirer/checkbox');
+  const { default: checkbox, Separator } = await openIdeList(load);
   const answer = await checkbox({
     message: 'Which AI IDEs do you use? (space to toggle, enter to confirm)',
     instructions: false,

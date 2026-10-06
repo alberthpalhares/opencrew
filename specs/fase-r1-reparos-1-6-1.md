@@ -874,3 +874,5 @@ primeiro teste de 200 mil caracteres.
 - Não há Node 20 na máquina de desenvolvimento: a prova no Node 20 de verdade é o CI. Com a
   correção, o CI ficou verde nas quatro células, com 464 testes em cada uma; o pior teste de
   200 mil caracteres levou 442 ms no Ubuntu e 890 ms no Windows com Node 20 (limite: 2.000 ms).
+
+**Depois desta fase (2026-10-06).** Os itens "→ R2" da §11, da §12 e desta seção foram tratados em `specs/fase-r2-update-e-envio-seguros.md` (1.6.3). Os dois limites da §7 (links e caminho de rede) foram corrigidos lá: o `--corrigir` não grava fora da crew, e caminho de rede citado vira alerta "não conferido", sem tocar a rede. O Node mínimo do CLI passou a 20.17; os scripts do payload seguem só com APIs do Node 20.0.

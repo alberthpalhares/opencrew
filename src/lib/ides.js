@@ -56,6 +56,10 @@ export const AGENTS_BRIDGE = `# opencrew\n\n${ACTIVATION}\n\nType \`/opencrew\` 
 // Marker that identifies the maintainer STATUS.md section leaked into CLAUDE.md by 1.4.0/1.4.1.
 export const LEAKED_STATUS_SECTION = '## STATUS.md (gestão de sessão)';
 
+// The title of CLAUDE.md, GEMINI.md, QWEN.md and copilot-instructions.md (files shared with
+// the user) is how `update` recognizes a bridge written up to 1.2.2, which has no marker. The
+// four titles are fixed in ./deteccao.js and pinned by R2-01d (tests/ides.test.js): to change
+// one here, keep the old one there.
 const render = (title, extra = '') =>
   `# ${title}\n\n${BRIDGE}${extra ? `\n\n${extra}` : ''}\n`;
 

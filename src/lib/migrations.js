@@ -1,11 +1,14 @@
 // What `update` does beyond refreshing _opencrew/core and the catalog skills, so that every
-// improvement reaches people who already use OpenCrew (AGENTS.md rule 14). The IDE detection
-// is shared with `init --repair-bridges`, whose helpers live here too.
+// improvement reaches people who already use OpenCrew (AGENTS.md rule 14). The helpers of
+// `init --repair-bridges` live here too, with the version guard the two commands share.
+// The IDE detection itself is in ./deteccao.js.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { exists, writeBridgeFile } from './fsx.js';
-import { IDES, allIdeIds } from './ides.js';
-import { deliverFile, writeManifest } from './manifest.js';
+import { exists } from './fsx.js';
+import { allIdeIds } from './ides.js';
+import { writeManifest } from './manifest.js';
+import { copyLine } from './blocos.js';
+import { detectInstalledIdes } from './deteccao.js';
 
 /** Semver compare (no pre-release tags): >0 if a > b, <0 if a < b, 0 if equal. */
 export function compareVersions(a, b) {
@@ -18,33 +21,27 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-const sharedPaths = (() => {
-  const count = new Map();
-  for (const ide of IDES) for (const f of ide.files) count.set(f.path, (count.get(f.path) ?? 0) + 1);
-  return new Set([...count].filter(([, n]) => n > 1).map(([p]) => p));
-})();
-
-async function hasOpencrew(file) {
-  return (await exists(file)) && /opencrew/i.test(await fs.readFile(file, 'utf8'));
+/** Version stamped in the workspace by the last init or update that finished; null = no stamp. */
+export async function installedVersion(target) {
+  const stamp = path.join(target, '_opencrew', '.opencrew-version');
+  return (await exists(stamp)) ? (await fs.readFile(stamp, 'utf8')).trim() : null;
 }
 
+const RUN_UPDATE = 'Nada foi alterado. Rode `npx @aksp/opencrew@latest update`: ele já atualiza as pontes. Para a ponte de uma IDE nova, repita este comando depois.';
+
 /**
- * IDEs installed in `target`, detected by their own bridge files (a path shared by several
- * IDEs only counts for an IDE that has no file of its own — e.g. Codex).
+ * Spec R2, rule 6: `init --repair-bridges` only rewrites with the package at the version
+ * stamped in the workspace. An older package would bring old bridges back; a newer one would
+ * point them to files the project does not have yet. No stamp (interrupted install): it runs.
+ * @returns {Promise<string|null>} the message that stops the repair, or null to go on
  */
-export async function detectInstalledIdes(target) {
-  const found = [];
-  for (const ide of IDES) {
-    const own = ide.files.filter((f) => !sharedPaths.has(f.path));
-    const probes = own.length ? own : ide.files;
-    for (const f of probes) {
-      if (await hasOpencrew(path.join(target, f.path))) {
-        found.push(ide);
-        break;
-      }
-    }
-  }
-  return found;
+export async function repairVersionGuard(target, version) {
+  const installed = await installedVersion(target);
+  const diff = installed ? compareVersions(installed, version) : 0;
+  if (!diff) return null;
+  return diff > 0
+    ? `Você tem a v${installed} instalada e este pacote é a v${version} (mais antigo). ${RUN_UPDATE}`
+    : `Este projeto está na v${installed} e este pacote é a v${version} (mais novo). O reparo não atualiza o projeto. ${RUN_UPDATE}`;
 }
 
 /**
@@ -79,57 +76,35 @@ export function backupSummary(ctx) {
   const dir = path.relative(ctx.target, ctx.backupDir).split(path.sep).join('/');
   return [
     `${ctx.copied.length} cópia(s) de segurança feita(s) antes de regravar:`,
-    ...ctx.copied.map((file) => `    ${dir}/${file}`),
+    ...ctx.copied.map((file) => `    ${copyLine(ctx, file, `${dir}/${file}`)}`),
   ];
 }
 
-/** Rewrite the bridges of the installed IDEs only (frontmatter files whole, others by block). */
-export async function refreshBridges(ctx, ides) {
-  const done = new Set();
-  for (const ide of ides) {
-    for (const f of ide.files) {
-      if (done.has(f.path)) continue;
-      done.add(f.path);
-      const file = path.join(ctx.target, f.path);
-      if (f.content.startsWith('---')) await deliverFile(ctx, file, f.content, { overwrite: true });
-      else await writeBridgeFile(file, f.content);
-    }
-  }
-}
+// The bridges themselves are written by `deliverBridges` (./blocos.js), for init, update and
+// repair; the project's .mcp.json is handled in ./mcp.js.
 
-const OUTPUT_DIR = ['--output-dir', '_opencrew/logs/playwright'];
+// ── What an old OpenSquad install left behind (R2 rule 16): only reported, never touched ──
 
-/**
- * Merge the Playwright server of the template into the project's .mcp.json without touching
- * other servers. @returns 'created' | 'updated' | 'unchanged' | 'invalid'
- */
-export async function mergeMcp(target, templateFile) {
-  const file = path.join(target, '.mcp.json');
-  const template = JSON.parse(await fs.readFile(templateFile, 'utf8'));
-  if (!(await exists(file))) {
-    await fs.writeFile(file, JSON.stringify(template, null, 2) + '\n');
-    return 'created';
-  }
-  let current;
-  try {
-    current = JSON.parse(await fs.readFile(file, 'utf8'));
-  } catch {
-    return 'invalid';
-  }
-  current.mcpServers ??= {};
-  const pw = current.mcpServers.playwright;
-  if (!pw) current.mcpServers.playwright = template.mcpServers.playwright;
-  else if (Array.isArray(pw.args) && !pw.args.includes('--output-dir')) pw.args.push(...OUTPUT_DIR);
-  else return 'unchanged';
-  await fs.writeFile(file, JSON.stringify(current, null, 2) + '\n');
-  return 'updated';
-}
+const OLD_DIR = '_opensquad/';
+// Folders where a `.md` that cites `_opensquad/` is reported, down to two subfolders.
+const LEFTOVER_ROOTS = ['.gemini/skills', '.claude/skills', '.agents/skills', '.agent/workflows', '.agent/rules'];
+// Bridges of the OpenSquad reported by their exact path (checked with `opensquad` 0.1.15).
+const LEFTOVER_BRIDGES = [
+  '.cursor/rules/opensquad.mdc',
+  '.cursor/commands/opensquad.md',
+  '.opencode/commands/opensquad.md',
+  '.qwen/skills/opensquad/SKILL.md',
+  '.trae/rules/opensquad.md',
+  '.github/prompts/opensquad.prompt.md',
+  '.agents/skills/opensquad/SKILL.md',
+];
 
-const LEGACY_ROOTS = ['.gemini/skills', '.claude/skills', '.agents/skills', '.agent/workflows', '.agent/rules'];
+/** A folder `opensquad/` or a file `opensquad.*` in the path: a bridge of the OpenSquad. */
+const namedOpensquad = (file) => file.split('/').some((part, i, parts) => (
+  i < parts.length - 1 ? part === 'opensquad' : part.startsWith('opensquad.')));
 
-/** Old bridges that point to a system no longer installed (e.g. `_opensquad/`). Never deleted. */
-export async function findLegacyBridges(target) {
-  if (await exists(path.join(target, '_opensquad'))) return [];
+/** The `.md` files under `root` (two subfolders deep) that cite `_opensquad/`. */
+async function citingOldDir(target, root) {
   const found = [];
   async function walk(dir, depth) {
     let entries;
@@ -137,11 +112,39 @@ export async function findLegacyBridges(target) {
     for (const e of entries) {
       const p = path.join(dir, e.name);
       if (e.isDirectory() && depth < 2) await walk(p, depth + 1);
-      else if (e.isFile() && e.name.endsWith('.md') && /_opensquad\//.test(await fs.readFile(p, 'utf8'))) {
+      else if (e.isFile() && e.name.endsWith('.md') && (await fs.readFile(p, 'utf8')).includes(OLD_DIR)) {
         found.push(path.relative(target, p).split(path.sep).join('/'));
       }
     }
   }
-  for (const root of LEGACY_ROOTS) await walk(path.join(target, root), 0);
+  await walk(path.join(target, root), 0);
   return found;
+}
+
+/** The file of `_opensquad/` the `playwright` server of .mcp.json points to; null when none. */
+async function oldPlaywrightConfig(target) {
+  let args;
+  try {
+    args = JSON.parse(await fs.readFile(path.join(target, '.mcp.json'), 'utf8')).mcpServers.playwright.args;
+  } catch { return null; }
+  if (!Array.isArray(args)) return null;
+  const values = args.map((a) => String(a)).map((a) => (a.startsWith('--') && a.includes('=') ? a.slice(a.indexOf('=') + 1) : a));
+  return values.find((v) => v.replace(/\\/g, '/').replace(/^\.\//, '').startsWith(OLD_DIR)) ?? null;
+}
+
+/**
+ * Leftovers of an OpenSquad install that is no longer there. With `_opensquad` at the project
+ * root nothing is reported (the system is still installed). Nothing is deleted nor changed.
+ * @returns {Promise<{files: Array<{file:string, bridge:boolean}>, config: string|null}>}
+ *   `files`, sorted by path: `bridge` = recognised by its name; false = it only cites
+ *   `_opensquad/` and may be the user's. `config` = the path of `_opensquad/` (so, missing)
+ *   that the `playwright` server of .mcp.json uses.
+ */
+export async function findLeftovers(target) {
+  if (await exists(path.join(target, '_opensquad'))) return { files: [], config: null };
+  const found = new Set();
+  for (const root of LEFTOVER_ROOTS) for (const file of await citingOldDir(target, root)) found.add(file);
+  for (const file of LEFTOVER_BRIDGES) if (await exists(path.join(target, file))) found.add(file);
+  const files = [...found].sort().map((file) => ({ file, bridge: namedOpensquad(file) }));
+  return { files, config: await oldPlaywrightConfig(target) };
 }
