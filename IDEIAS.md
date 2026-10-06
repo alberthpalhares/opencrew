@@ -42,10 +42,10 @@
 - **Aprovação:** não.
 
 ## Dividir o `runner.pipeline.md`
-- **O que já existe:** 916 linhas (~13k tokens; eram 829 na auditoria de 2026-10-02) lidas em
+- **O que já existe:** 882 linhas depois da E1 (eram 965 na 1.6.3 e 829 na auditoria de 2026-10-02) lidas em
   todo run; overhead fixo de 25–35k tokens contra os "~5K" anunciados no tier Express.
 - **Alocação:** → U5 — núcleo de ~250 linhas + arquivos carregados sob demanda
-  (dashboard, seleção de agentes, reflexão); carregar os agentes uma vez só (T-M11).
+  (Escritório, seleção de agentes, reflexão); carregar os agentes uma vez só (T-M11).
 - **Custo de adiar:** cada run paga o custo; a divisão fica mais cara à medida que a
   U1–U4 acrescentam regras ao runner.
 - **Aprovação:** não.
@@ -53,7 +53,7 @@
 ## Documentos oficiais em DOCX/PDF + entrega dentro das pastas do projeto
 - **O que já existe:** export PDF não executável (T-M21); no uso real o usuário escreveu um
   script Python + automação do Word à parte e copiou os resultados à mão (dor 6).
-- **Alocação:** → U3b (documento Word, 1.8.0); a entrega nas pastas do projeto → U3a (1.7.0).
+- **Alocação:** → U3b (documento Word, 1.9.0); a entrega nas pastas do projeto → U3a (1.8.0).
   PDF direto → sem fase — precisa de motor de renderização; o Word salva como PDF.
 - **Custo de adiar:** o resultado não vira uso direto; gambiarras por projeto.
 - **Aprovação:** sim — dada em 2026-10-04 para o motor: gerador próprio de `.docx`, sem
@@ -141,4 +141,69 @@
   busca semântica (H3-12).
 - **Alocação:** → U5 — custo (tokens por execução).
 - **Custo de adiar:** em fonte longa, um trecho importante pode ficar fora da leitura.
+- **Aprovação:** não.
+
+---
+
+> As seis entradas abaixo vêm da execução real de 2026-10-06 (spec E1, §8, item 5): um agente fez o
+> papel da IA da IDE (Codex), criou uma crew de 3 agentes e a rodou seguindo o runner ao pé da
+> letra. Tudo isto já existia antes da E1. **R3 é proposta:** a fase não existe ainda; o dono decide.
+
+## Runner: a entrada do passo não acha a saída do passo anterior (pasta de versão)
+- **O que já existe:** o runner manda trocar só o `run_id` no `inputFile`, mas a saída anterior foi
+  gravada com pasta de versão: `output/{run}/pesquisa.md` deu `VALIDATION:FAIL` com
+  `v1/pesquisa.md` em disco. A regra "achou `v1`, use `v2`" sobe a pasta a cada passo do mesmo
+  grupo (pesquisa em `v1/`, post em `v2/`, revisão em `v3/`); os exemplos do runner sugerem tudo
+  em `v1`. Do mesmo assunto, já com destino: "Save final output" não diz qual arquivo é o final →
+  U3a, que tira esse passo do runner (spec U3a, regra 21).
+- **Alocação:** → R3 (reparo, sem versão definida) — defeito do runner em uso real.
+- **Custo de adiar:** a IA que segue o texto à risca para em "Input not found" no segundo passo;
+  a que improvisa espalha a execução em várias pastas `vN`.
+- **Aprovação:** sim — abre uma fase de reparo que não está no roteiro.
+
+## Runner e discovery: comandos escritos só para bash
+- **O que já existe:** `test -s`, `grep -q`, `ls | sort -V | tail`, `mkdir -p`, `[ -f ]` no runner
+  e `ls crews/ 2>/dev/null` no discovery; no Windows (PowerShell) a IA tem de traduzir todos. O
+  Architect proíbe o `mkdir` do Bash e o runner manda usá-lo (T-M13, hoje → U5 na auditoria).
+- **Alocação:** → R3 (reparo, sem versão definida) — defeito do runner em uso real. O T-M13 vem
+  junto: é a mesma linha do runner.
+- **Custo de adiar:** no Windows, cada passo depende de a IA acertar a tradução do comando; um
+  erro vira validação que falha sem motivo.
+- **Aprovação:** sim — mesma fase de reparo da entrada acima.
+
+## Formato canônico de `pipeline.yaml`, de `crew.yaml` e da crew criada — o que a execução real acrescenta
+- **O que já existe:** o assunto tem destino na auditoria de 2026-10-02 (§3): T-A10 (os dois
+  arquivos sem formato; `crew.tier` lido sem o build dizer onde gravar), T-A2 (criação sem
+  condutor), T-M14 (as 4 pastas de modelo em `crews/` parecem crews), T-M17 (Express: "o redator
+  se revisa" × revisor obrigatório), T-M19 (`id` do agente com três definições), T-M20 e T-B8
+  (agente-base reprova o Gate 1; `extends:` não poupa trabalho). A execução confirmou todos e
+  achou mais três: Express manda `model_tier: fast` em todo passo e o build manda omitir o campo
+  em passo inline; `agent_dependencies` é "OPTIONAL" e "ALWAYS emit" no mesmo parágrafo; no
+  Codex, o Architect aponta para o `SKILL.md`, que só aponta de volta para o `system.md`.
+- **Alocação:** → U4 — entram no formato canônico, junto de T-A10 e T-A2.
+- **Custo de adiar:** cada IA monta a crew de um jeito; o runner lê campos que ninguém gravou.
+- **Aprovação:** não.
+
+## Histórico: o score do `runs.md` tem duas definições
+- **O que já existe:** o runner define o score como "agent outputs approved" e como
+  `{approved}/{total checkpoints}`. O histórico confiável já é da U4 (T-B6, T-A11).
+- **Alocação:** → U4 — junto do histórico confiável.
+- **Custo de adiar:** o mesmo número quer dizer coisas diferentes de uma execução para outra.
+- **Aprovação:** não.
+
+## Onboarding: formato do `company.md` e a marca `NOT CONFIGURED`
+- **O que já existe:** o onboarding não define o formato do `company.md` nem manda tirar
+  `<!-- NOT CONFIGURED -->` de `preferences.md` depois de configurar.
+- **Alocação:** → U5 — polimento de prompt.
+- **Custo de adiar:** perfil da empresa em formato livre; a marca pode ficar no arquivo já
+  configurado.
+- **Aprovação:** não.
+
+## Trecho visível da legenda e do post: limite declarado e não medido
+- **O que já existe:** `caption_visible_chars: 125` (`instagram-feed`, `instagram-reels`) e
+  `post_visible_chars: 210` (`linkedin-post`) estão no frontmatter `constraints:`; na execução
+  real o verificador mediu caracteres e hashtags da legenda, mas não o gancho de 125. Fere a
+  regra 12 do AGENTS.md. Os outros máximos sem medição já têm destino (spec U1 §12, H2-13).
+- **Alocação:** → U5 — junto do resto do H2-13.
+- **Custo de adiar:** o gancho passa do corte do "ver mais" sem aviso.
 - **Aprovação:** não.

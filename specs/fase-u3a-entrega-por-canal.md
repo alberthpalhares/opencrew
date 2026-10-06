@@ -1,4 +1,4 @@
-# Spec — Fase U3a: Entrega por canal (1.7.0)
+# Spec — Fase U3a: Entrega por canal (1.8.0)
 
 - **Fase:** U3a · **Módulos:** Runtime (`templates/_opencrew/core/`: `scripts/`, `prompts/`, `runner.pipeline.md`, best-practices; `templates/_opencrew/_memory/preferences.md`; skills `instagram-publisher` e `image-creator`; `templates/AGENTS.md`; `templates/gitignore`) + CLI (`src/commands/update.js`, `src/lib/`) + README + testes · **Status:** aguardando aprovação
 - **Termos novos no GLOSSARIO.md:** sim — Entrega, Entrega avulsa, Canal, Peça (amplia o termo da R1), Bloco de serviço, Pendência, Ressalva, Destino da entrega, Reentrega, Editáveis, Recurso de editável, Conjunto de imagens
@@ -13,8 +13,9 @@
    o usuário mais lê: leia e ajuste antes de aprovar.
 2. **PDF e "posts formatados" deixam de ser gerados** (regra 27). Isso desfaz uma promessa do
    README. O LEIA-ME ensina a salvar como PDF.
-3. **O dashboard sai do runtime** (regra 32): cerca de 125 linhas a menos no runner; `dashboard/`
-   fica no repositório como experimento. Publicar pediria corrigir XSS e o modo ao vivo.
+3. **O dashboard não é assunto desta fase** (regra 32). Ele virou o Escritório na fase E1 (1.7.0,
+   `specs/fase-e1-escritorio-ao-vivo.md`) e a pasta `dashboard/` não existe mais. A proposta
+   anterior, de removê-lo aqui, foi desfeita.
 4. **`entrega/` é refeita do zero** (regra 12): o que for editado dentro dela se perde na entrega
    seguinte, e o LEIA-ME avisa. Não adotado: preservar por hash o arquivo editado ali (B-05, E-22).
 5. **Cópia na pasta do projeto: uma pasta por execução** (regra 14). Canal que fica pronto depois
@@ -84,7 +85,7 @@ existem, só com o `update`.
 | A-19, A-20, B-14, C-13, D-16, E-11, G-18, Z-10 | PDF e `formatted-post` prometidos sem método | U3a-10 |
 | A-07, A-18, B-19, C-06, C-10, F-14, G-13, I-11 | Arquivos citados dentro das fontes | U3a-11 |
 | A-24, C-01, C-11, F-15, G-27, H1-02, H1-03, I-10 | `update` e o bloco do `.gitignore`; instalação interrompida | U3a-12 |
-| A-27, B-18, E-19, F-23, G-08, H1-13, H3-20 | Decisão do dashboard | U3a-13 |
+| A-27, B-18, E-19, F-23, G-08, H1-13, H3-20 | Decisão do dashboard | → feito na fase E1 (1.7.0, `specs/fase-e1-escritorio-ao-vivo.md`); aqui só a guarda U3a-13c |
 | A-33, B-17, B-24, C-14, C-15, C-22, E-15, E-18, E-20, F-22, G-12, G-21, G-22, G-28, Z-09, Z-11 | Nomes, idioma, tamanho, travas e regra nova | U3a-14, §13 |
 | A-06, A-30, B-03, C-05, E-02, G-02, G-24 | Crews que já existem (regra 14 do AGENTS.md); aceite que mede o objetivo | U3a-upg, §9 |
 | Fora daqui | Ver §11 | — |
@@ -537,12 +538,11 @@ canal "Já publicado", os passos não aparecem.
     o `init` (H1-02).
 
 **Dashboard e regras do projeto**
-32. **O dashboard sai do runtime.** Runner, `system.md`, `build.prompt.md` e `repair.prompt.md`
-    deixam de citar o dashboard e o `state.json`; o runner não grava mais esse arquivo; o modelo de
-    `preferences.md` perde a linha `Dashboard`. `Dashboard: enabled` em preferências antigas é
-    ignorado, sem editar o arquivo. `state.json` antigos ficam onde estão, e a linha
-    `crews/*/state.json` continua no bloco do `.gitignore`. A pasta `dashboard/` segue no
-    repositório, fora do pacote.
+32. **O Escritório (o antigo dashboard) não muda nesta fase.** Runner, prompts, `preferences.md` e
+    o `state.json` ficam como a fase E1 (1.7.0) os deixou (`specs/fase-e1-escritorio-ao-vivo.md`).
+    Daqui só valem: o `update`
+    não toca em `preferences.md` nem em `crews/*/state.json`, e a linha `crews/*/state.json`
+    continua no bloco do `.gitignore`.
 33. **Regra 15 do AGENTS.md**, com linha na tabela Regra → Trava: "Script do runtime só escreve
     onde foi combinado: arquivos da crew (com `.bak`), a pasta de saída da crew
     (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve arquivo do usuário, e só
@@ -996,13 +996,11 @@ com o mesmo ID e o caso no nome.
   o bloco completo é renovado e nenhuma linha some.
 
 **U3a-13 — Dashboard**
-- **U3a-13a** (contrato) runner, `templates/AGENTS.md`, `build.prompt.md`, `repair.prompt.md` e o
-  modelo de `preferences.md` não contêm "dashboard" nem `state.json`.
-- **U3a-13b** o README diz que o dashboard não faz parte do produto e não fala em decisão futura.
+- **U3a-13a, 13b e 13d** retirados em 2026-10-05: o dashboard passou para a fase E1 (1.7.0; os IDs não
+  são reaproveitados).
 - **U3a-13c** (guarda: já passa hoje; trava de regressão) DADO um workspace com
   `- **Dashboard:** enabled` em `preferences.md` e um `crews/x/state.json` QUANDO `update` ENTÃO os
   dois arquivos ficam iguais, byte a byte.
-- **U3a-13d** (guarda: já passa hoje; trava de regressão) o pacote não tem a pasta `dashboard/`.
 
 **U3a-14 — Regras e travas**
 - **U3a-14a** (contrato) o `AGENTS.md` tem a regra 15 e a linha na tabela, com a trava;
@@ -1024,7 +1022,7 @@ com o mesmo ID e o caso no nome.
 - **U3a-upg-b** DADO o mesmo workspace com o `.gitignore` da 1.4.1 QUANDO `update` ENTÃO o
   resultado é o da U3a-12c e a versão carimbada é a do pacote.
 - **U3a-upg-c** DADO o mesmo workspace QUANDO `update` ENTÃO o `SKILL.md` do `instagram-publisher`
-  cita `entrega/instagram/legenda.txt` e o runner entregue não cita `state.json`.
+  cita `entrega/instagram/legenda.txt`.
 - **U3a-upg-d** DADO o mesmo workspace, com uma crew anterior à 1.4.2 escrita literalmente (passo
   de publicação sem `side_effects`, antes da revisão) QUANDO `update` ENTÃO (contrato) o runner
   entregue reconhece o passo pela skill e manda a entrega para o fim, com `--publicado`; o
@@ -1053,16 +1051,15 @@ com o mesmo ID e o caso no nome.
 
 ## 10. Critérios de aceite
 - [ ] Cenários com teste de mesmo ID, vistos vermelhos antes do código — menos as guardas
-      U3a-08j, 11b, 12f, 13c e 13d, que já passam hoje e ficam como trava de regressão.
+      U3a-08j, 11b, 12f e 13c, que já passam hoje e ficam como trava de regressão.
 - [ ] `npm run verify` verde; os testes de F1, U1, U2 e R1 continuam passando, menos os que mudam
-      no mesmo commit: os de export e de dashboard em `tests/docs.test.js` e o F1-12a em
-      `tests/runtime-contracts.test.js` (regras 27 e 32); os do verificador que afirmam o número
+      no mesmo commit: os de export em `tests/docs.test.js` (regra 27); os do verificador que afirmam o número
       de legenda, post ou tweet, que passa a ser o do texto entregue (regra 26; o R1-01a e o
       R1-01d estão entre eles); os que deixam de valer pela regra 5: o R1-01l (1º caso, reels) e
       a parte do comentário no R1-01k; e o R1-07b, na parte da opção 2, que volta a trazer "fica
       registrado" (regra 22).
 - [ ] No mesmo commit do código (regra 9 do AGENTS.md): README (PDF, árvore de pastas, tabela "O
-      que é atualizado", dashboard), `AGENTS.md` (regra 15 e tabela), `GLOSSARIO.md`,
+      que é atualizado"), `AGENTS.md` (regra 15 e tabela), `GLOSSARIO.md`,
       `templates/AGENTS.md`, `IDEIAS.md` (saem os itens entregues; entram os da §11 que não têm
       entrada) e a entrada de correção nas specs F1, U1, U2 e R1. Na R1: regra 3 (b) e (c), seção
       de outro canal só é peça em arquivo sem formato ou de formato `instagram-feed`,
@@ -1072,7 +1069,7 @@ com o mesmo ID e o caso no nome.
       (seção de outro canal); regra 1 (passo de renderização sem `format:`: usa o formato do
       passo de conteúdo).
 - [ ] Conferência da §9 feita e registrada.
-- [ ] CHANGELOG 1.7.0, com as mudanças de comportamento (PDF e `formatted-post`, dashboard, legenda
+- [ ] CHANGELOG 1.8.0, com as mudanças de comportamento (PDF e `formatted-post`, legenda
       medida com as hashtags, thread medida tweet a tweet, post do LinkedIn e tweet medidos com as
       hashtags no fim, legenda escrita dentro de roteiro, e-mail ou artigo e primeiro comentário do
       LinkedIn deixam de ser medidos); `npm version minor`; release (commit + tag) só com
@@ -1105,7 +1102,7 @@ passos do LEIA-ME batem com a tela de cada rede (conferência da §9).
 | Reescrever o HTML dos slides com caminhos relativos (I-09) | → sem fase — a skill passa a orientar; o script só avisa |
 | Aviso de entregas ao apagar a crew; poda de `output/`; caminho da entrega no `runs.md` (Z-12) | → U5 — polimento; a pergunta do destino já tira a entrega da pasta descartável |
 | `_build/` e `*.bak` no bloco do `.gitignore` (H1-03, G-27) | → sem fase — o `design.yaml` é fonte do build; versionar é escolha do usuário |
-| Publicar o dashboard (corrigir XSS e o modo ao vivo) | → sem fase — fica no repositório como experimento |
+| Publicar o dashboard (corrigir XSS e o modo ao vivo) | → E1 — feito na 1.7.0: virou o Escritório, e a pasta `dashboard/` saiu do repositório |
 
 ## 12. Limites conhecidos
 - As regras 2, 10 (imagens no laço de revisão), 16, 21 a 25, 27 (o aviso do passo antigo) e 29 são
@@ -1160,8 +1157,8 @@ passos do LEIA-ME batem com a tela de cada rede (conferência da §9).
   mesma entrega, o HTML de prefixo `2-` continua citando o nome sem prefixo.
 - Os scripts novos seguem os limites de Node 20.0 da R1 (§12 de lá).
 - Destino dentro de uma pasta de `fontes:` faz a entrega aparecer na lista de arquivos da fonte.
-- Runner: saldo de cerca de −100 linhas (dashboard −125; "Output saved to" e "Save final output"
-  −5; chamada e frases +30).
+- Runner: saldo de cerca de +25 linhas ("Output saved to" e "Save final output" −5; chamada e
+  frases +30). A redução ligada ao dashboard já veio na fase E1 (1.7.0).
 
 ## 13. Travas que esta spec deixa
 `tests/entregar.test.js` (U3a-01a a 01d, 02, 06, 14b) · `tests/entregar-pecas.test.js` (U3a-03) ·
@@ -1171,9 +1168,9 @@ passos do LEIA-ME batem com a tela de cada rede (conferência da §9).
 verificador, 09) · `tests/conferir-fontes-citados.test.js` (U3a-11a a 11f) ·
 `tests/update-u3a.test.js` (U3a-12, 13c) · `tests/upgrade.test.js` (U3a-upg) ·
 `tests/runtime-contracts-u3a.test.js` (U3a-01e, 04j, 04l, 05l, 08a a 08f, 08i, 08l, 08o, 10, 11g,
-13a, 13b, 14a) · `tests/instagram-publisher.test.js` (U3a-08j, 08p) · `tests/package.test.js`
-(U3a-13d, 14c) · `tests/docs.test.js` (os testes antigos de export e de dashboard são apagados:
-U3a-10 e U3a-13a os substituem) · `tests/template-refs.test.js` (as referências a
+14a) · `tests/instagram-publisher.test.js` (U3a-08j, 08p) · `tests/package.test.js`
+(U3a-14c) · `tests/docs.test.js` (os testes antigos de export são apagados: U3a-10 os
+substitui) · `tests/template-refs.test.js` (as referências a
 `prompts/entrega.prompt.md` e `scripts/entregar.mjs` existem) · alerta de tamanho: nenhum módulo
 de `scripts/` acima de 200 linhas, inclusive os de `verificar/`; nenhum arquivo de teste novo
 acima de 300.

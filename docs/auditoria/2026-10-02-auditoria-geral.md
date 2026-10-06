@@ -118,7 +118,7 @@ Legenda de dono: **F0** governança · **F1** hotfix 1.4.2 · **F2** update conf
 | T-M21 | média | Export em PDF com `npx playwright open` + "imprimir" não é executável; `lang="pt-BR"` fixo | `export.prompt.md:50-55` | F3 | — |
 | T-B1 | baixa | Numeração do carregamento de agentes 1,2,3,5,6,4; `2.` duplicado | `runner.pipeline.md:236-311,649` | F4 | — |
 | T-B2 | baixa | Runner procura `Dashboard: enabled`, mas o arquivo grava `- **Dashboard:** enabled`: o toggle nunca casa | `runner.pipeline.md:22`, `preferences.md:11` | F1 | F1-12 |
-| T-B3 | baixa | `dashboard/index.html` não vai no pacote, e os dois arquivos o descrevem de formas diferentes | `AGENTS.md:93`, `runner.pipeline.md:21` | F4 | `package.test.js` |
+| T-B3 | baixa | `dashboard/index.html` não vai no pacote, e os dois arquivos o descrevem de formas diferentes (resolvido na E1, 1.7.0) | `AGENTS.md:93`, `runner.pipeline.md:21` | F4 | `package.test.js` |
 | T-B4 | baixa | "Load Architect / Skills Engine" sem caminho; `/opencrew help` e `/opencrew reset` (destrutivo) não definidos | `templates/AGENTS.md:48,54,61` | F3 | — |
 | T-B5 | baixa | `outputFile` de checkpoint com formato "Research Focus" fixo | `runner.pipeline.md:523-533` | F3 | — |
 | T-B6 | baixa | Comando `runs` inexistente; "30 segundos" que o modelo não mede; bullets ●/○ fora da convenção | `runner.pipeline.md:700,793,806` | F3 | — |
@@ -142,12 +142,12 @@ copiada no design; timeouts do Sherlock 2×.
 
 | ID | Sev | Achado | Onde | Dono | Trava |
 |---|---|---|---|---|---|
-| D-01 | alta | README diz que `dashboard/index.html` é instalado; não está no pacote (`files`, `.npmignore`) nem é copiado | `README.md:189-190` | F0 (doc) / F4 (decisão) | `package.test.js` |
+| D-01 | alta | README diz que `dashboard/index.html` é instalado; não está no pacote (`files`, `.npmignore`) nem é copiado (resolvido na E1, 1.7.0) | `README.md:189-190` | F0 (doc) / F4 (decisão) | `package.test.js` |
 | D-02 | média | README diz que `update` atualiza as pontes; não atualiza (só `AGENTS.md` e `system.md`). `--repair-bridges` não está documentado | `README.md:208` | F0 | — |
 | D-03 | média | README promete "nada se perde" na migração do legado; a migração apaga conteúdo do usuário | `README.md:210-212` | F0 (doc) / F1 (código) | F1-04 |
 | D-04 | média | CHANGELOG 1.4.0 incompleto: faltam migração do AGENTS.md legado, STATUS no CLAUDE.md, fix do Antigravity, pontes `.agents/`, `--repair-bridges` | `CHANGELOG.md:11-26` | F0 | — |
 | D-05 | média | `AGENTS.md` da raiz era cópia manual do runtime e a mudança pendente no `.gitignore` o mandaria para o git: qualquer IA no repo agiria como o produto | `.gitignore`, `AGENTS.md` | F0 | `AGENTS.md` de dev + `sandbox/` |
-| D-06 | média | Dashboard: nomes de agente e rótulos inseridos como HTML cru (XSS via `state.json` escrito a partir de conteúdo web); modo live procura `state.json` no lugar errado, não funciona via `file://` e congela se o primeiro poll falha | `dashboard/index.html:266-268,278,337` | F4 | — |
+| D-06 | média | Dashboard: nomes de agente e rótulos inseridos como HTML cru (XSS via `state.json` escrito a partir de conteúdo web); modo live procura `state.json` no lugar errado, não funciona via `file://` e congela se o primeiro poll falha (resolvido na E1, 1.7.0) | `dashboard/index.html:266-268,278,337` | F4 | — |
 | D-07 | baixa | IDEIAS #7 diz que `.gitignore`/`.env.example` recebem append; não recebem | `IDEIAS.md` | F0 (doc) / F1 (código) | F1-05, F1-06 |
 | D-08 | baixa | Contagens divergentes (23 guias vs 22, 12 prompts vs 13, contagens de testes); Windsurf citado sem suporte; Gemini/Qwen sem `.agents/skills`; flags `upgrade`, `-y`, `-v`, `-h` não documentadas; promessa de "30-70% de economia" sem base; template de PR com rodapé "Generated with Claude Code" | `README.md`, `CHANGELOG.md`, `.github/PULL_REQUEST_TEMPLATE.md` | F0 (as que mentem) / F4 | — |
 
@@ -192,10 +192,11 @@ Cada fase abre com o **portão de entrada** (varrer `Alocação: → Fase N` nes
 > | Trilha | Versão | Absorve |
 > |---|---|---|
 > | **R1 Reparos da 1.6.0: o verificador mede de verdade** | 1.6.1 | Defeitos do verificador, da conferência de fontes e do laço de revisão (lista no §7 da revisão); C-12 (`--repair-bridges` sem `--ide`, H3-02); de T-A10, só o `max_review_cycles` (H2-06) |
-> | **U3a Entrega por canal** | 1.7.0 | T-M21 (export e PDF); T-B3/D-01/D-06 (dashboard: decisão pendente do dono); bloco do `.gitignore` renovado pelo `update`; assunto de e-mail e WhatsApp medidos (spec U1 §11, H2-13); aviso de arquivo citado dentro das fontes; H2-07, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20 |
-> | **U3b Documento Word** | 1.8.0 | Dor 6 do uso real: documento oficial em `.docx` (gerador próprio, em perfil fechado) |
-> | **R2 `update` e envio seguros** | a definir, depois da R1 | T-M4 (resto: `blotato` e `resend`, H1-04); H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19. Recomendada antes da U3a; a ordem entre as duas é decisão do dono |
-> | **U4 Modo equipe + histórico confiável** | 1.9.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 e o conserto (`repair`) de crews antigas (H1-01, H2-05, H3-03); T-M5 (H3-08); T-M14, T-M17..20, T-B6, T-B8 |
+> | **U3a Entrega por canal** | 1.8.0 | T-M21 (export e PDF); T-B3/D-01/D-06 (dashboard: resolvido na E1, 1.7.0); bloco do `.gitignore` renovado pelo `update`; assunto de e-mail e WhatsApp medidos (spec U1 §11, H2-13); aviso de arquivo citado dentro das fontes; H2-07, H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20 |
+> | **U3b Documento Word** | 1.9.0 | Dor 6 do uso real: documento oficial em `.docx` (gerador próprio, em perfil fechado) |
+> | **R2 `update` e envio seguros** | 1.6.3 | T-M4 (resto: `blotato` e `resend`, H1-04); H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19. Vem depois da R1 e antes da U3a (decisão do dono, 2026-10-05) |
+> | **E1 Escritório ao vivo** | 1.7.0 | T-B3, D-01 e D-06: o dashboard virou o Escritório e passou a ser instalado. Vem depois da R2 e antes da U3a (decisão do dono, 2026-10-05) |
+> | **U4 Modo equipe + histórico confiável** | 1.10.0 | T-A2 (condutor da criação), T-A10, T-A11 (retomar), T-B15 e o conserto (`repair`) de crews antigas (H1-01, H2-05, H3-03); T-M5 (H3-08); T-M14, T-M17..20, T-B6, T-B8 |
 > | **U5 Rápido, barato e em PT-BR** | contínuo | T-A1, T-A8, T-A9, T-A12, T-M11, T-B13, runner dividido, C-18/C-19 (infra); C-11, C-20..23, C-25..27, T-M9 e busca semântica nas fontes (spec U2 §11; ela escreve "C-20..27", mas o C-24 saiu na F1); C-15, T-M1 (segredos em texto puro), T-M7, T-M8, T-M12, T-M13, T-M15, T-B1, T-B4, T-B5, T-B7, T-B9..B11, T-B14; D-08 (restante), poda e duplicação, estrutura `src/modules/` prevista na F2 (não feita; sem rastro, H3-12); H2-17, H3-07, H3-16, H1-19, G-29, H3-01 (arquivo de acréscimo) |
 > | **U0 Processo** | sempre | jornada de referência (`docs/jornada/roteiro-de-teste.md`) antes de cada release. Pendente, com o dono: uma execução real com o verificador no laço de revisão (H2-14) e a conferência manual de publicação no Instagram (F1-10e, H1-12); o roteiro ainda não confere fontes, correção gravada nem pergunta do perfil (H3-18) |
 >
@@ -326,7 +327,7 @@ para a 1.6.0 pelo npm, com autorização do dono, sem dado alterado; no Projeto 
 | `update`: agentes-base e modelos de crew nunca recebem melhoria, e modelo apagado volta; manifesto corrompido sem aviso; restos antigos só em 5 pastas | H3-11, H3-14, H3-19 | → R2 |
 | `fontes:` não chega a crews que já existem; a Regra de Ouro (T-M5) constava como herdada e segue quebrada | H3-03, H3-08 | → U4 |
 | Best-practice criada no overlay não é vista por discovery, design e build; o alerta "não é portátil" nunca vira oferta de correção | H3-07, H3-16 | → U5 |
-| Decisão do dashboard alocada na U3 e não herdada pela spec | H3-20 | → U3a |
+| Decisão do dashboard alocada na U3 e não herdada pela spec | H3-20 | → E1 (decidido em 2026-10-05: publicar) |
 | Spec com arquivos de teste errados; itens adiados sem rastro; termos fora do glossário | H3-13, H3-12, H3-21 | faxina de documentos de 2026-10-04 |
 | O roteiro da jornada U0 não tem passo nem métrica para o que a spec manda conferir nela (fontes conferidas no início, correção gravada, pergunta do perfil) | H3-18 | → U0 (`docs/jornada/roteiro-de-teste.md`), pendente |
 

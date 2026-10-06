@@ -1,6 +1,6 @@
 # Spec — Fase E1: Escritório ao vivo — a equipe trabalhando, em 8 bits (1.7.0)
 
-- **Fase:** E1 · **Módulos:** Runtime (`templates/_opencrew/core/`: `scripts/`, `escritorio/`, `runner.pipeline.md`, `prompts/`; `templates/AGENTS.md`) + README + testes. O CLI (`src/`) não muda · **Status:** decisões e emendas aceitas pelo dono em 2026-10-05; texto emendado aguardando a aprovação final
+- **Fase:** E1 · **Módulos:** Runtime (`templates/_opencrew/core/`: `scripts/`, `escritorio/`, `runner.pipeline.md`, `prompts/`; `templates/AGENTS.md`) + README + testes. O CLI (`src/`) não muda · **Status:** aprovada pelo dono; implementada; release 1.7.0 (2026-10-06)
 - **Termos novos no GLOSSARIO.md:** sim — Escritório, Estado da execução, Evento de estado, Passagem de bastão
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** pedido do dono em 2026-10-05; `IDEIAS.md`; achados D-01, D-06 e T-B3 de `docs/auditoria/2026-10-02-auditoria-geral.md`; pesquisa de 78 projetos parecidos em `docs/pesquisa/2026-10-05-escritorios-de-agentes.md` (as emendas S1 a S14 vêm de lá). Desfaz a decisão 3 e a regra 32 de `specs/fase-u3a-entrega-por-canal.md` (remover o dashboard), que não chegou a ser aprovada.
@@ -144,7 +144,8 @@ errado. Depois desta fase ele chega a quem já usa com um `update` e funciona na
     antes da pergunta de um checkpoint (`checkpoint`), logo depois do `iniciar`, um por agente desselecionado (`pular`), fim
     (`concluir`), execução abortada (`falhar`). Quando o agente muda, o `passo` leva em
     `--mensagem` uma frase sobre o que o agente anterior entregou; o runner não olha o passo
-    seguinte. Depois do `iniciar`, o runner mostra ao usuário, uma vez por execução, a linha
+    seguinte. `--passos` conta também os checkpoints, e o primeiro `passo` vai sem `--mensagem`
+    (o runner diz as duas coisas). Depois do `iniciar`, o runner mostra ao usuário, uma vez por execução, a linha
     "Runner, início" da §6, se o `iniciar` respondeu `ESTADO:OK`. Passo do tipo checkpoint roda só
     o `checkpoint`, não `passo` e depois `checkpoint`. Os comandos rodam um por vez, esperando a
     resposta de cada um, nunca em paralelo (cada um lê e regrava o mesmo arquivo). O runner não
@@ -485,18 +486,31 @@ No `sandbox/`, com o navegador aberto no escritório:
 9. Rodar `/opencrew dashboard` em pelo menos três IDEs, uma delas sem segundo plano, e
    registrar o que acontece; rodar duas vezes e ver o mesmo endereço.
 
+**Registro da conferência (2026-10-06)**
+- **Conferidos:** itens 1, 2, 3 e 5. O item 5 foi feito de duas formas. Um agente, no papel da
+  IA da IDE, criou e rodou uma crew de verdade seguindo o runner: 7 comandos, nos momentos
+  certos, e o estado final correto. O dono abriu o escritório pelo Antigravity CLI e viu a
+  demonstração.
+- **Não conferidos:** itens 4, 6, 7, 8 e 9. Do item 9 só há o Antigravity CLI; faltam duas IDEs,
+  uma delas sem segundo plano.
+- Os limites que a execução real mostrou estão na §11. O que ela achou fora do Escritório foi
+  para o `IDEIAS.md`, com triagem.
+
 ## 9. Critérios de aceite
-- [ ] Cenários com teste de mesmo ID, vistos vermelhos antes do código.
-- [ ] `npm run verify` verde; os testes de dashboard em `tests/docs.test.js` e o F1-12a em
-      `tests/runtime-contracts.test.js` são reescritos para o contrato novo (E1-03).
-- [ ] Conferência da §8 feita e registrada aqui.
-- [ ] No mesmo commit (regra 9 do AGENTS.md): README, CHANGELOG (inclui: com o escritório ligado,
+- [x] Cenários com teste de mesmo ID, vistos vermelhos antes do código.
+- [x] `npm run verify` verde, na máquina do dono (Node 24, Windows): 819 testes. Os testes de
+      dashboard em `tests/docs.test.js` e o F1-12a em `tests/runtime-contracts.test.js` foram
+      reescritos para o contrato novo (E1-03).
+- [ ] CI verde nas 4 células (Ubuntu e Windows, Node 20.17 e 22), antes da tag.
+- [ ] Conferência da §8 feita e registrada aqui. Em parte: feitos os itens 1, 2, 3 e 5; faltam
+      os itens 4, 6, 7, 8 e 9 (registro no fim da §8).
+- [x] No mesmo commit (regra 9 do AGENTS.md): README, CHANGELOG (inclui: com o escritório ligado,
       o estado final deixa de ser copiado para `crews/<crew>/output/<run>/state.json`),
       CONTRIBUTING, `AGENTS.md` (a regra 7 deixa de citar o dashboard entre o que não é coberto;
       fica "a aparência do escritório no navegador"), `GLOSSARIO.md`, `IDEIAS.md` (sai a entrada
       do dashboard), renumeração de versões da decisão 1 nas specs U3a e U3b, na auditoria e no
       STATUS.
-- [ ] O passo `lint` de `scripts/verify.js` inclui `templates/_opencrew/core/escritorio/`, e
+- [x] O passo `lint` de `scripts/verify.js` inclui `templates/_opencrew/core/escritorio/`, e
       `eslint.config.js` dá a essa pasta os nomes globais de navegador; `scripts/check-size.js`
       mede os `.js` dessa pasta (alvo 200).
 - [ ] `npm version minor --no-git-tag-version`; release (commit + tag) só com confirmação do dono.
@@ -542,12 +556,24 @@ No `sandbox/`, com o navegador aberto no escritório:
 - "Rode uma crew e ela aparece aqui" só vale com `Dashboard: enabled`: quem sobe o
   `escritorio.mjs` à mão sem ligar a preferência não vê a execução.
 - Mais de 12 agentes: os excedentes ficam só na lista (decisão 8).
+- Pergunta ao usuário feita dentro de um passo de agente (que não é `type: checkpoint`): o
+  escritório mostra o agente trabalhando enquanto a execução espera o usuário.
+- O `passo` roda antes da validação de entrada do passo: se a entrada falhar e o usuário pular
+  o passo, o agente já foi marcado como trabalhando.
+- O aviso "Escritório ligado. Se a página não estiver aberta…" sai também quando o servidor
+  acabou de ser aberto.
+- Um escritório já aberto guarda a lista de arquivos da página; depois de um `update` é preciso
+  fechar e abrir.
 
 ## 12. Travas que esta spec deixa
 `tests/estado.test.js` (E1-01) · `tests/estado-casca.test.js` (E1-02) ·
-`tests/escritorio.test.js` (E1-04) · `tests/escritorio-modelo.test.js` (E1-05a a 05e, 05k a 05m)
+`tests/estado-elenco.test.js` (regra 2: crew antiga, sem a coluna `id`) ·
+`tests/escritorio.test.js` (E1-04) · `tests/escritorio-porta.test.js` (E1-04f: porta tomada em
+todas as interfaces) · `tests/escritorio-modelo.test.js` (E1-05a a 05e, 05k a 05m)
 · `tests/escritorio-animacao.test.js` (E1-05f a 05j) · `tests/escritorio-pagina.test.js` (E1-06)
-· `tests/runtime-contracts-e1.test.js` (E1-03) · `tests/docs.test.js` (E1-03c, E1-07b) ·
+· `tests/escritorio-painel.test.js` (regra 18: a lista não muda no checkpoint)
+· `tests/runtime-contracts-e1.test.js` (E1-03a, 03b e 03d; regras 10 e 12) ·
+`tests/docs.test.js` (E1-03c) · `tests/docs-e1.test.js` (E1-07b) ·
 `tests/package.test.js` (E1-07a) · `tests/template-refs.test.js` (E1-07c) ·
 `tests/upgrade.test.js` (E1-upg) · alerta de tamanho: nenhum módulo de `scripts/` ou de
 `escritorio/` acima de 200 linhas; nenhum teste novo acima de 300.

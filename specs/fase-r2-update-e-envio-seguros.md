@@ -1,6 +1,6 @@
 # Spec — Fase R2: update e envio seguros (1.6.3)
 
-- **Fase:** R2 · **Módulos:** CLI (`src/commands/`, `src/lib/`) + Payload (skills de envio, `runner.pipeline.md`, `skills.engine.md`, `core/scripts/`) + CI (`.github/workflows/`) + testes · **Status:** aprovada pelo dono (2026-10-05); implementada (2026-10-06); release 1.6.3 aguardando a confirmação do dono
+- **Fase:** R2 · **Módulos:** CLI (`src/commands/`, `src/lib/`) + Payload (skills de envio, `runner.pipeline.md`, `skills.engine.md`, `core/scripts/`) + CI (`.github/workflows/`) + testes · **Status:** aprovada pelo dono (2026-10-05); implementada (2026-10-06); publicada como 1.6.3 (2026-10-06)
 - **Termos novos no GLOSSARIO.md:** sim — Skill de envio, Nome seguro, Não conferido, Texto legado; "Cópia de segurança" e "Manifesto" passam a citar bloco marcado e `.mcp.json`
 - **Modelo sugerido:** execução Sonnet 5.5 · médio (componentes A e B, que mexem em arquivo do usuário: alto)
 - **Origem:** itens "→ R2" da spec R1 (§11 e §12), com os mesmos IDs: H e L vêm de `docs/auditoria/2026-10-04-revisao-specs.md` e da revisão do código da R1; C, da auditoria de 2026-10-02. Comportamento de hoje conferido no código da 1.6.2

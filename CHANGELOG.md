@@ -3,11 +3,11 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Não lançado]
+## [1.7.0] — 2026-10-06
 
 Fase E1 "Escritório ao vivo — a equipe trabalhando, em 8 bits"
 (`specs/fase-e1-escritorio-ao-vivo.md`). Chega a quem já usa com um
-`npx @aksp/opencrew@latest update`. O número da versão entra quando a fase for fechada.
+`npx @aksp/opencrew@latest update`.
 
 ### Added
 - **Escritório ao vivo.** Uma página em pixel-art, aberta no navegador, mostra a crew
@@ -53,6 +53,7 @@ Fase E1 "Escritório ao vivo — a equipe trabalhando, em 8 bits"
   `tests/estado*.test.js`, `tests/escritorio*.test.js`, `tests/runtime-contracts-e1.test.js`,
   `tests/docs-e1.test.js` e os cenários E1-07a, E1-07c e E1-upg nos testes de pacote, de
   referências e de upgrade. A trava de conteúdo do mantenedor passa a ler também `.mjs` e `.css`.
+
 ## [1.6.3] — 2026-10-06
 
 **O Node mínimo subiu para o 20.17, numa versão de correção.** O pacote dizia 20.0, mas a lista

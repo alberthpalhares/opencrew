@@ -266,8 +266,8 @@ cenário citado é a trava; o que vale agora está na §14 (entrada de 2026-10-0
 | H2-05 | regra 8; §6 | Proibições sem aspas (as gravadas antes da 1.5.0) não viram trava; a nota fica só no relatório e a aprovação final não a mostra; o registro de fim de execução ainda não pede aspas | → U4; o registro de fim de execução passou a pedir aspas, na forma canônica: feito na R1 (1.6.1) — R1-07f |
 | H2-17 | regra 6 | A contagem é a mesma em todos os canais; no X/Twitter cada emoji vale 2 e cada link vale 23 | → U5 |
 
-Destinos: R1 = reparos da 1.6.0 (1.6.1) · U3a = entrega por canal (1.7.0) · U4 = modo equipe +
-histórico confiável (1.9.0) · U5 = rápido, barato e em PT-BR (contínuo).
+Destinos: R1 = reparos da 1.6.0 (1.6.1) · U3a = entrega por canal (1.8.0) · U4 = modo equipe +
+histórico confiável (1.10.0) · U5 = rápido, barato e em PT-BR (contínuo).
 
 ## 13. Travas que esta spec deixa
 - `tests/verificar.test.js` (cenários U1-01).

@@ -93,14 +93,23 @@ test('E1-03a: there is no handoff event', () => {
 
 test('E1-03a: --agente is the id column of crew-party.csv and --passos counts the steps that will run', () => {
   tem(texto, "`{id}`: the agent's `id` column in `crew-party.csv`");
-  tem(texto, 'a step with no `agent:` goes without `--agente`');
+  tem(texto, 'with no `agent:` goes without `--agente`');
   tem(texto, '`{N}`: how many steps will run');
   tem(texto, "`{K}`: the step's position among them, from 1");
 });
 
 test('E1-03a: when the agent changes, passo carries one sentence on what the previous agent delivered', () => {
-  tem(texto, '`--mensagem` goes only when the agent changed since the last `passo`: one sentence on what the previous agent delivered');
+  tem(texto, '`--mensagem` goes only when the agent changed since the last `passo`');
+  tem(texto, 'one sentence on what the previous agent delivered');
   tem(texto, 'never look at the next step');
+});
+
+// What a real run showed a literal AI gets wrong (2026-10-06): the total without the checkpoints,
+// --agente on a step that has no agent, --mensagem on the very first passo.
+test('E1 (review): --passos counts the checkpoints, a step or checkpoint without agent drops --agente, the first passo has no --mensagem', () => {
+  tem(texto, "`{N}`: how many steps will run, checkpoints included (a deselected agent's steps do not count)");
+  tem(texto, 'a step or checkpoint with no `agent:` goes without `--agente` (the table shows the full form)');
+  tem(texto, 'since the last `passo` (so never on the first one): one sentence');
 });
 
 test('E1-03a: the runner carries the character list of rule 10', () => {
