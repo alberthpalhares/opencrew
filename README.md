@@ -40,6 +40,9 @@ dentro da sua IDE.**
   termos que você proibiu e `[PREENCHER]` pendentes, e aponta afirmações a confirmar.
   Bloqueio não passa, seja qual for a nota do revisor. A crew não inventa casos nem números:
   quando falta um dado real, ela pergunta na aprovação final.
+- 🖥️ **Escritório ao vivo** — veja a equipe trabalhando numa sala em pixel-art, no navegador:
+  quem está digitando, quem passou o bastão, quem espera a sua resposta. Opcional, desligado por
+  padrão, só neste computador. Liga com `/opencrew dashboard`.
 - 📂 **Crew que conhece o projeto** — liste em `fontes:` os arquivos e pastas do seu projeto
   (decisões, calendário, manual de marca) e a crew os lê em todo run, tratando-os como verdade.
   Reorganizou as pastas? No início do run ela confere os caminhos, acha para onde o arquivo foi
@@ -175,6 +178,8 @@ meu-projeto/
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── best-practices/       ← 22 guias de melhores práticas + _catalog.yaml
+│   │   ├── scripts/              ← verificador, conferência de fontes e os scripts do Escritório
+│   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
 │   │   └── prompts/              ← 13 prompts de fase (discovery, design, build, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
@@ -184,7 +189,7 @@ meu-projeto/
 │   │   └── strategist.agent.md
 │   ├── _memory/
 │   │   ├── company.md            ← perfil da sua empresa (onboarding)
-│   │   └── preferences.md        ← idioma, tier padrão, dashboard
+│   │   └── preferences.md        ← idioma, tier padrão, Escritório ligado ou desligado
 │   └── .opencrew-version
 │
 ├── crews/                        ← suas crews vivem aqui
@@ -202,9 +207,47 @@ meu-projeto/
 │   └── ...
 ```
 
-> O dashboard visual (`dashboard/index.html`) **não é instalado** pelo `init` — ele vive
-> só no repositório do OpenCrew e ainda é experimental (decisão de publicar ou remover:
-> fase U3a — ver `IDEIAS.md` no repositório).
+---
+
+## Escritório ao vivo
+
+Quer ver a equipe trabalhando? O **Escritório** é uma página em pixel-art, aberta no navegador,
+em que cada agente tem a sua mesa: digita quando é a vez dele, leva o papel ao colega na passagem
+de bastão e levanta a mão quando espera uma resposta sua. Ao lado do desenho ficam o passo atual,
+a lista dos agentes (com o status por extenso e o que cada um fez) e a última passagem de bastão.
+
+**Como abrir:** no chat da sua IDE, digite `/opencrew dashboard`. O comando liga o Escritório,
+sobe a página e mostra o endereço — `http://127.0.0.1:4747`, ou a porta livre seguinte. A próxima
+execução de crew aparece ali; enquanto não há nenhuma, a página roda uma demonstração. Repetir o
+comando é seguro: ele devolve o mesmo endereço.
+
+Se a sua IDE não roda comando em segundo plano, ela mostra o comando para você rodar em outro
+terminal, na pasta do projeto:
+
+```bash
+node _opencrew/core/scripts/escritorio.mjs            # Ctrl+C para fechar
+node _opencrew/core/scripts/escritorio.mjs --porta 5000
+```
+
+Para desligar: `/opencrew dashboard off`.
+
+O que vale saber antes de ligar:
+
+- **Vem desligado.** Sem o `/opencrew dashboard`, nada muda nas suas execuções.
+- **Roda só neste computador, sem internet e sem medição.** A página é servida em `127.0.0.1`,
+  só lê o estado das suas crews (`crews/<crew>/state.json`), não carrega nada de fora e não envia
+  dado nenhum para lugar nenhum.
+- **Com ele ligado, cada passo custa um comando curto a mais.** É assim que a IA avisa o que está
+  fazendo: um comando de terminal por passo. Em IDE que pede aprovação a cada comando, libere o
+  `estado.mjs` uma vez.
+- **A tela mostra o que a IA avisa, e pode atrasar.** Se a IA pular um aviso, o desenho só se
+  acerta no passo seguinte. Depois de 2 minutos sem novidade a página diz há quanto tempo foi a
+  última atualização; depois de 20, o agente aparece "sem sinal" — o que não quer dizer que
+  travou: um passo longo é normal.
+- **O Escritório nunca para a execução.** Se o aviso falhar, a crew segue trabalhando.
+- **Até 12 mesas.** Numa crew maior, os agentes a mais aparecem só na lista ao lado.
+
+Quem já usa o OpenCrew recebe o Escritório com um `npx @aksp/opencrew@latest update`.
 
 ---
 
@@ -272,7 +315,9 @@ npx @aksp/opencrew update --check
 | `/opencrew delete <nome>` | Remove uma crew |
 | `/opencrew skills` | Navega, instala ou remove skills |
 | `/opencrew install <skill>` | Instala uma skill do catálogo |
-| `/opencrew settings` | Altera preferências (idioma, tier, dashboard) |
+| `/opencrew settings` | Altera preferências (idioma, tier, Escritório) |
+| `/opencrew dashboard` | Liga e abre o Escritório ao vivo (a equipe trabalhando, no navegador) |
+| `/opencrew dashboard off` | Desliga o Escritório |
 | `/opencrew show-company` | Mostra o perfil da empresa |
 | `/opencrew edit-company` | Reconfigura o perfil da empresa |
 | `/opencrew help` | Mostra a lista de comandos |

@@ -3,6 +3,57 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Não lançado]
+
+Fase E1 "Escritório ao vivo — a equipe trabalhando, em 8 bits"
+(`specs/fase-e1-escritorio-ao-vivo.md`). Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`. O número da versão entra quando a fase for fechada.
+
+### Added
+- **Escritório ao vivo.** Uma página em pixel-art, aberta no navegador, mostra a crew
+  trabalhando: cada agente na sua mesa, digitando na vez dele, levando o papel ao colega na
+  passagem de bastão, de mão levantada quando espera a sua resposta, com ✓ quando termina e "!"
+  quando falha. Ao lado, o passo atual, a lista dos agentes com o status por extenso e o que cada
+  um fez, e a última passagem de bastão. O título da aba acompanha a execução.
+- **`/opencrew dashboard`** liga o Escritório, sobe a página e mostra o endereço
+  (`http://127.0.0.1:4747`, ou a porta livre seguinte); repetir o comando devolve o mesmo
+  endereço. **`/opencrew dashboard off`** desliga. Continua desligado por padrão.
+- Roda só no seu computador, sem internet e sem medição: o servidor
+  (`_opencrew/core/scripts/escritorio.mjs`) escuta só em `127.0.0.1`, só lê e não escreve em disco.
+- Sem execução nenhuma, a página roda uma demonstração e troca sozinha para a execução real
+  quando ela aparece (`?demo` no endereço força a demonstração). Com mais de uma crew, mostra a
+  de atualização mais recente e um seletor com as outras.
+- A página não mente sobre o que não sabe: execução há mais de 2 minutos sem novidade mostra há
+  quanto tempo foi a última atualização; há mais de 20, o agente sai da pose de digitar e aparece
+  "sem sinal". Servidor fora do ar: a página avisa e tenta de novo sozinha.
+
+### Changed
+- **Quem avisa o Escritório é um script, não a IA escrevendo JSON.** Com o Escritório ligado, o
+  runner roda um comando curto por passo (`_opencrew/core/scripts/estado.mjs`). Checkpoint, agente
+  pulado e execução que falha passam a aparecer; antes nunca eram gravados. Falha desse comando
+  não para a execução: o runner avisa uma vez e segue.
+- **Com o Escritório ligado, o estado final deixa de ser copiado para
+  `crews/<crew>/output/<run>/state.json`.** O estado da execução mora só em
+  `crews/<crew>/state.json`.
+- `state.json`: os agentes ganham os status `checkpoint` e `failed` e o campo `label`; a
+  execução ganha `checkpoint` e `failed`; `desk` e `delivering` deixam de ser gravados. Arquivo
+  gravado por versão anterior continua sendo lido pela página.
+- Os prompts de criar e de consertar crew não escrevem mais `state.json`.
+- README: a nota "o dashboard não é instalado" deu lugar à seção "Escritório ao vivo".
+
+### Removed
+- A pasta `dashboard/` do repositório (o desenho antigo, que nunca foi instalado pelo `init`). O
+  que servia migrou para `_opencrew/core/escritorio/`, sem os defeitos apontados na auditoria:
+  nome de agente entrava na página como HTML, o modo ao vivo lia o arquivo no lugar errado e a
+  página congelava se a primeira leitura falhasse.
+
+### Internal
+- `npm run verify`: o lint passa a cobrir `templates/_opencrew/core/escritorio/` (com os nomes
+  globais de navegador) e o alerta de tamanho mede os `.js` dessa pasta. Travas novas:
+  `tests/estado*.test.js`, `tests/escritorio*.test.js`, `tests/runtime-contracts-e1.test.js`,
+  `tests/docs-e1.test.js` e os cenários E1-07a, E1-07c e E1-upg nos testes de pacote, de
+  referências e de upgrade. A trava de conteúdo do mantenedor passa a ler também `.mjs` e `.css`.
+
 ## [1.6.2] — 2026-10-05
 
 Correção da 1.6.1. Chega a quem já usa com um `npx @aksp/opencrew@latest update`.

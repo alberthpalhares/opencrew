@@ -20,9 +20,13 @@ function testFiles() {
     .map((f) => path.join('tests', f));
 }
 
+// Code that is linted: the CLI, its tooling and the code shipped in the payload — the runtime
+// scripts (Node) and the office page (browser; see eslint.config.js).
+const LINT_DIRS = ['bin/', 'src/', 'tests/', 'scripts/', 'templates/_opencrew/core/scripts/', 'templates/_opencrew/core/escritorio/'];
+
 export function defaultSteps() {
   return [
-    { name: 'lint', cmd: node, args: ['node_modules/eslint/bin/eslint.js', 'bin/', 'src/', 'tests/', 'scripts/', 'templates/_opencrew/core/scripts/'] },
+    { name: 'lint', cmd: node, args: ['node_modules/eslint/bin/eslint.js', ...LINT_DIRS] },
     { name: 'test', cmd: node, args: ['--test', ...testFiles()] },
     { name: 'version-sync', cmd: node, args: ['scripts/check-version-sync.js'] },
     { name: 'size (alert only)', cmd: node, args: ['scripts/check-size.js'] },

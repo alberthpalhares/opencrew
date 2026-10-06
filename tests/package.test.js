@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,4 +51,16 @@ test('every top-level entry of the README "Estrutura de pastas gerada" tree is s
       `README promises "${name}" in the user's project, but ${src} is not in the tarball`
     );
   }
+});
+
+// specs/fase-e1-escritorio-ao-vivo.md, rules 26 and 27: the Escritório ships inside the payload.
+test('E1-07a: the tarball ships estado.mjs, escritorio.mjs and every file of escritorio/, and no dashboard/', () => {
+  const core = 'templates/_opencrew/core';
+  const pagina = readdirSync(path.join(root, core, 'escritorio')).map((nome) => `${core}/escritorio/${nome}`);
+  assert.ok(pagina.includes(`${core}/escritorio/index.html`), 'the page folder lost index.html');
+  for (const must of [`${core}/scripts/estado.mjs`, `${core}/scripts/escritorio.mjs`, ...pagina]) {
+    assert.ok(files.includes(must), `missing from tarball: ${must}`);
+  }
+  assert.deepEqual(files.filter((f) => /(^|\/)dashboard\//.test(f)), [], 'the old dashboard app is gone');
+  assert.equal(readdirSync(root).includes('dashboard'), false, 'dashboard/ left the repository root');
 });

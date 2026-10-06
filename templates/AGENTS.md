@@ -58,6 +58,8 @@ Route input to the matching action:
 | `/opencrew edit-company` | Re-run company profile setup |
 | `/opencrew show-company` | Display company.md contents |
 | `/opencrew settings` | Show/edit preferences.md |
+| `/opencrew dashboard` | Turn on and open the Escritório (live view) — see "Dashboard (Optional)" |
+| `/opencrew dashboard off` | Turn the Escritório off — see "Dashboard (Optional)" |
 | `/opencrew reset` | Confirm and reset all configuration |
 | Natural language about crews | Infer intent and route accordingly |
 
@@ -90,12 +92,24 @@ When running a crew:
 
 ## Dashboard (Optional)
 
-The dashboard is an optional animated view of a crew run (`dashboard/index.html`).
-It is **disabled by default**; most installs never use it. Toggle it via
-`Dashboard: enabled|disabled` in `_opencrew/_memory/preferences.md` (editable via
-`/opencrew settings`). When disabled, the runner never writes `state.json`; when
-enabled, it writes `crews/{name}/state.json` before each step and at every handoff
-(see `_opencrew/core/runner.pipeline.md`).
+The dashboard is the **Escritório**: a local page that shows the crew at work, step by step.
+It is **disabled by default**. The switch is the `Dashboard` line of
+`_opencrew/_memory/preferences.md`; while it says `enabled`, the Pipeline Runner reports each
+step with one short command (see `_opencrew/core/runner.pipeline.md`).
+
+**`/opencrew dashboard`** — in this order:
+1. Write `- **Dashboard:** enabled` in `_opencrew/_memory/preferences.md`, changing only that
+   line (if the file has no `Dashboard` line, add it at the end). Leave the rest of the file as is.
+2. Start `node _opencrew/core/scripts/escritorio.mjs` in the background, from the project root.
+   The line it prints carries the address (`http://127.0.0.1:<port>`; the port may vary).
+3. Show the address and tell the user that the next crew run appears there.
+
+If your IDE cannot keep a process running in the background, do step 1 and show the user the
+command of step 2 to run in another terminal. Running `/opencrew dashboard` again is safe: the
+script answers with the same address instead of opening a second page.
+
+**`/opencrew dashboard off`** — write `- **Dashboard:** disabled` the same way (only that line)
+and touch nothing else: stop no process, delete no file.
 
 ## Language Handling
 

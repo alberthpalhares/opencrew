@@ -21,4 +21,9 @@ test('each category uses its own target', () => {
   // U1: runtime scripts shipped in the payload are code too (target 200), not prompts.
   assert.equal(classify('templates/_opencrew/core/scripts/verificar.mjs', 320).level, 'critico');
   assert.equal(classify('templates/_opencrew/core/scripts/verificar/regras.mjs', 210).level, 'aviso');
+  // E1: the modules of the office page are code as well (target 200); its HTML is not measured.
+  assert.equal(classify('templates/_opencrew/core/escritorio/modelo.js', 200), null);
+  assert.equal(classify('templates/_opencrew/core/escritorio/modelo.js', 210).level, 'aviso');
+  assert.equal(classify('templates/_opencrew/core/escritorio/modelo.js', 320).target, 200);
+  assert.equal(classify('templates/_opencrew/core/escritorio/index.html', 900), null);
 });

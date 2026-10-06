@@ -131,9 +131,9 @@ Generate these files. Use the Write tool for all file creation — never use Bas
    - **`displayName` is REQUIRED and MUST be byte-for-byte identical to the agent's
      `name:` frontmatter field in its `.agent.md`** (the mandatory two-word "FirstName
      LastName" persona name). The Pipeline Runner reads `displayName` — NOT `title` — to
-     render the agent's name in `state.json`, in "🤖 {name} is working…" announcements, and
-     in the dashboard. If `displayName` is missing, empty, or set to the role/title instead
-     of the persona name, the crew renders with functions but no names.
+     render the agent's name in "🤖 {name} is working…" announcements, and the Escritório
+     (the optional live view) shows the same column. If `displayName` is missing, empty, or set
+     to the role/title instead of the persona name, the crew renders with functions but no names.
    - `id` = the `path` basename with `./agents/` and `.agent.md` stripped
      (e.g. `./agents/researcher.agent.md` → `researcher`).
    - `title` = the agent's `title:` frontmatter (the role/function label). This is a

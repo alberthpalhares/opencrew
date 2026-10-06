@@ -24,9 +24,9 @@ src/                   CLI implementation
 templates/             the payload copied into user projects on `init`
   AGENTS.md            canonical RUNTIME system definition → installed as
                        _opencrew/core/system.md (root AGENTS.md becomes a thin bridge)
-  _opencrew/           framework core (runner, skills engine, prompts, best-practices)
+  _opencrew/           framework core (runner, skills engine, prompts, best-practices,
+                       scripts, and the Escritório page in _opencrew/core/escritorio/)
   skills/              catalog skills (README.md for humans, catalog.json for the engine)
-dashboard/             virtual office — experimental, NOT shipped in the npm package
 docs/auditoria/        audit reports (finding → phase → guard)
 scripts/               verify.js (the gate), check-size.js, version stamping
 tests/                 test suite (node:test, zero deps)

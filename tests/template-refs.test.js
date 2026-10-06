@@ -81,7 +81,7 @@ test('no file in templates/ carries the maintainer workflow (STATUS.md, /status,
   const markers = [/STATUS\.md/, /Skill: \/status/, /\/ideias\b/, /gestão de sessão/i, /[A-Z]:\\60-69/];
   const leaks = [];
   for (const file of walk(tpl)) {
-    if (!/\.(md|ya?ml|json|js|py|html|txt)$|(^|[\\/])(gitignore|\.env\.example)$/.test(file)) continue;
+    if (!/\.(md|ya?ml|json|m?js|py|html|css|txt)$|(^|[\\/])(gitignore|\.env\.example)$/.test(file)) continue;
     const text = readFileSync(file, 'utf8');
     for (const rx of markers) if (rx.test(text)) leaks.push(`${path.relative(root, file)} (${rx})`);
   }
@@ -98,4 +98,15 @@ test('KNOWN_BROKEN only lists references that are still broken', () => {
   for (const key of Object.keys(KNOWN_BROKEN)) {
     assert.ok(stillBroken.has(key), `"${key}" is fixed — remove it from KNOWN_BROKEN`);
   }
+});
+
+// specs/fase-e1-escritorio-ao-vivo.md E1-07c: the prompts cite the two scripts of the Escritório
+// (and, if they ever do, a file of the page), and everything they cite is shipped.
+test('E1-07c: every reference to _opencrew/core/escritorio/ and to estado.mjs / escritorio.mjs exists', () => {
+  const rx = /_opencrew\/core\/(?:escritorio\/[\w.-]*|scripts\/(?:estado|escritorio)(?:\.mjs|\/[\w.-]+))/g;
+  const refs = new Set(docs.flatMap((file) => readFileSync(file, 'utf8').match(rx) ?? []));
+  for (const script of ['estado.mjs', 'escritorio.mjs']) {
+    assert.ok(refs.has(`_opencrew/core/scripts/${script}`), `no prompt cites scripts/${script}`);
+  }
+  for (const ref of refs) assert.ok(existsSync(path.join(tpl, ref)), `broken reference: ${ref}`);
 });

@@ -11,32 +11,30 @@ async function read(relPath) {
   return fs.readFile(path.join(templatesDir, relPath), 'utf8');
 }
 
-test('runner.pipeline.md: dashboard state.json writes are opt-in, not mandatory', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+test('runner.pipeline.md: the Escritório is opt-in — no command without Dashboard: enabled, no forced delay', async () => {
+  const runner = (await read(path.join('_opencrew', 'core', 'runner.pipeline.md'))).replace(/\s+/g, ' ');
 
-  assert.match(runner, /dashboard_enabled/, 'runner should gate state.json writes on a dashboard_enabled flag');
-  assert.doesNotMatch(
-    runner,
-    /Wait 10 seconds/,
-    'the runner should never force a blocking delay for the dashboard'
-  );
-  assert.doesNotMatch(
-    runner,
-    /State writes are always mandatory/,
-    'state.json writes must be conditional, not always mandatory'
-  );
+  assert.match(runner, /only when the already-loaded `preferences\.md` has `Dashboard: enabled`/,
+    'runner should gate every Escritório command on the Dashboard preference');
+  assert.match(runner, /otherwise run none of these commands/, 'disabled or missing: the runner calls nothing');
+  assert.doesNotMatch(runner, /Wait 10 seconds/, 'the runner should never force a blocking delay for the dashboard');
+  assert.doesNotMatch(runner, /State writes are always mandatory/, 'the Escritório must be conditional, not always mandatory');
 });
 
-test('preferences.md template declares a Dashboard toggle, default disabled', async () => {
+test('E1-03c: preferences.md template declares a Dashboard toggle, default disabled', async () => {
   const prefs = await read(path.join('_opencrew', '_memory', 'preferences.md'));
   assert.match(prefs, /\*\*Dashboard:\*\*\s*disabled/);
 });
 
-test('AGENTS.md documents the Dashboard as optional and loads preferences.md before running a pipeline', async () => {
+test('E1-03c: AGENTS.md routes /opencrew dashboard and /opencrew dashboard off, cites escritorio.mjs, stays "disabled by default"', async () => {
   const agents = await read('AGENTS.md');
+  assert.match(agents, /^\| `\/opencrew dashboard` \|/m, 'route table should have /opencrew dashboard');
+  assert.match(agents, /^\| `\/opencrew dashboard off` \|/m, 'route table should have /opencrew dashboard off');
   assert.match(agents, /## Dashboard \(Optional\)/);
   assert.match(agents, /disabled by default/);
+  assert.match(agents, /node _opencrew\/core\/scripts\/escritorio\.mjs/, 'the route should start the Escritório server');
   assert.match(agents, /_opencrew\/_memory\/preferences\.md/);
+  assert.doesNotMatch(agents, /dashboard\/index\.html|state\.json/, 'the old dashboard app and the state file left the system prompt');
 });
 
 test('AGENTS.md no longer warns about squads/ naming limitation', async () => {

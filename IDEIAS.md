@@ -20,16 +20,6 @@
 
 ---
 
-## Dashboard: publicar ou remover
-- **O que já existe:** `dashboard/index.html` no repo, fora do pacote npm; o runtime o cita
-  (`runner.pipeline.md:20`, `templates/AGENTS.md`). Achados D-01 e D-06 da auditoria (XSS, modo
-  live quebrado).
-- **Alocação:** → U3a — decisão de produto que a spec da U3a traz como pendente do dono; até lá
-  a doc diz que ele não é instalado.
-- **Custo de adiar:** baixo; o runtime continua citando um arquivo que o usuário não tem.
-- **Aprovação:** sim — escolher entre publicar (com correção de XSS e caminho do
-  `state.json`) ou remover.
-
 ## `/opencrew retomar` — retomar um run interrompido
 - **O que já existe:** o estado do run vive só na memória do modelo (T-A11).
 - **Alocação:** → U4 — depende de `run-state.json` e do formato canônico de

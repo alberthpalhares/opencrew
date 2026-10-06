@@ -1,6 +1,5 @@
 # Never publish the maintainer's own working instance or heavy/dev files.
 node_modules/
-dashboard/
 tests/
 crews/*
 !crews/.gitkeep

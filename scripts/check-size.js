@@ -15,6 +15,8 @@ export const CATEGORIES = [
   { name: 'code', target: 200, match: (p) => /^(src|bin|scripts)\//.test(p) && p.endsWith('.js') },
   // Scripts shipped in the payload (e.g. the automatic checker) are code, not prompts.
   { name: 'runtime-script', target: 200, match: (p) => /^templates\/.*\/scripts\/.*\.m?js$/.test(p) },
+  // So are the modules of the office page (E1), which run in the user's browser.
+  { name: 'office-page', target: 200, match: (p) => /^templates\/_opencrew\/core\/escritorio\/.*\.js$/.test(p) },
   { name: 'prompt', target: 400, match: (p) => p.startsWith('templates/_opencrew/core/') && p.endsWith('.md') },
 ];
 

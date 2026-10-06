@@ -16,18 +16,7 @@ Before starting execution:
    - Crew memory from `crews/{name}/_memory/memories.md`
    - User preferences from `_opencrew/_memory/preferences.md`
 
-1a. **Check the Dashboard toggle** — the visual dashboard (`state.json` writes) is an
-    optional, opt-in feature that most installs never use (it requires running the
-    separate dashboard app from source — see README). Scan the already-loaded
-    `preferences.md` for a `Dashboard:` field:
-    - If its value is `enabled` (as written by onboarding: `- **Dashboard:** enabled`, or the
-      plain form `Dashboard: enabled`) → set `dashboard_enabled = true` for this run.
-    - Otherwise (`disabled`, missing, or preferences.md not configured yet) →
-      set `dashboard_enabled = false`. This is the default.
-    Store `dashboard_enabled` in working memory for the rest of this run. Every
-    `state.json` read/write instruction in this document is conditional on it —
-    when `false`, skip ALL of them; never create, update, or delete
-    `crews/{name}/state.json`.
+1a. **Escritório toggle** — the optional live view is off unless `preferences.md` turns it on (see "Escritório" below).
 
 > **Note on language**: The structural labels listed below are **fixed PT-BR** and must
 > never be translated — opencrew's primary supported audience is PT-BR (see AGENTS.md →
@@ -226,41 +215,42 @@ Before starting execution:
      - If it does (sub-second collision), append `-2`, `-3`, etc. until the folder does not exist
    - Create the folder using Bash: `mkdir -p crews/{name}/output/{run_id}`
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
-6. **Initialize state.json** (only if `dashboard_enabled` — see step 1a; otherwise skip this entire step, including all sub-steps below):
-   - **IMPORTANT**: When enabled, write to `crews/{name}/state.json` before every step and after every handoff, as described throughout this document. When `dashboard_enabled` is false, never create, write, or delete this file.
-   - Create `state.json` from scratch:
-     a. Read `crews/{name}/crew-party.csv` — for each agent row (skip header), extract:
-        - `id`: take the `path` column, strip `./agents/` prefix and `.agent.md` suffix
-          (e.g. `./agents/researcher.agent.md` → `researcher`)
-        - `name`: use the `displayName` column
-        - `icon`: use the `icon` column
-     b. Assign desk positions by agent order (0-based index):
-        - `col = (index % 3) + 1`
-        - `row = floor(index / 3) + 1`
-        (index 0 → col:1 row:1, index 1 → col:2 row:1, index 2 → col:3 row:1, index 3 → col:1 row:2, etc.)
-     c. Read `crews/{name}/crew.yaml` — count items in `pipeline.steps` for `total`
-     d. Write `crews/{name}/state.json` with the Write tool:
-        ```json
-        {
-          "crew": "{crew code from crew.yaml}",
-          "status": "idle",
-          "step": { "current": 0, "total": {step count from c}, "label": "" },
-          "agents": [
-            {
-              "id": "{agent id}",
-              "name": "{agent displayName}",
-              "icon": "{agent icon}",
-              "status": "idle",
-              "desk": { "col": {col from b}, "row": {row from b} }
-            }
-          ],
-          "handoff": null,
-          "startedAt": null,
-          "updatedAt": "{ISO timestamp now}"
-        }
-        ```
-        Include one entry per agent, in crew-party.csv order. For each agent, set
-        `"status"` to `"skipped"` if it is in `skipped_agents`, otherwise `"idle"`.
+6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below).
+
+## Escritório (optional live view)
+
+A local page that shows the crew at work, off by default. Follow this section only when the
+already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled` or
+plain `Dashboard: enabled`, any letter case); otherwise run none of these commands. When it is on,
+run via Bash, from the project root, the one-line command of each moment:
+
+| Moment | Command |
+|---|---|
+| Start of the run (Initialization, step 6) | `node _opencrew/core/scripts/estado.mjs "{name}" iniciar --passos {N}` |
+| Right after `iniciar`, once per deselected agent | `node _opencrew/core/scripts/estado.mjs "{name}" pular --agente {id}` |
+| Before each step, each time it starts | `node _opencrew/core/scripts/estado.mjs "{name}" passo --n {K} --agente {id} --rotulo "{rótulo}" --mensagem "{frase}"` |
+| Before asking the question of a checkpoint (instead of `passo`) | `node _opencrew/core/scripts/estado.mjs "{name}" checkpoint --n {K} --agente {id} --rotulo "{rótulo}"` |
+| End of the run (After Pipeline Completion) | `node _opencrew/core/scripts/estado.mjs "{name}" concluir` |
+| Run aborted after `iniciar`, by the user or by an error | `node _opencrew/core/scripts/estado.mjs "{name}" falhar --motivo "{motivo}"` |
+
+- **One at a time** — Run these commands one at a time, waiting for the `ESTADO:` line of each
+  before the next — never in parallel or in the background (each one reads and rewrites the same file).
+- **Values** — `{name}`: the crew code. `{N}`: how many steps will run (a deselected agent's steps
+  do not count). `{K}`: the step's position among them, from 1. `{id}`: the agent's `id` column in
+  `crew-party.csv`; a step with no `agent:` goes without `--agente`. `{rótulo}`: the step's name, in
+  a few words. `--mensagem` goes only when the agent changed since the last `passo`: one sentence on
+  what the previous agent delivered — never look at the next step. `{motivo}`: why the run stopped.
+- **Text on the command line** — `--rotulo`, `--mensagem` and `--motivo` go between double quotes,
+  on one line, starting with a letter or a digit, with only letters (accents included), digits,
+  spaces and `. , : ; - ( ) / ?`. Drop every other sign (quotes of any kind, `$`, backtick, `\`,
+  `%`, `!`, emoji). If no text is left, omit the option. Write them in the user's language.
+- **After `iniciar`**, when it answers `ESTADO:OK`, show the user once:
+  `Escritório ligado. Se a página não estiver aberta, rode em outro terminal: node _opencrew/core/scripts/escritorio.mjs`
+- **The Escritório never stops the run.** A command that fails, does not run or answers
+  `ESTADO:IGNORADO`: go on, do not repeat that event, ask nothing, and tell the user once per run,
+  in one line: `O escritório não foi atualizado nesta execução; o trabalho segue normalmente.` With
+  the reason "escritório desligado", say nothing and stop calling the script for the rest of this run.
+- The script is the only writer: never read, write or describe `crews/{name}/state.json` yourself.
 
 ## Execution Rules
 
@@ -485,38 +475,15 @@ Apply this transformation consistently for every write in this step.
 0. **Agent deselection check** — Read the step's `agent:` frontmatter field.
    - If the step has an `agent:` value present AND it is in `skipped_agents` →
      announce `⏭️ Skipping {Agent Name} (deselected for this run)` and skip this
-     step ENTIRELY: no dashboard update, no input validation, no execution, no output
-     validation, no veto, no output file, no handoff. Advance to the next step in
+     step ENTIRELY: no Escritório command, no input validation, no execution, no output
+     validation, no veto, no output file. Advance to the next step in
      `filtered_steps`.
    - Checkpoints that declare `agent:` and whose agent was deselected are skipped the
      same way. Checkpoints with no `agent:` field always run (backward compatible).
    - When the selection step was skipped (no `agent_dependencies:`), `skipped_agents`
      is empty → this check never fires (legacy behavior).
 
-0b. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 1). Write `crews/{name}/state.json` using the Write tool. Use this content:
-   ```json
-   {
-     "crew": "{crew code from crew.yaml}",
-     "status": "running",
-     "step": {
-       "current": {1-based index of this step},
-       "total": {total steps in pipeline},
-       "label": "{step id or label}"
-     },
-     "agents": [
-       {
-         "id": "{agent id}",
-         "name": "{agent displayName}",
-         "icon": "{agent icon}",
-          "status": "{working if this is the current step's agent, done if already completed, skipped if in skipped_agents, idle otherwise}",
-         "desk": {preserve existing desk positions from state.json — do not change col/row}
-       }
-     ],
-     "handoff": {preserve existing handoff object, or null if this is the first step},
-     "startedAt": "{ISO timestamp — set on the first step only, then preserve from existing state.json on subsequent steps}",
-     "updatedAt": "{ISO timestamp now}"
-   }
-   ```
+0b. **Escritório** — if it is on, run `passo`, or `checkpoint` when the step is a checkpoint (see "Escritório" above).
 
 1. **Pre-Step Input Validation** — MANDATORY. If the step's frontmatter declares an `inputFile`, validate that the input exists before executing the step. Run via Bash tool:
    ```bash
@@ -736,48 +703,18 @@ When a step has `on_reject: {step-id}` (a review step):
    text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
    and write it into the text before approving.
 
-### Dashboard Handoff (between steps)
-
-Only if `dashboard_enabled` (otherwise skip this entire section). After a step
-completes output and there IS a next step:
-
-1. **Write delivering state** — Write `crews/{name}/state.json` with:
-   - Current step's agent: `"status": "delivering"`
-   - Next step's agent: `"status": "idle"`
-   - All other agents unchanged
-   - Pipeline `"status": "running"`
-   - Add or update `"handoff"`:
-     ```json
-     "handoff": {
-       "from": "{current agent id}",
-       "to": "{next agent id}",
-       "message": "{one-sentence summary of what was produced, written in the user's language}",
-       "completedAt": "{ISO timestamp now}"
-     }
-     ```
-   - `"updatedAt"`: now
-
-2. _(No delay — proceed immediately to working state)_
-
-2. **Write working state** — Write `crews/{name}/state.json` again with:
-   - Current agent: `"status": "done"`
-   - Next agent: `"status": "working"`
-   - Keep the `"handoff"` object from step 1 unchanged
-   - `"updatedAt"`: now
-
 ### Step Execution Order (Summary)
 
 For reference, the complete execution order for each pipeline step is:
 
 ```
 0. Agent deselection check (skip step if its agent was deselected)
-0b. Dashboard update (state.json) — only if dashboard_enabled
+0b. Escritório command (passo or checkpoint) — only if it is on
 1. Pre-Step Input Validation (bash gate)
 2. Read step file
 3. Check execution mode and execute (subagent / inline / checkpoint)
 4. Post-Step Output Validation (bash gate)
 5. Veto Condition Enforcement
-6. Dashboard Handoff (to next step) — only if dashboard_enabled
 ```
 
 Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT advance — the user is consulted.
@@ -786,31 +723,9 @@ Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT adva
 
 1. Save final output to `crews/{name}/output/{run_id}/{filename}.md`
    (The run folder was created during initialization — no separate date subfolder needed)
-1b. **Update dashboard** (only if `dashboard_enabled`; otherwise skip to step 2 below). Write `crews/{name}/state.json` with:
-    - `"status": "completed"`
-    - All agents: `"status": "done"`
-    - `"updatedAt"`: now
-    - `"completedAt"`: now
-    - `"startedAt"`: preserve from existing `state.json`
-    - Keep existing `"handoff"` object
+1b. **Escritório** — if it is on, run `concluir` (see "Escritório" above).
 
-### Post-Completion Cleanup (only if `dashboard_enabled`)
-
-After writing the final "completed" state to `crews/{name}/state.json`:
-
-1. Add the `completedAt` field (or `failedAt` if status is `failed`) with the current ISO timestamp
-2. Copy `state.json` to the run output folder for permanent history:
-   ```bash
-   cp crews/{name}/state.json crews/{name}/output/{run_id}/state.json
-   ```
-3. Leave the working copy of `crews/{name}/state.json` in place — do not delete it and
-   do not add an artificial delay. A dashboard watching the file already sees the
-   "completed" status the moment it's written; the next run's initialization (step 6)
-   overwrites this file from scratch. There is nothing to clean up.
-
-This archives the run state for the `runs` command while keeping crew history available.
-
-2. **Update crew memory** — write to BOTH files (runs after Post-Completion Cleanup above):
+2. **Update crew memory** — write to BOTH files:
 
    ### 2a. Update `memories.md` (living preferences)
 
@@ -927,6 +842,7 @@ This archives the run state for the `runs` command while keeping crew history av
 - If a step file is missing, inform the user and suggest running `/opencrew edit {crew}` to fix.
 - If company.md is empty, stop and redirect to onboarding.
 - Never continue past a checkpoint without user input.
+- When the run is aborted: if the Escritório is on, run `falhar` (see "Escritório" above).
 
 ## Pipeline State
 

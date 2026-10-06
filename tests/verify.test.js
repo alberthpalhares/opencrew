@@ -35,3 +35,10 @@ test('default steps cover lint, test, version-sync and size, and call node direc
   const testStep = steps.find((s) => s.name === 'test');
   assert.ok(testStep.args.some((a) => a.endsWith('verify.test.js')), 'test step discovers every tests/*.test.js');
 });
+
+test('E1: the lint step covers the office page shipped in the payload, next to the runtime scripts', () => {
+  const lint = defaultSteps().find((s) => s.name === 'lint');
+  for (const pasta of ['templates/_opencrew/core/scripts/', 'templates/_opencrew/core/escritorio/']) {
+    assert.ok(lint.args.includes(pasta), `lint must cover ${pasta}`);
+  }
+});

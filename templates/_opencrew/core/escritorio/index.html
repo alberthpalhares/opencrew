@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Escritório</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --fundo: #12131c;
+    --painel: #1c1e2c;
+    --borda: #2e3350;
+    --poco: #0b0c12;
+    --tinta: #1a1c2c;
+    --papel: #f4f4ee;
+    --texto: #ecebe4;
+    --apagado: #9aa1b8;
+    --ambar: #f4a73b;
+    --verde: #5fd47a;
+    --vermelho: #e0564c;
+    --ceu: #7ec4e0;
+    --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.45 var(--sans); }
+  p, h1, h2, ul { margin: 0; }
+
+  /* Cabeçalho: a marca, a crew em exibição e o seletor (só com mais de uma crew). */
+  .topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 12px 16px 10px; background: var(--painel); border-bottom: 4px solid var(--borda); }
+  .marca { font: 700 14px/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ambar); }
+  .marca::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 10px; background: var(--ambar); box-shadow: 4px 4px 0 var(--poco); }
+  .crew { font: 700 18px/1.2 var(--mono); overflow-wrap: anywhere; }
+  .seletor { margin-left: auto; font: 12px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--apagado); }
+  .seletor select { max-width: 60vw; margin-left: 6px; padding: 4px 8px; font: 700 13px var(--mono); color: var(--texto); background: var(--poco); border: 2px solid var(--borda); border-radius: 0; }
+  .seletor select:focus-visible { outline: 2px solid var(--ambar); outline-offset: 2px; }
+
+  /* A frase de abertura fica na tela até o primeiro desenho; sem JavaScript, é o que se lê. */
+  .abertura { max-width: 64ch; margin: 24px 16px; padding: 14px 16px; font: 15px/1.5 var(--mono); background: var(--painel); border: 2px solid var(--borda); border-left: 6px solid var(--ambar); }
+
+  .pagina { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); gap: 16px; min-height: 0; padding: 14px 16px 16px; }
+  .palco { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+
+  /* O passo atual, com a contagem e a barra de progresso. */
+  .andamento { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 28px; }
+  .situacao { padding: 2px 8px; font: 700 12px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--tinta); background: var(--ceu); box-shadow: 3px 3px 0 var(--poco); }
+  [data-execucao="checkpoint"] .situacao { background: var(--ambar); }
+  [data-execucao="completed"] .situacao { background: var(--verde); }
+  [data-execucao="failed"] .situacao { background: var(--vermelho); }
+  .passo { font: 700 15px/1.3 var(--mono); overflow-wrap: anywhere; }
+  .barra { position: relative; flex: 1 1 180px; display: flex; height: 14px; background: var(--poco); border: 2px solid var(--borda); }
+  .barra span { flex: 0 0 0px; }
+  #barra-feito { background: var(--verde); }
+  #barra-atual { background: var(--ambar); animation: pulsar 1s steps(1, end) infinite; }
+  [data-execucao="failed"] #barra-atual { background: var(--vermelho); animation: none; }
+  .barra::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / var(--total, 1) - 2px), var(--poco) calc(100% / var(--total, 1) - 2px), var(--poco) calc(100% / var(--total, 1))); }
+  @keyframes pulsar { 0% { opacity: 1; } 50% { opacity: .45; } }
+
+  .avisos { display: flex; flex-direction: column; gap: 4px; min-height: 26px; }
+  .aviso, .frase { padding: 3px 10px; font: 13px/1.5 var(--mono); border-left: 6px solid; }
+  .aviso { color: #ffd9d4; background: #2a1719; border-color: var(--vermelho); }
+  .frase { color: #ffe2b0; background: #2a2113; border-color: var(--ambar); }
+
+  /* O desenho: o canvas em escala inteira e, por cima, a camada de nomes e balões. A área é medida
+     pela página para escolher a escala; a moldura em volta dá espaço à borda e rola se nem a
+     escala 1 couber. */
+  .moldura { flex: 1 1 auto; display: flex; min-height: 200px; padding: 10px; overflow: auto; }
+  .area { flex: 1 1 0; display: flex; min-width: 0; min-height: 0; }
+  .sala { position: relative; flex: none; width: 320px; height: 180px; margin: auto; box-shadow: 0 0 0 4px var(--borda), 6px 6px 0 4px #07080d; --u: 1; --fio: max(1px, calc(var(--u) * .5px)); }
+  .sala canvas { display: block; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; }
+  .rotulos { position: absolute; inset: 0; overflow: hidden; pointer-events: none; font: 700 clamp(9px, calc(var(--u) * 4.5px), 15px)/1.15 var(--mono); }
+  .rotulos div { position: absolute; display: flex; justify-content: center; transition: opacity .15s linear; }
+  .rotulos span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nome span { padding: 0 calc(var(--u) * 1.5px); color: var(--papel); background: rgba(26, 28, 44, .8); }
+  .balao { padding-bottom: calc(var(--u) * 2px); }
+  .balao span { padding: 0 calc(var(--u) * 2px); color: var(--tinta); background: var(--papel); border: var(--fio) solid var(--tinta); }
+  .balao::after { content: ""; position: absolute; bottom: 0; left: calc(50% - var(--u) * 1px - var(--fio)); width: calc(var(--u) * 2px + var(--fio) * 2); height: calc(var(--u) * 2px + var(--fio)); background: var(--papel); border: solid var(--tinta); border-width: 0 var(--fio) var(--fio); }
+  .balao.espera span, .balao.espera::after { background: var(--ambar); }
+  .faixa { position: absolute; top: 0; right: 0; left: 0; height: calc(var(--u) * 13px); padding: 0 calc(var(--u) * 4px); overflow: hidden; font: 700 clamp(10px, calc(var(--u) * 5.5px), 20px)/calc(var(--u) * 11px) var(--mono); text-align: center; text-overflow: ellipsis; white-space: nowrap; color: var(--tinta); background: var(--ambar); border-bottom: calc(var(--u) * 2px) solid var(--tinta); }
+  .etiqueta { position: absolute; right: calc(var(--u) * 3px); bottom: calc(var(--u) * 3px); padding: 0 calc(var(--u) * 2px); font: 700 clamp(10px, calc(var(--u) * 5px), 16px)/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ambar); background: rgba(26, 28, 44, .85); border: var(--fio) solid var(--ambar); }
+
+  .rodape { display: flex; flex-direction: column; gap: 2px; min-height: 42px; }
+  .nota { font: 13px/1.5 var(--mono); color: var(--apagado); overflow-wrap: anywhere; }
+  .nota.falha { color: #ffd9d4; }
+
+  /* A lista: todo agente, com o status por extenso e o que fez. */
+  .lado { display: flex; flex-direction: column; min-height: 0; background: var(--painel); border: 4px solid var(--borda); box-shadow: 6px 6px 0 #07080d; }
+  .lado h2 { padding: 8px 12px; font: 700 12px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--apagado); border-bottom: 2px solid var(--borda); }
+  .lista { flex: 1 1 auto; padding: 0; overflow: auto; list-style: none; }
+  .agente { display: grid; grid-template-columns: 10px 1.6em minmax(0, 1fr); column-gap: 10px; align-items: start; padding: 9px 12px; border-bottom: 2px solid var(--borda); }
+  .agente .cor { width: 10px; height: 10px; margin-top: 5px; box-shadow: 0 0 0 2px var(--tinta); }
+  .agente .icone { font-size: 17px; line-height: 1.2; text-align: center; }
+  .agente .nome { display: block; font: 700 14px/1.3 var(--mono); overflow-wrap: anywhere; }
+  .agente .status { display: block; font: 12px/1.5 var(--mono); color: var(--apagado); }
+  .agente .sinal { display: inline-block; width: 1.4em; }
+  .agente .fez { display: block; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; opacity: .85; }
+  .agente[data-acao="working"], .agente[data-acao="checkpoint"] { background: #222538; }
+  .agente[data-acao="working"] .status { color: var(--verde); }
+  .agente[data-acao="checkpoint"] .status { color: var(--ambar); }
+  .agente[data-acao="done"] .status { color: var(--ceu); }
+  .agente[data-acao="failed"] .status { color: var(--vermelho); }
+  .agente[data-acao="sem-sinal"] .status { color: var(--texto); }
+  .agente[data-acao="skipped"] { opacity: .55; }
+
+  /* Tela estreita: a lista desce para baixo do desenho e a página rola. */
+  @media (max-width: 860px) {
+    body { height: auto; min-height: 100vh; min-height: 100dvh; }
+    .pagina { display: flex; flex-direction: column; padding: 12px; }
+    .moldura { flex: none; min-height: 0; padding: 6px; }
+    .area { aspect-ratio: 16 / 9; }
+    .lista { overflow: visible; }
+  }
+  @media (max-width: 359px) {
+    .pagina, .moldura { padding-right: 0; padding-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #barra-atual { animation: none; }
+    .rotulos div { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1 class="marca">Escritório</h1>
+  <p class="crew" id="crew" hidden></p>
+  <label class="seletor" id="seletor-caixa" hidden>Crew em exibição <select id="seletor"></select></label>
+</header>
+<p class="abertura" id="abertura">Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.</p>
+<main class="pagina" id="pagina" hidden>
+  <section class="palco" aria-label="Sala do escritório">
+    <div class="andamento">
+      <span class="situacao" id="situacao" hidden></span>
+      <p class="passo" id="passo" role="status" hidden></p>
+      <div class="barra" id="barra" aria-hidden="true" hidden><span id="barra-feito"></span><span id="barra-atual"></span><span id="barra-resto"></span></div>
+    </div>
+    <div class="avisos">
+      <p class="aviso" id="aviso" role="alert" hidden></p>
+      <p class="frase" id="frase" hidden></p>
+    </div>
+    <div class="moldura">
+      <div class="area" id="moldura">
+        <div class="sala" id="sala">
+          <canvas id="tela" width="320" height="180" role="img" aria-label="Desenho do escritório em pixel-art. A lista Equipe diz o que cada agente está fazendo."></canvas>
+          <p class="faixa" id="faixa" role="status" hidden></p>
+          <div class="rotulos" id="rotulos" aria-hidden="true"></div>
+          <span class="etiqueta" id="etiqueta" hidden>Demonstração</span>
+        </div>
+      </div>
+    </div>
+    <div class="rodape">
+      <p class="nota" id="parada" hidden></p>
+      <p class="nota falha" id="motivo" hidden></p>
+      <p class="nota" id="passagem" hidden></p>
+    </div>
+  </section>
+  <aside class="lado" aria-label="Equipe">
+    <h2>Equipe</h2>
+    <ul class="lista" id="lista"></ul>
+  </aside>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

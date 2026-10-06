@@ -24,6 +24,10 @@
 | Overlay local | `_opencrew/best-practices.local/` | Runtime | Best-practices do usuário (aprendidas ou criadas), lidas antes das do core e nunca tocadas pelo `update` |
 | Checkpoint | `checkpoint` | Runtime | Passo que para e pede decisão do usuário |
 | Execução | `run` | Runtime | Uma passada completa do pipeline de uma crew; identificada por `run_id`, saída em `output/{run_id}/` |
+| Escritório | `escritorio.mjs` + `_opencrew/core/escritorio/` | Runtime | Página local, em pixel-art, que mostra a crew trabalhando (uma mesa por agente). O servidor escuta só em `127.0.0.1` e só lê. Desligado por padrão: liga com `/opencrew dashboard`, que grava a preferência `Dashboard: enabled` |
+| Estado da execução | `crews/<crew>/state.json` | Runtime | Retrato da execução em curso de uma crew: status da execução, passo atual, status e último rótulo de cada agente e a última passagem de bastão. Gravado só pelo `estado.mjs`, e só com o Escritório ligado; o Escritório apenas lê (não confundir com a Execução, que é o run em si) |
+| Evento de estado | `estado.mjs <crew> <evento>` | Runtime | Aviso que o runner dá, com um comando por momento, e que muda o estado da execução: `iniciar`, `passo`, `checkpoint`, `pular`, `concluir` ou `falhar`. A última linha diz o resultado: `ESTADO:OK`, `ESTADO:OK — estado recriado` ou `ESTADO:IGNORADO — <motivo>`; nunca para a execução |
+| Passagem de bastão | `handoff` | Runtime | Momento em que um agente termina e o seguinte começa. É gravada pelo próprio evento `passo` (não existe evento `handoff`) e, no Escritório, aparece como o boneco de quem entregou levando o papel até a mesa de quem recebe |
 | Skill | `skill` | Runtime | Capacidade externa (`skills/<nome>/SKILL.md`, às vezes com `scripts/`) que um agente pode usar |
 | Best-practice | `best-practice` | Runtime | Guia por formato ou disciplina em `_opencrew/core/best-practices/`, indexado em `_catalog.yaml`; a versão do usuário mora no overlay local, que o runner e o verificador leem antes da do core |
 | Tier da crew | `tier` | Runtime | Profundidade do pipeline: Express / Standard / Full (não confundir com o tier project-standards do repo) |

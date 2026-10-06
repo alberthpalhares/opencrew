@@ -4,14 +4,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
 import { exists } from '../src/lib/fsx.js';
-import { packageJsonPath } from '../src/lib/paths.js';
+import { packageJsonPath, templatesDir } from '../src/lib/paths.js';
 import { verificar } from '../templates/_opencrew/core/scripts/verificar.mjs';
-import { mkTmp, withCwd } from './_helpers.js';
+import { mkTmp, withCwd, snapshot } from './_helpers.js';
 
 const OLD_INSTAGRAM = '---\nname: "Instagram Feed Post"\nconstraints:\n  max_hashtags: 30\n  carousel_max_slides: 20\n  image_resolution: "1080x1440px"\n---\n';
 const LEAKED_CLAUDE = '<!-- opencrew:start -->\n# opencrew — Project Instructions\n\n## STATUS.md (gestão de sessão)\n<!-- opencrew:end -->\n';
@@ -121,4 +122,84 @@ test('R1-upg: update from a 1.6.0 workspace delivers the checker that measures l
   const fontesEntregue = pathToFileURL(path.join(core, 'scripts', 'conferir-fontes.mjs')).href;
   const { conferir } = await import(`${fontesEntregue}?r1-upg`);
   assert.equal((await conferir({ raiz: dir, crew: 'crews/minha-crew' })).status, 'OK');
+});
+
+// ── 1.6.x → Escritório (E1): the two scripts and the page arrive; the switch stays as it was ──
+
+const PREFS_16 = '# opencrew Preferences\n\n- **User Name:** Ana\n- **Default Tier:** standard\n- **Dashboard:** enabled\n';
+// What the 1.6.x runner wrote by hand: `desk`, `delivering`, no `label`.
+const STATE_16 = JSON.stringify({
+  crew: 'x', status: 'running', step: { current: 2, total: 3, label: 'Escrever' },
+  agents: [
+    { id: 'pesquisa', name: 'Pedro Pesquisa', icon: '🔎', status: 'delivering', desk: { col: 1, row: 1 } },
+    { id: 'redacao', name: 'Rita Redação', icon: '✍️', status: 'working', desk: { col: 2, row: 1 } },
+  ],
+  handoff: { from: 'pesquisa', to: 'redacao', message: 'Pauta pronta', completedAt: '2026-10-01T10:00:00.000Z' },
+  startedAt: '2026-10-01T09:58:00.000Z', updatedAt: '2026-10-01T10:00:00.000Z',
+}, null, 2);
+const NOVOS_E1 = [['scripts', 'estado.mjs'], ['scripts', 'estado'], ['scripts', 'escritorio.mjs'], ['scripts', 'escritorio'], ['escritorio']];
+
+async function workspace16(t) {
+  const dir = await mkTmp('upgrade16x');
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 3 }));
+  await withCwd(dir, () => init({ ide: ['claude-code'] }));
+  const core = path.join(dir, '_opencrew', 'core');
+  for (const novo of NOVOS_E1) await fs.rm(path.join(core, ...novo), { recursive: true, force: true });
+  await fs.writeFile(path.join(core, 'runner.pipeline.md'), '# Pipeline Runner (1.6.2)\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '1.6.2\n');
+  await fs.writeFile(path.join(dir, '_opencrew', '_memory', 'preferences.md'), PREFS_16);
+  await fs.mkdir(path.join(dir, 'crews', 'x'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'crews', 'x', 'crew-party.csv'), 'id,displayName,icon\npesquisa,Pedro Pesquisa,🔎\nredacao,Rita Redação,✍️\n');
+  await fs.writeFile(path.join(dir, 'crews', 'x', 'state.json'), STATE_16);
+  return { dir, core };
+}
+
+const pedir = (url) => new Promise((resolve, reject) => {
+  http.get(url, { agent: false }, (res) => {
+    let corpo = '';
+    res.setEncoding('utf8').on('data', (parte) => { corpo += parte; }).on('end', () => resolve({ status: res.statusCode, corpo }));
+  }).on('error', reject);
+});
+
+test('E1-upg-a: update from a 1.6.x workspace delivers the two scripts and escritorio/; preferences.md and the crews stay byte for byte', async (t) => {
+  const { dir, core } = await workspace16(t);
+  const crewsAntes = await snapshot(path.join(dir, 'crews'));
+
+  await withCwd(dir, () => update());
+
+  for (const novo of NOVOS_E1) assert.equal(await exists(path.join(core, ...novo)), true, `missing after update: ${novo.join('/')}`);
+  const pagina = await fs.readdir(path.join(templatesDir, '_opencrew', 'core', 'escritorio'));
+  assert.deepEqual((await fs.readdir(path.join(core, 'escritorio'))).sort(), pagina.sort(), 'every file of the page arrived');
+  assert.match(await fs.readFile(path.join(core, 'runner.pipeline.md'), 'utf8'), /scripts\/estado\.mjs/);
+  assert.equal(await fs.readFile(path.join(dir, '_opencrew', '_memory', 'preferences.md'), 'utf8'), PREFS_16);
+  assert.deepEqual(await snapshot(path.join(dir, 'crews')), crewsAntes);
+});
+
+test('E1-upg-b: after update, GET /estado of the installed server brings crew x from its 1.6.x state.json', async (t) => {
+  const { dir, core } = await workspace16(t);
+  await withCwd(dir, () => update());
+
+  // Imported from the WORKSPACE: the installed server serves the installed page.
+  const base = pathToFileURL(path.join(core, 'scripts')).href;
+  const { main } = await import(`${base}/escritorio.mjs?e1-upg`);
+  const { abrir } = await import(`${base}/escritorio/porta.mjs`);
+  const linhas = [];
+  const r = await main([], { cwd: dir, escrever: (s) => linhas.push(s), abrir: (servidor) => abrir(servidor, 0) }); // any free port
+  assert.equal(r.code, 0, linhas.join('\n'));
+  t.after(() => new Promise((ok) => { r.servidor.closeAllConnections?.(); r.servidor.close(() => ok()); }));
+  const origem = `http://127.0.0.1:${r.servidor.address().port}`;
+
+  const estado = await pedir(`${origem}/estado`);
+  assert.equal(estado.status, 200);
+  const { projeto, crews } = JSON.parse(estado.corpo);
+  assert.match(projeto, /^[0-9a-f]{12}$/);
+  assert.deepEqual(crews.map((c) => c.crew), ['x']);
+  assert.deepEqual(crews[0].estado, JSON.parse(STATE_16));
+  const inicio = await pedir(`${origem}/`);
+  assert.deepEqual([inicio.status, inicio.corpo], [200, await fs.readFile(path.join(core, 'escritorio', 'index.html'), 'utf8')]);
+  // Every module the page imports is served: a file left out of the fixed list would be a 404.
+  for (const nome of await fs.readdir(path.join(core, 'escritorio'))) {
+    assert.equal((await pedir(`${origem}/${nome}`)).status, 200, `the installed server does not serve ${nome}`);
+  }
+  assert.equal(await fs.readFile(path.join(dir, 'crews', 'x', 'state.json'), 'utf8'), STATE_16, 'the server only reads');
 });

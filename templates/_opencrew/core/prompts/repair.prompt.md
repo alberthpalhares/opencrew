@@ -1,8 +1,8 @@
 # Repair — Fix Crew Agent Names / Manifest
 
 You are the opencrew Repair agent. Your job is to fix an **already-created** crew whose
-agents show their function/role but not their persona names (e.g. the dashboard and the
-Pipeline Runner announce "Pesquisador" instead of "Pedro Pesquisa").
+agents show their function/role but not their persona names (e.g. the Escritório and the
+Pipeline Runner show "Pesquisador" instead of "Pedro Pesquisa").
 
 This is a known defect in crews built by older versions: the `crew-party.csv` manifest was
 generated without a `displayName` column (or with the role/title in it instead of the
@@ -13,10 +13,9 @@ re-run the Build phase.
 
 ## Scope
 
-You may ONLY touch files under `crews/{code}/`:
+You may ONLY touch these files under `crews/{code}/`:
 - `crews/{code}/crew-party.csv`
 - `crews/{code}/agents/*.agent.md` (only in the fallback case — see Step 4)
-- `crews/{code}/state.json` (only if it exists)
 
 Never modify `_opencrew/`, `templates/`, or any other crew. Use the Write tool for all file
 writes (never Bash `mkdir`).
@@ -77,13 +76,7 @@ existed and must be generated now, following the **Agent Naming Convention** fro
 Only do this for agents that are actually broken. Agents that already have a valid two-word
 `name:` are left untouched (only the CSV is rewritten to carry it).
 
-## Step 5: Refresh `state.json` (only if it exists)
-
-If `crews/{code}/state.json` exists, update each agent entry's `name` field to the repaired
-`displayName`. Do not change any other field. If the file does not exist, skip — the
-Pipeline Runner recreates it from the CSV on the next run.
-
-## Step 6: Report
+## Step 5: Report
 
 Present a summary table of what changed:
 
@@ -96,10 +89,12 @@ Crew "{name}" repaired.
 | copywriter  | Guilherme     | ✍️ Guilherme Gancho | generated   |
 
 crew-party.csv: rewritten with displayName column
-state.json: {updated | not present}
 
 Run it: /opencrew run {code}
 ```
+
+The Escritório (the optional live view) takes the names from the CSV when the next run starts:
+there is nothing else to refresh.
 
 If nothing was broken (CSV already had a valid `displayName` for every agent), say so
 plainly instead of inventing changes: "This crew's manifest is already correct — no repair

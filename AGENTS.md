@@ -66,7 +66,7 @@ Exceção: `templates/skills/opencrew-skill-creator/` (código de terceiros adap
 `npm run verify` — lint, testes, version-sync, alerta de tamanho, conteúdo do pacote. Sai
 diferente de zero se qualquer passo reprovar. O CI e o publish chamam o mesmo comando.
 **Não cobre:** a execução real dos prompts por uma IA (conferir no `sandbox/`), o publish
-real no npm, o dashboard.
+real no npm, a aparência do escritório no navegador.
 
 ### 8. Versão e release
 Nunca editar `version` à mão: `npm version <bump>` (carimba `.opencrew-version`). O release
