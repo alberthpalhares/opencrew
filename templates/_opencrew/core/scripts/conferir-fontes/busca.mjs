@@ -62,14 +62,22 @@ function dominioNoInicio(ref) {
 /**
  * Citação que a conferência não testa (regra 25 da fase R2): caminho de rede (começa por duas
  * barras) ou endereço de site — tem `://` (menos `http(s)://`, que fica como sempre foi), começa
- * por `mailto:` ou `www.`, ou o primeiro segmento parece domínio e não há pasta com esse nome no
- * projeto. Caminho de disco (letra de unidade ou uma barra no início) nunca é endereço. Só o
- * último caso consulta o disco, e nunca a rede.
+ * por `mailto:` ou `www.`. Caminho de disco (letra de unidade ou uma barra no início) nunca é
+ * endereço. Não consulta o disco nem a rede.
  */
-export function ehRedeOuSite({ raiz, crew }, { ref, citadoEm }) {
+export function ehRedeOuSite(ref) {
   if (ehDeRede(ref)) return true;
   if (ehAbsoluto(ref) || /^https?:\/\//i.test(ref)) return false;
-  if (ref.includes('://') || /^(?:mailto:|www\.)/i.test(ref)) return true;
+  return ref.includes('://') || /^(?:mailto:|www\.)/i.test(ref);
+}
+
+/**
+ * Citação que só parece endereço de site pela forma: o primeiro segmento tem cara de domínio e
+ * não há pasta com esse nome no projeto. Quem chama confere antes se o projeto tem arquivo com o
+ * mesmo nome: pasta com ponto que foi movida continua pendência, com sugestão.
+ */
+export function pareceSite({ raiz, crew }, { ref, citadoEm }) {
+  if (ehAbsoluto(ref) || /^https?:\/\//i.test(ref)) return false;
   const dominio = dominioNoInicio(ref);
   return dominio != null && !ehPasta(resolver(raiz, crew, dominio, citadoEm));
 }

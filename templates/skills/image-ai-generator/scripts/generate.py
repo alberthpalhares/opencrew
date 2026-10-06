@@ -58,9 +58,16 @@ def read_batch(path):
     """Read the batch list from a UTF-8 JSON file (BOM accepted)."""
     try:
         with open(path, "r", encoding="utf-8-sig") as f:
-            return json.load(f)
+            batch = json.load(f)
     except (OSError, ValueError) as e:
         fail(f"Não consegui ler o lote {path}: {e}. Grave o arquivo em UTF-8.")
+    ok = isinstance(batch, list) and all(
+        isinstance(i, dict) and all(isinstance(i.get(k), str) and i[k].strip() for k in ("prompt", "output"))
+        for i in batch
+    )
+    if not ok:
+        fail(f'O lote {path} tem de ser uma lista de itens com "prompt" e "output". Nada foi gerado.')
+    return batch
 
 
 def load_api_key():

@@ -504,8 +504,35 @@ Leituras adotadas na implementação (2026-10-06), onde a spec não fechava o ca
   `crews/` inclui o `.gitkeep`; a linha do `playwright` que aponta para `_opensquad/` não entra
   no total de restos. Texto fora da §6: "AGENTS.md criado com o bloco do OpenCrew."
 - Tamanho: o runner foi a 965 linhas e o skills engine a 495; `generate.py` a 211.
-- Não feito: a rodada de revisão do código por lentes independentes (feita na R1) não foi
-  repetida aqui. Nada rodou em Node 20.17 nem em Ubuntu antes do push: a prova é o CI.
+- Nada rodou em Node 20.17 nem em Ubuntu antes do push: a prova é o CI.
 - Achados de passagem, sem conserto nesta fase: a migração do `AGENTS.md` anterior à 1.3 grava a
   ponte sem marcador e o `update` seguinte duplica o texto → U5; `__pycache__` criado ao compilar
   o `generate.py` no repositório entraria no pacote → U5 (barrar no teste do pacote).
+
+**Revisão do código antes do push (2026-10-06).** Dois leitores independentes, cada achado
+reproduzido com o binário real, e a conferência da §9 (workspace 1.6.2 com bloco editado: cada
+linha do resumo confere com o disco). Upgrades de 1.0.0, 1.2.2, 1.3.0, 1.4.0, 1.4.2, 1.5.0 e
+1.6.2 com um `update` passaram. Corrigido, com teste visto vermelho (`tests/r2-bytes.test.js` e
+os arquivos de cada cenário):
+- Arquivo do usuário fora do UTF-8 (Windows-1252) tinha os acentos de fora do bloco trocados ao
+  receber o bloco, sem cópia. O bloco passa a ser gravado sem mexer em nenhum byte de fora dele; a
+  marca de início (BOM) fica no começo; arquivo em UTF-16 é copiado inteiro antes.
+- "Pontes das IDEs já estavam em dia." saía no mesmo resumo que retirava o texto legado: a ponte
+  que teve o texto retirado entra em "Pontes atualizadas".
+- `.mcp.json` com BOM era dado como JSON inválido a cada `update`: é lido, e o BOM é mantido.
+- Pasta com ponto no nome que foi movida (`Sr.Souza/contrato.pdf`) virava "não conferido" e
+  deixava de ser pendência: continua pendência, com sugestão, quando o projeto tem arquivo com o
+  mesmo nome.
+- `generate.py`: lote com forma errada parava no meio, com rastro em inglês, depois de já ter
+  gerado imagens; a forma é conferida antes da chave e de qualquer imagem.
+
+Ficou como está, com destino:
+- `--corrigir` em arquivo somente leitura para no meio, com a crew parcialmente corrigida e o
+  motivo em inglês → U5. O `{motivo}` das mensagens de erro vem do sistema, em inglês → U5.
+- O runner ainda repete sozinho o passo de envio de crew antiga sem a marca no passo; nada sai
+  sem a palavra, porque a skill mostra a prévia de novo → U4 (já na §11).
+- A best-practice de publicação fala em confirmar por plataforma e o `blotato` mostra uma prévia
+  só para todas as contas → U5.
+- O aviso de texto legado editado sai também quando fora do bloco só sobrou o título → U5.
+- O texto legado é retirado relendo o arquivo como UTF-8: num arquivo em outra codificação, os
+  acentos de fora mudam, mas a cópia do arquivo inteiro é feita antes → U5.

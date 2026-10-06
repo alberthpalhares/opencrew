@@ -184,3 +184,13 @@ for (const [caso, criar] of [
     assert.doesNotMatch(p.stdout, /FONTES:|\n\s+at /);
   });
 }
+
+// Review of R2: a folder with a dot in its name that was moved is still a pending item with a
+// suggestion (as in 1.6.2), not a "não conferido" alert that lets the run go on.
+test('R2-05f: a moved folder with a dot in its name stays a pending item when the project has a file of that name', async () => {
+  const raiz = await projeto({ [PASSO]: cita(['Sr.Souza/contrato.pdf', 'docs.antigos/guia.md']), 'Sr.Silva/contrato.pdf': 'x', 'docs/guia.md': 'x' });
+  const r = await conferir({ raiz, crew: 'crews/c' });
+  assert.deepEqual(estados(r), [['Sr.Souza/contrato.pdf', 'faltando'], ['docs.antigos/guia.md', 'faltando']]);
+  assert.equal(ref(r, 'Sr.Souza/contrato.pdf').sugestao, 'Sr.Silva/contrato.pdf');
+  assert.equal(r.status, 'PENDENTE');
+});

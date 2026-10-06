@@ -44,10 +44,12 @@ function indentOf(text) {
   return '  ';
 }
 
+const BOM = String.fromCharCode(0xfeff); // some editors on Windows save JSON with it
+
 /** `data` as JSON in the indentation, line ending and final line break of `text`. */
 function formatLike(text, data) {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
-  const json = JSON.stringify(data, null, indentOf(text)).replace(/\n/g, eol);
+  const json = (text.startsWith(BOM) ? BOM : '') + JSON.stringify(data, null, indentOf(text)).replace(/\n/g, eol);
   return text.endsWith('\n') ? json + eol : json;
 }
 
@@ -57,7 +59,7 @@ function formatLike(text, data) {
  */
 function planMcp(text, template, delivered) {
   let data;
-  try { data = JSON.parse(text); } catch { return { action: 'not-json' }; }
+  try { data = JSON.parse(text.startsWith(BOM) ? text.slice(1) : text); } catch { return { action: 'not-json' }; }
   // An object with no `mcpServers` counts as one with no server; any other shape is left alone.
   const servers = isRecord(data) && data.mcpServers === undefined ? {} : data?.mcpServers;
   if (!isRecord(servers)) return { action: 'bad-format' };

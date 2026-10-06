@@ -9,6 +9,12 @@ import path from 'node:path';
 import { exists } from './fsx.js';
 import { deliverFile, backupFile, hashOf } from './manifest.js';
 
+// The file is handled byte by byte (latin1 goes there and back unchanged): whatever its encoding,
+// no byte of the user outside the block changes. `bytesOf` = UTF-8 text in that same form.
+const bytesOf = (text) => Buffer.from(text, 'utf8').toString('latin1');
+const BOM = bytesOf(String.fromCharCode(0xfeff));
+const isUtf16 = (raw) => (raw[0] === 0xff && raw[1] === 0xfe) || (raw[0] === 0xfe && raw[1] === 0xff);
+
 // Files of the user where the block goes at the END, between `#` comment markers.
 const AT_END = new Set(['.gitignore', '.env.example']);
 const ONLY_THE_BLOCK = '(só o bloco do OpenCrew foi regravado; o resto do arquivo não mudou)';
@@ -59,17 +65,18 @@ function replaceRanges(text, ranges, block) {
  * the action, the new content (none when kept) and the hash of each block found.
  */
 function planBlock(file, text, marked) {
-  if (text === null) return { action: 'created', text: `${marked}\n`, hashes: [] };
+  if (text === null) return { action: 'created', text: `${bytesOf(marked)}\n`, hashes: [] };
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
-  const block = marked.replace(/\n/g, eol);
+  const block = bytesOf(marked).replace(/\n/g, eol);
   const ranges = blockRanges(text, file);
   if (!ranges.length) {
+    const bom = text.startsWith(BOM) ? BOM : '';
     const added = AT_END.has(file)
-      ? `${text.trimEnd()}${eol}${eol}${block}${eol}`
-      : `${block}${eol}${eol}${text.trimStart()}`;
+      ? `${text.replace(/[ \t\r\n]+$/, '')}${eol}${eol}${block}${eol}`
+      : `${bom}${block}${eol}${eol}${text.slice(bom.length).replace(/^[ \t\r\n]+/, '')}`;
     return { action: 'added', text: added, hashes: [] };
   }
-  const hashes = ranges.map(([from, to]) => hashOf(text.slice(from, to)));
+  const hashes = ranges.map(([from, to]) => hashOf(Buffer.from(text.slice(from, to), 'latin1').toString('utf8')));
   if (hashes.every((h) => h === hashOf(marked))) return { action: 'kept', hashes };
   return { action: 'updated', text: replaceRanges(text, ranges, block), hashes };
 }
@@ -89,13 +96,16 @@ export async function deliverBlock(ctx, file, content) {
   const [start, end] = markersOf(file);
   const marked = `${start}\n${content.replace(/\r\n/g, '\n').trimEnd()}\n${end}`;
   const dest = path.join(ctx.target, file);
-  const plan = planBlock(file, (await exists(dest)) ? await fs.readFile(dest, 'utf8') : null, marked);
+  const raw = (await exists(dest)) ? await fs.readFile(dest) : null;
+  const plan = planBlock(file, raw && raw.toString('latin1'), marked);
   const record = ctx.manifest?.files?.[blockKey(file)];
   const edited = plan.action === 'updated' && !plan.hashes.every((h) => h === record);
-  const copied = edited && (await backupFile(ctx, file));
+  // A UTF-16 file cannot take a UTF-8 block without damage: the whole file is copied first.
+  const risky = raw && plan.text !== undefined && isUtf16(raw);
+  const copied = (edited || risky) && (await backupFile(ctx, file));
   if (plan.text !== undefined) {
     await fs.mkdir(path.dirname(dest), { recursive: true });
-    await fs.writeFile(dest, plan.text);
+    await fs.writeFile(dest, Buffer.from(plan.text, 'latin1'));
   }
   ctx.files[blockKey(file)] = hashOf(marked);
   const result = { file, action: plan.action, copied, block: true };

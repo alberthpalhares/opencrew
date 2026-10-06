@@ -19,7 +19,7 @@ import path from 'node:path';
 import { erroDeUso, dentroDoProjeto, relativoAoProjeto, realDentroDe, ehPrincipal } from './comum.mjs';
 import { coletar, trocarCitacao } from './conferir-fontes/coleta.mjs';
 import {
-  LIMITE_DA_BUSCA, ehAbsoluto, ehRedeOuSite, temBarraFinal, resolver, indexar, candidatosPorNome, nomesDaPastaEsperada,
+  LIMITE_DA_BUSCA, ehAbsoluto, ehRedeOuSite, pareceSite, temBarraFinal, resolver, indexar, candidatosPorNome, nomesDaPastaEsperada,
 } from './conferir-fontes/busca.mjs';
 import { formatar, MSG } from './conferir-fontes/relatorio.mjs';
 
@@ -55,14 +55,15 @@ async function procurar(item, { raiz, crew, indice, destino }) {
  */
 async function classificar(item, destino, ctx) {
   const { raiz, crew } = ctx;
-  if (ehRedeOuSite(ctx, item)) {
+  if (ehRedeOuSite(item.ref)) {
     item.estado = 'nao-conferido';
     return;
   }
   const achado = resolver(raiz, crew, item.ref, item.citadoEm);
   if (!achado) {
     ctx.indice ??= await indexar(raiz, ctx.limite);
-    await procurar(item, { raiz, crew, indice: ctx.indice, destino });
+    if (pareceSite(ctx, item) && !candidatosPorNome(ctx.indice, item.ref).length) item.estado = 'nao-conferido';
+    else await procurar(item, { raiz, crew, indice: ctx.indice, destino });
   } else if (ehAbsoluto(item.ref)) {
     item.estado = 'nao-portatil';
     item.sugestao = sugestaoRelativa(raiz, item.ref, achado);

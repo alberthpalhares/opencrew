@@ -195,3 +195,8 @@ test('R2-05f: the runner mentions the "não conferido" alert and goes on', () =>
   const sourceCheck = items(runner, '## Initialization').find((s) => /^\d+[a-z]?\. \*\*Source check\*\*/.test(s)) ?? '';
   assert.match(sourceCheck, /Alerts — not portable \(absolute paths\) or "não conferido" \(a network path or a site address: the script never accesses the network\) — are mentioned once, without stopping\./);
 });
+
+test('R2-04f: generate.py checks the shape of the batch before the key and before any image', () => {
+  assert.match(genScript, /def read_batch\(path\):[\s\S]*?isinstance\(batch, list\)[\s\S]*?def load_api_key/);
+  assert.match(genScript, /O lote \{path\} tem de ser uma lista de itens com "prompt" e "output"/);
+});

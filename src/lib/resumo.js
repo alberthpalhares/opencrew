@@ -59,9 +59,10 @@ const blockLines = (results) => results
   .map((text) => [ok, text]);
 
 /** One line per case that happened: IDEs with a bridge rewritten, files created, or neither. */
-function bridgeLines(ides, bridges) {
+function bridgeLines(ides, bridges, legacy = []) {
   if (!ides.length) return [[info, NO_BRIDGES]];
-  const rewritten = bridges.filter((b) => b.action === 'updated' || b.action === 'added');
+  const cleaned = new Set(legacy.filter((l) => l.action === 'removed').map((l) => l.file));
+  const rewritten = bridges.filter((b) => b.action === 'updated' || b.action === 'added' || cleaned.has(b.file));
   const labels = [...new Set(rewritten.map((b) => b.ide.label))];
   const created = bridges.filter((b) => b.action === 'created' && !b.shared).map((b) => b.file);
   const lines = [];
@@ -114,7 +115,7 @@ function copyLines(ctx, unreadable) {
 export function updateSummary(ctx, done) {
   return [
     ...blockLines([done.agents, done.gitignore]),
-    ...bridgeLines(done.ides, done.bridges),
+    ...bridgeLines(done.ides, done.bridges, ctx.legacy),
     ...(done.leak ? [[ok, LEAK_REMOVED]] : []),
     ...legacyLines(ctx).map((line) => [warn, line]),
     ...mcpLines(ctx, done.mcp),
