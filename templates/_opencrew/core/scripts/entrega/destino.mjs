@@ -42,7 +42,8 @@ export function validarDestino(raiz, valor) {
   if (NAO.test(texto)) return { tipo: 'nao' };
   const recusado = { tipo: 'recusado', valor: texto };
   if (!texto || NAO_E_CAMINHO.test(texto)) return recusado;
-  const abs = path.resolve(raiz, texto);
+  // \ vale como separador em qualquer sistema: o usuário digita Pasta\Sub também fora do Windows.
+  const abs = path.resolve(raiz, texto.replace(/\\/g, '/'));
   const rel = dentro(raiz, abs);
   // Pelo lugar real também: um atalho dentro do projeto pode levar para fora, ou para `crews/`.
   if (!rel || !dentro(lugarReal(raiz), lugarReal(abs)) || !semArquivoNoCaminho(abs)) return recusado;
