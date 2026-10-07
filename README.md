@@ -30,11 +30,12 @@ dentro da sua IDE.**
   rejeita o mesmo erro 3 vezes, vira Regra de Ouro automática.
 - 📦 **Templates prontos** — blog semanal, Instagram carrossel, newsletter
   mensal, lançamento de produto. Comece em 2 minutos.
-- 📤 **Exportação multi-formato** — PDF, CSV e posts formatados por plataforma,
-  sem abrir editor nenhum.
+- 📤 **Tabelas em CSV** — as tabelas de um resultado saem em CSV, prontas para a planilha.
 - 📬 **Entrega por canal** — depois de aprovar, você encontra a pasta `entrega/`: uma pasta por
   canal (Instagram, LinkedIn, blog, e-mail, WhatsApp, X/Twitter, YouTube), o texto pronto para
   colar, as imagens e um `LEIA-ME.md` com o passo a passo. O que não está pronto fica marcado.
+- 📁 **Entrega no seu projeto** — a crew pergunta uma vez onde guardar e copia a entrega para uma
+  pasta do seu projeto, uma subpasta por execução, sem sobrescrever nada.
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
   ajusta com um clique. Agentes pulados não gastam tokens naquele run.
@@ -199,7 +200,7 @@ meu-projeto/
 │   ├── blog-semanal/             ← template: blog semanal
 │   │   └── output/<execução>/    ← criada a cada execução
 │   │       ├── v1/  v2/  …       ← o que cada passo gravou
-│   │       └── entrega/          ← o que você usa: LEIA-ME.md + uma pasta por canal
+│   │       └── entrega/          ← o que você usa: LEIA-ME.md + uma pasta por canal (copiada para a pasta do projeto que você escolher)
 │   ├── instagram-carrossel/      ← template: Instagram carrossel
 │   ├── newsletter-mensal/        ← template: newsletter
 │   └── lancamento-produto/       ← template: lançamento
@@ -239,19 +240,44 @@ Só aparecem as pastas que a execução tem.
 - **Texto pronto para colar.** Os `.txt` saem sem `#`, `**`, rótulos nem recados internos, com as
   hashtags no fim. Com mais de uma peça do mesmo tipo, os arquivos são numerados (`post-1.txt`,
   `post-2.txt`).
-- **O `LEIA-ME.md` diz o que fazer.** Cada canal tem a situação ("Pronto" ou "Não está pronto"),
-  os arquivos, de onde cada um veio e os passos, numerados. "Antes de usar" junta o que falta;
-  "O que não foi conferido" lembra o que ninguém mediu (links e fatos, texto dentro das imagens,
-  aparência final em cada rede).
-- **O que não está pronto fica marcado.** Sobrou um `[PREENCHER]` ou um texto acima do limite? O
-  canal aparece como "Não está pronto" e a crew pergunta se você quer corrigir agora ou seguir
-  assim.
+- **O `LEIA-ME.md` diz o que fazer.** Cada canal tem a situação ("Pronto", "Pronto, com ressalva"
+  ou "Não está pronto"), os arquivos, de onde cada um veio e os passos, numerados. "Antes de usar"
+  junta o que falta e o que foi entregue com ressalva; "O que não foi conferido" lembra o que
+  ninguém mediu (links e fatos, texto dentro das imagens, aparência final em cada rede).
+- **O que não está pronto fica marcado, e você escolhe.** Sobrou um `[PREENCHER]` ou um texto
+  acima do limite? O canal aparece como "Não está pronto" e a crew oferece três saídas:
+  1. **Corrigir agora** — ela ajusta no arquivo de origem, verifica e monta a entrega de novo.
+  2. **Entregar assim mesmo** — o que falta fica escrito como ressalva no começo do LEIA-ME, e o
+     canal passa a "Pronto, com ressalva".
+  3. **Deixar para depois** — o canal fica como "Não está pronto" e não é copiado para o projeto.
+     Quando o dado existir, peça a entrega dessa execução de novo.
+- **Não tem o dado na hora?** Na aprovação final, diga "não tenho esse dado": a crew não insiste e
+  não inventa — o `[PREENCHER]` fica no texto e você decide na entrega.
 - **Arquivo sem canal vai para `outros/`**, inteiro e com o nome original: nada some.
-- **A pasta é refeita a cada entrega e fica fora do git.** O que você editar ali se perde; para
-  guardar, copie a pasta para outro lugar do projeto.
+- **A pasta `entrega/` é refeita a cada entrega e fica fora do git.** O que você editar ali se
+  perde: o que é para guardar está na cópia do seu projeto (abaixo).
 - **Execução antiga?** Peça à IA: "monte a entrega da execução X da crew Y". Ela lista os
   arquivos, pede o seu "sim" e monta a pasta. Funciona em crews criadas antes da 1.8.0, depois
   do `update`.
+
+### A cópia no seu projeto
+
+Na primeira entrega de cada crew, a IA pergunta: "Quer que eu copie o resultado para uma pasta do
+projeto?". Se você disser uma pasta (por exemplo, `Conteudo/Prontos`), a crew copia a entrega para
+uma pasta do seu projeto, uma subpasta por execução: `<pasta>/<execução>/`, com o `LEIA-ME.md` e
+as pastas dos canais prontos.
+
+- **A pergunta é feita uma vez por crew.** A resposta — também o "não" — fica na linha
+  `entrega.destino` do `crew.yaml` da crew (o arquivo anterior fica em `crew.yaml.bak`). Para
+  mudar depois, peça à IA ou edite essa linha.
+- **Nada é sobrescrito.** Entregar de novo sem mudança não cria nada. Canal que ficou pronto
+  depois entra na mesma pasta. Se algo que já foi copiado mudou, a entrega nova vai para
+  `<execução>-reentrega-2` (depois `-3`…), ao lado, e a anterior fica como estava, com um aviso no
+  LEIA-ME dela. O que você editar ou guardar na cópia continua lá.
+- **Só vai o que está pronto.** Canal "Não está pronto" fica fora da cópia, a menos que você
+  escolha "Entregar assim mesmo".
+- **A pasta fica dentro do projeto**, fora de `_opencrew/`, `crews/`, `skills/`, `.git/` e
+  `node_modules/`; se não existe, é criada. Se ela entra no git, a escolha é sua.
 
 A entrega não gera PDF nem imagem: `artigo.md`, `corpo.md` e os roteiros saem em markdown, e o
 LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os nomes dos arquivos
@@ -323,6 +349,12 @@ o que você fez:
   copiou. Essa pasta fica fora do git (entra no bloco do `.gitignore`). No primeiro `update` para
   a 1.6.3 há cópia do `.gitignore` mesmo sem edição sua: as versões anteriores não registravam o
   bloco.
+- **O `.gitignore` tem um marcador do bloco sem o par** (só `# opencrew:start` ou só
+  `# opencrew:end`)? Nenhuma linha sua é apagada: o `update` guarda o arquivo como estava e põe
+  um bloco completo no fim. O bloco começa por um comentário que diz que ele é do OpenCrew: as
+  suas linhas ficam fora dele.
+- **A instalação anterior parou no meio?** O `update` não altera nada e pede para você rodar
+  `npx @aksp/opencrew init`, que conclui a instalação sem apagar o que já existe.
 - **Apagou um modelo de crew ou um skill do catálogo?** Ele volta no `update`, e a saída diz o
   que foi entregue de novo.
 - **Removeu o servidor Playwright do `.mcp.json`?** O `update` o entrega uma única vez; se você

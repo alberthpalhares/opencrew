@@ -33,7 +33,8 @@ const stepFormat = flat(sectionOf(build, '### Pipeline Step Format'));
 
 test('R1-07a: the checker gets caminho=formato items, with the format: of the step that wrote each file', () => {
   assert.match(check, /Each item is `caminho=formato`, with the `format:` of the step that generated that file/);
-  assert.match(check, /verificar\.mjs --crew "crews\/\{name\}" --arquivo "\{path1\}=\{format1\},\{path2\},…" ```/);
+  // Since 1.9.0 the command ends with --relatorio (U3a-09g-f2, tests/runtime-contracts-u3a2.test.js).
+  assert.match(check, /verificar\.mjs --crew "crews\/\{name\}" --arquivo "\{path1\}=\{format1\},\{path2\},…" --relatorio "[^"]+" ```/);
 });
 
 test('R1-07a: the runner no longer passes --formato', () => {
@@ -82,9 +83,11 @@ test('R1-07b: at the limit the status of the last report picks the message, as i
   assert.doesNotMatch(limit, /blocks remain|no block\b/);
 });
 
-test('R1-07b: "Aceitar assim mesmo" no longer says the choice is recorded', () => {
-  assert.match(limit, /2\. Aceitar assim mesmo 3\. Abortar/);
-  assert.doesNotMatch(runner, /fica registrado/, 'the runner still says "fica registrado"');
+// R1 took "fica registrado" out because nothing recorded the choice. Since 1.9.0 the delivery
+// does (the ressalva — specs/fase-u3a2-entrega-no-projeto.md, rule 22), and the option says where.
+test('R1-07b: "Aceitar assim mesmo" only says the choice is recorded where it is — in the delivery', () => {
+  assert.match(limit, /2\. Aceitar assim mesmo \(fica registrado na entrega\) 3\. Abortar/);
+  assert.equal(runner.split('fica registrado').length - 1, 1, '"fica registrado" appears somewhere else in the runner');
 });
 
 const REGRAS_DO_REVISOR = [

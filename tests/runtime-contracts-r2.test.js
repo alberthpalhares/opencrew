@@ -90,7 +90,8 @@ test('R2-04d: the run folder command, written in a line of the runner text, also
 });
 test('R2-04d: in export.prompt.md the crew path goes between double quotes', () => {
   const withPath = bashLines(exportPrompt).filter((l) => CREW_PATH.test(l));
-  assert.deepEqual(withPath, ['npx playwright open --viewport=1240,1754 "crews/{crew-name}/output/{run_id}/export/temp.html"']);
+  // The only command with a crew path was the PDF one, gone in 1.9.0 (U3a-10a): none is left.
+  assert.deepEqual(withPath, []);
   assert.deepEqual(unquoted([...withPath, ...inlineCommands(exportPrompt)]), []);
 });
 

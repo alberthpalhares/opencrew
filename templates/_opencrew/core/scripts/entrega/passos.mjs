@@ -1,9 +1,12 @@
 // Os passos de cada canal no LEIA-ME: o quadro "Passos por canal" da spec, guardado como dado.
 // O texto é literal (aprovado com a spec): não reescreva aqui sem mudar a spec.
-// Spec: fase-u3a1-pasta-de-entrega.md, §4 (repositório do OpenCrew).
+// Specs: fase-u3a1-pasta-de-entrega.md, §4, e fase-u3a2-entrega-no-projeto.md, §4 (o primeiro
+// passo do canal com ressalva), no repositório do OpenCrew.
 
 /** O primeiro passo do canal que não está pronto (ajuste da execução real). */
 export const ANTES_DE_POSTAR = 'Antes de postar, resolva o que está em Pendências. Corrija no arquivo de origem e peça para montar a entrega de novo: o que você mudar nesta pasta se perde.';
+/** O primeiro passo do canal entregue com ressalva. */
+export const CONFIRA_AS_RESSALVAS = 'Antes de postar, confira as ressalvas em "Antes de usar".';
 const MARKDOWN = 'Este texto está em markdown: se o seu editor não aceitar, ajuste títulos, negrito e links depois de colar.';
 
 // Cada passo: [o que o faz aparecer, o texto]. null = sempre que o canal tem arquivo; um tipo de
@@ -87,13 +90,15 @@ function doQuadro(pasta, arquivos) {
 }
 
 /**
- * Os passos de um canal. No canal que não está pronto, o primeiro manda resolver as pendências.
+ * Os passos de um canal. No canal que não está pronto, o primeiro manda resolver as pendências; no
+ * que foi entregue com ressalva, manda conferir as ressalvas.
  * @param {string} pasta a pasta do canal
  * @param {object[]} arquivos os arquivos da entrega nessa pasta: `{ nome, tipo, numerado, texto }`
- * @param {boolean} [comPendencia] o canal tem pendência
+ * @param {boolean} [comPendencia] o canal tem pendência · @param {boolean} [comRessalva] tem ressalva
  * @returns {string[]}
  */
-export function passosDe(pasta, arquivos, comPendencia = false) {
+export function passosDe(pasta, arquivos, comPendencia = false, comRessalva = false) {
   const passos = doQuadro(pasta, arquivos);
-  return comPendencia && passos.length ? [ANTES_DE_POSTAR, ...passos] : passos;
+  const antes = comPendencia ? ANTES_DE_POSTAR : comRessalva ? CONFIRA_AS_RESSALVAS : null;
+  return antes && passos.length ? [antes, ...passos] : passos;
 }

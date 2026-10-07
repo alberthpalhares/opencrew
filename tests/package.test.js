@@ -63,6 +63,25 @@ test('U3a-14c: the tarball ships entregar.mjs, every module of scripts/entrega/ 
   }
 });
 
+// specs/fase-u3a2-entrega-no-projeto.md, rule 33: the copy to the project ships inside the payload.
+test('U3a-14c-f2: the tarball ships the new modules of scripts/entrega/ and of scripts/verificar/', () => {
+  const scripts = 'templates/_opencrew/core/scripts';
+  const novos = [
+    ...['comparar', 'copia', 'destino', 'guardar', 'lembrar', 'ressalvas', 'resumo'].map((m) => `${scripts}/entrega/${m}.mjs`),
+    `${scripts}/verificar/entradas.mjs`, `${scripts}/verificar/gravacao.mjs`,
+  ];
+  for (const must of novos) assert.ok(files.includes(must), `missing from tarball: ${must}`);
+});
+
+test('U3a-14c-f2: no module of scripts/ has more than 200 lines', () => {
+  const pasta = path.join(root, 'templates', '_opencrew', 'core', 'scripts');
+  const modulos = readdirSync(pasta, { recursive: true }).map(String).filter((nome) => nome.endsWith('.mjs'));
+  assert.ok(modulos.length > 20, 'could not list scripts/');
+  for (const nome of modulos) {
+    const linhas = readFileSync(path.join(pasta, nome), 'utf8').trimEnd().split(/\r?\n/).length;
+    assert.ok(linhas <= 200, `${nome} has ${linhas} lines`);
+  }
+});
 // specs/fase-e1-escritorio-ao-vivo.md, rules 26 and 27: the Escritório ships inside the payload.
 test('E1-07a: the tarball ships estado.mjs, escritorio.mjs and every file of escritorio/, and no dashboard/', () => {
   const core = 'templates/_opencrew/core';

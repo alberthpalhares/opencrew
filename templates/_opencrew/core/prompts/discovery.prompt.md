@@ -112,7 +112,7 @@ Based on the detected domain, ask the most relevant contextual question first. W
 **If domain = `analysis`:**
 1. Where does the data come from? (open-ended — let the user describe their data sources)
 2. What decisions should this analysis help you make? (open-ended)
-3. What format should the output take? (multiple choice: dashboard / PDF report / spreadsheet / automated alert / other)
+3. What format should the output take? (multiple choice: dashboard / written report / spreadsheet / automated alert / other)
 
 **If domain = `mixed`:**
 Ask the most pressing question from each relevant domain, starting with the primary one. Cap at 3 questions total in this step.

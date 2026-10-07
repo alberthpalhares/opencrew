@@ -117,27 +117,15 @@ test('U3a-01e-f1: for a run that already ended, the paths come from caminho.mjs 
   tem(encerrada, 'Posso montar a entrega com esta lista? (sim / não)');
 });
 
-// ── U3a-08b The two options of ENTREGA:INCOMPLETA (rule 22) ──────────────────────────────────
+// ── U3a-08b ENTREGA:INCOMPLETA (rule 22) ─────────────────────────────────────────────────────
+// Since 1.9.0 there are three options, and the prompt cites `--aceitar-pendencias` and `--destino`:
+// the scenario became U3a-08b-f2, in tests/runtime-contracts-u3a2.test.js. What stays from 1.8.0:
 
-test('U3a-08b: ENTREGA:INCOMPLETA shows what is missing and the two options of spec §6', () => {
-  for (const frase of [
-    '⚠️ A entrega ficou incompleta: {o que falta}',
-    '1. Corrigir agora (eu ajusto e monto a entrega de novo)',
-    '2. Seguir assim (no LEIA-ME, o canal fica marcado como "Não está pronto")',
-  ]) tem(prompt, frase);
-});
-
-test('U3a-08b: option 1 goes back to the text and runs the delivery again; option 2 goes on, each irreversible step still asking', () => {
-  assert.match(texto, /\*\*1\*\* — [^.]*fix it in the source file[^.]*\. [^.]*run the delivery again/);
-  assert.match(texto, /\*\*2\*\* — go on[^.]*\. Every irreversible step still asks for its own confirmation, as it does today/);
+test('U3a-08b: ENTREGA:INCOMPLETA still shows what is missing, and whoever goes on still confirms each irreversible step', () => {
+  tem(prompt, '⚠️ A entrega ficou incompleta: {o que falta}');
+  assert.match(texto, /Every irreversible step still asks for its own confirmation, as it does today/);
   assert.match(texto, /`ENTREGA:OK` → go on/);
 });
-
-for (const opcao of ['--aceitar-pendencias', '--destino', '--publicado']) {
-  test(`U3a-08b: the prompt does not cite ${opcao} (slice 2)`, () => {
-    assert.ok(prompt.length > 0 && !prompt.includes(opcao) && !runner.includes(opcao), `cited: ${opcao}`);
-  });
-}
 
 // ── U3a-08c The script that does not run (rule 22; the R3 pattern: warn and go on) ───────────
 

@@ -15,6 +15,9 @@ export const UNTOUCHED = 'Não foram alterados: as crews que você criou, `_open
 /** `init` in a workspace that is already installed (rule 15). */
 export const ALREADY_INSTALLED = 'Para atualizar, rode `npx @aksp/opencrew@latest update`. Não apague `_opencrew/` para reinstalar: a pasta guarda a sua memória (`_opencrew/_memory/`) e as suas best-practices (`_opencrew/best-practices.local/`).';
 
+/** `update` over `_opencrew/core` with no version stamp (spec U3a-2, rule 31). */
+export const INTERRUPTED = 'A instalação anterior não terminou. Rode `npx @aksp/opencrew init` para concluir.';
+
 const NO_BRIDGES = 'Nenhuma ponte de IDE encontrada: nada a atualizar. Para criar a ponte de uma IDE: `npx @aksp/opencrew@latest init --repair-bridges --ide=<id>`.';
 const LEAK_REMOVED = 'CLAUDE.md: removi a seção de STATUS.md que as versões 1.4.0 e 1.4.1 gravaram por engano.';
 const FIRST_PROTECTED = 'Primeira atualização com proteção: sem registro anterior, guardamos tudo o que diferia. Daqui em diante, só o que você editar.';

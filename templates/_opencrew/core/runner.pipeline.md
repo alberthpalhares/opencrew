@@ -283,19 +283,17 @@ Before executing any step that references an agent:
    - Apply Voice Guidance (vocabulary always/never use, tone rules)
 5. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
    If present:
-   a. **Export formats** — if format is one of `pdf`, `csv`, or `formatted-post`:
-      - Read `_opencrew/core/prompts/export.prompt.md`
-      - Parse the YAML frontmatter to extract the `name` field
-      - Extract the Markdown body (everything after the YAML frontmatter closing `---`)
-      - Append to the agent's context, before skill instructions:
-        ```
-        --- EXPORT FORMAT: {format} ---
-
-        {export.prompt.md markdown body}
-        ```
-      - The agent must follow the export process for the specified format — read the input file,
-        transform the content, and write the output file in the target format.
-      - Skip the best-practices lookup below for export formats.
+   a. **Export format** — if format is `csv`:
+      - Read `_opencrew/core/prompts/export.prompt.md` and append its Markdown body to the agent's
+        context, before skill instructions, under the line `--- EXPORT FORMAT: csv ---`
+      - The agent must follow the export process — read the input file, transform the content,
+        and write the output file in the target format. Skip the best-practices lookup below.
+   a2. **`pdf` or `formatted-post`** (a step of an old crew) — neither is generated any more. Say
+      `O formato "{id}" não é mais gerado. O passo segue sem ele e grava o texto em markdown. Para ter um PDF, use Imprimir → Salvar como PDF.`
+      (`{id}` = the format) and run it as a common step, with no format injection. For `pdf`, the
+      agent writes markdown and the `outputFile` is used with the extension `.md`: that is the
+      path that goes to `caminho.mjs` (`saida`, `conferir`) and that the next steps read (their
+      `inputFile`, too) — no `.pdf` is created.
    b. **Content formats** — otherwise, read `_opencrew/best-practices.local/{format}.md` (the user's
       own version, never touched by `update`) if it exists, else `_opencrew/core/best-practices/{format}.md`
       (e.g., `_opencrew/core/best-practices/instagram-feed.md`)
@@ -669,10 +667,10 @@ When a step has `on_reject: {step-id}` (a review step):
    the `format:` of the step that generated that file; a step with no `format:`, with an export
    format (`pdf`, `csv`, `formatted-post`) or with one outside `[a-z0-9-]+` goes without `=formato`:
    ```bash
-   node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path1}={format1},{path2},…"
+   node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path1}={format1},{path2},…" --relatorio "crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md"
    ```
-   Save the full output to `crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md` and inject it
-   into the reviewer's context as `--- VERIFICAÇÃO AUTOMÁTICA ---`. The reviewer must copy the
+   The script writes its report to that file (`{N}` = the cycle; do not save it yourself). Inject
+   the output into the reviewer's context as `--- VERIFICAÇÃO AUTOMÁTICA ---`. The reviewer must copy the
    measured values from it (see best-practices `review.md`). If the checker did not run (no Node,
    an error, or no `VERIFICACAO:` status line), tell the user, continue with the normal review and
    repeat it at the final approval: "⚠️ A verificação automática não rodou: {motivo}".
@@ -695,11 +693,12 @@ When a step has `on_reject: {step-id}` (a review step):
    {any other status} A revisão não aprovou o texto depois de {N} ciclos. Motivo: {parecer resumido}
 
    1. Corrigir eu mesmo (eu edito o texto e você verifica de novo)
-   2. Aceitar assim mesmo
+   2. Aceitar assim mesmo (fica registrado na entrega)
    3. Abortar
    ```
 5. **Final approval checkpoint** (the checkpoint after the review): show the summary of the last
-   report — `Verificação automática: {N} bloqueios, {M} alertas, {Z} não medidos` — plus the list
+   report — `Verificação automática: {N} bloqueios, {M} alertas, {Z} não medidos`, with
+   `{P} a preencher` right after the blocks when the report counts any — plus the list
    of alerts and the {Z} items not measured or not verified (the `Não medido` and `Não verificado`
    lines under each file, not the "não é texto" line of **Notas**), one per line as
    `{arquivo} — {motivo}`, then the lines under `**Notas:**` in that report, as they are written,
@@ -707,7 +706,8 @@ When a step has `on_reject: {step-id}` (a review step):
    every file left unchecked by the safe-name rule. List the same way every file the path script
    did not check (see Output Path Transformation). If the approved
    text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
-   and write it into the text before approving.
+   and write it into the text before approving. If the user does not have it, do not insist and
+   never invent: keep the `[PREENCHER]`, say `Sem problema: deixo [PREENCHER: {o que falta}] no texto. Na entrega você escolhe entre preencher depois e entregar assim mesmo, com ressalva.` and go on.
 
 ### Step Execution Order (Summary)
 
@@ -728,7 +728,7 @@ Steps 1 and 4 are binary script gates. If either fails, the pipeline does NOT ad
 
 ### Entrega
 
-One script turns the approved files into `crews/{name}/output/{run_id}/entrega/` (a folder per channel, text ready to paste, a `LEIA-ME.md`). Read `_opencrew/core/prompts/entrega.prompt.md` and follow it: how to build `{lista}`, when to add `--vai-publicar`, what to do with `ENTREGA:OK`, with `ENTREGA:INCOMPLETA` and with a script that did not run.
+One script turns the approved files into `crews/{name}/output/{run_id}/entrega/` (a folder per channel, text ready to paste, a `LEIA-ME.md`) and copies what is ready to the folder of the project the user chose. Read `_opencrew/core/prompts/entrega.prompt.md` and follow it: how to build `{lista}`, when to add `--vai-publicar`, what to do with `ENTREGA:OK`, `ENTREGA:COM_RESSALVA` and `ENTREGA:INCOMPLETA`, the question about the folder of the project that keeps a copy (asked once per crew) and what to do with a script that did not run.
 
 - **Command** — from the project root, by the safe-name rule (nome seguro), everything between double quotes: `node _opencrew/core/scripts/entregar.mjs --crew "crews/{name}" --run "{run_id}" --arquivo "{lista}"`
 - **When** — once, after the final approval, immediately before the first step that publishes or sends (`side_effects: irreversible`, in the step or in the agent's skill); with no such step, after the last step. Always before the end-of-run command of the Escritório. If the irreversible step comes before the final approval (a crew built by an old version), the delivery runs at the end.

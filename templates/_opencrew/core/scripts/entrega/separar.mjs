@@ -1,6 +1,7 @@
 // Separa os itens da lista em produtos da entrega: peças que viram arquivo próprio (unidades),
 // cópias com o nome original e avisos. Não escreve nada: quem grava é `gravar.mjs`.
-// Spec: fase-u3a1-pasta-de-entrega.md, §4 e regras 4, 8, 9 e 11 (repositório do OpenCrew).
+// Spec: fase-u3a1-pasta-de-entrega.md, §4 e regras 4, 8, 9 e 11 (repositório do OpenCrew). O
+// `doCanal` da cópia é da fase-u3a2-entrega-no-projeto.md, regra 14: o editável segue o canal dele.
 import path from 'node:path';
 import { lerItem } from '../verificar/arquivos.mjs';
 import { semFrontmatter } from '../verificar/leitura.mjs';
@@ -35,7 +36,7 @@ const ehEditavel = (item, itens) => HTML.has(extensao(item)) && itens.some((i) =
 
 /** Cópia com o nome original: `de` (os mesmos bytes do arquivo) ou `texto` (o corpo tratado). */
 function copia(item, pasta, tipo, texto = null) {
-  const base = { pasta, nome: path.basename(item.abs), tipo, origem: item.rel, pastaDeOrigem: path.dirname(item.abs) };
+  const base = { pasta, nome: path.basename(item.abs), tipo, origem: item.rel, pastaDeOrigem: path.dirname(item.abs), doCanal: item.canal ?? OUTROS };
   return texto ? { ...base, texto } : { ...base, de: item.abs };
 }
 
@@ -93,7 +94,7 @@ async function separarItem(item, itens, p) {
  *   `{ abs, rel, formato, canal, tipo }` (`tipo`: arquivo, pasta ou ausente)
  * @returns {Promise<{ unidades: object[], copias: object[], avisos: object[] }>}
  *   · `unidades`: `{ pasta, tipo, titulo, origem, formato, ordem, total, partes }`
- *   · `copias`: `{ pasta, nome, tipo, origem, pastaDeOrigem, de | texto }`
+ *   · `copias`: `{ pasta, nome, tipo, origem, pastaDeOrigem, doCanal, de | texto }`
  *   · `avisos`: `{ pasta, texto, tela }` (`tela`: o texto do resumo da tela; sem `texto`, só sai lá)
  */
 export async function separar(itens) {

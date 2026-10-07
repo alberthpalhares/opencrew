@@ -1,28 +1,41 @@
 #!/usr/bin/env node
 // Entrega de uma execução: separa os arquivos aprovados por canal, com texto pronto para colar e
-// um LEIA-ME que diz o que fazer com cada arquivo.
+// um LEIA-ME que diz o que fazer com cada arquivo; e copia o que está pronto para a pasta do
+// projeto que o usuário escolheu.
 // Uso (na pasta do projeto): node _opencrew/core/scripts/entregar.mjs --crew "crews/<crew>"
-//   --run "<id>" --arquivo "<caminho=formato>[,<caminho=formato>…]" [--vai-publicar <canal>] [--ajuda]
+//   --run "<id>" --arquivo "<caminho=formato>[,<caminho=formato>…]" [--destino "<pasta>"]
+//   [--lembrar-destino "<pasta>"|nao] [--aceitar-pendencias] [--vai-publicar <canal>] [--ajuda]
 //   --arquivo: a lista do verificador (o "=formato" é opcional); entra o que estiver nela e existir.
+//   --destino: pasta do projeto que recebe a cópia, só nesta chamada (vale sobre o crew.yaml).
+//   --lembrar-destino: grava a pasta (ou "nao") em `entrega.destino` do crew.yaml e já vale agora.
+//   --aceitar-pendencias: as pendências deste momento viram ressalvas ("entregar assim mesmo").
 //   --vai-publicar: canal que a crew publica sozinha (pode repetir); o LEIA-ME avisa.
-// Grava só em crews/<crew>/output/<run>/: a pasta `entrega/` (refeita do zero a cada chamada,
-// montada em `entrega.tmp/`) e, ao lado, `verificacao-entrega.md`.
-// Última linha da saída (o runner lê esta linha): ENTREGA:OK (nenhuma pendência) ou
-// ENTREGA:INCOMPLETA (algum canal não está pronto, ou a gravação falhou).
+// Grava em crews/<crew>/output/<run>/: a pasta `entrega/` (refeita do zero a cada chamada, montada
+// em `entrega.tmp/`), `verificacao-entrega.md` e, com --aceitar-pendencias, `ressalvas.json`. Fora
+// dali, só o combinado: a cópia em `<destino>/<run>/` (nunca por cima do que já está lá; se a
+// entrega mudou, `<run>-reentrega-2`…) e, com --lembrar-destino, o crew.yaml (com crew.yaml.bak).
+// Última linha da saída (o runner lê esta linha): ENTREGA:OK (nenhuma pendência),
+// ENTREGA:COM_RESSALVA (toda pendência foi aceita) ou ENTREGA:INCOMPLETA (algum canal não está
+// pronto, o destino foi recusado ou uma gravação falhou).
 // Código de saída: 0 sempre que a linha ENTREGA: sai, e em --ajuda · 1 = erro de uso ou erro que
 // impediu a entrega inteira; com código 1 não há linha ENTREGA: e nada é escrito.
-// Spec: fase-u3a1-pasta-de-entrega.md (repositório do OpenCrew).
+// Specs: fase-u3a1-pasta-de-entrega.md e fase-u3a2-entrega-no-projeto.md (repositório do OpenCrew).
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { MSG as COMUM, erroDeUso, ehPrincipal, relativoAoProjeto } from './comum.mjs';
 import { formatarRelatorio, verificar } from './verificar.mjs';
 import { USO, lerArgs, lerLista, limpar, runValido } from './entrega/argumentos.mjs';
-import { CANAIS, OUTROS, canalDoFormato, ehCanal, ehDeServico } from './entrega/canais.mjs';
-import { separar } from './entrega/separar.mjs';
-import { nomear } from './entrega/nomes.mjs';
-import { alertasDeTamanho, frasesDePendencia, naoConferido, pendenciasPorPasta } from './entrega/pendencias.mjs';
-import { TEXTO, montarLeiame } from './entrega/leiame.mjs';
+import { CANAIS, canalDoFormato, ehCanal, ehDeServico } from './entrega/canais.mjs';
+import { MSG as DESTINO, escolherDestino, validarDestino } from './entrega/destino.mjs';
+import { MSG as COPIA, guardar } from './entrega/guardar.mjs';
 import { gravarEntrega } from './entrega/gravar.mjs';
+import { montarLeiame } from './entrega/leiame.mjs';
+import { lembrarDestino } from './entrega/lembrar.mjs';
+import { nomear } from './entrega/nomes.mjs';
+import { alertasDeTamanho, naoConferido, pendenciasPorPasta } from './entrega/pendencias.mjs';
+import { ARQUIVO as RESSALVAS, MSG as RESSALVA, gravarRessalvas, lerRessalvas, separarPendencias } from './entrega/ressalvas.mjs';
+import { resumo } from './entrega/resumo.mjs';
+import { separar } from './entrega/separar.mjs';
 
 const MSG = {
   desconhecida: (opcao) => `Opção desconhecida: ${limpar(opcao)}.`,
@@ -30,7 +43,6 @@ const MSG = {
   nenhumArquivo: 'Nenhum arquivo da lista foi encontrado.',
   deServico: (arquivo) => `${arquivo} é arquivo de serviço e não entra na entrega.`,
   semCanal: (canal) => `Canal não encontrado nesta entrega: ${limpar(canal)}.`,
-  falhaDeEscrita: (arquivo) => `Não consegui gravar ${arquivo}. Feche o arquivo, ou espere a sincronização da pasta, e rode de novo.`,
 };
 
 const ehPasta = (p) => existsSync(p) && statSync(p).isDirectory();
@@ -47,7 +59,9 @@ function erroDeChamada(raiz, args, pedidos) {
   if (!existsSync(path.join(crew, 'crew.yaml'))) return { mensagem: COMUM.crewNaoEncontrada(args.crew) };
   const saida = path.join(crew, 'output');
   if (!runValido(args.run) || !ehPasta(path.join(saida, args.run))) return { mensagem: MSG.semExecucao(args.run, execucoes(saida)) };
-  return null;
+  // O destino a lembrar é validado antes de qualquer escrita: recusado, o crew.yaml fica intacto.
+  const lembrar = args.lembrarDestino == null ? null : validarDestino(raiz, args.lembrarDestino);
+  return lembrar?.tipo === 'recusado' ? { mensagem: DESTINO.recusado(lembrar.valor) } : null;
 }
 
 /** Cada item da lista, uma vez: onde fica, se existe, se é de serviço e qual é o canal do formato. */
@@ -65,48 +79,56 @@ async function classificar(raiz, pedidos) {
 }
 
 /** Verifica na origem, separa por canal e monta tudo o que a entrega mostra; não escreve nada. */
-async function montar(raiz, args, itens) {
+async function montar(raiz, args, itens, aceitas) {
   const arquivosDaLista = itens.map((i) => (i.formato ? { arquivo: i.arquivo, formato: i.formato } : i.arquivo));
   const verificacao = await verificar({ raiz, crew: args.crew, arquivos: arquivosDaLista, semPadraoDeBlog: true });
   const { arquivos, avisos } = nomear(await separar(itens));
-  const pendencias = pendenciasPorPasta(raiz, itens, verificacao);
-  const presentes = new Set([...arquivos.map((a) => a.pasta), ...pendencias.keys()]);
+  const todas = pendenciasPorPasta(raiz, itens, verificacao);
+  const presentes = new Set([...arquivos.map((a) => a.pasta), ...todas.keys()]);
   const dados = {
-    crew: path.basename(path.resolve(raiz, args.crew)), run: args.run, arquivos, avisos, pendencias,
+    crew: path.basename(path.resolve(raiz, args.crew)), run: args.run, arquivos, avisos,
+    ...separarPendencias(todas, aceitas, args.aceitar),
     pastas: Object.keys(CANAIS).filter((c) => presentes.has(c)),
     alertas: await alertasDeTamanho(raiz, itens, arquivos, verificacao),
     naoConferido: naoConferido(raiz, itens, verificacao),
     vaiPublicar: args.vaiPublicar,
   };
-  return { dados, leiame: montarLeiame(dados), relatorio: `${formatarRelatorio(verificacao)}\n` };
+  return { dados, relatorio: `${formatarRelatorio(verificacao)}\n` };
 }
 
-/** O resumo da tela: a pasta, a situação de cada canal, o que falta, os avisos e o LEIA-ME. */
-function resumo(execucao, { crew, run, pastas, pendencias, avisos, alertas }, deServico) {
-  const comPendencia = [...pastas, OUTROS].filter((p) => pendencias.has(p));
-  const notas = [...alertas, ...deServico.map((i) => MSG.deServico(i.rel)), ...avisos.map((a) => a.tela ?? a.texto)];
-  return [
-    `Entrega da execução ${run} da crew ${crew}`,
-    `Pasta: ${execucao}/entrega`,
-    ...pastas.map((p) => `- ${CANAIS[p]}: ${pendencias.has(p) ? TEXTO.naoPronto : TEXTO.pronto}`),
-    ...frasesDePendencia(comPendencia, pendencias).flatMap((frase, i) => [frase, ...pendencias.get(comPendencia[i]).map((l) => `- ${l}`)]),
-    ...(notas.length ? ['Avisos:', ...notas.map((l) => `- ${l}`)] : []),
-    `LEIA-ME: ${execucao}/entrega/LEIA-ME.md`,
-  ];
+/** O que a entrega grava, na ordem: crew.yaml, ressalvas, a cópia e, por último, `entrega/`. */
+async function gravarTudo(raiz, args, validos, pastas) {
+  const falhas = [args.lembrarDestino == null ? null : await lembrarDestino(raiz, pastas.crew, validarDestino(raiz, args.lembrarDestino))];
+  const lidas = await lerRessalvas(pastas.execucao);
+  const { dados, relatorio } = await montar(raiz, args, validos, lidas.aceitas);
+  if (args.aceitar) falhas.push(await gravarRessalvas(pastas.execucao, dados.ressalvas));
+  const copia = await guardar(raiz, await escolherDestino(raiz, pastas.crew, args), dados);
+  const leiame = montarLeiame({ ...dados, copiaEm: copia.pasta });
+  const daEntrega = await gravarEntrega(pastas.execucao, dados.arquivos, { leiame, relatorio });
+  const naoGravados = falhas.filter(Boolean).map((f) => COPIA.falhaDeEscrita(relativoAoProjeto(raiz, f)));
+  return { dados, copia, lidas, naoGravados, daEntrega: daEntrega && COPIA.falhaDeEscrita(relativoAoProjeto(raiz, daEntrega)) };
+}
+
+function linhaFinal(dados, incompleta) {
+  if (incompleta || dados.pendencias.size) return 'ENTREGA:INCOMPLETA';
+  return dados.ressalvas.size ? 'ENTREGA:COM_RESSALVA' : 'ENTREGA:OK';
 }
 
 async function entregar(raiz, args, itens, escrever) {
-  const validos = itens.filter((i) => !i.servico);
   const execucao = relativoAoProjeto(raiz, path.join(args.crew, 'output', args.run));
-  const { dados, leiame, relatorio } = await montar(raiz, args, validos);
-  const falha = await gravarEntrega(path.resolve(raiz, execucao), dados.arquivos, { leiame, relatorio });
-  if (falha) {
-    escrever(MSG.falhaDeEscrita(relativoAoProjeto(raiz, falha)));
+  const pastas = { crew: path.resolve(raiz, args.crew), execucao: path.resolve(raiz, execucao) };
+  const r = await gravarTudo(raiz, args, itens.filter((i) => !i.servico), pastas);
+  if (r.daEntrega) {
+    for (const linha of [...r.naoGravados, r.daEntrega]) escrever(linha);
     escrever('ENTREGA:INCOMPLETA');
     return 0;
   }
-  for (const linha of resumo(execucao, dados, itens.filter((i) => i.servico))) escrever(linha);
-  escrever(dados.pendencias.size ? 'ENTREGA:INCOMPLETA' : 'ENTREGA:OK');
+  const notas = [
+    ...(r.lidas.ilegivel ? [RESSALVA.ilegivel(`${execucao}/${RESSALVAS}`)] : []), ...r.dados.novas,
+    ...itens.filter((i) => i.servico).map((i) => MSG.deServico(i.rel)),
+  ];
+  for (const linha of resumo(execucao, r.dados, notas, [...r.naoGravados, ...r.copia.linhas])) escrever(linha);
+  escrever(linhaFinal(r.dados, r.copia.falhou || r.naoGravados.length > 0));
   return 0;
 }
 

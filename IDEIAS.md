@@ -17,6 +17,11 @@
 > projeto" e "Convivência com outros sistemas de agentes". O que ficou de fora delas tem destino:
 > `fontes:` em crews que já existem → entrada do conserto de crews antigas, abaixo (U4); pontes
 > antigas sem marcador → R2 (`docs/auditoria/2026-10-04-revisao-specs.md` §7, H3-06).
+>
+> Saíram em 2026-10-07, entregues na v1.9.0 (CHANGELOG): a cópia da entrega para uma pasta do
+> projeto, o relatório do laço de revisão gravado pelo script, e, no `.gitignore`, o marcador órfão
+> e o comentário do bloco. O que a 1.9.0 deixou de fora (`specs/fase-u3a2-entrega-no-projeto.md`,
+> §8) está nas entradas abaixo.
 
 ---
 
@@ -50,13 +55,11 @@
   U1–U4 acrescentam regras ao runner.
 - **Aprovação:** não.
 
-## Documentos oficiais em DOCX/PDF + cópia da entrega para uma pasta do projeto
-- **O que já existe:** export PDF não executável (T-M21); no uso real o usuário escreveu um
-  script Python + automação do Word à parte e copiou os resultados à mão (dor 6). Desde a 1.8.0
-  a crew monta `entrega/` dentro da pasta da execução, por canal, com LEIA-ME; a pasta fica fora
-  do git e quem quer guardar ainda copia à mão.
-- **Alocação:** → U3b (documento Word, 1.10.0); o destino da entrega e a cópia para uma pasta do
-  projeto → U3a fatia 2 (1.9.0).
+## Documentos oficiais em DOCX/PDF
+- **O que já existe:** no uso real o usuário escreveu um script Python + automação do Word à
+  parte (dor 6). O export de PDF, que não executava (T-M21), saiu na 1.9.0: o LEIA-ME da entrega
+  ensina a salvar como PDF. Desde a 1.9.0 a entrega é copiada para uma pasta do projeto.
+- **Alocação:** → U3b (documento Word, 1.10.0).
   PDF direto → sem fase — precisa de motor de renderização; o Word salva como PDF.
 - **Custo de adiar:** o resultado não vira uso direto; gambiarras por projeto.
 - **Aprovação:** sim — dada em 2026-10-04 para o motor: gerador próprio de `.docx`, sem
@@ -65,7 +68,9 @@
 ## Modo equipe: `/opencrew pedir <crew> "<tarefa>"`
 - **O que já existe:** só o pipeline completo. No uso real a crew virou equipe permanente com
   tarefas avulsas fora do pipeline, uma delas fora do histórico (dor 7).
-- **Alocação:** → U4 — com `runs.md` confiável para tarefas avulsas.
+- **Alocação:** → U4 — com `runs.md` confiável para tarefas avulsas. Inclui a entrega avulsa
+  (arquivos fora de uma execução, sem `--run`): é o modo equipe que cria a tarefa fora do
+  pipeline (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** histórico e memória perdem o que acontece fora do pipeline.
 - **Aprovação:** não.
 
@@ -80,18 +85,47 @@
 - **O que já existe:** U2 confere os caminhos citados pela crew; no Projeto A o manual de marca
   (uma fonte) lista nomes de logo que não existem na pasta — a crew usou texto no lugar do logo,
   sem aviso.
-- **Alocação:** → U3a fatia 2 (1.9.0) — como aviso que não para a execução: não muda `FONTES:` e
-  o `--corrigir` nunca reescreve a fonte.
+- **Alocação:** → U3a fatia 3 (sem versão; depois da U4) — é conferência de fontes, não entrega,
+  e não cabia na 1.9.0 (`specs/fase-u3a2-entrega-no-projeto.md`, §8). Como aviso que não para a
+  execução: não muda `FONTES:` e o `--corrigir` nunca reescreve a fonte.
 - **Custo de adiar:** peças visuais sem logo, falha silenciosa.
 - **Aprovação:** não.
 
-## `.gitignore` antigo no `update`: linhas soltas do template e marcador órfão
-- **O que já existe:** a R2 (1.6.3) fez o `update` renovar o bloco do `.gitignore`, que já traz
-  `.opencrew-backup/`. Falta: (b) transformar em bloco as 8 linhas soltas das versões 1.0.0 a
-  1.4.1, sem repetir nenhuma; (f) marcador órfão (só o de início ou só o de fim); o comentário
-  "gerenciado pelo OpenCrew" dentro do bloco.
-- **Alocação:** → U3a fatia 2 (1.9.0) — regra 30 de `specs/fase-u3a-entrega-por-canal.md`.
+## `.gitignore` antigo no `update`: linhas soltas do template
+- **O que já existe:** a R2 (1.6.3) fez o `update` renovar o bloco do `.gitignore`; a 1.9.0
+  tratou o marcador órfão e pôs o comentário no bloco. Falta transformar em bloco as 8 linhas
+  soltas das versões 1.0.0 a 1.4.1, sem repetir nenhuma.
+- **Alocação:** → sem fase — cosmético (linha repetida não muda o que o git ignora) e exige
+  reescrever linha do usuário; quem atualizou desde a 1.6.3 já tem o bloco
+  (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** `.gitignore` antigo fica com linhas repetidas depois do `update`; nada se perde.
+- **Aprovação:** não.
+
+## Publicador lendo a pasta da entrega; "já publicado"
+- **O que já existe:** desde a 1.8.0 a entrega é montada antes do passo que publica, e o LEIA-ME
+  avisa "Esta crew publica este canal sozinha". O publicador do Instagram ainda lê o arquivo do
+  passo, não `entrega/instagram/`; não existe `--publicado`, `publicado.json` nem a situação "Já
+  publicado"; a confirmação de publicar não repete as ressalvas; canal com `[PREENCHER]` aceito
+  pode ser publicado pela crew (regras 23 a 25 e cenários U3a-08e-f2 a 08p, upg-c e upg-d da spec
+  grande, `specs/fase-u3a-entrega-por-canal.md`).
+- **Alocação:** → sem fase — corte do dono em 2026-10-07: nenhuma crew real publica em rede
+  social sozinha; volta com pedido real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
+- **Custo de adiar:** quem publica pela crew publica o texto do passo, não o da entrega, e pode
+  publicar um canal entregue com ressalva sem novo aviso.
+- **Aprovação:** não.
+
+## Entrega: o que muda o que o verificador bloqueia (medir como será colado, imagens, mais de um canal)
+- **O que já existe:** a entrega (1.8.0 e 1.9.0) separa por canal e copia para o projeto. Legenda,
+  post e tweet são medidos sem as hashtags no fim (só o alerta da regra 34 da 1.8.0); assunto,
+  prévia, WhatsApp, cada tweet de thread e as imagens saem como "não medido"; arquivo com seções
+  de mais de um canal vai inteiro para um canal só; HTML editável com caminho `file://` não é
+  avisado, e a skill `image-creator` manda embutir imagem por caminho absoluto (regras 5, 9, 10,
+  11 e 26 da spec grande; U3a-09a a 09f, 04c a 04p, 03m a 03u, 07k a 07p).
+- **Alocação:** → U3a fatia 3 (sem versão; depois da U4) — muda o que bloqueia: texto que hoje
+  passa pode parar, e pede a conferência do dono em cada rede; mudar a skill pede teste de
+  renderização real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
+- **Custo de adiar:** texto que passa no verificador pode estourar o limite ao ser colado com as
+  hashtags; imagem fora do tamanho da rede só é vista na hora de postar.
 - **Aprovação:** não.
 
 ## Papel timbrado / modelo `.dotx` do usuário
@@ -193,17 +227,8 @@
 
 ---
 
-> As três entradas abaixo vêm da execução real de aceite da R3 (2026-10-06, spec R3 §9).
-
-## Verificador: relatório do laço de revisão copiado à mão
-- **O que já existe:** o runner manda salvar o relatório em `verificacao-ciclo-{N}.md` sem dizer o
-  meio: a IA copia a saída à mão e pode truncar. Na entrega (1.8.0) o relatório já é gravado pelo
-  script, em `verificacao-entrega.md`; no laço de revisão, ainda não. (A outra metade desta
-  entrada, o título H1 lido como legenda, saiu na 1.8.0.)
-- **Alocação:** → U3a fatia 2 (1.9.0) — o relatório do ciclo passa a ser gravado pelo próprio
-  script (`specs/fase-u3a1-pasta-de-entrega.md`, §8).
-- **Custo de adiar:** relatório de verificação incompleto.
-- **Aprovação:** não.
+> As duas entradas abaixo vêm da execução real de aceite da R3 (2026-10-06, spec R3 §9). A
+> terceira (o relatório do laço de revisão copiado à mão) saiu na 1.9.0.
 
 ## Runner: depois de um veto, o arquivo corrigido não é conferido de novo; restos de comando
 - **O que já existe:** a ordem é conferir → veto; reexecutado por veto, o passo regrava no mesmo

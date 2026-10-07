@@ -9,7 +9,7 @@ import { detectInstalledIdes } from '../lib/deteccao.js';
 import { withoutLegacy } from '../lib/legado.js';
 import { updateMcp } from '../lib/mcp.js';
 import { compareVersions, installedVersion, findLeftovers } from '../lib/migrations.js';
-import { say, recreatedLines, updateSummary, UNTOUCHED } from '../lib/resumo.js';
+import { say, recreatedLines, updateSummary, UNTOUCHED, INTERRUPTED } from '../lib/resumo.js';
 import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
 
 const tpl = (...p) => path.join(templatesDir, ...p);
@@ -39,7 +39,13 @@ export async function update(opts = {}) {
     return;
   }
 
-  const current = (await installedVersion(target)) ?? 'unknown';
+  // No stamp = an install that did not finish: nothing is written or stamped (rule 31).
+  const current = await installedVersion(target);
+  if (!current) {
+    err(INTERRUPTED);
+    process.exitCode = 1;
+    return;
+  }
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
   if (canApply(opts, current, version)) await apply(target, version);
@@ -47,7 +53,7 @@ export async function update(opts = {}) {
 
 /** `--check` only reports, and a package older than the workspace stops: false = write nothing. */
 function canApply(opts, current, version) {
-  const newer = current !== 'unknown' && compareVersions(current, version) > 0;
+  const newer = compareVersions(current, version) > 0;
   if (opts.check) {
     if (current === version) ok(`Up to date (v${version}).`);
     else if (newer) info(`A versão instalada (v${current}) é mais nova que este pacote (v${version}).`);

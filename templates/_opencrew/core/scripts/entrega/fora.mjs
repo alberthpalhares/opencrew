@@ -1,7 +1,8 @@
 // Blocos de rótulo do arquivo de origem que não chegam à entrega: os de serviço (notas, checklist,
 // FORMAT) e, nos formatos lidos pelo leitor de peças, os que não são a peça do formato (os SLIDES
 // de um carrossel, por exemplo). A entrega não muda: o LEIA-ME só passa a dizer o que ficou fora.
-// Spec: fase-u3a1-pasta-de-entrega.md, §4 e §6, ajuste da execução real (repositório do OpenCrew).
+// Specs: fase-u3a1-pasta-de-entrega.md, §4 e §6, ajuste da execução real, e
+// fase-u3a2-entrega-no-projeto.md, §6: o aviso do LEIA-ME cita o arquivo de origem (repositório do OpenCrew).
 import { semFrontmatter } from '../verificar/leitura.mjs';
 import { ROTULOS } from '../verificar/pecas.mjs';
 import { lerTrechos, marcar } from '../verificar/secoes.mjs';
@@ -9,7 +10,7 @@ import { PRINCIPAL } from './leitor.mjs';
 import { ehServico, secoesDeRotulo, semComentarios } from './texto.mjs';
 
 export const MSG = {
-  fora: (blocos) => `Ficou fora do texto para colar: ${blocos.join(', ')}. Veja no arquivo de origem.`,
+  fora: (blocos, arquivo) => `Ficou fora do texto para colar: ${blocos.join(', ')}. Veja no arquivo de origem, \`${arquivo}\`.`,
   foraNaTela: (arquivo, blocos) => `${arquivo}: ficou fora do texto para colar: ${blocos.join(', ')}. Veja no arquivo de origem.`,
 };
 
@@ -45,5 +46,5 @@ export function blocosFora(texto, formato = null) {
 
 /** O aviso de um arquivo: `{ pasta, texto, tela }`, ou nenhum quando nada ficou fora. */
 export function avisoDeFora(item, blocos) {
-  return blocos.length ? [{ pasta: item.canal, texto: MSG.fora(blocos), tela: MSG.foraNaTela(item.rel, blocos) }] : [];
+  return blocos.length ? [{ pasta: item.canal, texto: MSG.fora(blocos, item.rel), tela: MSG.foraNaTela(item.rel, blocos) }] : [];
 }

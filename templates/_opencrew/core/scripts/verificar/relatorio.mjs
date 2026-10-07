@@ -1,7 +1,10 @@
 // Relatório do verificador em markdown (PT-BR). A última linha é o status que o runner lê.
-import { NAO_MEDIDO, NAO_VERIFICADO } from './regras.mjs';
+// [PREENCHER] sai como "A preencher", contado à parte: bloqueia como antes, mas só o usuário resolve
+// (fase-u3a2-entrega-no-projeto.md, regra 36). Sem [PREENCHER], o relatório é o de sempre.
+import { FALTA_INFO, NAO_MEDIDO, NAO_VERIFICADO } from './regras.mjs';
 
 const ROTULO = { bloqueio: '❌ Bloqueio', alerta: '⚠️ Alerta', ok: '✅ OK' };
+const A_PREENCHER = '✏️ A preencher';
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 const ehNaoMedido = (i) => i.item === NAO_MEDIDO || i.item === NAO_VERIFICADO;
 
@@ -14,7 +17,7 @@ function tabela(medidos) {
 /** "Não medido" e "Não verificado" começam por ⚠️ quando são alerta e por ⚪ quando não têm nível. */
 function linhaDoAchado(i) {
   if (ehNaoMedido(i)) return `- ${i.nivel === 'alerta' ? '⚠️' : '⚪'} ${i.item} — ${i.detalhe}`;
-  return `- ${ROTULO[i.nivel]} — ${i.item}: "${i.detalhe}"`;
+  return `- ${i.item === FALTA_INFO ? A_PREENCHER : ROTULO[i.nivel]} — ${i.item}: "${i.detalhe}"`;
 }
 
 function secaoDoArquivo(a) {
@@ -30,7 +33,11 @@ export function formatarRelatorio(r) {
   const naoTexto = r.naoTexto ?? [];
   const notas = [...r.notas];
   if (naoTexto.length) notas.push(`⚪ ${NAO_VERIFICADO} — não é texto (${naoTexto.length}): ${naoTexto.join(', ')}`);
-  const resumo = [plural(r.bloqueios, 'bloqueio', 'bloqueios'), plural(r.alertas, 'alerta', 'alertas'), plural(r.naoMedidos ?? 0, 'não medido', 'não medidos')];
+  const aPreencher = r.aPreencher ?? 0;
+  const resumo = [
+    plural(r.bloqueios - aPreencher, 'bloqueio', 'bloqueios'), ...(aPreencher ? [`${aPreencher} a preencher`] : []),
+    plural(r.alertas, 'alerta', 'alertas'), plural(r.naoMedidos ?? 0, 'não medido', 'não medidos'),
+  ];
   return [
     '## Verificação automática',
     '',

@@ -5,6 +5,14 @@
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §2, §2.6 e §7 (os IDs entre parênteses são de lá). Substitui `specs/fase-u3-entrega-no-projeto.md`, que não foi aprovada. Parte do verificador como ele fica depois da R1 (`specs/fase-r1-reparos-1-6-1.md`).
 
+> **Nota de 2026-10-07 (2) — este arquivo agora é só histórico.** A fatia 2 (1.9.0) tem spec
+> própria, que se basta: `specs/fase-u3a2-entrega-no-projeto.md` (destino e cópia, ressalvas,
+> publicação, export e PDF, reparos do `update`). **Não implementar a partir daqui.** Este arquivo
+> fica como origem do que foi para a "fatia 3" (sem versão; depois da U4) — regras 5, 9 a 11, 26,
+> 28 e 29 e os cenários delas — e do que a §8 de lá mandou para a U4 (entrega avulsa) e para "sem
+> fase" (regra 30, caso b). O corpo abaixo não foi reescrito, e o título e o status da linha 3
+> ficaram como estavam.
+>
 > **Nota de 2026-10-07 — o que muda na revisão desta spec.** Ela foi relida contra o código da
 > 1.7.1 e dividida em duas fatias. O corpo abaixo não foi reescrito.
 > - **Vai na fatia 1** (`specs/fase-u3a1-pasta-de-entrega.md`, que diz o que entra e o que foi

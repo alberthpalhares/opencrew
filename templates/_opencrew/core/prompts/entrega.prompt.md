@@ -2,7 +2,9 @@
 
 One script turns the approved files of a run into `crews/{name}/output/{run_id}/entrega/`: one
 folder per channel, text ready to paste and a `LEIA-ME.md` that tells the user what to do with each
-file. Your part is to build the list of files, run the script and act on its last line.
+file. The same script copies what is ready to a folder of the project the user chose, one folder per
+run. Your part is to build the list of files, run the script, act on its last line and ask, once per
+crew, where the copy goes.
 
 You do NOT copy, split, rename or rewrite a file yourself, and you never write inside `entrega/`:
 the script rebuilds that folder from scratch on every call. **When** the delivery runs is in the
@@ -59,31 +61,83 @@ With channels from Step 2, the same command ends with one option per channel:
 
 ## Step 4: Show the result and read the last line
 
-The output of the script is the final summary of the run (the folder, each channel as "Pronto" or
-"Não está pronto", what is missing, the path of the `LEIA-ME.md`): show it to the user as it came,
+The output of the script is the final summary of the run (the folder, each channel as "Pronto",
+"Pronto, com ressalva" or "Não está pronto", what is missing, the line of the copy, the path of
+the `LEIA-ME.md`): show it to the user as it came,
 without the `ENTREGA:` line. Do not rewrite it and do not add files it does not list. Besides the
 `entrega/` folder, the script also writes `crews/{name}/output/{run_id}/verificacao-entrega.md`,
 the report of the check made at delivery time (it is not part of the delivery).
 
-- `ENTREGA:OK` → go on with the run.
-- `ENTREGA:INCOMPLETA` → a channel is not ready, or a file could not be written. The files were
-  generated anyway and the `LEIA-ME.md` marks the channel. Show what is missing and ask:
+- `ENTREGA:OK` → go on with the run (Step 5 first, when it applies).
+- `ENTREGA:COM_RESSALVA` → everything that was missing is a ressalva the user accepted: the
+  `LEIA-ME.md` opens with it and the channel is "Pronto, com ressalva"; go on as with `ENTREGA:OK`.
+- `ENTREGA:INCOMPLETA` → a channel is not ready, the destination was refused or a file could not be
+  written. `entrega/` was generated anyway and the `LEIA-ME.md` marks the channel; a channel that
+  is not ready is not copied to the project. Show what is missing and ask:
   ```
   ⚠️ A entrega ficou incompleta: {o que falta}
-  1. Corrigir agora (eu ajusto e monto a entrega de novo)
-  2. Seguir assim (no LEIA-ME, o canal fica marcado como "Não está pronto")
+  1. Corrigir agora (eu ajusto no arquivo de origem, verifico e monto a entrega de novo)
+  2. Entregar assim mesmo (fica registrado como ressalva no LEIA-ME)
+  3. Deixar para depois (o canal fica como "Não está pronto" e não é copiado)
   ```
   Wait for the answer.
-  - **1** — for each item that is missing, fix it in the source file the summary names: ask the
-    user for the real information of every `[PREENCHER: …]`, shorten what is over a limit, write
-    again a file that is not there (when the summary says a file could not be written, there is
-    nothing to fix in the text). Then run the delivery again, with the same list.
-  - **2** — go on, with the delivery as it is. Every irreversible step still asks for its own
-    confirmation, as it does today.
+  - **1** — for each item that is missing, fix it in the source file the pending item names, never
+    inside `entrega/`: ask the user for the real information of every `[PREENCHER: …]`, shorten
+    what is over a limit, write again a file that is not there. Then run the checker on that file
+    (`node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{caminho}={formato}"`)
+    and only then run the delivery again, with the same list.
+  - **2** — run the same command again, ending with `--aceitar-pendencias`: the script records
+    each pending item as a ressalva (in `ressalvas.json`, in the run folder, and at the top of the
+    `LEIA-ME.md`), the channel becomes "Pronto, com ressalva" and is copied like the ready ones.
+    It does **not** solve a file that does not exist, a refused destination or a file that could
+    not be written: for those, see below.
+  - **3** — go on: the channel stays "Não está pronto" and is not copied. Every irreversible step
+    still asks for its own confirmation, as it does today. Tell the user what is missing and that
+    it is enough to ask for the delivery of this run when the data exists.
+  - **Destination refused, or a file that could not be written** (the lines "Não copiei: …" and
+    "Não consegui gravar …"): show the message as it came and ask for another folder (Step 5, with
+    the new answer) or for a new attempt, which is the same command again. A file of the list that
+    does not exist: ask for it, or take it out of the list.
+
+  The first call never has `--aceitar-pendencias`. Outside option 2 it goes only when the user
+  already chose "Aceitar assim mesmo" in the review loop of this run and what is missing is only
+  what was accepted there: then run the command again with it, without asking.
 
 After "Edit this content" (the final menu of the runner) changes an approved file, or any step
 runs again after the delivery, run the delivery again with the new paths: the folder is rebuilt
-from scratch, so whatever was edited inside `entrega/` is lost — the `LEIA-ME.md` says so.
+from scratch, so whatever was edited inside `entrega/` is lost — the `LEIA-ME.md` says so. The copy
+in the project is never overwritten: when something already copied changed, the script puts the
+new delivery in a folder beside it (`{run_id}-reentrega-2`) and the summary says so.
+
+## Step 5: The folder of the project that keeps the copy
+
+The line `Cópia:` of the summary says what was copied and where (or "Criei a pasta …" before it):
+show it as it came. A crew whose answer was "não" has no such line, and nothing is asked.
+
+Only when the summary has the line "Cópia: nenhuma pasta escolhida para esta crew.", and only
+after an `ENTREGA:INCOMPLETA` was resolved (Step 4), ask, once:
+
+```
+Quer que eu copie o resultado para uma pasta do projeto? Se sim, diga qual (por exemplo, `Conteudo/Prontos`). Se não, não pergunto de novo.
+```
+
+- A folder → run the same command again (same list, same options), ending with
+  `--lembrar-destino "{pasta}"`.
+- "Não" → the same command again, ending with `--lembrar-destino nao`.
+
+The script writes the answer in the `crew.yaml` of the crew (`entrega.destino`, with a `.bak` copy
+of the file) and makes the copy in the same call: never edit the `crew.yaml` yourself for this. The
+next deliveries of the crew do not ask again.
+
+- **`{pasta}` was typed by the user and goes into a command** — the safe-name rule (nome seguro)
+  of the runner applies: between double quotes and only if it is made of letters (accents
+  included), digits, space and `. _ - / \ : ( )`. With any other character do NOT run the command;
+  say `⚠️ O nome `{pasta}` tem um caractere que não posso usar em comandos ({caractere}). Use só letras, números, espaço, ponto, hífen, sublinhado e parênteses.`
+  and ask for the folder again.
+- The folder is a path inside the project, written from its root (`Conteudo/Prontos`). When the
+  script refuses it ("Não copiei: …"), nothing was recorded: Step 4 says what to do.
+- To copy one delivery somewhere else without changing the answer of the crew, the same command
+  ends with `--destino "{pasta}"` (same rule for `{pasta}`); only when the user asks for it.
 
 ## When the script does not run
 
@@ -119,7 +173,7 @@ delivery did not run):
    - {caminho} ({formato})
    Posso montar a entrega com esta lista? (sim / não)
    ```
-4. On "sim", follow Steps 2 to 4. No step of the pipeline runs again, and nothing is published.
+4. On "sim", follow Steps 2 to 5. No step of the pipeline runs again, and nothing is published.
 
 ## Rules
 
@@ -127,5 +181,6 @@ delivery did not run):
   are fixed PT-BR, whatever the user's language.
 - **DO** run the delivery again whenever an approved file changes.
 - **DO NOT** create, edit or delete anything inside `entrega/` yourself.
+- **DO NOT** write the destination in the `crew.yaml` yourself, nor copy the delivery by hand.
 - **DO NOT** put in the list a file the user did not approve, nor a path you guessed.
 - **DO NOT** treat `ENTREGA:INCOMPLETA` as an error of the script: it is its answer.

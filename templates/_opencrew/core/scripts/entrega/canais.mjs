@@ -35,7 +35,8 @@ export async function canalDoFormato(raiz, formato) {
 const PASTAS_DE_SERVICO = new Set(['entrega', 'entrega.tmp', 'export']);
 
 /**
- * Arquivo de serviço nunca entra, mesmo listado: `verificacao-*.md`, `publicado.json`, o que está
+ * Arquivo de serviço nunca entra, mesmo listado: `verificacao-*.md`, `ressalvas.json` (as
+ * pendências aceitas, fase-u3a2-entrega-no-projeto.md, regra 18), `publicado.json`, o que está
  * em `entrega/`, `entrega.tmp/` ou `export/` de uma execução e o `caption.txt` direto na pasta
  * da execução (é ali que o publicador o grava; dentro de uma pasta `vN` ele é saída de passo).
  * @param {string} rel caminho relativo ao projeto, com `/`
@@ -43,7 +44,7 @@ const PASTAS_DE_SERVICO = new Set(['entrega', 'entrega.tmp', 'export']);
 export function ehDeServico(rel) {
   const partes = rel.toLowerCase().split('/');
   const nome = partes.at(-1);
-  if (/^verificacao-.*\.md$/.test(nome) || nome === 'publicado.json') return true;
+  if (/^verificacao-.*\.md$/.test(nome) || nome === 'publicado.json' || nome === 'ressalvas.json') return true;
   const naSaida = partes[0] === 'crews' && partes[2] === 'output';
   if (!naSaida) return false;
   if (partes.slice(4, -1).some((p) => PASTAS_DE_SERVICO.has(p))) return true;

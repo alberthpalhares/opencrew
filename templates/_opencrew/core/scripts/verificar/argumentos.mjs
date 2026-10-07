@@ -1,12 +1,12 @@
 // Linha de comando do verificador: as opções, os itens `caminho=formato` e a linha de uso.
-// Spec: fase-r1-reparos-1-6-1.md, §3.
+// Specs: fase-r1-reparos-1-6-1.md, §3, e fase-u3a2-entrega-no-projeto.md, §3 (`--relatorio`).
 
 // Uma linha só, e sem o texto do status: em erro de uso a saída não tem linha de status.
-export const USO = 'Uso: node _opencrew/core/scripts/verificar.mjs --crew crews/<nome> --arquivo "<caminho=formato>[,<caminho=formato>…]" [--formato blog-post|blog-seo]'
+export const USO = 'Uso: node _opencrew/core/scripts/verificar.mjs --crew crews/<nome> --arquivo "<caminho=formato>[,<caminho=formato>…]" [--formato blog-post|blog-seo] [--relatorio "<caminho>"]'
   + ' — o "=formato" é opcional; o relatório termina em OK, BLOQUEADA ou AGUARDANDO_USUARIO; código de saída: 0 = verificou, 1 = erro de uso';
 
 /**
- * Opções da linha de comando: `{ crew, formato, arquivos }`. `--arquivo` repetido soma à lista, e
+ * Opções da linha de comando: `{ crew, formato, relatorio, arquivos }`. `--arquivo` repetido soma à lista, e
  * o que vem solto logo depois da lista (sem `--`) é mais um item dela: nenhum arquivo citado fica
  * sem verificação.
  */
@@ -14,7 +14,7 @@ export function lerArgs(argv) {
   const args = { arquivos: [] };
   let naLista = false;
   for (let i = 0; i < argv.length; i++) {
-    const opcao = argv[i].match(/^--(crew|arquivo|formato)$/)?.[1];
+    const opcao = argv[i].match(/^--(crew|arquivo|formato|relatorio)$/)?.[1];
     if (opcao && i + 1 < argv.length) {
       if (opcao === 'arquivo') args.arquivos.push(argv[++i]);
       else args[opcao] = argv[++i];

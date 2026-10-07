@@ -1,6 +1,7 @@
 // O que a verificação diz da entrega: as pendências de cada canal (bloqueio, [PREENCHER], item
 // que não existe), o que não foi conferido e o alerta de tamanho do texto entregue.
-// Spec: fase-u3a1-pasta-de-entrega.md, regras 17, 19, 20 e 34 (repositório do OpenCrew).
+// Specs: fase-u3a1-pasta-de-entrega.md, regras 17, 19, 20 e 34, e fase-u3a2-entrega-no-projeto.md,
+// regra 18: a chave de cada pendência, que a faz virar ressalva (repositório do OpenCrew).
 import path from 'node:path';
 import { lerLimites } from '../verificar/leitura.mjs';
 import { contar, FALTA_INFO, NAO_MEDIDO, NAO_VERIFICADO } from '../verificar/regras.mjs';
@@ -28,16 +29,24 @@ function linhaDoItem(i, arquivo) {
 /** O resultado do verificador para um item da lista (só os arquivos de texto têm). */
 const resultadoDe = (raiz, r, item) => r.arquivos.find((a) => path.resolve(raiz, a.arquivo) === item.abs && (a.formato ?? null) === (item.formato ?? null));
 
+/** A pendência de um bloqueio: a linha, a chave que a identifica e, em [PREENCHER], o trecho pedido. */
+function doBloqueio(i, arquivo) {
+  const trecho = i.medido != null ? `${i.medido}/${i.limite}` : String(i.detalhe ?? '');
+  return { linha: linhaDoItem(i, arquivo), chave: { arquivo, item: i.item, trecho }, preencher: i.item === FALTA_INFO ? i.detalhe : null };
+}
+
 /**
  * Pendências por pasta da entrega (canal ou `outros`), na ordem da lista.
- * @returns {Map<string, string[]>} só as pastas que têm pendência
+ * @returns {Map<string, object[]>} só as pastas que têm pendência: `{ linha, chave, preencher }` —
+ *   `chave`: `{ arquivo, item, trecho }` (em bloqueio de medida, o trecho é `medido/limite`); null
+ *   no arquivo que não existe, que nunca vira ressalva
  */
 export function pendenciasPorPasta(raiz, itens, r) {
   const mapa = new Map();
-  const somar = (item, linha) => mapa.set(item.canal ?? OUTROS, [...(mapa.get(item.canal ?? OUTROS) ?? []), linha]);
+  const somar = (item, p) => mapa.set(item.canal ?? OUTROS, [...(mapa.get(item.canal ?? OUTROS) ?? []), p]);
   for (const item of itens) {
-    if (item.tipo !== 'arquivo') somar(item, MSG.naoEncontrei(item.rel));
-    for (const i of resultadoDe(raiz, r, item)?.itens ?? []) if (i.nivel === 'bloqueio') somar(item, linhaDoItem(i, item.rel));
+    if (item.tipo !== 'arquivo') somar(item, { linha: MSG.naoEncontrei(item.rel), chave: null, preencher: null });
+    for (const i of resultadoDe(raiz, r, item)?.itens ?? []) if (i.nivel === 'bloqueio') somar(item, doBloqueio(i, item.rel));
   }
   return mapa;
 }
@@ -73,6 +82,7 @@ function jaApontada(itensDaOrigem, a) {
  * Regra 34: cada `legenda*.txt`, `post*.txt` (não o comentário) e `tweet*.txt` gerado é contado
  * como o verificador conta e comparado com o limite do formato do item. Passou: um ALERTA — mas
  * só quando o verificador não apontou a mesma peça. Não é pendência.
+ * @returns {Promise<{ pasta: string, texto: string }[]>}
  */
 export async function alertasDeTamanho(raiz, itens, arquivos, r) {
   const alertas = [];
@@ -81,7 +91,7 @@ export async function alertasDeTamanho(raiz, itens, arquivos, r) {
     const medido = contar(a.texto);
     const item = itens.find((i) => i.rel === a.origem && i.formato === a.formato);
     const daOrigem = (item && resultadoDe(raiz, r, item)?.itens) ?? [];
-    if (typeof limite === 'number' && medido > limite && !jaApontada(daOrigem, a)) alertas.push(MSG.alerta(`${a.pasta}/${a.nome}`, medido, limite));
+    if (typeof limite === 'number' && medido > limite && !jaApontada(daOrigem, a)) alertas.push({ pasta: a.pasta, texto: MSG.alerta(`${a.pasta}/${a.nome}`, medido, limite) });
   }
   return alertas;
 }

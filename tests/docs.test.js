@@ -161,19 +161,39 @@ test('discovery.prompt.md supports template selection at Step 0', async () => {
   assert.match(discovery, /discovery\.template\.yaml/, 'must reference discovery.template.yaml files');
 });
 
-test('runner.pipeline.md dispatches export formats correctly', async () => {
+// Since 1.9.0 (specs/fase-u3a2-entrega-no-projeto.md, rule 27) csv is the only export format: pdf
+// had a method that does not run, and the delivery by channel replaced formatted-post.
+test('runner.pipeline.md dispatches the export format correctly', async () => {
   const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
-  assert.match(runner, /export\.prompt\.md/, 'runner must reference export.prompt.md for export formats');
-  assert.match(runner, /Export formats/, 'runner must have export format dispatch section');
-  assert.match(runner, /format is one of `pdf`, `csv`, or `formatted-post`/, 'runner must recognize pdf, csv, and formatted-post as export formats');
+  assert.match(runner, /export\.prompt\.md/, 'runner must reference export.prompt.md for the export format');
+  assert.match(runner, /\*\*Export format\*\* — if format is `csv`/, 'runner must have the export format dispatch');
+  assert.doesNotMatch(runner, /format is one of `pdf`, `csv`, or `formatted-post`/, 'pdf and formatted-post are no longer export formats');
 });
 
-test('export.prompt.md documents all supported formats', async () => {
+test('export.prompt.md documents the supported format', async () => {
   const export_ = await read(path.join('_opencrew', 'core', 'prompts', 'export.prompt.md'));
-  assert.match(export_, /format: pdf/, 'must document PDF export');
   assert.match(export_, /format: csv/, 'must document CSV export');
-  assert.match(export_, /format: formatted-post/, 'must document formatted-post export');
-  assert.match(export_, /Playwright/, 'PDF export must use Playwright');
+  assert.match(export_, /Never fabricate content/, 'the export only transforms what exists');
+});
+
+test('U3a-10c: discovery.prompt.md no longer offers a "PDF report"', async () => {
+  const discovery = await read(path.join('_opencrew', 'core', 'prompts', 'discovery.prompt.md'));
+  assert.doesNotMatch(discovery, /pdf/i);
+  assert.match(discovery, /dashboard \/ written report \/ spreadsheet \/ automated alert \/ other/);
+});
+
+test('U3a-10c: the README does not promise PDF nor formatted posts, and describes the copy to a folder of the project', async () => {
+  const readme = (await fs.readFile(path.join(templatesDir, '..', 'README.md'), 'utf8')).replace(/\s+/g, ' ');
+  assert.doesNotMatch(readme, /posts formatados|Exportação multi-formato|formatted-post/i);
+  // Every mention of PDF left says the crew does not generate it, or teaches "Salvar como PDF".
+  for (const frase of readme.split(/(?<=[.:;]) /).filter((f) => /pdf/i.test(f))) {
+    assert.match(frase, /não gera PDF|salvar como PDF|não é mais gerado|deixaram de ser gerados/i, `the README still promises PDF: ${frase}`);
+  }
+  assert.match(readme, /## Entrega por canal/);
+  assert.match(readme, /copia a entrega para uma pasta do seu projeto/);
+  assert.match(readme, /`<pasta>\/<execução>\/`/);
+  assert.match(readme, /Entregar assim mesmo/);
+  assert.match(readme, /-reentrega-2/);
 });
 
 test('crew templates have valid discovery.template.yaml files', async () => {

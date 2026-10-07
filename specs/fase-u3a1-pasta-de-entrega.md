@@ -331,6 +331,9 @@ segunda lista são novos ou reescritos e valem com o texto daqui. Sem QUANDO, a 
   saved to", "Run folder" nem "Save final output".
 - **U3a-08b** (contrato; texto novo) `entrega.prompt.md` traz as duas opções de `INCOMPLETA` da §6
   e o que cada uma faz, e não cita `--aceitar-pendencias`, `--destino` nem `--publicado`.
+  *(Nota, 1.9.0: as opções de `INCOMPLETA` mudaram — são três, com "Entregar assim mesmo", e o
+  prompt passou a citar `--aceitar-pendencias` e `--destino`. O cenário virou U3a-08b-f2, em
+  `specs/fase-u3a2-entrega-no-projeto.md`; `--publicado` continua proibido.)*
 - **U3a-08h** (só `--vai-publicar`) DADO `--vai-publicar outra-rede` ENTÃO código 1 e a mensagem
   da §6. **U3a-08n** (1º caso) DADO `--vai-publicar instagram` ENTÃO a seção do canal abre com a
   frase da regra 24. **U3a-14b** (sem destino) DADO cada cenário de `tests/entregar*.test.js`

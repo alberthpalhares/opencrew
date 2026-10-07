@@ -3,6 +3,68 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.9.0] — 2026-10-07
+
+Fase U3a, fatia 2 "Entrega no projeto" (`specs/fase-u3a2-entrega-no-projeto.md`). Chega a quem já
+usa com um `npx @aksp/opencrew@latest update`, e funciona nas crews que já existem.
+
+Ainda não nesta versão: a crew que publica sozinha continua publicando como na 1.8.0 (o publicador
+ainda não lê a pasta da entrega); legenda, post e tweet continuam medidos sem as hashtags no fim
+(só o alerta); documento Word fica para a 1.10.0.
+
+### Added
+- **A entrega vai para uma pasta do seu projeto.** Na primeira entrega de cada crew, a IA pergunta
+  "Quer que eu copie o resultado para uma pasta do projeto?". Com a pasta escolhida (por exemplo,
+  `Conteudo/Prontos`), cada execução ganha a sua subpasta, `<pasta>/<execução>/`, com o LEIA-ME e
+  as pastas dos canais prontos. Antes, a entrega só existia em `crews/<crew>/output/…/entrega/`,
+  fora do git, e quem queria guardar copiava à mão.
+- **A pergunta é feita uma vez.** A resposta — também o "não" — fica na linha `entrega.destino` do
+  `crew.yaml` da crew; o arquivo anterior é guardado em `crew.yaml.bak`.
+- **Nada do que foi copiado é sobrescrito.** Entregar de novo sem mudança não cria nada; canal que
+  ficou pronto depois entra na mesma pasta; se algo já copiado mudou, a entrega nova vai para
+  `<execução>-reentrega-2`, ao lado, e o LEIA-ME da anterior avisa. Arquivo seu dentro da cópia
+  nunca é tocado.
+- **"Entregar assim mesmo".** Quando um canal não está pronto, a crew oferece três saídas: corrigir
+  agora, entregar assim mesmo ou deixar para depois. Em "entregar assim mesmo", o que falta fica
+  escrito como ressalva no começo do LEIA-ME, o canal aparece como "Pronto, com ressalva" e é
+  copiado com os outros. Pendência nova depois do aceite pede novo aceite.
+- **"Não tenho esse dado".** Na aprovação final, se você não tem a informação de um `[PREENCHER]`,
+  a crew não insiste e não inventa: deixa o `[PREENCHER]` no texto e você decide na entrega.
+
+### Changed
+- **PDF e "posts formatados" deixaram de ser gerados.** O PDF era prometido e o método não
+  funcionava; o "post formatado" foi substituído pela entrega por canal. Para ter um PDF, abra o
+  arquivo e use Imprimir → Salvar como PDF (o LEIA-ME ensina). Crew antiga com um passo de
+  `format: pdf` ou `format: formatted-post`: a execução avisa que o formato não é mais gerado e o
+  passo grava o texto em markdown (`.md`); nenhum `.pdf` é criado. O CSV continua.
+- **Canal que não está pronto não é copiado para o projeto.** Ele continua em `entrega/`, marcado
+  como "Não está pronto", e entra na cópia quando ficar pronto ou quando você aceitar a ressalva.
+- **"Corrigir agora" corrige no arquivo de origem**, verifica o texto de novo e só então monta a
+  entrega. Antes, a correção podia ser feita sem nova verificação.
+- **`[PREENCHER]` aparece no relatório como "✏️ A preencher"**, e não mais como "❌ Bloqueio"; o
+  resumo conta à parte ("1 a preencher"). O que impede a entrega não mudou: texto com `[PREENCHER]`
+  continua "Não está pronto" até você preencher ou aceitar.
+- No LEIA-ME, o aviso de trecho que ficou fora do texto para colar diz em qual arquivo de origem
+  ele está.
+- No laço de revisão, "Aceitar assim mesmo" diz que a escolha fica registrada na entrega.
+- **`update` em instalação que não terminou** (`_opencrew/core` sem o registro de versão): não
+  altera nada e pede `npx @aksp/opencrew init`, que conclui. Antes, atualizava mostrando a versão
+  "unknown".
+
+### Fixed
+- **O relatório de cada ciclo de revisão é gravado pelo verificador**
+  (`verificacao-ciclo-N.md`). Antes, a IA copiava a saída à mão e podia truncar.
+- **`.gitignore` com um marcador do bloco sem o par** (só `# opencrew:start` ou só
+  `# opencrew:end`): o `update` guarda o arquivo como estava em `.opencrew-backup/<data>/`, põe um
+  bloco completo no fim e lista a cópia. Nenhuma linha sua é apagada.
+
+### Internal
+- O bloco do `.gitignore` começa por `# gerenciado pelo OpenCrew: suas linhas ficam fora deste
+  bloco` (o primeiro `update` regrava só o bloco).
+- `entregar.mjs` ganha `--destino`, `--lembrar-destino` e `--aceitar-pendencias`; `verificar.mjs`
+  ganha `--relatorio`; módulos novos em `scripts/entrega/` e `scripts/verificar/` (sem dependência,
+  até 200 linhas cada). `export.prompt.md` fica só com o CSV. O runner não cresceu (874 linhas).
+
 ## [1.8.0] — 2026-10-07
 
 Fase U3a, fatia 1 "Pasta de entrega" (`specs/fase-u3a1-pasta-de-entrega.md`). Chega a quem já usa

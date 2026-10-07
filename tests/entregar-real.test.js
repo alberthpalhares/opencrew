@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { BLOG, EXEC, LEGENDA, entregar, existe, leiame, ler, png, projeto, passos, secao } from './_entrega.js';
 
 const ANTES = 'Antes de postar, resolva o que está em Pendências. Corrija no arquivo de origem e peça para montar a entrega de novo: o que você mudar nesta pasta se perde.';
-const FORA = (blocos) => `Ficou fora do texto para colar: ${blocos}. Veja no arquivo de origem.`;
+// Since 1.9.0 (specs/fase-u3a2-entrega-no-projeto.md, §6) the warning names the source file.
+const FORA = (blocos, origem) => `Ficou fora do texto para colar: ${blocos}. Veja no arquivo de origem, \`${EXEC}/${origem}\`.`;
 const vezes = (texto, trecho) => texto.split(trecho).length - 1;
 
 test('U3a (real): a channel that is not ready opens its steps with "resolve the pending items first"; a ready one does not', async (t) => {
@@ -45,8 +46,8 @@ test('U3a (real): a block that does not reach the text to paste is named in "Ate
   const r = await entregar(raiz, ['v1/blog.md=blog-post', 'v1/legenda.md=instagram-feed', 'v1/slide-01.png=instagram-feed']);
   assert.equal(r.fim, 'ENTREGA:OK', 'a warning, not a pending item');
   const md = await leiame(raiz);
-  assert.match(secao(md, 'Blog'), new RegExp(`^Atenção:\\n- ${FORA('POST NOTES').replace(/\./g, '\\.')}$`, 'm'));
-  assert.match(secao(md, 'Instagram'), new RegExp(`^Atenção:\\n- ${FORA('FORMAT, SLIDES').replace(/\./g, '\\.')}$`, 'm'));
+  assert.match(secao(md, 'Blog'), new RegExp(`^Atenção:\\n- ${FORA('POST NOTES', 'v1/blog.md').replace(/\./g, '\\.')}$`, 'm'));
+  assert.match(secao(md, 'Instagram'), new RegExp(`^Atenção:\\n- ${FORA('FORMAT, SLIDES', 'v1/legenda.md').replace(/\./g, '\\.')}$`, 'm'));
   assert.equal(vezes(md, 'Ficou fora do texto para colar'), 2, 'one warning for each file');
   // What is delivered does not change: the notes stay out of the article, the caption is the caption.
   assert.ok(!(await ler(raiz, 'blog/artigo.md')).includes('Inserir o link'));
@@ -71,7 +72,7 @@ test('U3a (real): a script (roteiro) that loses its notes block says so', async 
   const raiz = await projeto(t, { 'v1/artigo.md': '=== SECTION 1: Por que mudar ===\nPorque o mercado mudou.\n\n=== ARTICLE NOTES ===\nRevisar os números.\n' });
   await entregar(raiz, ['v1/artigo.md=linkedin-article']);
   assert.ok(!(await ler(raiz, 'linkedin/artigo.md')).includes('Revisar'));
-  assert.ok(secao(await leiame(raiz), 'LinkedIn').includes(`- ${FORA('ARTICLE NOTES')}`));
+  assert.ok(secao(await leiame(raiz), 'LinkedIn').includes(`- ${FORA('ARTICLE NOTES', 'v1/artigo.md')}`));
 });
 
 const SEM_CANAL = ' — sem canal de publicação; está aqui para você usar como quiser.';

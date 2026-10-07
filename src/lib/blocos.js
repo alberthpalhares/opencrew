@@ -70,11 +70,14 @@ function planBlock(file, text, marked) {
   const block = bytesOf(marked).replace(/\n/g, eol);
   const ranges = blockRanges(text, file);
   if (!ranges.length) {
+    // A marker left alone (its pair deleted by hand): the block still goes in whole, and the
+    // file as it was is copied first (spec U3a-2, rule 30).
+    const orphan = markersOf(file).some((marker) => text.includes(marker));
     const bom = text.startsWith(BOM) ? BOM : '';
     const added = AT_END.has(file)
       ? `${text.replace(/[ \t\r\n]+$/, '')}${eol}${eol}${block}${eol}`
       : `${bom}${block}${eol}${eol}${text.slice(bom.length).replace(/^[ \t\r\n]+/, '')}`;
-    return { action: 'added', text: added, hashes: [] };
+    return { action: 'added', text: added, hashes: [], orphan };
   }
   const hashes = ranges.map(([from, to]) => hashOf(Buffer.from(text.slice(from, to), 'latin1').toString('utf8')));
   if (hashes.every((h) => h === hashOf(marked))) return { action: 'kept', hashes };
@@ -85,7 +88,8 @@ function planBlock(file, text, marked) {
  * Put `content` between the opencrew markers of `file` (path relative to the project root,
  * with `/`) and record the block in `ctx.files`.
  * - no file → `created`; file with no block → `added` at the top (at the end in .gitignore
- *   and .env.example), the user's content kept, no copy;
+ *   and .env.example), the user's content kept, no copy — unless a marker was left alone
+ *   in it: then the whole file is copied first;
  * - block equal to the new one → `kept`, nothing written;
  * - otherwise → `updated`: only the block is rewritten, in the line ending of the file. The
  *   whole file is copied first unless the block is exactly what the manifest recorded.
@@ -102,7 +106,7 @@ export async function deliverBlock(ctx, file, content) {
   const edited = plan.action === 'updated' && !plan.hashes.every((h) => h === record);
   // A UTF-16 file cannot take a UTF-8 block without damage: the whole file is copied first.
   const risky = raw && plan.text !== undefined && isUtf16(raw);
-  const copied = (edited || risky) && (await backupFile(ctx, file));
+  const copied = (edited || risky || plan.orphan) && (await backupFile(ctx, file));
   if (plan.text !== undefined) {
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.writeFile(dest, Buffer.from(plan.text, 'latin1'));

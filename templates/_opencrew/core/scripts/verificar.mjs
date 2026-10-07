@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Verificador automático do OpenCrew — mede o texto ANTES do revisor.
-// Uso: node _opencrew/core/scripts/verificar.mjs --crew crews/<nome> --arquivo "<caminho=formato>[,<caminho=formato>…]" [--formato blog-post|blog-seo]
+// Uso: node _opencrew/core/scripts/verificar.mjs --crew crews/<nome> --arquivo "<caminho=formato>[,<caminho=formato>…]" [--formato blog-post|blog-seo] [--relatorio "<caminho>"]
 //   caminho=formato: o formato declarado de cada arquivo (o `format:` do passo que o gerou); o
 //   "=formato" é opcional. --formato só escolhe os limites de blog do item sem "=formato" que tem
-//   título no frontmatter.
+//   título no frontmatter. --relatorio grava no arquivo dado (crews/<crew>/output/…/verificacao-*.md)
+//   exatamente o que o script imprime.
 // Os limites vêm do frontmatter `constraints:` dos best-practices (fonte única).
 // Última linha da saída (o runner lê esta linha): VERIFICACAO:OK, VERIFICACAO:BLOQUEADA ou
 // VERIFICACAO:AGUARDANDO_USUARIO (os únicos bloqueios são [PREENCHER], que só o usuário resolve).
@@ -11,19 +12,22 @@
 // obrigatória faltando, pasta sem `_opencrew/`, crew inexistente, crew ou caminho fora do
 // projeto, nenhum caminho da lista existe) ou erro que impediu a verificação inteira; com
 // código 1 não há linha VERIFICACAO:.
-// Specs: fase-u1-revisor-com-dentes.md, fase-r1-reparos-1-6-1.md e fase-r2-update-e-envio-seguros.md
-// (regra 23: "dentro do projeto" pelo texto ou pelo lugar real), no repositório do OpenCrew.
+// Specs: fase-u1-revisor-com-dentes.md, fase-r1-reparos-1-6-1.md, fase-r2-update-e-envio-seguros.md
+// (regra 23: "dentro do projeto" pelo texto ou pelo lugar real) e fase-u3a2-entrega-no-projeto.md
+// (regras 35 e 36), no repositório do OpenCrew.
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { erroDeUso, ehPrincipal, relativoAoProjeto } from './comum.mjs';
 import { USO, lerArgs, lerItemDaLista } from './verificar/argumentos.mjs';
 import { lerItem } from './verificar/arquivos.mjs';
+import { nomeNoRelatorio, normalizar, semRepetidas } from './verificar/entradas.mjs';
 import { lerLimites, lerDominioDoSite, semFrontmatter } from './verificar/leitura.mjs';
 import { lerProibicoes } from './verificar/proibicoes.mjs';
 import { lerPecas } from './verificar/pecas.mjs';
 import { medirPecas } from './verificar/medicao.mjs';
 import { regrasGerais, temVariavel, item, FALTA_INFO, NAO_MEDIDO, NAO_VERIFICADO } from './verificar/regras.mjs';
 import { formatarRelatorio } from './verificar/relatorio.mjs';
+import { MSG as GRAVACAO, caminhoDoRelatorio, gravarRelatorio } from './verificar/gravacao.mjs';
 
 export { formatarRelatorio };
 
@@ -88,27 +92,6 @@ async function verificarArquivo({ arquivo, formato }, ctx, regraDeTeste) {
   return { itens, fecho: fechoDe(itens, medidas, formato) };
 }
 
-/** Item da lista → `{ arquivo, formato }`; só o objeto traz formato declarado. */
-function normalizar(entrada) {
-  if (typeof entrada === 'string') return { arquivo: entrada, formato: null };
-  return { arquivo: entrada.arquivo, formato: entrada.formato || null };
-}
-
-/** O mesmo arquivo citado duas vezes, com o mesmo formato, é verificado (e contado) uma vez só. */
-function semRepetidas(raiz, entradas) {
-  const vistas = new Set();
-  return entradas.filter((e) => {
-    const chave = `${path.resolve(raiz, e.arquivo)}|${e.formato ?? ''}`;
-    return !vistas.has(chave) && vistas.add(chave);
-  });
-}
-
-/** No relatório, o absoluto de dentro do projeto (também por link, junção ou nome curto) sai como o relativo. */
-function nomeNoRelatorio(raiz, arquivo) {
-  const relativo = relativoAoProjeto(raiz, arquivo);
-  const comoEscrito = !path.isAbsolute(arquivo) && path.resolve(raiz, relativo) === path.resolve(raiz, arquivo);
-  return comoEscrito ? arquivo : relativo;
-}
 
 function resumir(arquivos, naoTexto, notas) {
   const todos = arquivos.flatMap((a) => a.itens);
@@ -121,6 +104,7 @@ function resumir(arquivos, naoTexto, notas) {
     naoTexto,
     notas: [...notas],
     bloqueios: bloqueios.length,
+    aPreencher: bloqueios.length - reais,
     alertas: todos.filter((i) => i.nivel === 'alerta').length,
     naoMedidos: todos.filter((i) => i.item === NAO_MEDIDO || i.item === NAO_VERIFICADO).length,
     status: reais ? 'BLOQUEADA' : bloqueios.length ? 'AGUARDANDO_USUARIO' : 'OK',
@@ -139,7 +123,8 @@ function resumir(arquivos, naoTexto, notas) {
  *   título do frontmatter não é medido como blog (fase-u3a1-pasta-de-entrega.md, regra 17)
  * @param {Function} [o.regraDeTeste] SÓ PARA TESTE: regra extra, chamada com `{ arquivo, formato,
  *   texto }` em cada arquivo de texto; serve para simular uma regra que lança erro
- * @returns {Promise<object>} `{ arquivos, naoTexto, notas, bloqueios, alertas, naoMedidos, status }`
+ * @returns {Promise<object>} `{ arquivos, naoTexto, notas, bloqueios, aPreencher, alertas, naoMedidos,
+ *   status }` · `aPreencher`: quantos dos `bloqueios` são [PREENCHER]
  *   · `arquivos`: `[{ arquivo, formato, itens, fecho }]`, só os de texto; cada item é
  *   `{ item, medido, limite, nivel, detalhe }`, com `nivel` bloqueio, alerta, ok ou null (linha
  *   "Não medido" sem nível); para a mesma entrada, arquivo + item + detalhe não mudam
@@ -178,12 +163,17 @@ export async function main(argv, { cwd = process.cwd(), escrever = (s) => proces
     if (faltando.length) escrever(USO);
     return 1;
   }
+  const alvo = args.relatorio == null ? null : caminhoDoRelatorio(cwd, args.crew, args.relatorio);
+  if (args.relatorio != null && !alvo) return escrever(GRAVACAO.invalido(args.relatorio)) ?? 1;
   if (!caminhos.some((c) => existsSync(path.resolve(cwd, c)))) {
     for (const c of new Set(caminhos)) escrever(`Arquivo não encontrado: ${c}`);
     return 1;
   }
   try {
-    escrever(formatarRelatorio(await verificar({ raiz: cwd, crew: args.crew, arquivos, formato: args.formato || 'blog-post' })));
+    const relatorio = formatarRelatorio(await verificar({ raiz: cwd, crew: args.crew, arquivos, formato: args.formato || 'blog-post' }));
+    // O relatório sai na tela mesmo quando o arquivo não pôde ser gravado.
+    if (alvo && !(await gravarRelatorio(alvo, relatorio))) escrever(GRAVACAO.naoGravou(relativoAoProjeto(cwd, alvo)));
+    escrever(relatorio);
     return 0;
   } catch (erroGeral) {
     // Fora da lista de arquivos (memória da crew ou `company.md` ilegível): nada foi verificado.

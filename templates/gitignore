@@ -1,3 +1,4 @@
+# gerenciado pelo OpenCrew: suas linhas ficam fora deste bloco
 node_modules/
 .env
 *.log
