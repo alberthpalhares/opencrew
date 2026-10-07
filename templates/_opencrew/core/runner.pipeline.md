@@ -53,12 +53,9 @@ Before starting execution:
 > unless the user base expands beyond PT-BR — at that point, discuss a migration strategy
 > (e.g. i18n key mapping) rather than mixing languages in a single file.
 
-1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format by scanning for the `## Estilo de Escrita` section header:
-   ```bash
-   [ -f "crews/{name}/_memory/memories.md" ] && grep -q "## Estilo de Escrita" "crews/{name}/_memory/memories.md" && echo "NEW_FORMAT" || echo "OLD_FORMAT"
-   ```
-   - If `NEW_FORMAT` → proceed normally.
-   - If `OLD_FORMAT` (or file is empty / does not exist) → migrate before proceeding:
+1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format: it does when it has the `## Estilo de Escrita` section header (read the file with the read tool — no command).
+   - If it has the header → proceed normally.
+   - If it does not (or the file is empty / does not exist) → migrate before proceeding:
      a0. If the file exists and is not empty, FIRST copy it to `crews/{name}/_memory/memories.md.bak`
         (never lose what the crew learned), then tell the user in one line:
         "Atualizei o formato da memória da crew; a versão anterior está em `memories.md.bak`."
@@ -78,11 +75,8 @@ Before starting execution:
         ## Técnico (específico do crew)
         ```
         (Use the crew's display name for `{crew-name}`, and the crew code for `{name}` in file paths — they refer to the same crew.)
-     b. Check if `crews/{name}/_memory/runs.md` exists:
-        ```bash
-        test -f "crews/{name}/_memory/runs.md" && echo "EXISTS" || echo "MISSING"
-        ```
-        If `MISSING`, create it with:
+     b. Check if `crews/{name}/_memory/runs.md` exists (read tool — no command).
+        If it does not exist, create it with:
         ```markdown
         # Run History: {crew-name}
 
@@ -229,9 +223,9 @@ Before starting execution:
    identical to today: all agents listed, no Skipped line.
 5b. **Initialize run folder**: Generate a unique run ID for this execution:
    - Format: `YYYY-MM-DD-HHmmss` using the current timestamp (e.g. `2026-03-03-143022`)
-   - Check if `crews/{name}/output/{run_id}/` already exists
+   - Check (folder-listing tool, no command) if `crews/{name}/output/{run_id}/` already exists
      - If it does (sub-second collision), append `-2`, `-3`, etc. until the folder does not exist
-   - Create the folder using Bash: `mkdir -p "crews/{name}/output/{run_id}"`
+   - Create the folder: run the `pasta` command (see "Output Path Transformation" below) — never create a folder by command yourself
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
 6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below).
 
@@ -379,11 +373,9 @@ Before executing any step that references an agent:
 To prevent linear token growth across multi-agent pipelines, apply context compression
 when passing prior agents' outputs as context:
 
-1. **TL;DR extraction**: After each agent completes, check if its output contains a `## TL;DR` section.
+1. **TL;DR extraction**: After each agent completes, check if its output contains a `## TL;DR` section
+   (a line starting with `## TL;DR` — you have the output, no command is needed).
    If present, extract and store it separately as the agent's summary.
-   ```bash
-   grep -q "^## TL;DR" "{outputFile}" && echo "HAS_TLDR" || echo "NO_TLDR"
-   ```
 
 2. **Compressed context assembly**: When preparing context for Agent N:
    - Include **TL;DR summaries** from Agents 1 through N-2 (all agents except the direct predecessor)
@@ -441,7 +433,7 @@ When an agent's `.agent.md` frontmatter contains a `tasks:` field:
    e. Check task veto conditions (same enforcement as step veto conditions below)
 
 3. **Final output**: The output of the LAST task in the chain becomes the step's output
-   - Apply the Output Path Transformation (Steps 1 and 2: run_id injection + version folder) to the `outputFile` path before saving — this applies regardless of whether the step runs as `execution: inline` or `execution: subagent`
+   - Resolve the `outputFile` path with the `saida` command (Output Path Transformation) before saving — this applies regardless of whether the step runs as `execution: inline` or `execution: subagent`
    - Save to the **transformed** outputFile path
    - This is what the next step (or checkpoint) receives
 
@@ -455,40 +447,44 @@ When an agent's `.agent.md` frontmatter contains a `tasks:` field:
 
 ### Output Path Transformation
 
-Before saving any output file in a step, apply these rules to determine the final path:
+The path of every file of the run comes from one script (`caminho.mjs`), the same on every system —
+never from a path you put together, never from a shell command of your own. Run from the project
+root the one-line command of each moment and read the last line (`CAMINHO:OK {path}`,
+`CAMINHO:FALTA {path}` or `CAMINHO:REPROVADO {motivo}`):
 
-#### Step 1 — Insert run_id
+| Moment | Command |
+|---|---|
+| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --run "{run_id}"` |
+| Before a step, for its `inputFile` | `node _opencrew/core/scripts/caminho.mjs "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"` |
+| Before a step writes, for the first `outputFile` of each group | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` |
+| After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}"` |
 
-- If the path starts with `crews/{name}/output/`, insert `{run_id}/` immediately after `output/`
-  - Example: `crews/carousel/output/slides/draft.md` → `crews/carousel/output/2026-03-03-143022/slides/draft.md`
-  - Example: `crews/carousel/output/angles-brief.yaml` → `crews/carousel/output/2026-03-03-143022/angles-brief.yaml`
-- If the path does NOT start with `crews/{name}/output/`, leave it unchanged
+- **Values** — `{name}`: the crew code. `{inputFile}` / `{outputFile}`: the path as the step
+  declares it (raw, without the run_id). `{path}`: the path `saida` returned. The safe-name rule
+  (nome seguro) applies: the crew and every path between double quotes.
+- **`saida`** answers with the **transformed** path and creates its folder: write the file there,
+  never to the raw path. Run it once per group in a step — the other `outputFile`s of the same
+  group reuse the version folder it returned, and a file written twice in a step goes to the same path.
+- **`entrada`** answers with the newest output of that file: use the path it returns, whatever
+  its version folder.
+- **The rule the script applies** (apply it yourself only when the script does not run):
+  1. A declared path that starts with `crews/{name}/output/` gets `{run_id}/` right after
+     `output/`; any other path stays as declared, with no version folder.
+  2. The **group** is the folder of the file, run_id included (`…/output/{run_id}/`, or
+     `…/output/{run_id}/slides/`). A step writes to the group's next version folder: the highest
+     `vN` there plus 1, or `v1` when there is none — numeric order (`v10` comes after `v9`), gaps
+     not filled (`v1` and `v3` → `v4`).
+  3. A step reads the newest version that has the file: from the highest `vN` down, the first
+     where the file exists and is not empty; then the group itself, with no version folder (where
+     checkpoint answers live).
 
-#### Step 2 — Insert version folder
-
-Apply to every path that was transformed in Step 1:
-
-1. Determine the **output group** = the parent directory of the file (after Step 1 transformation)
-   - Example: `crews/carousel/output/2026-03-03-143022/slides/draft.md` → group is `crews/carousel/output/2026-03-03-143022/slides/`
-   - Example: `crews/carousel/output/2026-03-03-143022/angles-brief.yaml` → group is `crews/carousel/output/2026-03-03-143022/`
-
-2. Detect existing versions for this group using Bash:
-   ```bash
-   ls -1 "crews/{name}/output/{run_id}/{relative-group}/" 2>/dev/null | grep -E '^v[0-9]+$' | sort -V | tail -1
-   ```
-   - If the command returns a version (e.g. `v2`) → use `v3`
-   (Always increment the highest version found, even if lower versions have gaps — e.g. if `v1` and `v3` exist, use `v4`)
-   - If the command returns nothing (no versions yet) → use `v1`
-   (`{relative-group}` is the portion of the group path after `crews/{name}/output/{run_id}/`, e.g. `slides/` or empty string for root-level files)
-
-3. Insert the version folder immediately before the filename:
-   - `crews/carousel/output/2026-03-03-143022/slides/draft.md` → `crews/carousel/output/2026-03-03-143022/slides/v1/draft.md`
-   - `crews/carousel/output/2026-03-03-143022/angles-brief.yaml` → `crews/carousel/output/2026-03-03-143022/v1/angles-brief.yaml`
-
-4. **Cache per group**: within a single step execution, once a version is determined for a group, reuse it for all subsequent files in that same group. Do not re-run the `ls` per file.
-   If the same file path is written twice within a step, both writes go to the same versioned path (the second write overwrites the first within that version).
-
-Apply this transformation consistently for every write in this step.
+  Example, one group: the researcher writes `…/v1/pesquisa.md`, the writer writes `…/v2/post.md`
+  and reads `…/v1/pesquisa.md`. Never assume `v1`.
+- **Script that does not run** (no Node, an error, or no `CAMINHO:` line): tell the user once per
+  run `Não consegui rodar a conferência de caminhos; sigo pela regra escrita e marco os arquivos como não verificados.`,
+  build the path by the rule above (the Write tool creates the folder) and continue. A file handled
+  this way skips its gate and is listed at the final approval:
+  `{arquivo} — não verificado: a conferência de caminhos não rodou`.
 
 ### For each pipeline step:
 
@@ -505,13 +501,9 @@ Apply this transformation consistently for every write in this step.
 
 0b. **Escritório** — if it is on, run `passo`, or `checkpoint` when the step is a checkpoint (see "Escritório" above).
 
-1. **Pre-Step Input Validation** — MANDATORY. If the step's frontmatter declares an `inputFile`, validate that the input exists before executing the step. Run via Bash tool:
-   ```bash
-   test -s "{transformed inputFile path}" && echo "VALIDATION:PASS" || echo "VALIDATION:FAIL"
-   ```
-   - Apply the Output Path Transformation (Step 1: run_id injection) to the `inputFile` path before running the check.
-   - If the Bash output contains `VALIDATION:PASS` → proceed to execute the step.
-   - If the Bash output contains `VALIDATION:FAIL` → do NOT execute the step. Present to user:
+1. **Pre-Step Input Validation** — MANDATORY. If the step's frontmatter declares an `inputFile`, the input comes from the `entrada` action, never from a path you build: validate that the input exists before executing the step. Run the `entrada` command (Output Path Transformation) with the `inputFile` as declared:
+   - `CAMINHO:OK {path}` → that path is the step's input (the newest version that has the file): read the input from it and execute the step.
+   - `CAMINHO:FALTA {path}` → do NOT execute the step. Present to user:
      ```
      ⚠️ Input for {Agent Name} not found: {path}
      The previous step may have failed to produce output.
@@ -530,7 +522,7 @@ Apply this transformation consistently for every write in this step.
 - Inform user: `🔍 {Agent Name} is working in the background...`
 - Read the step's `model_tier` frontmatter field (if present).
   Valid values: `fast` or `powerful`. If absent or any other value: default to `powerful`.
-- **Before building the subagent prompt**: Apply the Output Path Transformation (Step 1: run_id injection + Step 2: version folder) to all output paths referenced in the step file. Store the transformed path(s) in working memory — they will be used both in the prompt and in post-completion verification. Never pass raw paths from the step file to the subagent.
+- **Before building the subagent prompt**: Resolve all output paths referenced in the step file with the `saida` command (Output Path Transformation, once per group). Store the transformed path(s) in working memory — they will be used both in the prompt and in post-completion verification. Never pass raw paths from the step file to the subagent.
 - Use the Task tool to dispatch the step as a subagent:
   - If `model_tier: fast`: use the fastest/lightest model available in your current IDE.
   - If `model_tier: powerful` or absent/invalid: use the default model (no model override needed)
@@ -542,7 +534,7 @@ Apply this transformation consistently for every write in this step.
   - The veto conditions from the step file (agent should self-check before completing)
   - The company context
   - The crew memory
-  - The **transformed** path to save output (e.g., `crews/{name}/output/2026-03-20-140736/slides/v1/draft.md`)
+  - The **transformed** path to save output (the one `saida` returned, e.g. `crews/{name}/output/2026-03-20-140736/slides/v2/draft.md`)
 - Wait for the subagent to complete
 - Inform user: `✓ {Agent Name} completed`
 - Proceed to Post-Step Output Validation (below) before advancing.
@@ -552,13 +544,13 @@ Apply this transformation consistently for every write in this step.
 - Announce: `{icon} {Agent Name} is working...`
 - Follow the step instructions
 - Present output directly in the conversation
-- Save output to the specified output file — apply the Output Path Transformation (Steps 1 and 2) to the path before writing. Do not write to the raw path from the step file.
+- Save output to the specified output file — resolve the path with the `saida` command (Output Path Transformation) before writing. Do not write to the raw path from the step file.
 - Proceed to Post-Step Output Validation (below) before advancing.
 
 #### If `type: checkpoint`
 - Present the checkpoint message to the user
 - If the checkpoint requires a choice (numbered list), present options as a numbered list
-- **Always include the file path** of any generated content the user needs to review. Example: "Review the content at `crews/{name}/output/{run_id}/v1/content.md` and let me know if it looks good."
+- **Always include the file path** of any generated content the user needs to review. Example: "Review the content at `crews/{name}/output/{run_id}/v2/content.md` and let me know if it looks good." (the path the script returned)
 - Wait for user input before proceeding
 - Save the user's choice/response for the next step
 - **Correction → memory, right away**: if the answer corrects something (tone, audience, a term,
@@ -571,7 +563,7 @@ Apply this transformation consistently for every write in this step.
   (e.g. the organization's name, the main audience), ask: "Isso vale para todas as crews?
   Atualizo o perfil da empresa?" — change `company.md` only after a yes.
 - **If the step frontmatter contains `outputFile`**: after collecting the user's full response,
-  apply the Output Path Transformation **Step 1 only** (run_id injection — skip Step 2, version folder) to the `outputFile` path, then write the response to the transformed path using the Write tool before moving to the next step. Checkpoint files are user input captures, not versioned output — Step 2 does not apply here, regardless of the general "every write" rule in the Output Path Transformation section above.
+  insert only the run_id in the `outputFile` path (item 1 of the rule in Output Path Transformation — no version folder, no `saida` command), then write the response to that path using the Write tool (it creates the folder) before moving to the next step. Checkpoint files are user input captures, not versioned output: they live in the group itself, where `entrada` finds them.
   Use this format:
   ```
   # Research Focus
@@ -584,28 +576,22 @@ Apply this transformation consistently for every write in this step.
 
 ### Post-Step Output Validation
 
-After a step produces output (subagent or inline) and BEFORE Veto Condition Enforcement, the runner MUST validate that the declared output files exist and are non-empty. This is a binary, non-negotiable gate — the runner does NOT proceed on memory or assumption, only on bash output.
+After a step produces output (subagent or inline) and BEFORE Veto Condition Enforcement, the runner MUST validate that the declared output files exist and are non-empty. This is a binary, non-negotiable gate — the runner does NOT proceed on memory or assumption, only on the script's `CAMINHO:` line.
 
-**If the step declares an `outputFile`** (single or multiple), run via Bash tool for EACH output file:
+**If the step declares an `outputFile`** (single or multiple), run the `conferir` command (Output Path Transformation) for EACH output file, with the **stored transformed path** (the one `saida` returned), not the raw path from the step file. A step with an `output_contract:` adds its options to this same call (see Output Contract Validation): one command per file.
 
-```bash
-test -s "{transformed outputFile path}" && echo "VALIDATION:PASS" || echo "VALIDATION:FAIL"
-```
-
-Use the **stored transformed path** (after Output Path Transformation Steps 1 and 2), not the raw path from the step file.
-
-**Rules:**
-- If ALL output files return `VALIDATION:PASS` → proceed to Veto Condition Enforcement.
+**Rules** (`FAIL` below = the last line is `CAMINHO:REPROVADO arquivo ausente ou vazio`):
+- If ALL output files return `CAMINHO:OK` → proceed to Veto Condition Enforcement.
 - **Irreversible step** (`side_effects: irreversible` — publish, post, send) with ANY
-  `VALIDATION:FAIL` → NEVER re-execute it. Tell the user: "⚠️ {Agent Name} did not save its
+  `FAIL` → NEVER re-execute it. Tell the user: "⚠️ {Agent Name} did not save its
   output, but the action may already have happened (post published / email sent). Check
   before retrying." Then offer: 1. Retry step (only after the user checked) · 2. Mark as done
   and continue · 3. Abort pipeline.
-- If ANY output file returns `VALIDATION:FAIL` (any other step):
+- If ANY output file returns `FAIL` (any other step):
   1. **Retry once**: re-execute the entire step with the same input and context.
   2. After re-execution, run the validation again for all output files.
-  3. If second attempt returns `VALIDATION:PASS` for all files → proceed normally.
-  4. If second attempt still has ANY `VALIDATION:FAIL` → present to user:
+  3. If second attempt returns `CAMINHO:OK` for all files → proceed normally.
+  4. If second attempt still has ANY `FAIL` → present to user:
      ```
      ⚠️ {Agent Name}'s output was not generated: {path}
 
@@ -617,26 +603,23 @@ Use the **stored transformed path** (after Output Path Transformation Steps 1 an
 - If the step does not declare an `outputFile` (e.g., steps that only produce inline console output) → skip output validation.
 - Checkpoint steps (`type: checkpoint`) are exempt — their output is the user's response, not a file.
 
-**IMPORTANT**: Do NOT rely on reading the file with the Read tool to "verify" output. The Read tool returns content that can be misinterpreted. Use ONLY the bash `test -s` command — its output is binary and cannot be hallucinated.
+**IMPORTANT**: Do NOT rely on reading the file with the Read tool to "verify" output. The Read tool returns content that can be misinterpreted. Use ONLY the `conferir` command — its last line is binary and cannot be hallucinated.
 
 ### Output Contract Validation
 
 If the step's frontmatter declares an `output_contract:` field, apply structured validation
-AFTER the basic file existence check passes:
+in the same call as the basic file existence check (Post-Step Output Validation):
 
-1. **Required sections check**: If `output_contract.required_sections` is defined,
-   verify each required section exists in the output file:
-   ```bash
-   grep -c "^## " "{transformed outputFile path}" | xargs -I {} test {} -ge {min_sections} && echo "SECTIONS:PASS" || echo "SECTIONS:FAIL"
-   ```
+1. **Required sections check**: If `output_contract.required_sections` is defined, add
+   `--secoes {min_sections}` to the same `conferir` command: the file needs at least that many
+   lines starting with `## `.
 
-2. **TL;DR check**: If the output contract requires a TL;DR section:
-   ```bash
-   grep -q "^## TL;DR" "{transformed outputFile path}" && echo "TLDR:PASS" || echo "TLDR:FAIL"
-   ```
+2. **TL;DR check**: If the output contract requires a TL;DR section, add `--tldr` to the same
+   `conferir` command.
 
-3. **If any check fails**:
-   - Present to user: "⚠️ Output from {Agent Name} is incomplete: {which checks failed}"
+3. **If a check fails** (the last line is `CAMINHO:REPROVADO {motivo}`, with a motivo other than
+   `arquivo ausente ou vazio`; the script reports the first one):
+   - Present to user: "⚠️ Output from {Agent Name} is incomplete: {motivo}"
    - Options as numbered list:
      1. Accept anyway and continue
      2. Retry step (re-execute the agent)
@@ -720,7 +703,8 @@ When a step has `on_reject: {step-id}` (a review step):
    lines under each file, not the "não é texto" line of **Notas**), one per line as
    `{arquivo} — {motivo}`, then the lines under `**Notas:**` in that report, as they are written,
    and repeat every "não rodou" warning of this run (checker and source check) and the line of
-   every file left unchecked by the safe-name rule. If the approved
+   every file left unchecked by the safe-name rule. List the same way every file the path script
+   did not check (see Output Path Transformation). If the approved
    text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
    and write it into the text before approving.
 
@@ -731,14 +715,14 @@ For reference, the complete execution order for each pipeline step is:
 ```
 0. Agent deselection check (skip step if its agent was deselected)
 0b. Escritório command (passo or checkpoint) — only if it is on
-1. Pre-Step Input Validation (bash gate)
+1. Pre-Step Input Validation (script gate: `entrada`)
 2. Read step file
 3. Check execution mode and execute (subagent / inline / checkpoint)
-4. Post-Step Output Validation (bash gate)
+4. Post-Step Output Validation (script gate: `conferir`)
 5. Veto Condition Enforcement
 ```
 
-Steps 1 and 4 are binary bash gates. If either fails, the pipeline does NOT advance — the user is consulted.
+Steps 1 and 4 are binary script gates. If either fails, the pipeline does NOT advance — the user is consulted.
 
 ### After Pipeline Completion
 

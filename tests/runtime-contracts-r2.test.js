@@ -50,7 +50,7 @@ for (const [arquivo, texto] of INDICES) {
 // The command lines of every ```bash block of a prompt.
 const bashLines = (md) =>
   [...md.matchAll(/```bash\r?\n([\s\S]*?)```/g)].flatMap((m) => m[1].split(/\r?\n/)).map((l) => l.trim()).filter(Boolean);
-// Commands written in a line of text: `mkdir -p …`.
+// Commands written in a line of text: `node … "{name}" pasta`.
 const inlineCommands = (md) =>
   [...md.matchAll(/`((?:mkdir|cp|mv|rm|ls|test|grep|cat|node|npx|python3?|py) [^`\n]+)`/g)].map((m) => m[1]);
 // What is left of a command once the double-quoted pieces are taken out.
@@ -58,30 +58,36 @@ const outsideQuotes = (line) => line.replace(/"[^"]*"/g, '""');
 const CREW_PATH = /crews\/|\{[^}]*(path|file|name|run_id|group)[^}]*\}/i;
 const unquoted = (lines) => lines.filter((l) => CREW_PATH.test(outsideQuotes(l)));
 
-test('R2-04d: in the runner no crew path is left outside double quotes in a command block', () => {
-  const withPath = bashLines(runner).filter((l) => CREW_PATH.test(l));
-  // 10 since E1: the cp of state.json into the run folder left the runner with the old dashboard.
-  assert.ok(withPath.length >= 10, `expected the 10 command templates that take a crew path, got ${withPath.length}`);
-  assert.deepEqual(unquoted(withPath), []);
+// Since R3 (specs/fase-r3-runner-em-uso-real.md, rules 7 and 11) the runner has no bash command for
+// paths: the path script is called by one-line commands written in the text. What R2 protects is
+// the same — no crew path outside double quotes, in a block or in a line.
+const CAMINHO = 'node _opencrew/core/scripts/caminho.mjs "{name}"';
+
+test('R2-04d: in the runner no crew path is left outside double quotes in a command, block or line', () => {
+  const blocks = bashLines(runner).filter((l) => CREW_PATH.test(l));
+  const inline = inlineCommands(runner).filter((l) => CREW_PATH.test(l));
+  // 2 blocks (source check, checker) + 6 of the Escritório + 4 of the path script.
+  assert.equal(blocks.length, 2, `expected the 2 command blocks that take a crew path, got ${blocks.length}`);
+  assert.ok(inline.length >= 10, `expected the 10 one-line commands that take a crew path, got ${inline.length}`);
+  assert.deepEqual(unquoted([...blocks, ...inline]), []);
 });
 
-test('R2-04d: the templates that had no quotes are quoted', () => {
-  const lines = bashLines(runner);
+test('R2-04d: the commands that replaced the unquoted templates are quoted', () => {
+  const lines = inlineCommands(runner);
   for (const cmd of [
-    '[ -f "crews/{name}/_memory/memories.md" ] && grep -q "## Estilo de Escrita" "crews/{name}/_memory/memories.md"',
-    'test -f "crews/{name}/_memory/runs.md"',
-    'ls -1 "crews/{name}/output/{run_id}/{relative-group}/" 2>/dev/null',
+    `${CAMINHO} entrada --run "{run_id}" --arquivo "{inputFile}"`,
+    `${CAMINHO} saida --run "{run_id}" --arquivo "{outputFile}"`,
+    `${CAMINHO} conferir --arquivo "{path}"`,
   ]) {
-    assert.ok(lines.some((l) => l.startsWith(cmd)), `not found: ${cmd}`);
+    assert.ok(lines.includes(cmd), `not found: ${cmd}`);
   }
 });
 
-test('R2-04d: a command written in a line of the runner text also quotes the crew path', () => {
+test('R2-04d: the run folder command, written in a line of the runner text, also quotes the crew path', () => {
   const withPath = inlineCommands(runner).filter((l) => CREW_PATH.test(l));
-  assert.ok(withPath.includes('mkdir -p "crews/{name}/output/{run_id}"'), `the run folder command changed: ${withPath}`);
+  assert.ok(withPath.includes(`${CAMINHO} pasta --run "{run_id}"`), `the run folder command changed: ${withPath}`);
   assert.deepEqual(unquoted(withPath), []);
 });
-
 test('R2-04d: in export.prompt.md the crew path goes between double quotes', () => {
   const withPath = bashLines(exportPrompt).filter((l) => CREW_PATH.test(l));
   assert.deepEqual(withPath, ['npx playwright open --viewport=1240,1754 "crews/{crew-name}/output/{run_id}/export/temp.html"']);

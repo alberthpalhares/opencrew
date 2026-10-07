@@ -3,6 +3,41 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.7.1] — 2026-10-06
+
+Fase R3 "Reparos do runner em uso real" (`specs/fase-r3-runner-em-uso-real.md`): dois defeitos
+achados numa execução real de crew, seguindo o runner ao pé da letra. Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`. Execuções antigas continuam legíveis.
+
+### Fixed
+- **A crew parava no segundo passo com "Input … not found".** O passo procurava o arquivo de
+  entrada num caminho em que o passo anterior não tinha gravado (a pesquisa estava em `v1/`, e a
+  entrada era procurada fora dela). Agora a entrada de um passo é sempre a saída mais nova daquele
+  arquivo, em qualquer pasta de versão.
+- **No Windows, cada conferência dependia de a IA traduzir um comando de bash** (`test -s`,
+  `grep`, `ls | sort | tail`, `mkdir -p`). Um erro de tradução virava validação que falhava sem
+  motivo. Esses comandos saíram do runner.
+- O Architect proibia criar pasta por comando e o runner mandava criar: os dois agora dizem a
+  mesma coisa (ninguém cria pasta por comando).
+
+### Changed
+- **Quem calcula os caminhos da execução é um script, não a IA.** O runner roda um comando curto
+  (`_opencrew/core/scripts/caminho.mjs`), igual em qualquer sistema, para criar a pasta da
+  execução, saber onde cada passo grava, achar a entrada e conferir o arquivo gravado. Existência,
+  número de seções e TL;DR saem numa conferência só; antes eram até três.
+- A pasta de versão continua subindo como antes (`v1`, `v2`, `v3`… a cada passo que grava), agora
+  em ordem numérica (`v10` vem depois de `v9`). O script só cria pastas, e só dentro de
+  `crews/<crew>/output/<execução>/`; nunca cria, altera nem apaga arquivo.
+- Se o script não rodar (sem Node, por exemplo), a execução não para: o runner avisa uma vez,
+  segue pela regra escrita e lista esses arquivos como "não verificado" na aprovação final.
+- Saber se a memória da crew está no formato novo e se o `runs.md` existe passa a ser feito lendo
+  o arquivo, sem comando de terminal. Na criação de crew, as crews existentes são listadas pela
+  ferramenta da IDE, não por `ls`.
+
+### Internal
+- Travas novas: `tests/caminho.test.js`, `tests/caminho-casca.test.js`,
+  `tests/runtime-contracts-r3.test.js` e `tests/upgrade-r3.test.js`; os testes R2-04d que contavam
+  comandos de bash no runner passam a proteger as aspas nos comandos novos.
 ## [1.7.0] — 2026-10-06
 
 Fase E1 "Escritório ao vivo — a equipe trabalhando, em 8 bits"

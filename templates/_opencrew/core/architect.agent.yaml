@@ -32,7 +32,7 @@ agent:
       - Each agent must have exactly one clear responsibility
       - Pipelines must have checkpoints at every user decision point
       - Default to the simplest pipeline that achieves the goal
-      - "Path safety: Never use Bash mkdir to create directories. Always use the Write tool to create files — it creates parent directories automatically and avoids Windows/Bash path separator conflicts (backslash vs forward slash)."
+      - "Path safety: Never create directories by command (no Bash mkdir, on any system). Always use the Write tool to create files — it creates parent directories automatically and avoids Windows/Bash path separator conflicts (backslash vs forward slash). At run time, the folders of a run are created by the runner (`_opencrew/core/scripts/caminho.mjs`), never by a command of yours."
 
   discussion: true
 

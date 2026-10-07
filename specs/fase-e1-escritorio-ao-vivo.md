@@ -491,8 +491,17 @@ No `sandbox/`, com o navegador aberto no escritório:
   IA da IDE, criou e rodou uma crew de verdade seguindo o runner: 7 comandos, nos momentos
   certos, e o estado final correto. O dono abriu o escritório pelo Antigravity CLI e viu a
   demonstração.
-- **Não conferidos:** itens 4, 6, 7, 8 e 9. Do item 9 só há o Antigravity CLI; faltam duas IDEs,
-  uma delas sem segundo plano.
+- **Conferidos depois, no mesmo dia, pelo navegador embutido** (com a 1.7.0 instalada num
+  projeto de teste):
+  - item 6: crew de 12 agentes, as 12 mesas e os 12 nomes legíveis, sem sobreposição;
+  - item 4, em parte: com a tela em 175% (`devicePixelRatio` 1,75) a escala ficou inteira (4) e
+    cada pixel do desenho ocupou 1 pixel físico; em 375×812 com fator 2 (celular emulado) a
+    escala ficou em 2, sem rolagem lateral, com nomes sob as mesas. Ali o balão do passo encosta
+    no nome da fileira de cima (limite já previsto na §11). 125% e 150% e um celular de verdade
+    não foram vistos;
+  - item 7: com `?demo` e uma execução gravada, a demonstração roda e não troca sozinha.
+- **Não conferidos:** item 8 (aba oculta por 10 minutos) e o resto do item 9. Do item 9 só há o
+  Antigravity CLI; faltam duas IDEs, uma delas sem segundo plano.
 - Os limites que a execução real mostrou estão na §11. O que ela achou fora do Escritório foi
   para o `IDEIAS.md`, com triagem.
 
