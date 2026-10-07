@@ -25,11 +25,10 @@ const SEGURO = 'letters (accents included), digits, space and `. _ - / \\ : ( )`
 
 // ── U3a-05l-f2 The runner asks, the script records (rule 16) ─────────────────────────────────
 
-test('U3a-05l-f2: the prompt asks the question of spec §6 only when the summary has "nenhuma pasta escolhida", after an INCOMPLETA is resolved', () => {
+test('U3a-05l-f2: the prompt asks the question of spec §6, once, when the summary has "nenhuma pasta escolhida"', () => {
   assert.ok(destino, 'entrega.prompt.md has no "## Step 5"');
   tem(destino, 'Cópia: nenhuma pasta escolhida para esta crew.');
   tem(destino, 'Quer que eu copie o resultado para uma pasta do projeto? Se sim, diga qual (por exemplo, `Conteudo/Prontos`). Se não, não pergunto de novo.');
-  assert.match(destino, /Only when the summary has the line [^,]*, and only after an `ENTREGA:INCOMPLETA` was resolved \(Step 4\)/);
   assert.match(destino, /ask, once/);
 });
 
@@ -129,6 +128,42 @@ test('U3a-09g-f2: the runner passes --relatorio in the review loop and no longer
   tem(revisao, 'verificar.mjs --crew "crews/{name}" --arquivo "{path1}={format1},{path2},…" --relatorio "crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md"');
   assert.match(revisao, /The script writes its report to that file/);
   assert.ok(!/Save the full output/.test(runner), 'the runner still tells the AI to save the output');
+});
+
+// ── U3a (real-2) The adjustments of the second real run (rules 16 and 22) ────────────────────
+
+const naoRodou = flat(sectionOf(prompt, '## When the script does not run'));
+const mudar = flat(sectionOf(prompt, '## Changing the folder later'));
+const system = ler('templates/AGENTS.md');
+
+test('U3a (real-2): the question of the destination comes after ANY delivery with "nenhuma pasta escolhida" — in an INCOMPLETA, after it is resolved', () => {
+  assert.match(destino, /After \*\*any\*\* delivery whose summary has the line "Cópia: nenhuma pasta escolhida para esta crew\."[^:]*`ENTREGA:OK` and `ENTREGA:COM_RESSALVA` included[^:]*ask, once/);
+  assert.match(destino, /When the last line was `ENTREGA:INCOMPLETA`, ask only after it was resolved \(Step 4\)/);
+  assert.ok(!destino.includes('and only after an `ENTREGA:INCOMPLETA` was resolved'), 'the sentence that read as "only after an INCOMPLETA" is still there');
+});
+
+test('U3a (real-2): in an INCOMPLETA the ready channels were already copied, before the user answers', () => {
+  assert.match(resultado, /The channels that are ready were already copied by this same call, before the user answers/);
+});
+
+test('U3a (real-2): "corrigir agora" fixes the source file in place, and the checker and the delivery run again with the same list', () => {
+  assert.match(resultado, /in place — the same file at the same path, no new `vN` folder and no copy — so the list does not change/);
+});
+
+test('U3a (real-2): the one line "Não copiei: …" with no ENTREGA: line is a refused destination, not a script that did not run', () => {
+  assert.match(naoRodou, /\*\*A refused destination is not that\.\*\* When the only line is "Não copiei: … Recebi: \{valor\}\."/);
+  assert.match(naoRodou, /show that line to the user as it came and ask for another folder \(or "não"\)/);
+  assert.match(naoRodou, /never answer it with "A entrega automática não rodou"/);
+  assert.match(destino, /also when it is the only line of the output, with no `ENTREGA:` line/);
+});
+
+test('U3a (real-2): to change the folder later, the delivery of the last run goes with --lembrar-destino; the crew.yaml is never edited by hand', () => {
+  assert.ok(mudar, 'entrega.prompt.md has no "## Changing the folder later"');
+  for (const pedido of ['muda a pasta de entrega', 'não quero mais cópia', 'volta a copiar']) tem(mudar, pedido);
+  assert.match(mudar, /run the delivery of the \*\*last run\*\* of the crew[^.]*ending with `--lembrar-destino "\{pasta\}"`[^.]*`--lembrar-destino nao`/);
+  assert.match(mudar, /Never edit the `crew\.yaml` by hand/);
+  const linha = system.split(/\r?\n/).find((l) => l.includes('muda a pasta de entrega')) ?? '';
+  assert.match(linha, /^\| [^|]*\| [^|]*`_opencrew\/core\/prompts\/entrega\.prompt\.md`[^|]*"Changing the folder later"[^|]*\|$/);
 });
 
 // ── U3a-10a and U3a-10b Export: only csv is left (rule 27) ───────────────────────────────────

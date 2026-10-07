@@ -51,7 +51,7 @@ test('U3a-05f: the caption changed — the whole delivery goes to <run_id>-reent
   await gravar(raiz, { 'v1/legenda.md': LEGENDA.replace('Legenda da semana.', 'Legenda nova.') });
   const r = await entregarEm(raiz, DEST, ITENS);
   assert.equal(r.fim, 'ENTREGA:OK');
-  assert.ok(r.linhas.includes(`Cópia: ${REENTREGA} — guardei aqui porque a entrega mudou. A anterior ficou como estava.`), r.saida);
+  assert.ok(r.linhas.includes(`Cópia: ${REENTREGA} — guardei aqui porque a entrega mudou. Os arquivos da anterior ficaram como estavam; só o LEIA-ME dela ganhou um aviso.`), r.saida);
   assert.deepEqual(await nomes(raiz, REENTREGA), ['LEIA-ME.md', 'blog/artigo.md', 'blog/seo.txt', 'instagram/legenda.txt']);
   assert.equal(await lerDe(raiz, `${REENTREGA}/instagram/legenda.txt`), 'Legenda nova.\n\n#horta #casa\n');
   assert.ok(!(await lerDe(raiz, `${REENTREGA}/LEIA-ME.md`)).includes('Há uma entrega mais nova'));
@@ -100,9 +100,20 @@ test('U3a-05m: a file the user put in the root of the copy stays and changes not
   assert.equal(await lerDe(raiz, `${COPIA}/anotacoes.txt`), 'minhas notas');
 });
 
-test('U3a-05m: one more file inside <destino>/<run_id>/instagram/ — the copy goes to -reentrega-2 and that file stays where it was', async (t) => {
+test('U3a-05m: one more file inside <destino>/<run_id>/instagram/ stays and changes nothing (the copy is compared with what was copied)', async (t) => {
   const raiz = await projeto(t, ARQUIVOS);
   await entregarEm(raiz, DEST, ITENS);
+  await fs.writeFile(path.join(raiz, COPIA, 'instagram', 'rascunho.txt'), 'meu rascunho');
+  const r = await entregarEm(raiz, DEST, ITENS);
+  assert.ok(r.linhas.includes(`Cópia: ${COPIA} — já está atualizada.`), r.saida);
+  assert.deepEqual(await pastas(raiz), [RUN]);
+  assert.equal(await lerDe(raiz, `${COPIA}/instagram/rascunho.txt`), 'meu rascunho');
+});
+
+test('U3a-05m: a copy with no copia.json (made by the earlier code) and one more file in instagram/ — -reentrega-2, and that file stays where it was', async (t) => {
+  const raiz = await projeto(t, ARQUIVOS);
+  await entregarEm(raiz, DEST, ITENS);
+  await fs.rm(path.join(raiz, EXEC, 'copia.json'));
   await fs.writeFile(path.join(raiz, COPIA, 'instagram', 'rascunho.txt'), 'meu rascunho');
   const r = await entregarEm(raiz, DEST, ITENS);
   assert.ok(r.linhas.some((l) => l.startsWith(`Cópia: ${REENTREGA} — guardei aqui`)), r.saida);

@@ -20,7 +20,7 @@ test('U3a-06e: the LEIA-ME has the fixed titles, in order, only for what is ther
   assert.ok(citados.includes('instagram/legenda.txt') && citados.includes('instagram/slide-02.png') && citados.includes('blog/artigo.md'));
   for (const rel of citados) assert.ok(await existe(raiz, rel), rel);
   assert.ok(secao(md, 'Blog').includes(MARKDOWN));
-  assert.equal(secao(md, 'Para ter um PDF'), 'Abra o arquivo que você quer (por exemplo, o artigo do blog) no navegador ou no editor de texto e use Imprimir → Salvar como PDF.');
+  assert.equal(secao(md, 'Para ter um PDF'), 'Abra o arquivo que você quer no navegador ou no editor de texto e use Imprimir → Salvar como PDF.');
   assert.equal(secao(md, 'Sobre esta pasta'), SOBRE);
   assert.ok(!md.includes(raiz) && !/[A-Za-z]:[\\/]/.test(md) && !md.includes('\\'), 'no absolute path');
   assert.ok(secao(md, 'Blog').includes(`${EXEC}/v2/post.md`), 'the source file, relative to the project');

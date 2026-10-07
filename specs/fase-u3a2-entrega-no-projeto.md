@@ -72,6 +72,7 @@ node _opencrew/core/scripts/verificar.mjs --crew "crews/<crew>" --arquivo "<list
 <destino>/<run_id>/                        a cópia; se preciso, <run_id>-reentrega-2, -3…
   LEIA-ME.md  +  as pastas dos canais prontos, outros/ e editaveis/
 crews/<crew>/output/<run>/ressalvas.json   só se houve aceite
+crews/<crew>/output/<run>/copia.json       o retrato do que foi copiado (ajuste da execução real)
 crews/<crew>/output/<run>/verificacao-ciclo-N.md    gravado pelo verificar.mjs --relatorio
 crews/<crew>/crew.yaml                     entrega.destino, só com --lembrar-destino (com .bak)
 ```
@@ -84,6 +85,14 @@ crews/<crew>/crew.yaml                     entrega.destino, só com --lembrar-de
 - Ordem das gravações: `crew.yaml` (com `--lembrar-destino`), `ressalvas.json`, a cópia e, por
   último, `entrega/` — assim o LEIA-ME de `entrega/` só cita a cópia que existe.
 - `ressalvas.json`: `{ "ressalvas": [ { "arquivo", "item", "trecho" } ] }`. UTF-8, LF.
+- `copia.json` (ajuste da execução real): `{ "copias": { "<pasta da cópia>": { "<canal>/<arquivo>":
+  "<hash>" } } }` — por pasta de cópia (relativa ao projeto), o que o script copiou para ela. É
+  gravado logo depois da cópia; é arquivo de serviço do script e não entra em entrega.
+- Legenda sem marcador (ajuste da execução real): arquivo de `instagram-feed` que é só o texto (sem
+  `=== CAPTION ===`, sem cabeçalho e sem linha "Slide N") sai como `instagram/legenda.txt`, com o
+  texto inteiro limpo como as outras peças, o aviso da §6 em `Atenção:` e o alerta de tamanho da
+  regra 34 valendo — como o leitor já faz com o post do LinkedIn e com o tweet. Com cabeçalho ou
+  rótulo e nenhuma legenda, o arquivo segue inteiro, com o aviso da 1.8.0. O verificador não muda.
 
 **LEIA-ME da entrega: o que muda.**
 - `Situação:` é uma só: `Pronto` · `Pronto, com ressalva` · `Não está pronto`.
@@ -98,7 +107,8 @@ crews/<crew>/crew.yaml                     entrega.destino, só com --lembrar-de
 **LEIA-ME da cópia.** O mesmo módulo o gera, com quatro diferenças: canal que não foi copiado traz
 só `Situação:` e `Pendências:`; `## Outros arquivos` e `## Editáveis` listam só o que foi copiado;
 `## Sobre esta pasta` traz o texto da cópia; e, na pasta que deixou de ser a mais nova, a primeira
-linha é o aviso da pasta nova. Todo arquivo citado existe na cópia.
+linha é o aviso da pasta nova. Todo arquivo citado existe na cópia. Na pasta de reentrega, o título
+diz qual é: `# Entrega — {crew} — {run} (reentrega {N})` (ajuste da execução real).
 
 ## 5. Regras
 (Números da spec grande; 35 a 37 são novas. O que a 1.8.0 já faz não é repetido.)
@@ -111,8 +121,13 @@ linha é o aviso da pasta nova. Todo arquivo citado existe na cópia.
     final é `ENTREGA:INCOMPLETA`. Uma função só valida as três entradas.
 14. **Cópia.** Vai para `<destino>/<run_id>/` o que está pronto: ficam de fora o canal (ou
     `outros/`) com pendência não aceita e o HTML de `editaveis/` desse canal. Sem nada pronto,
-    nenhuma pasta é criada. O script compara as pastas que copiaria agora com a pasta mais nova da
-    execução (a de maior número):
+    nenhuma pasta é criada. O script compara as pastas que copiaria agora com **o que foi copiado**
+    para a pasta mais nova da execução (a de maior número) — o retrato dela em `copia.json`, e não
+    o que está na pasta agora (ajuste da execução real): o que o usuário edita, apaga ou acrescenta
+    na cópia nunca é sobrescrito nem gera reentrega. Sem retrato dessa pasta (cópia feita antes
+    deste ajuste, ou `copia.json` ilegível), a comparação é com os arquivos da pasta, como abaixo,
+    e o retrato passa a existir a partir dessa chamada. Arquivo novo cujo lugar na cópia já está
+    ocupado por outro conteúdo conta como diferente.
     - *Igual* (mesmo conteúdo — texto sem contar CRLF/LF, o resto byte a byte — e nenhum arquivo a
       mais nessas pastas): nada é copiado. Texto é `.txt`, `.md`, `.html`, `.htm`, `.csv` e `.json`.
     - *Só acrescenta* (o que está lá continua igual e há arquivos novos, como um canal que ficou
@@ -129,31 +144,43 @@ linha é o aviso da pasta nova. Todo arquivo citado existe na cópia.
     de escrita: mensagem com o arquivo, nenhuma pasta parcial nem temporária, `entrega/` continua
     válida e o final é `ENTREGA:INCOMPLETA`. Ao acrescentar, vale o que já entrou, e a chamada
     seguinte completa.
-16. **O runner pergunta, o script grava.** Se o resumo traz "nenhuma pasta escolhida", o runner —
-    depois de resolvida uma `INCOMPLETA` (regra 22) — faz a pergunta da §6 e repete a mesma chamada
+16. **O runner pergunta, o script grava.** Depois de qualquer entrega cujo resumo traz "nenhuma
+    pasta escolhida" (`OK` e `COM_RESSALVA` também; numa `INCOMPLETA`, depois de resolvida — regra
+    22) (ajuste da execução real), o runner faz a pergunta da §6 e repete a mesma chamada
     com `--lembrar-destino "<pasta>"` ou `--lembrar-destino nao`. O script grava `entrega.destino`
     sem mexer no resto do `crew.yaml`, com cópia `crew.yaml.bak` (se já existe,
     `crew.yaml.bak-<data-hora>`, como no `conferir-fontes.mjs`). `não` e `no` viram `nao`. Valor
     igual ao gravado: nada é regravado. Destino inválido: código 1, a mensagem do destino recusado
     (§6), `crew.yaml` intacto e nada escrito. A linha gravada é `destino: "<pasta>"` (com `/`), ou
-    `destino: nao`.
+    `destino: nao`. Essa resposta de código 1 — só a linha "Não copiei: …", sem linha `ENTREGA:` —
+    é destino recusado, não "o script não rodou": o runner mostra a linha e pede outra pasta, ou
+    "não" (ajuste da execução real). **Mudar depois** (ajuste da execução real): para trocar a
+    pasta, parar de copiar ou voltar a copiar, o runner roda a entrega da última execução da crew
+    com `--lembrar-destino "<pasta>"` (ou `nao`); nunca edita o `crew.yaml` à mão. A rota está na
+    tabela de comandos do `templates/AGENTS.md`.
 
 **Ressalvas**
 18. **Ressalva.** Pendência é o que a 1.8.0 define. Com `--aceitar-pendencias`, o script regrava
     `ressalvas.json` com todas as pendências daquele momento. Chave: arquivo de origem + item do
     verificador + trecho (em bloqueio de medida, `medido/limite`: `2300/2200`). Nas entregas
     seguintes da execução, pendência igual a uma ressalva continua aceita, mesmo sem a opção; mudou
-    um dos três, é pendência nova, e o arquivo não muda. Arquivo que não existe nunca vira ressalva;
-    sem pendência, nada é gravado. `ressalvas.json` ilegível vale como vazio, com aviso.
+    um dos três, é pendência nova. A ressalva só vale enquanto a pendência existir sem interrupção
+    (ajuste da execução real): a cada entrega o `ressalvas.json` é regravado só com as ressalvas
+    que ainda correspondem a uma pendência atual (sem nenhuma, fica com a lista vazia); pendência
+    que some e volta é pendência nova — `ENTREGA:INCOMPLETA` e a pergunta. Arquivo que não existe
+    nunca vira ressalva; sem pendência e sem arquivo, nada é gravado. `ressalvas.json` ilegível
+    vale como vazio, com aviso, e fica como está até um aceite novo.
     `ressalvas.json` é arquivo de serviço: não entra em entrega.
 19. **Três finais.** `ENTREGA:OK`: nenhuma pendência. `ENTREGA:COM_RESSALVA`: toda pendência é
     ressalva. `ENTREGA:INCOMPLETA`: algum canal não está pronto, o destino foi recusado ou uma
     gravação falhou.
 22. **O que o runner faz com cada final** (texto em `entrega.prompt.md`). `OK` e `COM_RESSALVA`:
-    segue. `INCOMPLETA`: mostra o que falta e as três opções da §6.
-    - **1, corrigir agora:** corrige no arquivo de origem que a pendência cita, nunca dentro de
-      `entrega/`; roda o `verificar.mjs` nesse arquivo; só então monta a entrega de novo, com a
-      mesma lista (achado 2).
+    segue. `INCOMPLETA`: mostra o que falta e as três opções da §6. Os canais prontos já foram
+    copiados por essa mesma chamada, antes de o usuário responder (ajuste da execução real).
+    - **1, corrigir agora:** corrige no arquivo de origem que a pendência cita, no lugar (o mesmo
+      arquivo, no mesmo caminho: sem pasta `vN` nova e sem cópia — ajuste da execução real), nunca
+      dentro de `entrega/`; roda o `verificar.mjs` nesse arquivo; só então monta a entrega de novo,
+      com a mesma lista (achado 2).
     - **2, entregar assim mesmo:** repete a chamada com `--aceitar-pendencias`. Não resolve arquivo
       que não existe, destino recusado nem falha de gravação: aí o runner mostra a mensagem e pede o
       arquivo, outra pasta ou nova tentativa.
@@ -209,7 +236,10 @@ As mensagens com `{n}` concordam em número. Nenhuma mostra caminho absoluto.
 | Resumo, cópia nova | "Cópia: {pasta}" (antes, se criou o destino: "Criei a pasta {destino}.") |
 | Resumo, cópia igual | "Cópia: {pasta} — já está atualizada." |
 | Resumo, só acrescentou | "Cópia: {pasta} — completei com {n} arquivos novos." |
-| Resumo, pasta de reentrega | "Cópia: {pasta nova} — guardei aqui porque a entrega mudou. A anterior ficou como estava." |
+| Resumo, pasta de reentrega (ajuste da execução real) | "Cópia: {pasta nova} — guardei aqui porque a entrega mudou. Os arquivos da anterior ficaram como estavam; só o LEIA-ME dela ganhou um aviso." |
+| LEIA-ME da pasta de reentrega, título (ajuste da execução real) | "# Entrega — {crew} — {run} (reentrega {N})" |
+| Legenda sem marcador, em `Atenção:` e no resumo (ajuste da execução real) | "Não encontrei a legenda marcada em {arquivo}: usei o texto inteiro. Confira antes de colar." |
+| LEIA-ME, `## Para ter um PDF` (ajuste da execução real; troca o texto da 1.8.0) | "Abra o arquivo que você quer no navegador ou no editor de texto e use Imprimir → Salvar como PDF." |
 | Resumo, nada pronto | "Cópia: nada foi copiado, porque nenhum canal está pronto." |
 | Destino recusado | "Não copiei: o destino precisa ser uma pasta dentro do projeto, fora de `_opencrew/`, `crews/`, `skills/`, `.git/` e `node_modules/`. Recebi: {valor}." |
 | Falha de escrita na cópia | "Não consegui gravar {arquivo}. Feche o arquivo, ou espere a sincronização da pasta, e rode de novo." |
@@ -270,7 +300,8 @@ com legenda de 2.300 caracteres (o limite é 2.200).
   `--lembrar-destino`, também para o "não"; e não manda a IA editar o `crew.yaml`.
 - **U3a-05m** DADO um `anotacoes.txt` posto pelo usuário em `<destino>/<run_id>/` e nova chamada sem
   mudança ENTÃO nenhuma pasta é criada e o arquivo continua lá; DADO um arquivo a mais dentro de
-  `<destino>/<run_id>/instagram/` ENTÃO a cópia vai para `<run_id>-reentrega-2/` e esse arquivo
+  `<destino>/<run_id>/instagram/` ENTÃO nada muda e o arquivo continua lá (ajuste da execução
+  real); na cópia sem `copia.json`, a entrega vai para `<run_id>-reentrega-2/` e esse arquivo
   continua onde estava.
 - **U3a-07a-f2** DADOS uma legenda de 2.300, um blog sem pendência e um destino ENTÃO o destino tem
   `blog/` e não tem `instagram/`; o LEIA-ME da cópia não cita arquivo de `instagram/` e traz a
@@ -295,7 +326,23 @@ com legenda de 2.300 caracteres (o limite é 2.200).
   `ressalvas.json` igual, byte a byte.
 - **U3a-07e** DADA a U3a-07c e um `[PREENCHER]` novo no texto ENTÃO `ENTREGA:INCOMPLETA`, a mensagem
   de pendência nova, e `ressalvas.json` não muda; DADA a U3a-07c e a legenda passando de 2.300 para
-  2.250 caracteres ENTÃO `ENTREGA:INCOMPLETA`.
+  2.250 caracteres ENTÃO `ENTREGA:INCOMPLETA` e a ressalva antiga sai do `ressalvas.json` (ajuste
+  da execução real).
+- **U3a (real-2)** — os ajustes da execução real, em `tests/entregar-real2.test.js` e, os de
+  contrato, em `tests/runtime-contracts-u3a2.test.js`: DADA uma pendência aceita, depois resolvida
+  (`ENTREGA:OK`) e que volta ao texto ENTÃO `ENTREGA:INCOMPLETA`, sem "Entregue com ressalva"; DADAS
+  duas ressalvas e uma resolvida ENTÃO só a outra fica no `ressalvas.json`; DADO um arquivo da cópia
+  editado pelo usuário e nova entrega sem mudança ENTÃO "já está atualizada", nenhuma pasta nova e o
+  arquivo editado intacto; DADA a cópia editada e a entrega mudando de fato ENTÃO `-reentrega-2`, e
+  o arquivo editado continua como o usuário deixou; DADO um canal que ficou pronto depois ENTÃO ele
+  entra na cópia editada ("completei") sem sobrescrever; DADA a cópia sem `copia.json`, ou com ele
+  ilegível ENTÃO a comparação é com os arquivos; DADO `copia.json` na lista ENTÃO não entra (arquivo
+  de serviço); DADO um arquivo de `instagram-feed` que é só o texto ENTÃO `instagram/legenda.txt`, o
+  aviso, o alerta de tamanho quando passa do limite e o canal "Pronto"; DADA a reentrega ENTÃO a
+  linha nova do resumo e o título "(reentrega N)"; DADA uma crew sem blog ENTÃO "Para ter um PDF"
+  não cita o blog. Contrato: a pergunta do destino depois de qualquer entrega; os canais prontos já
+  copiados; corrigir no lugar; "Não copiei: …" sem linha `ENTREGA:` é destino recusado; mudar o
+  destino depois, com a rota no `templates/AGENTS.md`.
 - **U3a-07j** DADA a U3a-07e (o `[PREENCHER]` novo) e nova chamada com `--aceitar-pendencias` ENTÃO
   `ressalvas.json` tem as duas pendências e o final é `ENTREGA:COM_RESSALVA`.
 - **U3a-07h** DADOS um item da lista que não existe e `--aceitar-pendencias` ENTÃO
@@ -406,7 +453,7 @@ O que a spec grande já mandava para U3b, U4, U5 ou "sem fase" (§11 de lá) nã
       `[PREENCHER]`. Mudaram também, por consequência direta das regras 27 e 35: o R1-07a (o
       comando do verificador agora termina em `--relatorio`) e o R2-04d do `export.prompt.md` (o
       único comando com caminho de crew era o do PDF: a lista ficou vazia).
-- [ ] **Execução real**, por um agente no papel da IA da IDE, no `sandbox/`, seguindo o runner ao pé
+- [x] **Execução real**, por um agente no papel da IA da IDE, no `sandbox/`, seguindo o runner ao pé
       da letra, numa crew de três canais (Instagram com imagens, LinkedIn e blog). Conferir e
       registrar aqui: (1) a pergunta do destino aparece uma vez; o `crew.yaml` tem o destino e o
       `.bak`; a cópia está em `<destino>/<run_id>/`; (2) segunda execução, com um `[PREENCHER]` e a
@@ -415,6 +462,7 @@ O que a spec grande já mandava para U3b, U4, U5 ou "sem fase" (§11 de lá) nã
       se repete; (3) entregar de novo sem mudar nada: nenhuma pasta nova; mudar a legenda:
       `-reentrega-2`; (4) `verificacao-ciclo-1.md` gravado pelo script; (5) um passo antigo com
       `format: pdf`: o aviso e um `.md`.
+      Feita em 2026-10-07 (PowerShell, pasta temporária, crew de 4 agentes): a pergunta do destino saiu uma vez, a resposta ficou no `crew.yaml` com `.bak` e a cópia chegou à pasta do projeto; com `[PREENCHER]` e "não tenho esse dado", a entrega saiu incompleta, "entregar assim mesmo" gerou `ENTREGA:COM_RESSALVA` e o `ressalvas.json`; a reentrega foi para uma pasta nova sem sobrescrever; destino fora do projeto foi recusado; o relatório do ciclo foi gravado pelo script. Oito ajustes saíram dela (marcados "ajuste da execução real"), entre eles dois defeitos: ressalva antiga aceitava pendência nova, e editar a cópia gerava reentrega. Os ajustes só têm teste automático: não houve segunda execução real.
 - [ ] O dono abre a pasta da cópia no projeto, lê o LEIA-ME e confere um canal com ressalva.
 - [x] No mesmo commit (regra 9 do AGENTS.md; feito no working tree, o commit é do dono): README (entrega no projeto, árvore de pastas, fim do
       PDF e dos posts formatados), CHANGELOG 1.9.0 (com as mudanças de comportamento: PDF,
@@ -428,9 +476,21 @@ O que a spec grande já mandava para U3b, U4, U5 ou "sem fase" (§11 de lá) nã
 - As regras 16, 22, 27 e 37 são seguidas pela IA: os testes garantem o texto; a execução real, o
   uso.
 - A ressalva é presa ao arquivo de origem, ao item e ao trecho: se o texto for reescrito (pasta `vN`
-  nova) ou o valor medido mudar, a pendência volta e pede novo aceite.
+  nova) ou o valor medido mudar, a pendência volta e pede novo aceite. O mesmo vale para a
+  pendência que foi resolvida e voltou, e para o arquivo que saiu da lista numa entrega e voltou
+  na seguinte: a ressalva dele saiu do `ressalvas.json`.
 - A cópia nunca é atualizada no lugar: texto corrigido depois de copiado gera uma pasta
   `-reentrega-N`. Pasta de canal que voltou a "não está pronto" fica na cópia como estava.
+- O que o usuário edita na cópia não chega à pasta de reentrega: ela leva a entrega nova, e a
+  versão editada fica na pasta anterior. Se o usuário apagar um arquivo da cópia, o script não o
+  repõe (o retrato diz que ele foi copiado). O retrato é por caminho de pasta: cópia movida ou
+  renomeada à mão deixa de ser reconhecida.
+- Nome de pasta de destino com caractere que não vai em comando (por exemplo, `&`) é recusado pelo
+  prompt, pela regra do nome seguro, embora o script o aceitasse: o usuário precisa de uma pasta
+  com nome simples (ajuste da execução real; sem código).
+- A legenda sem marcador é o arquivo inteiro: se o arquivo trouxer mais do que a legenda (uma nota
+  solta, por exemplo), ela vai junto — por isso o aviso "Confira antes de colar". O verificador
+  continua dizendo "não medido" para esse arquivo; quem mede o tamanho é o alerta da regra 34.
 - Legenda, post e tweet continuam medidos sem as hashtags no fim (só o alerta da regra 34); e-mail,
   WhatsApp, thread e imagens saem como "não medido" (→ fatia 3).
 - O destino é uma pasta do projeto: se ela entra no git, é escolha do usuário. Em pasta sincronizada
@@ -453,5 +513,6 @@ a 07m, 01b-f2, 08h-f2) · `tests/entregar-leiame-copia.test.js` (U3a-06e-f2) · 
 runner de 09g-f2 e 09h-f2; trava também o tamanho do runner: até 874 linhas) ·
 `tests/docs.test.js` (U3a-10c) · `tests/update-u3a2.test.js` (U3a-12f a 12i-f2, 13c) ·
 `tests/upgrade-u3a2.test.js` (U3a-upg-e-f2) · `tests/package.test.js` (U3a-14c-f2) ·
-`tests/template-refs.test.js` (as referências dos prompts existem) · alerta de tamanho: nenhum
+`tests/template-refs.test.js` (as referências dos prompts existem) · `tests/entregar-real2.test.js`
+(U3a (real-2): os ajustes da execução real) · alerta de tamanho: nenhum
 módulo de `scripts/` acima de 200 linhas; nenhum teste novo acima de 300.

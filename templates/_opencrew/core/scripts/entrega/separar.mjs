@@ -15,6 +15,7 @@ export const MSG = {
   // Só no resumo da tela: no LEIA-ME, a linha do arquivo em "Outros arquivos" já diz.
   semCanal: (arquivo) => `${arquivo} não tem canal conhecido. Está em \`outros/\`.`,
   semPeca: (peca, arquivo) => `Não encontrei ${peca} em ${arquivo}. Confira antes de colar.`,
+  legendaInteira: (arquivo) => `Não encontrei a legenda marcada em ${arquivo}: usei o texto inteiro. Confira antes de colar.`,
   outroCanal: (arquivo, cabecalho) => `${arquivo} tem uma seção de outro canal (${cabecalho}) que não foi separada. Ela continua no arquivo de origem.`,
 };
 
@@ -65,6 +66,7 @@ function separarPecas(item, texto, itens, p) {
   const { tipo, unidades, temSlides, outros, fora } = lerUnidades(texto, item.formato);
   const comArquivo = unidades.map((u) => ({ ...u, partes: u.partes.filter((parte) => parte.texto) })).filter((u) => u.partes.length);
   for (const u of comArquivo) p.unidades.push({ ...u, pasta: item.canal, origem: item.rel, formato: item.formato });
+  if (comArquivo.some((u) => u.inteiro)) p.avisos.push({ pasta: item.canal, texto: MSG.legendaInteira(item.rel) });
   for (const cabecalho of outros) p.avisos.push({ pasta: item.canal, texto: MSG.outroCanal(item.rel, cabecalho) });
   const semImagem = !itens.some((i) => i.tipo === 'arquivo' && ehImagem(i) && i.formato === item.formato);
   if (!comArquivo.length) p.avisos.push({ pasta: item.canal, texto: MSG.semPeca(DITA[tipo], item.rel) });

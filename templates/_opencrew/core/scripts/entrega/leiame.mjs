@@ -9,7 +9,7 @@ import { passosDe } from './passos.mjs';
 
 export const TEXTO = {
   vaiPublicar: 'Esta crew publica este canal sozinha. Antes de postar à mão, confira se já saiu.',
-  pdf: 'Abra o arquivo que você quer (por exemplo, o artigo do blog) no navegador ou no editor de texto e use Imprimir → Salvar como PDF.',
+  pdf: 'Abra o arquivo que você quer no navegador ou no editor de texto e use Imprimir → Salvar como PDF.',
   semCanal: 'sem canal de publicação; está aqui para você usar como quiser.',
   sobre: 'Esta pasta é refeita a cada entrega e fica fora do git: o que você editar aqui se perde. Para guardar, copie a pasta para outro lugar do projeto.',
   sobreComCopia: (pasta) => `Esta pasta é refeita a cada entrega e fica fora do git: o que você editar aqui se perde. A cópia para guardar está em \`${pasta}\`.`,
@@ -106,12 +106,13 @@ function sobre(d) {
  * @param {string[]} d.naoConferido · @param {string[]} d.vaiPublicar canais que a crew publica
  * @param {string|null} [d.copiaEm] a pasta da cópia, relativa ao projeto, quando ela foi feita
  * @param {boolean} [d.ehCopia] é o LEIA-ME da cópia: todo arquivo citado existe nela
+ * @param {number} [d.reentrega] na cópia, o número da pasta: de 2 em diante, o título diz `(reentrega N)`
  * @returns {string} o LEIA-ME, em UTF-8 sem BOM e com LF
  */
 export function montarLeiame(d) {
   const temMd = d.arquivos.some((a) => a.nome.toLowerCase().endsWith('.md'));
   const partes = [
-    `# Entrega — ${d.crew} — ${d.run}`,
+    `# Entrega — ${d.crew} — ${d.run}${d.reentrega > 1 ? ` (reentrega ${d.reentrega})` : ''}`,
     ...antesDeUsar(d),
     ...d.pastas.flatMap((pasta) => secaoDoCanal(d, pasta)),
     ...secaoDaPasta(d, OUTROS, 'Outros arquivos'),

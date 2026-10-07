@@ -121,8 +121,8 @@ test('U3a-03f: a thread with no "TWEET n/N" block is read like a twitter-post; t
   assert.equal(await ler(raiz, 'twitter/tweet-2.txt'), 'Segundo tweet.\n');
 });
 
-test('U3a-03l: an instagram-feed file with no caption goes whole to instagram/, and the LEIA-ME says so', async (t) => {
-  const inteiro = 'Um texto qualquer, **sem** peça reconhecível.\r\n';
+test('U3a-03l: an instagram-feed file with no caption (headings, none of them a caption) goes whole to instagram/, and the LEIA-ME says so', async (t) => {
+  const inteiro = '# Rascunho\r\n\r\nUm texto qualquer, **sem** peça reconhecível.\r\n';
   const { raiz, r } = await um(t, inteiro, 'instagram-feed', 'rascunho.md');
   assert.equal(r.fim, 'ENTREGA:OK');
   assert.deepEqual(await bytes(raiz, 'instagram/rascunho.md'), Buffer.from(inteiro));

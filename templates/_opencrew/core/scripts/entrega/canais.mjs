@@ -39,6 +39,7 @@ const PASTAS_DE_SERVICO = new Set(['entrega', 'entrega.tmp', 'export']);
  * pendências aceitas, fase-u3a2-entrega-no-projeto.md, regra 18), `publicado.json`, o que está
  * em `entrega/`, `entrega.tmp/` ou `export/` de uma execução e o `caption.txt` direto na pasta
  * da execução (é ali que o publicador o grava; dentro de uma pasta `vN` ele é saída de passo).
+ * E o `copia.json` direto na pasta da execução: o retrato do que foi copiado (mesma spec, regra 14).
  * @param {string} rel caminho relativo ao projeto, com `/`
  */
 export function ehDeServico(rel) {
@@ -48,5 +49,5 @@ export function ehDeServico(rel) {
   const naSaida = partes[0] === 'crews' && partes[2] === 'output';
   if (!naSaida) return false;
   if (partes.slice(4, -1).some((p) => PASTAS_DE_SERVICO.has(p))) return true;
-  return nome === 'caption.txt' && partes.length === 5;
+  return (nome === 'caption.txt' || nome === 'copia.json') && partes.length === 5;
 }

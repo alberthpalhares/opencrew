@@ -90,5 +90,5 @@ test('U3a (real): a file with no channel is explained once, on its own line, in 
 test('U3a (real): "Para ter um PDF" says which file to open and where', async (t) => {
   const raiz = await projeto(t, { 'v1/blog.md': BLOG });
   await entregar(raiz, ['v1/blog.md=blog-post']);
-  assert.equal(secao(await leiame(raiz), 'Para ter um PDF'), 'Abra o arquivo que você quer (por exemplo, o artigo do blog) no navegador ou no editor de texto e use Imprimir → Salvar como PDF.');
+  assert.equal(secao(await leiame(raiz), 'Para ter um PDF'), 'Abra o arquivo que você quer no navegador ou no editor de texto e use Imprimir → Salvar como PDF.');
 });

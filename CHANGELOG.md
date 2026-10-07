@@ -23,11 +23,18 @@ ainda não lê a pasta da entrega); legenda, post e tweet continuam medidos sem 
 - **Nada do que foi copiado é sobrescrito.** Entregar de novo sem mudança não cria nada; canal que
   ficou pronto depois entra na mesma pasta; se algo já copiado mudou, a entrega nova vai para
   `<execução>-reentrega-2`, ao lado, e o LEIA-ME da anterior avisa. Arquivo seu dentro da cópia
-  nunca é tocado.
+  nunca é tocado: você pode editar a cópia à vontade, porque a entrega seguinte é comparada com o
+  que foi copiado, e não com o que você mudou depois.
 - **"Entregar assim mesmo".** Quando um canal não está pronto, a crew oferece três saídas: corrigir
   agora, entregar assim mesmo ou deixar para depois. Em "entregar assim mesmo", o que falta fica
   escrito como ressalva no começo do LEIA-ME, o canal aparece como "Pronto, com ressalva" e é
-  copiado com os outros. Pendência nova depois do aceite pede novo aceite.
+  copiado com os outros. Pendência nova depois do aceite pede novo aceite — também a que foi
+  resolvida e voltou.
+- **Legenda de Instagram sem marcador.** Arquivo de legenda que é só o texto, pronto para colar,
+  sai como `instagram/legenda.txt`, com um aviso para conferir e com o alerta de tamanho. Antes, o
+  arquivo ia inteiro, sem ser medido.
+- **Mudar a pasta da cópia depois.** Peça à IA ("muda a pasta de entrega", "não quero mais cópia",
+  "volta a copiar"): ela refaz a entrega da última execução e grava a resposta nova.
 - **"Não tenho esse dado".** Na aprovação final, se você não tem a informação de um `[PREENCHER]`,
   a crew não insiste e não inventa: deixa o `[PREENCHER]` no texto e você decide na entrega.
 

@@ -1,7 +1,8 @@
 // A cópia da entrega para a pasta do projeto que o usuário escolheu: uma pasta por execução
 // (`<destino>/<run_id>/`). Nada é sobrescrito, menos o `LEIA-ME.md` da cópia, que é do script.
 // Pasta nova é montada em `<pasta>.tmp/`, ao lado, e renomeada no fim: nada fica pela metade.
-// O script só apaga o temporário que ele mesmo criou.
+// O script só apaga o temporário que ele mesmo criou. O que o usuário edita na cópia fica: a
+// entrega seguinte é comparada com o retrato do que foi copiado (`retrato.mjs`), não com a pasta.
 // Spec: fase-u3a2-entrega-no-projeto.md, regras 14 e 15 (repositório do OpenCrew).
 import { constants, existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -87,14 +88,20 @@ async function avisarAnteriores(destino, anteriores, pastaNova, em) {
   }
 }
 
-/** Completa a pasta mais nova com o que falta, ou cria a pasta de reentrega quando algo mudou. */
-async function atualizar({ destino, run, arquivos, ignorar, leiame }, existentes, em) {
+/** O LEIA-ME da pasta número `n` (1 = `<run>`; N = `<run>-reentrega-N`): um texto fixo, ou quem o monta. */
+const leiameDe = (leiame, n) => (typeof leiame === 'function' ? leiame(n) : leiame);
+
+/**
+ * Completa a pasta mais nova com o que falta, ou cria a pasta de reentrega quando algo mudou. A
+ * comparação é com o retrato do que foi copiado para ela; sem retrato, com os arquivos dela.
+ */
+async function atualizar({ destino, run, arquivos, ignorar, leiame, retratos }, existentes, em) {
   const ultima = existentes.at(-1);
   const pasta = path.join(destino.abs, ultima.nome);
-  const faltam = await oQueFalta(pasta, arquivos, ignorar);
+  const faltam = await oQueFalta(pasta, arquivos, ignorar, retratos?.[`${destino.rel}/${ultima.nome}`] ?? null);
   if (!faltam) {
     const nome = `${run}-reentrega-${ultima.n + 1}`;
-    await criar(path.join(destino.abs, nome), arquivos, leiame, em);
+    await criar(path.join(destino.abs, nome), arquivos, leiameDe(leiame, ultima.n + 1), em);
     await avisarAnteriores(destino.abs, existentes, `${destino.rel}/${nome}`, em);
     return { tipo: 'reentrega', pasta: `${destino.rel}/${nome}` };
   }
@@ -102,7 +109,7 @@ async function atualizar({ destino, run, arquivos, ignorar, leiame }, existentes
     em.alvo = path.join(pasta, a.pasta, a.nome);
     await gravarNovo(em.alvo, a);
   }
-  await regravarLeiame(pasta, leiame, em);
+  await regravarLeiame(pasta, leiameDe(leiame, ultima.n), em);
   return { tipo: faltam.length ? 'completada' : 'igual', pasta: `${destino.rel}/${ultima.nome}`, novos: faltam.length };
 }
 
@@ -112,7 +119,8 @@ async function atualizar({ destino, run, arquivos, ignorar, leiame }, existentes
  * @param {{ rel: string, abs: string }} o.destino a pasta escolhida, já validada · @param {string} o.run
  * @param {object[]} o.arquivos o que é copiado agora: `{ pasta, nome, texto | de }`
  * @param {Set<string>} o.ignorar `pasta/nome` do que a entrega tem e não é copiado agora
- * @param {string} o.leiame o LEIA-ME da cópia
+ * @param {string|function(number): string} o.leiame o LEIA-ME da cópia, ou quem o monta para a pasta número N
+ * @param {object} [o.retratos] por pasta de cópia (relativa ao projeto), o retrato do que foi copiado
  * @returns {Promise<object>} `{ tipo, pasta, novos, criouDestino }` — `tipo`: nova, igual,
  *   completada ou reentrega; `pasta`: relativa ao projeto · ou `{ tipo: 'falha', arquivo }`, com o
  *   caminho absoluto que não pôde ser gravado
@@ -122,7 +130,7 @@ export async function copiar(o) {
   try {
     const existentes = await pastasDaExecucao(o.destino.abs, o.run);
     if (existentes.length) return await atualizar(o, existentes, em);
-    const criouDestino = await criar(path.join(o.destino.abs, o.run), o.arquivos, o.leiame, em);
+    const criouDestino = await criar(path.join(o.destino.abs, o.run), o.arquivos, leiameDe(o.leiame, 1), em);
     return { tipo: 'nova', pasta: `${o.destino.rel}/${o.run}`, criouDestino };
   } catch {
     return { tipo: 'falha', arquivo: em.alvo };

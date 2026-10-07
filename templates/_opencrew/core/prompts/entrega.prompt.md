@@ -73,7 +73,9 @@ the report of the check made at delivery time (it is not part of the delivery).
   `LEIA-ME.md` opens with it and the channel is "Pronto, com ressalva"; go on as with `ENTREGA:OK`.
 - `ENTREGA:INCOMPLETA` → a channel is not ready, the destination was refused or a file could not be
   written. `entrega/` was generated anyway and the `LEIA-ME.md` marks the channel; a channel that
-  is not ready is not copied to the project. Show what is missing and ask:
+  is not ready is not copied to the project. The channels that are ready were already copied by
+  this same call, before the user answers: nothing waits for the answer. Show what is missing and
+  ask:
   ```
   ⚠️ A entrega ficou incompleta: {o que falta}
   1. Corrigir agora (eu ajusto no arquivo de origem, verifico e monto a entrega de novo)
@@ -82,8 +84,10 @@ the report of the check made at delivery time (it is not part of the delivery).
   ```
   Wait for the answer.
   - **1** — for each item that is missing, fix it in the source file the pending item names, never
-    inside `entrega/`: ask the user for the real information of every `[PREENCHER: …]`, shorten
-    what is over a limit, write again a file that is not there. Then run the checker on that file
+    inside `entrega/`, and in place — the same file at the same path, no new `vN` folder and no
+    copy — so the list does not change: ask the user for the real information of every
+    `[PREENCHER: …]`, shorten what is over a limit, write again a file that is not there. Then run
+    the checker on that file
     (`node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{caminho}={formato}"`)
     and only then run the delivery again, with the same list.
   - **2** — run the same command again, ending with `--aceitar-pendencias`: the script records
@@ -114,8 +118,9 @@ new delivery in a folder beside it (`{run_id}-reentrega-2`) and the summary says
 The line `Cópia:` of the summary says what was copied and where (or "Criei a pasta …" before it):
 show it as it came. A crew whose answer was "não" has no such line, and nothing is asked.
 
-Only when the summary has the line "Cópia: nenhuma pasta escolhida para esta crew.", and only
-after an `ENTREGA:INCOMPLETA` was resolved (Step 4), ask, once:
+After **any** delivery whose summary has the line "Cópia: nenhuma pasta escolhida para esta crew."
+— `ENTREGA:OK` and `ENTREGA:COM_RESSALVA` included — ask, once. When the last line was
+`ENTREGA:INCOMPLETA`, ask only after it was resolved (Step 4):
 
 ```
 Quer que eu copie o resultado para uma pasta do projeto? Se sim, diga qual (por exemplo, `Conteudo/Prontos`). Se não, não pergunto de novo.
@@ -135,9 +140,18 @@ next deliveries of the crew do not ask again.
   say `⚠️ O nome `{pasta}` tem um caractere que não posso usar em comandos ({caractere}). Use só letras, números, espaço, ponto, hífen, sublinhado e parênteses.`
   and ask for the folder again.
 - The folder is a path inside the project, written from its root (`Conteudo/Prontos`). When the
-  script refuses it ("Não copiei: …"), nothing was recorded: Step 4 says what to do.
+  script refuses it ("Não copiei: …"), nothing was recorded — also when it is the only line of the
+  output, with no `ENTREGA:` line: show it as it came and ask for another folder (or "não").
 - To copy one delivery somewhere else without changing the answer of the crew, the same command
   ends with `--destino "{pasta}"` (same rule for `{pasta}`); only when the user asks for it.
+
+## Changing the folder later
+
+When the user asks to change where the copy goes, to stop copying or to copy again ("muda a pasta
+de entrega", "não quero mais cópia", "volta a copiar"): run the delivery of the **last run** of the
+crew ("A run that already ended", below), with the command ending with
+`--lembrar-destino "{pasta}"` (same rule for `{pasta}`), or with `--lembrar-destino nao` to stop.
+With no folder in the request, ask which. Never edit the `crew.yaml` by hand.
 
 ## When the script does not run
 
@@ -154,6 +168,11 @@ Os arquivos aprovados estão em:
 
 `{motivo}` is the line the script printed, or what kept it from running. The completion summary
 of the runner then shows this list in place of the `entrega/` folder.
+
+**A refused destination is not that.** When the only line is "Não copiei: … Recebi: {valor}." (the
+folder given to `--lembrar-destino` was refused; nothing was written), the script did run: show
+that line to the user as it came and ask for another folder (or "não"), as in Step 5 — never answer
+it with "A entrega automática não rodou".
 
 ## A run that already ended
 

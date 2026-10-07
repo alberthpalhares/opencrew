@@ -35,7 +35,8 @@ test('U3a-01b: a caption.txt inside a version folder is a step output and goes i
   const raiz = await projeto(t, { 'v2/caption.txt': 'Legenda do passo.\n' });
   const r = await entregar(raiz, ['v2/caption.txt=instagram-feed']);
   assert.equal(r.code, 0);
-  assert.deepEqual(await arvore(raiz), ['LEIA-ME.md', 'instagram/caption.txt']);
+  // Since the second real run, a caption that is only the text is delivered as the text to paste.
+  assert.deepEqual(await arvore(raiz), ['LEIA-ME.md', 'instagram/legenda.txt']);
   assert.ok(!r.saida.includes('arquivo de serviço'));
 });
 

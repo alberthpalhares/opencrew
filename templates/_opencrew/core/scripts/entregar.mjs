@@ -8,10 +8,12 @@
 //   --arquivo: a lista do verificador (o "=formato" é opcional); entra o que estiver nela e existir.
 //   --destino: pasta do projeto que recebe a cópia, só nesta chamada (vale sobre o crew.yaml).
 //   --lembrar-destino: grava a pasta (ou "nao") em `entrega.destino` do crew.yaml e já vale agora.
-//   --aceitar-pendencias: as pendências deste momento viram ressalvas ("entregar assim mesmo").
+//   --aceitar-pendencias: as pendências deste momento viram ressalvas ("entregar assim mesmo"); a
+//     ressalva vale enquanto a pendência dela existir: a que some sai do `ressalvas.json`.
 //   --vai-publicar: canal que a crew publica sozinha (pode repetir); o LEIA-ME avisa.
 // Grava em crews/<crew>/output/<run>/: a pasta `entrega/` (refeita do zero a cada chamada, montada
-// em `entrega.tmp/`), `verificacao-entrega.md` e, com --aceitar-pendencias, `ressalvas.json`. Fora
+// em `entrega.tmp/`), `verificacao-entrega.md`, `ressalvas.json` (as pendências aceitas que ainda
+// existem) e `copia.json` (o retrato do que foi copiado, para a comparação seguinte). Fora
 // dali, só o combinado: a cópia em `<destino>/<run>/` (nunca por cima do que já está lá; se a
 // entrega mudou, `<run>-reentrega-2`…) e, com --lembrar-destino, o crew.yaml (com crew.yaml.bak).
 // Última linha da saída (o runner lê esta linha): ENTREGA:OK (nenhuma pendência),
@@ -101,8 +103,9 @@ async function gravarTudo(raiz, args, validos, pastas) {
   const falhas = [args.lembrarDestino == null ? null : await lembrarDestino(raiz, pastas.crew, validarDestino(raiz, args.lembrarDestino))];
   const lidas = await lerRessalvas(pastas.execucao);
   const { dados, relatorio } = await montar(raiz, args, validos, lidas.aceitas);
-  if (args.aceitar) falhas.push(await gravarRessalvas(pastas.execucao, dados.ressalvas));
-  const copia = await guardar(raiz, await escolherDestino(raiz, pastas.crew, args), dados);
+  // Ilegível, o arquivo fica como está — só um aceite novo o regrava.
+  if (!lidas.ilegivel || (args.aceitar && dados.ressalvas.size)) falhas.push(await gravarRessalvas(pastas.execucao, dados.ressalvas));
+  const copia = await guardar(raiz, await escolherDestino(raiz, pastas.crew, args), dados, pastas.execucao);
   const leiame = montarLeiame({ ...dados, copiaEm: copia.pasta });
   const daEntrega = await gravarEntrega(pastas.execucao, dados.arquivos, { leiame, relatorio });
   const naoGravados = falhas.filter(Boolean).map((f) => COPIA.falhaDeEscrita(relativoAoProjeto(raiz, f)));

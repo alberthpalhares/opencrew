@@ -119,7 +119,7 @@ ordem; seção sem conteúdo não aparece:
 - `## O que não foi conferido` (regra 20).
 - `## Para ter um PDF`: "Abra o arquivo que você quer (por exemplo, o artigo do blog) no navegador
   ou no editor de texto e use Imprimir → Salvar como PDF." (ajuste da execução real) Só quando a
-  entrega tem arquivo `.md`.
+  entrega tem arquivo `.md`. Na 1.9.0 o texto perdeu o exemplo do blog (fase-u3a2, §6).
 - `## Sobre esta pasta`: o texto da §6.
 
 Arquivo da entrega é citado com caminho relativo à pasta do LEIA-ME (`instagram/legenda.txt`);
@@ -255,7 +255,7 @@ opção obrigatória faltando, crew não encontrada, caminho fora do projeto) sa
 | Bloco do arquivo de origem que ficou fora (ajuste da execução real) | LEIA-ME, em `Atenção:`: "Ficou fora do texto para colar: {blocos}. Veja no arquivo de origem." · resumo da tela: "{arquivo}: ficou fora do texto para colar: {blocos}. Veja no arquivo de origem." |
 | LEIA-ME, primeiro passo de canal `Não está pronto` (ajuste da execução real) | "Antes de postar, resolva o que está em Pendências. Corrija no arquivo de origem e peça para montar a entrega de novo: o que você mudar nesta pasta se perde." |
 | LEIA-ME, `## Para ter um PDF` (ajuste da execução real) | "Abra o arquivo que você quer (por exemplo, o artigo do blog) no navegador ou no editor de texto e use Imprimir → Salvar como PDF." |
-| Nenhuma peça que gere arquivo foi achada | "Não encontrei {peça} em {arquivo}. Confira antes de colar." |
+| Nenhuma peça que gere arquivo foi achada | "Não encontrei {peça} em {arquivo}. Confira antes de colar." (na 1.9.0, o arquivo de `instagram-feed` que é só o texto vira `legenda.txt`, com outro aviso: fase-u3a2, §4 e §6) |
 | Peça de outro canal no arquivo (novo) | "{arquivo} tem uma seção de outro canal ({cabeçalho}) que não foi separada. Ela continua no arquivo de origem." |
 | Nomes iguais na mesma pasta | "{arquivo} tem o mesmo nome de outro e foi guardado como {novo nome}." |
 | Falha de escrita | "Não consegui gravar {arquivo}. Feche o arquivo, ou espere a sincronização da pasta, e rode de novo." |

@@ -52,7 +52,7 @@ test('U3a-07d: a new call without the option and with no change — ENTREGA:COM_
   assert.ok(r.linhas.includes(`Cópia: ${COPIA} — já está atualizada.`), r.saida);
 });
 
-test('U3a-07e: a new [PREENCHER] after the acceptance — ENTREGA:INCOMPLETA, the message, ressalvas.json unchanged', async (t) => {
+test('U3a-07e: a new [PREENCHER] after the acceptance — ENTREGA:INCOMPLETA, the message, ressalvas.json unchanged (the old one still applies)', async (t) => {
   const { raiz } = await aceita(t);
   await gravar(raiz, { 'v1/legenda.md': COM_TELEFONE });
   const r = await entregarEm(raiz, DEST, ITENS);
@@ -71,7 +71,7 @@ test('U3a-07e: the measure changed (2300 → 2250) — it is a new pending item,
   const r = await entregarEm(raiz, DEST, ITENS);
   assert.equal(r.fim, 'ENTREGA:INCOMPLETA');
   assert.ok(r.linhas.includes('- Há pendência nova, que você ainda não aceitou: Legenda Instagram — caracteres.'), r.saida);
-  assert.equal(await lerDe(raiz, RESSALVAS), gravado([DA_LEGENDA]));
+  assert.equal(await lerDe(raiz, RESSALVAS), gravado([]), 'the ressalva that matches no pending item leaves the file');
   assert.ok(!(await leiame(raiz)).includes('Entregue com ressalva'), 'the old acceptance no longer applies to anything');
 });
 

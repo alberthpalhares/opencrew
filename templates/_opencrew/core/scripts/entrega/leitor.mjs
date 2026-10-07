@@ -1,8 +1,9 @@
 // Peças que vêm do leitor do verificador (`lerPecas`): legenda, post e tweet, cada um com as
 // suas hashtags no fim — e o primeiro comentário do LinkedIn, que sai do texto do post.
-// Spec: fase-u3a1-pasta-de-entrega.md, §4 e regra 4 (repositório do OpenCrew).
+// Spec: fase-u3a1-pasta-de-entrega.md, §4 e regra 4 (repositório do OpenCrew). A legenda sem
+// marcador (o arquivo que é só o texto) é da fase-u3a2-entrega-no-projeto.md, §4.
 import { semAcento } from '../verificar/leitura.mjs';
-import { lerPecas, listarHashtags } from '../verificar/pecas.mjs';
+import { contarSlides, lerPecas, listarHashtags } from '../verificar/pecas.mjs';
 import { lerTrechos, marcar, rotuloDe } from '../verificar/secoes.mjs';
 import { paraColar } from './texto.mjs';
 
@@ -94,6 +95,17 @@ function distribuir(marcas, comentarios) {
 }
 
 /**
+ * Arquivo de `instagram-feed` que é só o texto (sem rótulo, sem cabeçalho e sem linha "Slide N"): o
+ * corpo inteiro é a legenda, como o leitor do verificador já faz com o post e com o tweet. A
+ * unidade sai com `inteiro: true`, para o aviso.
+ */
+function legendaInteira(corpo) {
+  const soTexto = corpo.trim() && !contarSlides(corpo) && !marcar(corpo).some((m) => m.rotulo || m.nivel);
+  if (!soTexto) return [];
+  return [{ tipo: 'legenda', titulo: null, ordem: 1, total: 1, inteiro: true, partes: [{ nome: 'legenda', sufixo: '', ext: 'txt', tipo: 'legenda', texto: paraColar(corpo) }] }];
+}
+
+/**
  * Lê as peças do formato num corpo já sem frontmatter e sem blocos de serviço.
  * @returns {{ unidades: object[], temSlides: boolean, outros: string[] }} `unidades`: uma por
  *   legenda, post ou tweet, `{ tipo, titulo, ordem, total, partes: [{ nome, sufixo, ext, tipo, texto }] }`
@@ -116,5 +128,6 @@ export function pecasDoLeitor(corpoOriginal, formato) {
     return { tipo, titulo: titulos[i], ordem: i + 1, total: principais.length, partes };
   });
   const outros = pecas.filter((p) => p.formato !== tabela && p.tipo !== 'hashtags' && p.cabecalho).map((p) => p.cabecalho);
-  return { unidades, temSlides: pecas.some((p) => p.formato === tabela && p.tipo === 'slides'), outros: [...new Set(outros)] };
+  const achadas = unidades.length || tipo !== 'legenda' ? unidades : legendaInteira(corpo);
+  return { unidades: achadas, temSlides: pecas.some((p) => p.formato === tabela && p.tipo === 'slides'), outros: [...new Set(outros)] };
 }

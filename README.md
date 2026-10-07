@@ -273,7 +273,8 @@ as pastas dos canais prontos.
 - **Nada é sobrescrito.** Entregar de novo sem mudança não cria nada. Canal que ficou pronto
   depois entra na mesma pasta. Se algo que já foi copiado mudou, a entrega nova vai para
   `<execução>-reentrega-2` (depois `-3`…), ao lado, e a anterior fica como estava, com um aviso no
-  LEIA-ME dela. O que você editar ou guardar na cópia continua lá.
+  LEIA-ME dela. O que você editar ou guardar na cópia continua lá, e editar a cópia não faz a
+  entrega seguinte virar reentrega.
 - **Só vai o que está pronto.** Canal "Não está pronto" fica fora da cópia, a menos que você
   escolha "Entregar assim mesmo".
 - **A pasta fica dentro do projeto**, fora de `_opencrew/`, `crews/`, `skills/`, `.git/` e
