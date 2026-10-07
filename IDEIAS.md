@@ -185,3 +185,33 @@
 - **Alocação:** → U5 — junto do resto do H2-13.
 - **Custo de adiar:** o gancho passa do corte do "ver mais" sem aviso.
 - **Aprovação:** não.
+
+---
+
+> As três entradas abaixo vêm da execução real de aceite da R3 (2026-10-06, spec R3 §9).
+
+## Verificador: o título do arquivo conta como legenda; relatório copiado à mão
+- **O que já existe:** `verificar.mjs` mediu o título H1 do arquivo (`# Legenda — …`) como
+  "legenda 1", ao lado da legenda de verdade; com piso de hashtags isso vira alerta falso. O
+  runner manda salvar o relatório em `verificacao-ciclo-{N}.md` sem dizer o meio: a IA copia a
+  saída à mão e pode truncar.
+- **Alocação:** → U3a — a entrega por canal já mexe em como a peça é lida e no que o runner grava;
+  o relatório passa a ser gravado pelo próprio script.
+- **Custo de adiar:** alerta falso em arquivo com título; relatório de verificação incompleto.
+- **Aprovação:** não.
+
+## Runner: depois de um veto, o arquivo corrigido não é conferido de novo; restos de comando
+- **O que já existe:** a ordem é conferir → veto; reexecutado por veto, o passo regrava no mesmo
+  caminho e o runner não manda repetir o `conferir` (spec R3, §10). O `run_id` pede "a hora
+  atual" sem dizer de onde. `design.prompt.md` ainda manda `ls _opencrew/agents/`.
+- **Alocação:** → U5 — polimento de prompts; nenhum dos três parou a execução.
+- **Custo de adiar:** arquivo corrigido segue sem a conferência de seções; a IA improvisa um
+  comando para a hora e para a listagem.
+- **Aprovação:** não.
+
+## `init --ide=codex --yes` instala as pontes das 9 IDEs
+- **O que já existe:** visto na execução real: com `--ide=codex --yes` apareceram `.claude`,
+  `.cursor`, `.github`, `.trae`, `GEMINI.md`, `QWEN.md`. Conferido no código: é o desenho atual (`--yes` equivale a `--all` em `src/commands/init.js`, `resolveIdes`); com `--ide` junto, o `--ide` deveria vencer.
+- **Alocação:** → U4 — conferir junto do conserto de instalações; se for defeito, vira reparo.
+- **Custo de adiar:** projeto de quem usa uma IDE só ganha arquivos de oito outras.
+- **Aprovação:** não.
