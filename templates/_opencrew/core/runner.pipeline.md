@@ -500,6 +500,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
      is empty → this check never fires (legacy behavior).
 
 0b. **Escritório** — if it is on, run `passo`, or `checkpoint` when the step is a checkpoint (see "Escritório" above).
+0c. **Entrega** — before the first step that publishes or sends, once the final approval was given, run the delivery (see "Entrega" below).
 
 1. **Pre-Step Input Validation** — MANDATORY. If the step's frontmatter declares an `inputFile`, the input comes from the `entrada` action, never from a path you build: validate that the input exists before executing the step. Run the `entrada` command (Output Path Transformation) with the `inputFile` as declared:
    - `CAMINHO:OK {path}` → that path is the step's input (the newest version that has the file): read the input from it and execute the step.
@@ -715,6 +716,7 @@ For reference, the complete execution order for each pipeline step is:
 ```
 0. Agent deselection check (skip step if its agent was deselected)
 0b. Escritório command (passo or checkpoint) — only if it is on
+0c. Entrega (delivery script) — only before the first step that publishes or sends
 1. Pre-Step Input Validation (script gate: `entrada`)
 2. Read step file
 3. Check execution mode and execute (subagent / inline / checkpoint)
@@ -724,10 +726,18 @@ For reference, the complete execution order for each pipeline step is:
 
 Steps 1 and 4 are binary script gates. If either fails, the pipeline does NOT advance — the user is consulted.
 
+### Entrega
+
+One script turns the approved files into `crews/{name}/output/{run_id}/entrega/` (a folder per channel, text ready to paste, a `LEIA-ME.md`). Read `_opencrew/core/prompts/entrega.prompt.md` and follow it: how to build `{lista}`, when to add `--vai-publicar`, what to do with `ENTREGA:OK`, with `ENTREGA:INCOMPLETA` and with a script that did not run.
+
+- **Command** — from the project root, by the safe-name rule (nome seguro), everything between double quotes: `node _opencrew/core/scripts/entregar.mjs --crew "crews/{name}" --run "{run_id}" --arquivo "{lista}"`
+- **When** — once, after the final approval, immediately before the first step that publishes or sends (`side_effects: irreversible`, in the step or in the agent's skill); with no such step, after the last step. Always before the end-of-run command of the Escritório. If the irreversible step comes before the final approval (a crew built by an old version), the delivery runs at the end.
+- **Crew with no final approval checkpoint** — same moments, and show `Esta crew não tem aprovação final: confira os arquivos antes de usar.` **Never** for a run that was rejected, aborted before the final approval or left with no approved file.
+- The output of the script is the final summary of the run: show it as it came; if the run stops later, at an irreversible step, show it before stopping. After "Edit this content" changes an approved file, run it again.
+
 ### After Pipeline Completion
 
-1. Save final output to `crews/{name}/output/{run_id}/{filename}.md`
-   (The run folder was created during initialization — no separate date subfolder needed)
+1. **Entrega** — if the delivery has not run in this run, run it now (see "Entrega" above).
 1b. **Escritório** — if it is on, run `concluir` (see "Escritório" above).
 
 2. **Update crew memory** — write to BOTH files:
@@ -828,8 +838,7 @@ Steps 1 and 4 are binary script gates. If either fails, the pipeline does NOT ad
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ✅ Pipeline complete!
-   📁 Run folder: crews/{name}/output/{run_id}/
-   📄 Output saved to: {output path}
+   📁 Delivery: crews/{name}/output/{run_id}/entrega/ — start with LEIA-ME.md
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
    What would you like to do?

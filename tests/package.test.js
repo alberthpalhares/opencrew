@@ -53,6 +53,16 @@ test('every top-level entry of the README "Estrutura de pastas gerada" tree is s
   }
 });
 
+// specs/fase-u3a1-pasta-de-entrega.md, rule 33: the delivery ships inside the payload.
+test('U3a-14c: the tarball ships entregar.mjs, every module of scripts/entrega/ and prompts/entrega.prompt.md', () => {
+  const core = 'templates/_opencrew/core';
+  const modulos = readdirSync(path.join(root, core, 'scripts', 'entrega')).map((nome) => `${core}/scripts/entrega/${nome}`);
+  assert.ok(modulos.length > 0, 'scripts/entrega/ is empty');
+  for (const must of [`${core}/scripts/entregar.mjs`, ...modulos, `${core}/prompts/entrega.prompt.md`]) {
+    assert.ok(files.includes(must), `missing from tarball: ${must}`);
+  }
+});
+
 // specs/fase-e1-escritorio-ao-vivo.md, rules 26 and 27: the Escritório ships inside the payload.
 test('E1-07a: the tarball ships estado.mjs, escritorio.mjs and every file of escritorio/, and no dashboard/', () => {
   const core = 'templates/_opencrew/core';

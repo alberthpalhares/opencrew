@@ -12,7 +12,7 @@ export const FORMATOS_DA_TABELA = [...BLOG, 'instagram-feed', 'linkedin-post', '
 const FORMATO_DA_PECA = { legenda: 'instagram-feed', slides: 'instagram-feed', post: 'linkedin-post', tweet: 'twitter-post' };
 // O que cada rótulo faz, por formato declarado. Sem formato declarado valem todos: os
 // inconfundíveis abrem peça e os outros só se juntam a uma peça já aberta.
-const ROTULOS = {
+export const ROTULOS = {
   'instagram-feed': { CAPTION: 'legenda', SLIDES: 'slides', HASHTAGS: 'hashtags' },
   'linkedin-post': { HOOK: 'post', BODY: 'parte', INSIGHTS: 'parte', CTA: 'parte', HASHTAGS: 'hashtags' },
   'twitter-post': { TWEET: 'tweet' },
@@ -159,8 +159,8 @@ function fechar(entradas) {
  * Lê as peças de um texto, na ordem em que aparecem.
  * @param {string} texto conteúdo de um arquivo `.md` ou `.txt`, já sem o BOM
  * @param {string|null} [formato] formato declarado (`caminho=formato`); null = sem formato declarado
- * @param {{ formatoDeBlog?: string }} [opcoes] sem formato declarado, o formato em que o título do
- *   frontmatter é medido (`--formato`)
+ * @param {{ formatoDeBlog?: string|null }} [opcoes] sem formato declarado, o formato em que o
+ *   título do frontmatter é medido (`--formato`); null = não é peça (a entrega chama assim)
  * @returns {object[]} peças `{ tipo, formato, texto, origem, cabecalho, ordem }`
  *   · `tipo`: titulo, meta, legenda, hashtags, slides, post ou tweet
  *   · `formato`: o formato cujo limite vale para a peça
@@ -180,7 +180,7 @@ export function lerPecas(texto, formato = null, { formatoDeBlog = 'blog-post' } 
   if (BLOG.includes(tabela)) pecasDoBlog(e, texto, trechos, tabela, true);
   else {
     // Fora da tabela os rótulos não são lidos; sem formato declarado, título no frontmatter é blog.
-    if (formato == null) pecasDoBlog(e, texto, trechos, formatoDeBlog, false);
+    if (formato == null && formatoDeBlog) pecasDoBlog(e, texto, trechos, formatoDeBlog, false);
     const rotulos = tabela ? ROTULOS[tabela] : formato == null ? TODOS_OS_ROTULOS : {};
     for (const trecho of trechos) pecasDoTrecho(e, trecho, rotulos);
     pecaDoArquivoInteiro(e, marcas);

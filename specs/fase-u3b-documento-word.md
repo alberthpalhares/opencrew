@@ -1,10 +1,10 @@
-# Spec — Fase U3b: Documento Word (1.9.0)
+# Spec — Fase U3b: Documento Word (1.10.0)
 
 - **Fase:** U3b · **Módulos:** Runtime (`templates/_opencrew/core/scripts/documento.mjs`, `scripts/docx/`, `scripts/verificar.mjs`, `scripts/entregar.mjs` e `scripts/entrega/` da U3a, `best-practices/documento-oficial.md`, `_catalog.yaml`, `prompts/entrega.prompt.md`, `prompts/design.prompt.md`, `templates/AGENTS.md`) + testes (`tests/_helpers.js`, `tests/fixtures/`) + docs (`AGENTS.md` regras 7 e 15, README) · **Status:** aguardando aprovação
 - **Termos novos no GLOSSARIO.md:** sim — Documento Word, Documento oficial (formato), Perfil fechado, Marcador literal, Aviso de conversão, Conversão avulsa, Modo plano, Carimbo da conferência
 - **Modelo sugerido:** execução Sonnet 5.5 · alto (o Word não tolera improviso no XML)
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §2.5, §2.6 e §7 (os IDs entre parênteses são de lá). Substitui a parte de documentos de `specs/fase-u3-entrega-no-projeto.md`, que não foi aprovada.
-- **Depende de:** R1 (`specs/fase-r1-reparos-1-6-1.md`) e U3a (`specs/fase-u3a-entrega-por-canal.md`). Parte do código como ele fica depois das duas.
+- **Depende de:** R1 (`specs/fase-r1-reparos-1-6-1.md`) e U3a, nas duas fatias (`specs/fase-u3a1-pasta-de-entrega.md`, 1.8.0, e `specs/fase-u3a-entrega-por-canal.md`, 1.9.0). Parte do código como ele fica depois delas.
 
 ## Decisões que o dono confirma ao aprovar
 Cada uma já está aplicada no texto, com a opção recomendada.
@@ -672,12 +672,12 @@ cada caso é conferido.
   `.md` de `templates/_opencrew/core/best-practices/`.
 - **U3b-07c** nenhum arquivo de `scripts/docx/`, nem `documento.mjs`, nem
   `scripts/entrega/documentos.mjs` passa de 200 linhas; o `runner.pipeline.md` não tem mais
-  linhas do que tinha na 1.8.0.
-- **U3b-upg** DADO um workspace 1.8.0 (sem `documento.mjs`, sem `docx/`, sem
+  linhas do que tinha na 1.9.0.
+- **U3b-upg** DADO um workspace 1.9.0 (sem `documento.mjs`, sem `docx/`, sem
   `documento-oficial.md` e sem a entrada dele no catálogo) com uma crew antiga e um `.md` dela
   QUANDO roda o `update` e depois a conversão avulsa nesse `.md`, com `--destino` ENTÃO o `.docx`
   é gerado, o catálogo tem a entrada e nenhum arquivo da crew mudou.
-- **U3b-upg-b** DADO o mesmo workspace 1.8.0, com uma crew antiga (passo sem `format:`, saída
+- **U3b-upg-b** DADO o mesmo workspace 1.9.0, com uma crew antiga (passo sem `format:`, saída
   `.md` numa execução antiga) QUANDO roda o `update` e, depois, `entregar.mjs` com a lista e
   `--lembrar-documentos "<arquivo>.md"` ENTÃO existe `entrega/documentos/<nome>.docx` e, em
   `crews/<crew>/` fora de `output/`, só mudou o `crew.yaml`, e nasceu o `crew.yaml.bak`.
@@ -715,7 +715,7 @@ cada caso é conferido.
 - [ ] Conferência da seção 9 feita e registrada na seção 14 **antes da tag**.
 - [ ] No mesmo commit (regra 9): AGENTS.md (regra 7; e a regra 15 passa a citar a conversão
       avulsa: pasta do arquivo de origem ou `--destino`), README (inclusive "23 guias de melhores
-      práticas", no lugar de 22), GLOSSARIO.md, CHANGELOG 1.9.0, a entrada de correção na spec
+      práticas", no lugar de 22), GLOSSARIO.md, CHANGELOG 1.10.0, a entrada de correção na spec
       U3a (oitava pasta de canal; seção `## Documentos` no LEIA-ME e o item dela no quadro
       "Passos por canal"; as regras 4 a 6 dela não valem para documento; regra 17: item listado
       em `entrega.documentos` é verificado como `documento-oficial`; seção 3: a linha de uso
@@ -816,7 +816,7 @@ U3a-14b passa a valer também para este arquivo, com duas áreas a mais: a pasta
 `--lembrar-documentos-em`) · `tests/documento-contratos.test.js` (U3b-06) ·
 `tests/docx-referencia.test.js` com `tests/fixtures/documento-referencia.md` e `.json` (U3b-ref) ·
 `tests/package.test.js` (U3b-07a) · `tests/documento-docs.test.js` (U3b-07b) ·
-`tests/upgrade.test.js` (U3b-upg e U3b-upg-b, 1.8.0 → 1.9.0) · `tests/_helpers.js`: leitor de zip
+`tests/upgrade.test.js` (U3b-upg e U3b-upg-b, 1.9.0 → 1.10.0) · `tests/_helpers.js`: leitor de zip
 mínimo, conferidor de XML bem-formado e conferidor dos invariantes da regra 5, sem dependência
 nova (U3b-01g, U3b-01h) · `tests/template-refs.test.js` já cobre os caminhos novos citados nos
 prompts · alerta de tamanho: `scripts/check-size.js` já alcança `scripts/docx/` e

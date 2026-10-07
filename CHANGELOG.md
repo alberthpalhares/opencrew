@@ -3,6 +3,66 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.0] — 2026-10-07
+
+Fase U3a, fatia 1 "Pasta de entrega" (`specs/fase-u3a1-pasta-de-entrega.md`). Chega a quem já usa
+com um `npx @aksp/opencrew@latest update`, e funciona nas crews que já existem, sem mexer nelas.
+
+Ainda não nesta versão: PDF e "posts formatados" não são gerados pela entrega (`artigo.md`,
+`corpo.md` e os roteiros saem em markdown, e o LEIA-ME ensina a salvar como PDF pelo "Imprimir");
+copiar a entrega para uma pasta do projeto, registrar "entregar assim mesmo" e marcar "já
+publicado" ficam para a 1.9.0. O LEIA-ME e os nomes dos arquivos são só em português.
+
+### Added
+- **Pasta `entrega/`: o que você usa, separado por canal.** Depois da aprovação final, a crew
+  monta `crews/<crew>/output/<execução>/entrega/` com uma pasta por canal (`instagram/`,
+  `linkedin/`, `blog/`, `email/`, `whatsapp/`, `twitter/`, `youtube/`; só os que a execução tem).
+  Antes, você recebia a pasta da execução com `v1`, `v2`, relatórios e textos cheios de `#`, `**`
+  e rótulos.
+- **Texto pronto para colar.** `legenda.txt`, `post.txt` e `tweet.txt` saem sem `#`, `**`, rótulos
+  nem recados internos, com as hashtags no fim. O primeiro comentário do LinkedIn vem em arquivo
+  à parte; a thread, em `tweet-1.txt`, `tweet-2.txt`…; o blog, em `seo.txt` (título, meta
+  description, palavra-chave, slug) e `artigo.md`; o e-mail, em `assunto.txt`, `previa.txt` e
+  `corpo.md`; o WhatsApp, em `mensagem.txt`. As imagens vão para a pasta do canal com o nome
+  original, sem alteração; o HTML dos slides, para `editaveis/`.
+- **`LEIA-ME.md` em cada entrega.** Diz o que fazer com cada arquivo, canal por canal, em passos
+  numerados; marca cada canal como "Pronto" ou "Não está pronto"; lista em "Antes de usar" o que
+  falta; e diz o que não foi conferido (links e fatos, texto dentro das imagens, aparência final
+  em cada rede).
+- **O que não está pronto fica marcado.** Texto com `[PREENCHER]`, acima de um limite ou arquivo
+  que faltou: o canal aparece como "Não está pronto" e a crew pergunta se você quer corrigir agora
+  ou seguir assim. Se a legenda, o post ou o tweet passar do limite por causa das hashtags no fim,
+  o LEIA-ME traz um alerta.
+- **Arquivo sem canal não se perde.** Proposta, minuta, relatório ou formato que não é de rede
+  nenhuma vai inteiro para `outros/`, com o nome original, e aparece no LEIA-ME.
+- **Entrega de uma execução antiga.** Peça à IA para montar a entrega de uma execução já
+  encerrada: ela lista os arquivos, pede o seu "sim" e monta a pasta.
+- Crew que publica sozinha (Instagram, por exemplo): a entrega é montada antes da publicação, e
+  o LEIA-ME avisa "Esta crew publica este canal sozinha. Antes de postar à mão, confira se já saiu."
+
+### Changed
+- **O fim da execução aponta para `entrega/` e para o LEIA-ME**, não mais para a pasta da execução
+  e para um "arquivo final" que ninguém dizia qual era. A cópia do arquivo final na raiz da
+  execução deixa de ser feita.
+- A pasta `entrega/` é refeita do zero a cada entrega e fica fora do git: o que você editar ali se
+  perde. Para guardar, copie a pasta para outro lugar do projeto (o LEIA-ME avisa).
+- Se o script da entrega não rodar (sem Node, por exemplo), a execução não para: a crew avisa e
+  lista os arquivos aprovados.
+
+### Fixed
+- **O título do arquivo era lido como legenda.** Num arquivo com `# Legenda — …` no topo e a
+  legenda de verdade mais abaixo, o verificador media duas legendas e podia dar alerta falso.
+  Agora o título do arquivo não conta como peça.
+
+### Internal
+- `_opencrew/core/scripts/entregar.mjs` e os módulos de `scripts/entrega/` (sem dependência, até
+  200 linhas cada); `_opencrew/core/prompts/entrega.prompt.md`; seção `### Entrega` no runner, que
+  perde "Save final output", "Run folder" e "Output saved to".
+- Regra 15 do `AGENTS.md`: script do runtime só escreve onde foi combinado.
+- Travas novas: `tests/entregar*.test.js`, `tests/runtime-contracts-u3a.test.js`,
+  `tests/upgrade-u3a.test.js` e o U3a-14c em `tests/package.test.js`.
+- Roteiro renumerado: U3a fatia 2 = 1.9.0, U3b = 1.10.0, U4 = 1.11.0.
+
 ## [1.7.1] — 2026-10-06
 
 Fase R3 "Reparos do runner em uso real" (`specs/fase-r3-runner-em-uso-real.md`): dois defeitos

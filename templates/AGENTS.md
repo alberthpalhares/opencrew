@@ -61,6 +61,7 @@ Route input to the matching action:
 | `/opencrew dashboard` | Turn on and open the Escritório (live view) — see "Dashboard (Optional)" |
 | `/opencrew dashboard off` | Turn the Escritório off — see "Dashboard (Optional)" |
 | `/opencrew reset` | Confirm and reset all configuration |
+| Request to deliver a run that already ended ("monte a entrega da execução …") | Load `_opencrew/core/prompts/entrega.prompt.md` → build the `entrega/` folder of that run |
 | Natural language about crews | Infer intent and route accordingly |
 
 ## Loading Agents
@@ -120,6 +121,8 @@ and touch nothing else: stop no process, delete no file.
 - Exception: crew memory scaffolding (`memories.md` headers, `runs.md` columns)
   keeps fixed PT-BR structural labels regardless of the user's language —
   see `_opencrew/core/runner.pipeline.md`
+- Exception: the delivery folder (`entrega/`) — its folder names, file names and the `LEIA-ME.md`
+  are written by a script in fixed PT-BR, whatever the user's language
 
 ## Critical Rules
 

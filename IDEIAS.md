@@ -42,7 +42,7 @@
 - **Aprovação:** não.
 
 ## Dividir o `runner.pipeline.md`
-- **O que já existe:** 882 linhas depois da E1 (eram 965 na 1.6.3 e 829 na auditoria de 2026-10-02) lidas em
+- **O que já existe:** 874 linhas depois da U3a fatia 1 (eram 865 na 1.7.1, 882 depois da E1, 965 na 1.6.3 e 829 na auditoria de 2026-10-02) lidas em
   todo run; overhead fixo de 25–35k tokens contra os "~5K" anunciados no tier Express.
 - **Alocação:** → U5 — núcleo de ~250 linhas + arquivos carregados sob demanda
   (Escritório, seleção de agentes, reflexão); carregar os agentes uma vez só (T-M11).
@@ -50,10 +50,13 @@
   U1–U4 acrescentam regras ao runner.
 - **Aprovação:** não.
 
-## Documentos oficiais em DOCX/PDF + entrega dentro das pastas do projeto
+## Documentos oficiais em DOCX/PDF + cópia da entrega para uma pasta do projeto
 - **O que já existe:** export PDF não executável (T-M21); no uso real o usuário escreveu um
-  script Python + automação do Word à parte e copiou os resultados à mão (dor 6).
-- **Alocação:** → U3b (documento Word, 1.9.0); a entrega nas pastas do projeto → U3a (1.8.0).
+  script Python + automação do Word à parte e copiou os resultados à mão (dor 6). Desde a 1.8.0
+  a crew monta `entrega/` dentro da pasta da execução, por canal, com LEIA-ME; a pasta fica fora
+  do git e quem quer guardar ainda copia à mão.
+- **Alocação:** → U3b (documento Word, 1.10.0); o destino da entrega e a cópia para uma pasta do
+  projeto → U3a fatia 2 (1.9.0).
   PDF direto → sem fase — precisa de motor de renderização; o Word salva como PDF.
 - **Custo de adiar:** o resultado não vira uso direto; gambiarras por projeto.
 - **Aprovação:** sim — dada em 2026-10-04 para o motor: gerador próprio de `.docx`, sem
@@ -77,16 +80,18 @@
 - **O que já existe:** U2 confere os caminhos citados pela crew; no Projeto A o manual de marca
   (uma fonte) lista nomes de logo que não existem na pasta — a crew usou texto no lugar do logo,
   sem aviso.
-- **Alocação:** → U3a — como aviso que não para a execução: não muda `FONTES:` e o `--corrigir`
-  nunca reescreve a fonte.
+- **Alocação:** → U3a fatia 2 (1.9.0) — como aviso que não para a execução: não muda `FONTES:` e
+  o `--corrigir` nunca reescreve a fonte.
 - **Custo de adiar:** peças visuais sem logo, falha silenciosa.
 - **Aprovação:** não.
 
-## `.opencrew-backup/` no `.gitignore` do usuário (e `update` renovar o bloco do `.gitignore`)
-- **O que já existe:** a 1.6.0 cria `.opencrew-backup/<data>/` nas atualizações; o bloco do
-  `.gitignore` só é escrito no `init` (o `update` não o renova).
-- **Alocação:** → U3a — junto da entrega no projeto.
-- **Custo de adiar:** em projetos com git, as cópias de segurança aparecem como arquivos novos.
+## `.gitignore` antigo no `update`: linhas soltas do template e marcador órfão
+- **O que já existe:** a R2 (1.6.3) fez o `update` renovar o bloco do `.gitignore`, que já traz
+  `.opencrew-backup/`. Falta: (b) transformar em bloco as 8 linhas soltas das versões 1.0.0 a
+  1.4.1, sem repetir nenhuma; (f) marcador órfão (só o de início ou só o de fim); o comentário
+  "gerenciado pelo OpenCrew" dentro do bloco.
+- **Alocação:** → U3a fatia 2 (1.9.0) — regra 30 de `specs/fase-u3a-entrega-por-canal.md`.
+- **Custo de adiar:** `.gitignore` antigo fica com linhas repetidas depois do `update`; nada se perde.
 - **Aprovação:** não.
 
 ## Papel timbrado / modelo `.dotx` do usuário
@@ -190,14 +195,14 @@
 
 > As três entradas abaixo vêm da execução real de aceite da R3 (2026-10-06, spec R3 §9).
 
-## Verificador: o título do arquivo conta como legenda; relatório copiado à mão
-- **O que já existe:** `verificar.mjs` mediu o título H1 do arquivo (`# Legenda — …`) como
-  "legenda 1", ao lado da legenda de verdade; com piso de hashtags isso vira alerta falso. O
-  runner manda salvar o relatório em `verificacao-ciclo-{N}.md` sem dizer o meio: a IA copia a
-  saída à mão e pode truncar.
-- **Alocação:** → U3a — a entrega por canal já mexe em como a peça é lida e no que o runner grava;
-  o relatório passa a ser gravado pelo próprio script.
-- **Custo de adiar:** alerta falso em arquivo com título; relatório de verificação incompleto.
+## Verificador: relatório do laço de revisão copiado à mão
+- **O que já existe:** o runner manda salvar o relatório em `verificacao-ciclo-{N}.md` sem dizer o
+  meio: a IA copia a saída à mão e pode truncar. Na entrega (1.8.0) o relatório já é gravado pelo
+  script, em `verificacao-entrega.md`; no laço de revisão, ainda não. (A outra metade desta
+  entrada, o título H1 lido como legenda, saiu na 1.8.0.)
+- **Alocação:** → U3a fatia 2 (1.9.0) — o relatório do ciclo passa a ser gravado pelo próprio
+  script (`specs/fase-u3a1-pasta-de-entrega.md`, §8).
+- **Custo de adiar:** relatório de verificação incompleto.
 - **Aprovação:** não.
 
 ## Runner: depois de um veto, o arquivo corrigido não é conferido de novo; restos de comando

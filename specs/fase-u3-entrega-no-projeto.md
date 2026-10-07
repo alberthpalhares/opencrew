@@ -10,8 +10,9 @@
 | Ordem | Spec | Versão | O que entrega |
 |---|---|---|---|
 | 1 | [`fase-r1-reparos-1-6-1.md`](fase-r1-reparos-1-6-1.md) | 1.6.1 | O verificador mede de verdade (defeitos do que já está publicado) |
-| 2 | [`fase-u3a-entrega-por-canal.md`](fase-u3a-entrega-por-canal.md) | 1.8.0 | Pasta `entrega/` por canal, texto pronto para colar, destino no projeto |
-| 3 | [`fase-u3b-documento-word.md`](fase-u3b-documento-word.md) | 1.9.0 | Documento oficial em `.docx`, dentro e fora de uma execução |
+| 2 | [`fase-u3a1-pasta-de-entrega.md`](fase-u3a1-pasta-de-entrega.md) | 1.8.0 | U3a, fatia 1: pasta `entrega/` por canal, texto pronto para colar e LEIA-ME |
+| 3 | [`fase-u3a-entrega-por-canal.md`](fase-u3a-entrega-por-canal.md) | 1.9.0 | U3a, fatia 2: destino no projeto, ressalvas e publicação |
+| 4 | [`fase-u3b-documento-word.md`](fase-u3b-documento-word.md) | 1.10.0 | Documento oficial em `.docx`, dentro e fora de uma execução |
 
 Os cenários `U3-…` da versão antiga não existem mais: os novos usam os prefixos `U3a-` e `U3b-`.
 O texto antigo fica no histórico do git (commit `9645399`).

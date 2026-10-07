@@ -3,9 +3,9 @@
 // Synthetic, neutral text; the numbers are the ones in the scenarios.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatarRelatorio } from '../templates/_opencrew/core/scripts/verificar.mjs';
+import { formatarRelatorio, verificar } from '../templates/_opencrew/core/scripts/verificar.mjs';
 import { lerPecas } from '../templates/_opencrew/core/scripts/verificar/pecas.mjs';
-import { medir, um, texto, tags, itens, bloqueios, caracteres, naoMedidos, par } from './_helpers.js';
+import { medir, um, texto, tags, itens, bloqueios, caracteres, naoMedidos, par, projetoFalso, CREW, SAIDA } from './_helpers.js';
 
 test('R1-01a: labelled Instagram caption of 2300 and 31 hashtags give two blocks', async () => {
   const r = await um(`=== CAPTION ===\n${texto(2300)}\n\n=== HASHTAGS ===\n${tags(31)}\n`, 'instagram-feed');
@@ -232,3 +232,47 @@ for (const formato of ['blog-seo', 'blog-post']) {
     assert.ok(!relatorio.includes('Nada a apontar'));
   });
 }
+
+// ── specs/fase-u3a1-pasta-de-entrega.md: what the delivery phase asks of the checker ─────────
+const H1 = `# Legenda — Dia das Mães\n\nRascunho aprovado em reunião.\n\n## Legenda\n\n${texto(500)}\n\n## Hashtags\n\n${tags(5)}\n`;
+
+test('U3a-03w: a level-1 heading above another caption heading is the file title, not a caption', async () => {
+  const legendas = lerPecas(H1, 'instagram-feed').filter((p) => p.tipo === 'legenda');
+  assert.deepEqual(legendas.map((p) => [p.cabecalho, p.texto]), [['Legenda', texto(500)]]);
+  const r = await um(H1, 'instagram-feed');
+  assert.deepEqual(caracteres(r).map((i) => [i.item, ...par(i)]), [['Legenda Instagram — caracteres', 500, 2200]]);
+});
+
+test('U3a-03w: a level-1 "# Legenda" with nothing but its text is the caption', async () => {
+  const pecas = lerPecas(`# Legenda\n\n${texto(500)}\n`, 'instagram-feed');
+  assert.deepEqual(pecas.filter((p) => p.tipo === 'legenda').map((p) => p.texto), [texto(500)]);
+  // A heading of another piece under it does not take the caption away.
+  const comTags = lerPecas(`# Legenda\n\n${texto(500)}\n\n## Hashtags\n\n${tags(5)}\n`, 'instagram-feed');
+  assert.deepEqual(comTags.map((p) => [p.tipo, p.texto]), [['legenda', texto(500)], ['hashtags', tags(5)]]);
+});
+
+test('U3a-03w: the title rule stops at the next level-1 heading and at a label line', () => {
+  const dois = lerPecas(`# Legenda A\n\n${texto(100)}\n\n# Legenda B\n\n${texto(200)}\n`, 'instagram-feed');
+  assert.deepEqual(dois.filter((p) => p.tipo === 'legenda').map((p) => p.texto.length), [100, 200]);
+  const comRotulo = lerPecas(`# Legenda\n\n${texto(100)}\n\n=== SLIDES ===\n## Legenda do slide\n\nx\n`, 'instagram-feed');
+  assert.equal(comRotulo.filter((p) => p.tipo === 'legenda')[0].texto, texto(100));
+});
+
+const SEM_FORMATO = `---\ntitle: "${texto(120)}"\n---\n\nUma proposta comercial, sem peça de canal.\n`;
+
+test('U3a-07g: without the delivery option an item with no format is measured as today (blog title)', async () => {
+  const raiz = await projetoFalso({ saidas: { 'proposta.md': SEM_FORMATO } });
+  const arquivos = [`${SAIDA}/proposta.md`];
+  const hoje = await verificar({ raiz, crew: CREW, arquivos });
+  assert.deepEqual(bloqueios(hoje).map(par), [[120, 70]]);
+  assert.deepEqual(await verificar({ raiz, crew: CREW, arquivos, semPadraoDeBlog: false }), hoje);
+  assert.deepEqual(lerPecas(SEM_FORMATO).map((p) => [p.tipo, p.formato]), [['titulo', 'blog-post']]);
+});
+
+test('U3a-02d: with the delivery option the frontmatter title of an item with no format is not measured', async () => {
+  const raiz = await projetoFalso({ saidas: { 'proposta.md': SEM_FORMATO, 'post.md': SEM_FORMATO } });
+  const r = await verificar({ raiz, crew: CREW, arquivos: [`${SAIDA}/proposta.md`, { arquivo: `${SAIDA}/post.md`, formato: 'blog-post' }], semPadraoDeBlog: true });
+  assert.deepEqual(r.arquivos.map((a) => a.itens.filter((i) => i.nivel === 'bloqueio').map(par)), [[], [[120, 70]]]);
+  assert.equal(r.status, 'BLOQUEADA', 'a declared blog is still measured');
+  assert.deepEqual(lerPecas(SEM_FORMATO, null, { formatoDeBlog: null }), []);
+});

@@ -223,12 +223,12 @@ usaria esse mesmo verificador como porta da entrega.
    roda"). Os itens 12 a 15 e 17: você decide se vão junto ou esperam.
 2. **Faxina de documentos**, sem código: o §4 inteiro, num commit.
 3. **U3 reescrita** com as decisões D1 a D5 e a tabela do §2.6, em duas entregas:
-   - **U3a (1.8.0) — Entrega por canal:** `entregar.mjs`, pasta por execução, destino perguntado,
+   - **U3a (1.8.0 e 1.9.0, em duas fatias desde 2026-10-07) — Entrega por canal:** `entregar.mjs`, pasta por execução, destino perguntado,
      LEIA-ME, funcionamento em crews antigas, export e PDF acertados, `.gitignore` no `update`.
-   - **U3b (1.9.0) — Documento Word:** gerador em perfil fechado, modo avulso, conferência no
+   - **U3b (1.10.0) — Documento Word:** gerador em perfil fechado, modo avulso, conferência no
      Word antes da tag.
    A ordem das duas é escolha sua: a U3a serve à crew de conteúdo, a U3b à de documentos. A U4
-   passa a 1.10.0.
+   passa a 1.11.0.
 4. **Conferências que só você pode fazer:** ver se a unidade do Projeto B está montada (ela não
    estava durante a revisão) e como os caminhos de saída ficaram presos lá (G-26, F-20);
    confirmar se a execução de 1.6.0 no Projeto A deixou mesmo os arquivos soltos em `output/`
@@ -267,11 +267,11 @@ e polimento → U5.
 | Destino | Versão | O que é | Achados |
 |---|---|---|---|
 | **R1 — Reparos da 1.6.0: o verificador mede de verdade** | 1.6.1 | `specs/fase-r1-reparos-1-6-1.md` | H2-01, H2-02, H2-04, H2-06, H2-08, H2-10, H2-11, H2-12, H2-15, H2-18, E-07 (o bloqueio de `{{…}}`), H3-01 (mescla com o core e nota), H3-02, H3-04, H3-05, H3-15, H3-17, I-14, Z-02, H1-05 (nome do teste), H1-17 (teste com o ID) |
-| **U3a — Entrega por canal** | 1.8.0 | `specs/fase-u3a-entrega-por-canal.md` | Os achados A a G, I e Z sobre entrega, canais, destino, imagens, export, LEIA-ME, regras 10 e 11; e das specs antigas: H2-07, H2-13 (assunto e prévia de e-mail, WhatsApp e thread), H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20, E-07 (medir assunto de e-mail e WhatsApp) |
-| **U3b — Documento Word** | 1.9.0 | `specs/fase-u3b-documento-word.md` | Os achados sobre DOCX (D-01 a D-17, A-21, A-22, A-31, B-16, B-22, C-17, C-18, E-05, E-12, E-13, E-21, F-13, F-18, F-19, F-20, G-19, I-03, I-08, Z-06) |
+| **U3a — Entrega por canal** | 1.8.0 (fatia 1) e 1.9.0 (fatia 2) | `specs/fase-u3a1-pasta-de-entrega.md` (fatia 1) e `specs/fase-u3a-entrega-por-canal.md` (fatia 2) | Os achados A a G, I e Z sobre entrega, canais, destino, imagens, export, LEIA-ME, regras 10 e 11; e das specs antigas: H2-07, H2-13 (assunto e prévia de e-mail, WhatsApp e thread), H1-02, H1-03, H1-07, H1-08, H1-10, H1-15, H1-20, E-07 (medir assunto de e-mail e WhatsApp) |
+| **U3b — Documento Word** | 1.10.0 | `specs/fase-u3b-documento-word.md` | Os achados sobre DOCX (D-01 a D-17, A-21, A-22, A-31, B-16, B-22, C-17, C-18, E-05, E-12, E-13, E-21, F-13, F-18, F-19, F-20, G-19, I-03, I-08, Z-06) |
 | **R2 — `update` e envio seguros** | 1.6.3, depois da R1 e antes da U3a | `specs/fase-r2-update-e-envio-seguros.md` | H1-04, H1-06, H3-06, H3-09, H3-10, H3-11, H3-14, H3-19 |
 | **E1 — Escritório ao vivo** | 1.7.0, depois da R2 e antes da U3a | `specs/fase-e1-escritorio-ao-vivo.md` | A-27, B-18, E-19, F-23, G-08, H1-13, H3-20 (a decisão do dashboard: publicar) |
-| **U4 — Modo equipe + histórico confiável** | 1.10.0 | sem spec ainda | H1-01, H2-05, H3-03, H3-08, e o conserto (`repair`) de crews antigas |
+| **U4 — Modo equipe + histórico confiável** | 1.11.0 | sem spec ainda | H1-01, H2-05, H3-03, H3-08, e o conserto (`repair`) de crews antigas |
 | **U5 — Rápido, barato e em PT-BR** | contínuo | sem spec ainda | H2-17, H3-07, H3-16, H1-19, H3-01 (arquivo de acréscimo e aviso no `update`), G-29, dependência sem uso; H2-16 (relatório do laço de revisão gravado pelo script) e o resto do H2-13 (Reels, YouTube, artigo do LinkedIn, hashtags do tweet), que as specs R1 e U3a mandaram para cá |
 | **Só documento** | — | faxina de 2026-10-04 | A-34, A-35, A-36, C-24, G-15, G-20, G-25, H1-11, H1-12, H1-14, H1-16, H1-18, H2-09, H2-14, H3-12, H3-13, H3-18, H3-21 |
 

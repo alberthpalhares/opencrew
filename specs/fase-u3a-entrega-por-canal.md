@@ -1,9 +1,23 @@
-# Spec — Fase U3a: Entrega por canal (1.8.0)
+# Spec — Fase U3a, fatia 2: Entrega por canal — destino, ressalvas e publicação (1.9.0)
 
-- **Fase:** U3a · **Módulos:** Runtime (`templates/_opencrew/core/`: `scripts/`, `prompts/`, `runner.pipeline.md`, best-practices; `templates/_opencrew/_memory/preferences.md`; skills `instagram-publisher` e `image-creator`; `templates/AGENTS.md`; `templates/gitignore`) + CLI (`src/commands/update.js`, `src/lib/`) + README + testes · **Status:** aguardando aprovação
+- **Fase:** U3a · **Módulos:** Runtime (`templates/_opencrew/core/`: `scripts/`, `prompts/`, `runner.pipeline.md`, best-practices; `templates/_opencrew/_memory/preferences.md`; skills `instagram-publisher` e `image-creator`; `templates/AGENTS.md`; `templates/gitignore`) + CLI (`src/commands/update.js`, `src/lib/`) + README + testes · **Status:** não aprovada; passa a ser a **fatia 2 (1.9.0)**. A fatia 1 (1.8.0, a pasta `entrega/` por canal com o LEIA-ME) está em `specs/fase-u3a1-pasta-de-entrega.md`. Este texto ainda é o original, de antes da divisão: precisa de uma revisão antes de ser aprovado (nota abaixo)
 - **Termos novos no GLOSSARIO.md:** sim — Entrega, Entrega avulsa, Canal, Peça (amplia o termo da R1), Bloco de serviço, Pendência, Ressalva, Destino da entrega, Reentrega, Editáveis, Recurso de editável, Conjunto de imagens
 - **Modelo sugerido:** execução Sonnet 5.5 · médio
 - **Origem:** `docs/auditoria/2026-10-04-revisao-specs.md` §2, §2.6 e §7 (os IDs entre parênteses são de lá). Substitui `specs/fase-u3-entrega-no-projeto.md`, que não foi aprovada. Parte do verificador como ele fica depois da R1 (`specs/fase-r1-reparos-1-6-1.md`).
+
+> **Nota de 2026-10-07 — o que muda na revisão desta spec.** Ela foi relida contra o código da
+> 1.7.1 e dividida em duas fatias. O corpo abaixo não foi reescrito.
+> - **Vai na fatia 1** (`specs/fase-u3a1-pasta-de-entrega.md`, que diz o que entra e o que foi
+>   reescrito lá): regras 1 a 4, 6 a 9, 11, 12, 15, 17, 19 a 22, 24 e 33, na parte simples, e os
+>   cenários listados na §7 de lá. As regras 6, 7 e 8 e 42 cenários valem lá **com o texto
+>   daqui**: não apagar daqui antes de a 1.8.0 estar implementada.
+> - **Já entregue por outras fases, sai daqui:** a regra 30 em quase tudo e os cenários U3a-12a,
+>   12b, 12d, 12e e 12h (R2, 1.6.3: o `update` renova o bloco do `.gitignore`, que já traz
+>   `.opencrew-backup/`) — sobram os casos (b) e (f) e o comentário do bloco; a regra 32 (E1,
+>   1.7.0); e toda menção ao `state.json` na pasta da execução (desde a E1 ele mora em
+>   `crews/<crew>/`).
+> - **A conferir na revisão:** a regra 2 e o U3a-01e (o caminho das saídas vem de `caminho.mjs`,
+>   R3); o saldo de linhas do runner (§12); a numeração de versões (U3b 1.10.0, U4 1.11.0).
 
 **Decisões que o dono confirma ao aprovar** (a opção recomendada já está aplicada no texto).
 

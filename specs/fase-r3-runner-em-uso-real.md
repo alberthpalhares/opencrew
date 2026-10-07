@@ -170,8 +170,8 @@ anterior.
 ## 8. Fora desta fase
 | Item | Alocação |
 |---|---|
-| Uma pasta de versão por ciclo de revisão, em vez de uma por passo | → U3a — é ela que define onde fica a entrega |
-| "Save final output" sem dizer qual arquivo é o final | → U3a (regra 21 de lá tira o passo) |
+| Uma pasta de versão por ciclo de revisão, em vez de uma por passo | → não adotado na U3a fatia 1 (1.8.0, decisão 7 de `specs/fase-u3a1-pasta-de-entrega.md`): continua uma por passo |
+| "Save final output" sem dizer qual arquivo é o final | → feito na U3a fatia 1 (1.8.0): a regra 21 de lá tirou o passo |
 | Formato canônico de `pipeline.yaml` e de `crew.yaml`; `id` do agente com três definições | → U4 |
 | Onboarding: formato do `company.md` e a marca `NOT CONFIGURED` | → U5 |
 | Trecho visível da legenda declarado e não medido | → U5 |
@@ -198,8 +198,8 @@ anterior.
   passo por vez.
 - Passo reexecutado por veto regrava no mesmo caminho e o runner não manda repetir o `conferir`:
   o arquivo corrigido segue sem passar de novo pela conferência (visto na execução real).
-- "Save final output" continua no runner e gera uma cópia do arquivo final na raiz da execução
-  (§8: sai na U3a).
+- "Save final output" gerava uma cópia do arquivo final na raiz da execução. Deixou de valer na
+  U3a fatia 1 (1.8.0): o passo saiu do runner, e o que o usuário usa passa a ser a pasta `entrega/`.
 - Cada conferência continua sendo uma chamada de terminal; o número de chamadas por passo cai,
   mas não some.
 

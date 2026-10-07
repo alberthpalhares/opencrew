@@ -7,7 +7,9 @@
 
 **Decisões aceitas pelo dono em 2026-10-05:**
 1. **Posição no roteiro: depois da R1 e da R2, antes da U3a**, como 1.7.0. A U3a passa a 1.8.0, a
-   U3b a 1.9.0 e a U4 a 1.10.0; os documentos são renumerados no commit desta fase.
+   U3b a 1.9.0 e a U4 a 1.10.0; os documentos são renumerados no commit desta fase. (Renumerado
+   de novo em 2026-10-07, quando a U3a foi dividida em duas fatias: U3a fatia 1 = 1.8.0, U3a
+   fatia 2 = 1.9.0, U3b = 1.10.0 e U4 = 1.11.0 — `specs/fase-u3a1-pasta-de-entrega.md`, decisão 8.)
 2. **Quem grava o estado é um script, não a IA** (regras 1 a 8), com **um comando por passo**: a
    passagem de bastão é gravada pelo próprio `passo`; não existe evento `handoff` (S1).
 3. **Continua desligado por padrão** (regra 9). Liga com `/opencrew dashboard`.

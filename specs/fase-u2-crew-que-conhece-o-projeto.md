@@ -178,7 +178,7 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
 - [ ] No Projeto A: a mesma conferência aponta o logo com nome diferente e lista os PNGs da pasta.
       Conferência rodada em 2026-10-02 (seção 14): as 9 fontes da crew estão OK e o logo não
       aparece, porque o nome errado está dentro do manual de marca (uma fonte), não nos arquivos
-      da crew — pendente: conferir arquivos citados dentro das fontes → U3a.
+      da crew — pendente: conferir arquivos citados dentro das fontes → U3a fatia 2 (1.9.0).
 - [ ] Rodar uma crew: ao corrigir algo num checkpoint, abrir `crews/<crew>/_memory/memories.md`
       e ver a correção gravada antes do fim do run.
       — pendente: não há execução real de crew registrada com esta conferência → jornada de
@@ -192,7 +192,7 @@ nos arquivos da crew e guarda `.bak`; nunca apaga nada. O `update` nunca apaga a
       O publish da 1.6.0 (tag `v1.6.0`, 2026-10-02) roda `npm run verify`; o teste é o U2-upg.
 - [ ] Conferência da seção 9 (dois primeiros itens, só leitura sem `--corrigir`).
       Feita em 2026-10-02 (seção 14): no Projeto B, como esperado; no Projeto A a conferência rodou
-      e não apontou o logo (seção 9) — pendente: conferir arquivos citados dentro das fontes → U3a.
+      e não apontou o logo (seção 9) — pendente: conferir arquivos citados dentro das fontes → U3a fatia 2 (1.9.0).
 - [x] CHANGELOG 1.6.0; release (commit + tag) com confirmação; atualizar A e B com autorização.
       1.6.0 publicada em 2026-10-02 (tag no GitHub e npm); A e B atualizados pelo npm, com
       autorização do dono, sem dado alterado.

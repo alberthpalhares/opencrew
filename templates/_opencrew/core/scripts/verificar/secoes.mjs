@@ -111,17 +111,35 @@ function abrir(trechos, trecho) {
 }
 
 /**
+ * Peças a que algum cabeçalho de baixo do cabeçalho de nível 1 da posição `i` é candidato; a
+ * seção dele vai até o próximo de nível 1 ou até um rótulo.
+ */
+function tiposSobOTitulo(marcas, i, formato) {
+  const tipos = new Set();
+  let pilha = [marcas[i]];
+  for (let j = i + 1; j < marcas.length && !marcas[j].rotulo && marcas[j].nivel !== 1; j++) {
+    if (!marcas[j].nivel) continue;
+    pilha = pilha.filter((c) => c.nivel < marcas[j].nivel);
+    for (const tipo of candidaturas(marcas[j].norm, pilha.map((c) => c.norm), formato)) tipos.add(tipo);
+    pilha.push(marcas[j]);
+  }
+  return tipos;
+}
+
+/**
  * Percorre as marcas e devolve os trechos, na ordem do texto: `{ rotulo, linhas }` para cada
  * linha de rótulo e `{ titulo, tipos, canal, linhas }` para cada cabeçalho candidato a peça
  * (`canal`: na seção de hashtags, o formato do canal que o cabeçalho cita; senão null).
  * A seção de cabeçalho vai até o próximo cabeçalho do mesmo nível ou acima, ou até um rótulo; a
  * de rótulo, até o próximo rótulo ou até um cabeçalho candidato (regra 2).
+ * O cabeçalho de nível 1 que tem, abaixo dele, outro candidato à mesma peça é o título do
+ * arquivo: não abre essa peça (fase-u3a1-pasta-de-entrega.md, regra 4).
  */
 export function lerTrechos(marcas, formato) {
   const trechos = [];
   let pilha = []; // cabeçalhos abertos, do mais externo ao mais interno
   let rotulo = null; // seção de rótulo aberta
-  for (const m of marcas) {
+  for (const [i, m] of marcas.entries()) {
     if (m.rotulo) {
       pilha = [];
       rotulo = abrir(trechos, { rotulo: m.rotulo });
@@ -129,7 +147,9 @@ export function lerTrechos(marcas, formato) {
     }
     if (m.nivel) {
       pilha = pilha.filter((c) => c.nivel < m.nivel);
-      const tipos = candidaturas(m.norm, pilha.map((c) => c.norm), formato);
+      const todos = candidaturas(m.norm, pilha.map((c) => c.norm), formato);
+      const abaixo = m.nivel === 1 && todos.length ? tiposSobOTitulo(marcas, i, formato) : null;
+      const tipos = abaixo ? todos.filter((tipo) => !abaixo.has(tipo)) : todos;
       const canal = tipos[0] === 'hashtags' ? canalDe(m.norm) : null;
       const trecho = tipos.length ? abrir(trechos, { titulo: m.titulo, tipos, canal }) : null;
       pilha.push({ nivel: m.nivel, norm: m.norm, trecho });

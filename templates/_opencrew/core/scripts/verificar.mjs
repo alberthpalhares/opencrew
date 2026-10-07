@@ -135,6 +135,8 @@ function resumir(arquivos, naoTexto, notas) {
  * @param {Array<string|{ arquivo: string, formato?: string }>} o.arquivos caminho (sem formato
  *   declarado) ou `{ arquivo, formato }` (formato declarado)
  * @param {string} [o.formato] limites de blog do item sem formato declarado que tem título no frontmatter
+ * @param {boolean} [o.semPadraoDeBlog] só a entrega passa true: no item sem formato declarado, o
+ *   título do frontmatter não é medido como blog (fase-u3a1-pasta-de-entrega.md, regra 17)
  * @param {Function} [o.regraDeTeste] SÓ PARA TESTE: regra extra, chamada com `{ arquivo, formato,
  *   texto }` em cada arquivo de texto; serve para simular uma regra que lança erro
  * @returns {Promise<object>} `{ arquivos, naoTexto, notas, bloqueios, alertas, naoMedidos, status }`
@@ -144,11 +146,11 @@ function resumir(arquivos, naoTexto, notas) {
  *   · `naoTexto`: caminhos que não são texto · `naoMedidos`: linhas "Não medido"/"Não verificado"
  *   · `status`: OK, BLOQUEADA ou AGUARDANDO_USUARIO
  */
-export async function verificar({ raiz, crew, arquivos, formato = 'blog-post', regraDeTeste }) {
+export async function verificar({ raiz, crew, arquivos, formato = 'blog-post', semPadraoDeBlog = false, regraDeTeste }) {
   const entradas = semRepetidas(raiz, arquivos.map(normalizar));
   const erro = erroDeUso({ raiz, crew, caminhos: entradas.map((e) => e.arquivo) });
   if (erro) throw new Error(erro);
-  const ctx = await prepararContexto(raiz, crew, formato);
+  const ctx = await prepararContexto(raiz, crew, semPadraoDeBlog ? null : formato);
   const resultado = [];
   const naoTexto = [];
   for (const entrada of entradas) {

@@ -32,6 +32,9 @@ dentro da sua IDE.**
   mensal, lançamento de produto. Comece em 2 minutos.
 - 📤 **Exportação multi-formato** — PDF, CSV e posts formatados por plataforma,
   sem abrir editor nenhum.
+- 📬 **Entrega por canal** — depois de aprovar, você encontra a pasta `entrega/`: uma pasta por
+  canal (Instagram, LinkedIn, blog, e-mail, WhatsApp, X/Twitter, YouTube), o texto pronto para
+  colar, as imagens e um `LEIA-ME.md` com o passo a passo. O que não está pronto fica marcado.
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
   ajusta com um clique. Agentes pulados não gastam tokens naquele run.
@@ -178,9 +181,9 @@ meu-projeto/
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── best-practices/       ← 22 guias de melhores práticas + _catalog.yaml
-│   │   ├── scripts/              ← verificador, conferência de fontes e os scripts do Escritório
+│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega e os scripts do Escritório
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
-│   │   └── prompts/              ← 13 prompts de fase (discovery, design, build, etc.)
+│   │   └── prompts/              ← 14 prompts de fase (discovery, design, build, entrega, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
 │   │   ├── copywriter.agent.md
@@ -194,6 +197,9 @@ meu-projeto/
 │
 ├── crews/                        ← suas crews vivem aqui
 │   ├── blog-semanal/             ← template: blog semanal
+│   │   └── output/<execução>/    ← criada a cada execução
+│   │       ├── v1/  v2/  …       ← o que cada passo gravou
+│   │       └── entrega/          ← o que você usa: LEIA-ME.md + uma pasta por canal
 │   ├── instagram-carrossel/      ← template: Instagram carrossel
 │   ├── newsletter-mensal/        ← template: newsletter
 │   └── lancamento-produto/       ← template: lançamento
@@ -206,6 +212,50 @@ meu-projeto/
 │   ├── resend/                   ← envio de emails
 │   └── ...
 ```
+
+---
+
+## Entrega por canal
+
+Depois da aprovação final, a crew monta a pasta `entrega/` dentro da pasta da execução
+(`crews/<crew>/output/<execução>/entrega/`). É ali que está o que você vai usar:
+
+```
+entrega/
+├── LEIA-ME.md      ← comece por aqui: o que fazer com cada arquivo, canal por canal
+├── instagram/      ← legenda.txt (hashtags no fim) e as imagens, com o nome original
+├── linkedin/       ← post.txt e, se houver, post-comentario.txt (o primeiro comentário)
+├── blog/           ← seo.txt (título, meta description, palavra-chave, slug) e artigo.md
+├── email/          ← assunto.txt, previa.txt e corpo.md
+├── whatsapp/       ← mensagem.txt
+├── twitter/        ← tweet.txt (na thread: tweet-1.txt, tweet-2.txt…)
+├── youtube/        ← o roteiro
+├── outros/         ← arquivo sem canal (proposta, minuta, relatório), como está
+└── editaveis/      ← o HTML dos slides, para quem quiser ajustar
+```
+
+Só aparecem as pastas que a execução tem.
+
+- **Texto pronto para colar.** Os `.txt` saem sem `#`, `**`, rótulos nem recados internos, com as
+  hashtags no fim. Com mais de uma peça do mesmo tipo, os arquivos são numerados (`post-1.txt`,
+  `post-2.txt`).
+- **O `LEIA-ME.md` diz o que fazer.** Cada canal tem a situação ("Pronto" ou "Não está pronto"),
+  os arquivos, de onde cada um veio e os passos, numerados. "Antes de usar" junta o que falta;
+  "O que não foi conferido" lembra o que ninguém mediu (links e fatos, texto dentro das imagens,
+  aparência final em cada rede).
+- **O que não está pronto fica marcado.** Sobrou um `[PREENCHER]` ou um texto acima do limite? O
+  canal aparece como "Não está pronto" e a crew pergunta se você quer corrigir agora ou seguir
+  assim.
+- **Arquivo sem canal vai para `outros/`**, inteiro e com o nome original: nada some.
+- **A pasta é refeita a cada entrega e fica fora do git.** O que você editar ali se perde; para
+  guardar, copie a pasta para outro lugar do projeto.
+- **Execução antiga?** Peça à IA: "monte a entrega da execução X da crew Y". Ela lista os
+  arquivos, pede o seu "sim" e monta a pasta. Funciona em crews criadas antes da 1.8.0, depois
+  do `update`.
+
+A entrega não gera PDF nem imagem: `artigo.md`, `corpo.md` e os roteiros saem em markdown, e o
+LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os nomes dos arquivos
+são sempre em português.
 
 ---
 

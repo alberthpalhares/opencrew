@@ -102,7 +102,15 @@ Toda melhoria do runtime tem que chegar a um projeto que já tem uma versão ant
 `npx @aksp/opencrew@latest update`, sem perder dado do usuário. Se a mudança mora fora de
 `_opencrew/core/` ou dos skills do catálogo (o que o `update` renova), a mesma entrega inclui a
 migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no npm).
-**Trava:** `tests/upgrade.test.js` (simula um workspace pré-1.5 e atualiza) e `tests/upgrade-r3.test.js`.
+**Trava:** `tests/upgrade.test.js` (simula um workspace pré-1.5 e atualiza), `tests/upgrade-r3.test.js`
+e `tests/upgrade-u3a.test.js`.
+
+### 15. Script do runtime só escreve onde foi combinado
+Script do runtime só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da
+crew, a pasta de saída da crew (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve
+arquivo do usuário, e só apaga a própria pasta de entrega e os temporários que ele mesmo criou.
+**Trava:** `tests/entregar*.test.js` (U3a-14b): em cada cenário, fora da pasta da execução a árvore
+do projeto é igual antes e depois, e não sobra pasta `.tmp`.
 
 ## Regra → Trava
 
@@ -121,7 +129,8 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js` | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js` | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js` | Reprova |
+| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.
