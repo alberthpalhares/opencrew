@@ -13,7 +13,7 @@ import { conferirPacote, trocar } from './_documento-conferir.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPTS = path.resolve(AQUI, '../templates/_opencrew/core/scripts');
-const REFERENCIA = readFileSync(path.join(AQUI, 'fixtures/documento-referencia.md'), 'utf8');
+const REFERENCIA = readFileSync(path.join(AQUI, 'fixtures/documento-referencia.md'), 'utf8').replace(/\r\n/g, '\n'); // the checkout may bring CRLF
 const FIXAS = ['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/_rels/document.xml.rels', 'word/styles.xml', 'word/settings.xml', 'word/numbering.xml'];
 const DO_TIMBRE = ['word/header1.xml', 'word/_rels/header1.xml.rels', 'word/media/logo.png', 'word/footer1.xml'];
 const TABELA = '| A | B |\n|---|---|\n| 1 | |\n';

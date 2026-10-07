@@ -11,8 +11,8 @@ import { gerar, lerZip, xmlDe, filhos, filho, todos, textoDe, tem, val, png, pro
 import { conferirPacote, palavrasDoDocx, palavrasDoMarkdown, trocar } from './_documento-conferir.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const REFERENCIA = readFileSync(path.join(AQUI, 'fixtures/documento-referencia.md'), 'utf8');
-const ATA = readFileSync(path.join(AQUI, 'fixtures/ata-exemplo.md'), 'utf8');
+const REFERENCIA = readFileSync(path.join(AQUI, 'fixtures/documento-referencia.md'), 'utf8').replace(/\r\n/g, '\n'); // the checkout may bring CRLF
+const ATA = readFileSync(path.join(AQUI, 'fixtures/ata-exemplo.md'), 'utf8').replace(/\r\n/g, '\n'); // the checkout may bring CRLF
 const PERFIL = '_opencrew/_memory/documento-oficial.md';
 const LOGO = png(200, 80);
 const completo = () => ({ perfil: lerPerfil(PERFIL_COMPLETO).perfil, logotipo: LOGO });
