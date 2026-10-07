@@ -147,7 +147,7 @@
 
 > As seis entradas abaixo vêm da execução real de 2026-10-06 (spec E1, §8, item 5): um agente fez o
 > papel da IA da IDE (Codex), criou uma crew de 3 agentes e a rodou seguindo o runner ao pé da
-> letra. Tudo isto já existia antes da E1. **R3 é proposta:** a fase não existe ainda; o dono decide.
+> letra. Tudo isto já existia antes da E1. **R3 aprovada pelo dono em 2026-10-06:** fase de reparo, 1.7.1, antes da U3a; a spec ainda não foi escrita.
 
 ## Runner: a entrada do passo não acha a saída do passo anterior (pasta de versão)
 - **O que já existe:** o runner manda trocar só o `run_id` no `inputFile`, mas a saída anterior foi
@@ -156,20 +156,20 @@
   grupo (pesquisa em `v1/`, post em `v2/`, revisão em `v3/`); os exemplos do runner sugerem tudo
   em `v1`. Do mesmo assunto, já com destino: "Save final output" não diz qual arquivo é o final →
   U3a, que tira esse passo do runner (spec U3a, regra 21).
-- **Alocação:** → R3 (reparo, sem versão definida) — defeito do runner em uso real.
+- **Alocação:** → R3 (reparo, 1.7.1) — defeito do runner em uso real.
 - **Custo de adiar:** a IA que segue o texto à risca para em "Input not found" no segundo passo;
   a que improvisa espalha a execução em várias pastas `vN`.
-- **Aprovação:** sim — abre uma fase de reparo que não está no roteiro.
+- **Aprovação:** sim — dada em 2026-10-06 (abre a fase de reparo R3).
 
 ## Runner e discovery: comandos escritos só para bash
 - **O que já existe:** `test -s`, `grep -q`, `ls | sort -V | tail`, `mkdir -p`, `[ -f ]` no runner
   e `ls crews/ 2>/dev/null` no discovery; no Windows (PowerShell) a IA tem de traduzir todos. O
   Architect proíbe o `mkdir` do Bash e o runner manda usá-lo (T-M13, hoje → U5 na auditoria).
-- **Alocação:** → R3 (reparo, sem versão definida) — defeito do runner em uso real. O T-M13 vem
+- **Alocação:** → R3 (reparo, 1.7.1) — defeito do runner em uso real. O T-M13 vem
   junto: é a mesma linha do runner.
 - **Custo de adiar:** no Windows, cada passo depende de a IA acertar a tradução do comando; um
   erro vira validação que falha sem motivo.
-- **Aprovação:** sim — mesma fase de reparo da entrada acima.
+- **Aprovação:** sim — dada em 2026-10-06, na mesma fase R3.
 
 ## Formato canônico de `pipeline.yaml`, de `crew.yaml` e da crew criada — o que a execução real acrescenta
 - **O que já existe:** o assunto tem destino na auditoria de 2026-10-02 (§3): T-A10 (os dois
