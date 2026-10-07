@@ -88,6 +88,7 @@ async function apply(target, version) {
   const done = { unreadable, ...(await refreshBridges(ctx)) };
   done.mcp = await updateMcp(ctx, await readFile(tpl('.mcp.json')));
   done.leftovers = await findLeftovers(target);
+  done.hasCrew = await hasCrew(target);
   say(updateSummary(ctx, done));
 
   await writeManifest(target, version, ctx.files);
@@ -95,6 +96,13 @@ async function apply(target, version) {
   await fs.writeFile(path.join(target, '_opencrew', '.opencrew-version'), version + '\n');
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
   log(c.dim(`${UNTOUCHED}\n`));
+}
+
+/** Is there a crew of the user's? A folder of `crews/` with `crew.yaml` (the templates have none). Only looks. */
+async function hasCrew(target) {
+  const dirs = await fs.readdir(path.join(target, 'crews'), { withFileTypes: true }).catch(() => []);
+  const found = await Promise.all(dirs.filter((d) => d.isDirectory()).map((d) => exists(path.join(target, 'crews', d.name, 'crew.yaml'))));
+  return found.includes(true);
 }
 
 /** @returns what `deliverTree` did to each crew template (only the missing ones are written). */

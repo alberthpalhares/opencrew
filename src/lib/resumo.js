@@ -18,6 +18,9 @@ export const ALREADY_INSTALLED = 'Para atualizar, rode `npx @aksp/opencrew@lates
 /** `update` over `_opencrew/core` with no version stamp (spec U3a-2, rule 31). */
 export const INTERRUPTED = 'A instalação anterior não terminou. Rode `npx @aksp/opencrew init` para concluir.';
 
+/** After an `update`, when the project has at least one crew (spec U4-1, decision 7). */
+export const REPAIR_HINT = 'Para levar as melhorias novas às crews que você já tem, peça na sua IDE: /opencrew repair';
+
 const NO_BRIDGES = 'Nenhuma ponte de IDE encontrada: nada a atualizar. Para criar a ponte de uma IDE: `npx @aksp/opencrew@latest init --repair-bridges --ide=<id>`.';
 const LEAK_REMOVED = 'CLAUDE.md: removi a seção de STATUS.md que as versões 1.4.0 e 1.4.1 gravaram por engano.';
 const FIRST_PROTECTED = 'Primeira atualização com proteção: sem registro anterior, guardamos tudo o que diferia. Daqui em diante, só o que você editar.';
@@ -112,7 +115,7 @@ function copyLines(ctx, unreadable) {
  * @param {object} done what each step returned: `agents` and `gitignore` (deliverBlock; `agents`
  *   is null when a pre-1.3 AGENTS.md was migrated), `ides` (detected), `bridges` (deliverBridges),
  *   `leak` (the STATUS.md section left CLAUDE.md's block), `mcp` (updateMcp), `leftovers`
- *   (findLeftovers) and `unreadable` (manifest)
+ *   (findLeftovers), `unreadable` (manifest) and `hasCrew` (a folder of `crews/` with `crew.yaml`)
  * @returns {Array<[Function, string]>} lines for `say`
  */
 export function updateSummary(ctx, done) {
@@ -124,5 +127,6 @@ export function updateSummary(ctx, done) {
     ...mcpLines(ctx, done.mcp),
     ...leftoverLines(done.leftovers, done.mcp),
     ...copyLines(ctx, done.unreadable),
+    ...(done.hasCrew ? [[info, REPAIR_HINT]] : []),
   ];
 }

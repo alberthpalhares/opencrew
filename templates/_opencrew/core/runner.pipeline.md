@@ -114,7 +114,7 @@ Before starting execution:
     briefing, the research or your own assumptions, the sources take precedence over them
     (as fontes valem sobre o briefing e a pesquisa) — and say so when it matters.
 
-2. Read `crews/{name}/pipeline/pipeline.yaml` for the pipeline definition
+2. Read `crews/{name}/pipeline/pipeline.yaml` for the pipeline definition. The format of the crew files — where each field lives and the older shapes that still count — is in `_opencrew/core/formato-da-crew.md`; read it when a field is not where you expect.
 3. **Resolve skills**: Read `crew.yaml` → `skills` section. For each non-native skill (anything other than web_search, web_fetch):
    a. Verify `skills/{skill}/SKILL.md` exists
       - If missing → ask user: "Skill '{skill}' is not installed. Install now? (y/n)"
@@ -124,13 +124,9 @@ Before starting execution:
    c. If type: mcp, verify MCP is configured in `.claude/settings.local.json`
       - If missing → **ERROR**: "Skill '{skill}' MCP not configured. Reinstall the skill."
    All skills must resolve successfully before the pipeline starts (fail fast).
-4. **Model tiers**: Individual steps declare their own `model_tier` in their frontmatter (`fast` or `powerful`), set by the Architect at crew creation time based on the crew's tier (Express/Standard/Full).
-   - Read `crew.yaml` → `crew.tier` field to understand the crew's depth level:
-     - `express`: all steps use `model_tier: fast` by default
-     - `standard`: mixed — research/data steps use `fast`, creative/review steps use `powerful`
-     - `full`: all steps use `model_tier: powerful` by default
-   - If a step has its own `model_tier` in frontmatter → step-level override takes priority over crew-level default.
-    - If neither crew tier nor step model_tier is set → default to `powerful` at dispatch.
+4. **Model tiers**: a `subagent` step declares its own `model_tier` (`fast` or `powerful`), set at crew creation by the crew's tier; inline steps carry none.
+   - Read the crew's tier for the run header: `crew.tier` in `crew.yaml` (older crews: `tier` loose at the top level).
+   - A subagent step with no `model_tier` → `powerful` at dispatch.
 
 4b. **Pre-Execution Agent Selection** — Decide which agents actually run for this task.
     Run this step ONLY if `crew.yaml` declares an `agent_dependencies:` field (even an
@@ -563,7 +559,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
   Atualizo o perfil da empresa?" — change `company.md` only after a yes.
 - **If the step frontmatter contains `outputFile`**: after collecting the user's full response,
   insert only the run_id in the `outputFile` path (item 1 of the rule in Output Path Transformation — no version folder, no `saida` command), then write the response to that path using the Write tool (it creates the folder) before moving to the next step. Checkpoint files are user input captures, not versioned output: they live in the group itself, where `entrada` finds them.
-  Use this format:
+  For the checkpoint that precedes the researcher, use this format:
   ```
   # Research Focus
 
@@ -571,7 +567,8 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
   **Time Range:** {selected time range label, e.g., "Últimos 7 dias"}
   **Date:** {today's date in YYYY-MM-DD format}
   ```
-  This file is the `inputFile` for the researcher step that follows.
+  For any other checkpoint: `# {the checkpoint's title}`, the user's answer as given (the option chosen and every comment), and `**Date:** {today, YYYY-MM-DD}`.
+  This file is the `inputFile` of the step that follows.
 
 ### Post-Step Output Validation
 
@@ -681,8 +678,8 @@ When a step has `on_reject: {step-id}` (a review step):
    (real data only the user has): do NOT reject for them — the reviewer judges the rest, and the
    final approval below collects the missing data from the user.
 3. Track the review cycle count: a **cycle** is one pass of the reviewer. The maximum is
-   `max_review_cycles`, an integer from 1 declared where the step declares `on_reject` (the step
-   frontmatter or its `pipeline.yaml` entry); absent or invalid: 3. On every rejection, with or
+   `max_review_cycles`, an integer from 1: the one declared where the step declares `on_reject` (the
+   step frontmatter or its `pipeline.yaml` entry); without it, the one in `crew.yaml`; absent or invalid in both: 3. On every rejection, with or
    without a block, send the reviewer's feedback to the writer and go back to the referenced step.
 4. If the last allowed pass also rejects, stop; the status of the last report picks the message, as
    in item 2 — `VERIFICACAO:BLOQUEADA`: the blocks; any other status: the reviewer's feedback, also

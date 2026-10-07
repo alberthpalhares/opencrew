@@ -56,17 +56,17 @@ test('R1 revisão: the crew folder goes between quotes in the two script command
   assert.match(check, /verificar\.mjs --crew "crews\/\{name\}" --arquivo "/);
 });
 
-test('R1-07b: a cycle is one pass of the reviewer; max_review_cycles lives next to on_reject and defaults to 3', () => {
+// Since U4-1 (decision 3) the limit written in `crew.yaml` counts too: step → crew.yaml → 3.
+test('R1-07b: a cycle is one pass of the reviewer; max_review_cycles lives next to on_reject, then in crew.yaml, and defaults to 3', () => {
   assert.match(cycles, /a \*\*cycle\*\* is one pass of the reviewer/);
-  assert.match(cycles, /`max_review_cycles`, an integer from 1 declared where the step declares `on_reject` \(the step frontmatter or its `pipeline\.yaml` entry\)/);
-  assert.match(cycles, /absent or invalid: 3\./);
+  assert.match(cycles, /`max_review_cycles`, an integer from 1: the one declared where the step declares `on_reject` \(the step frontmatter or its `pipeline\.yaml` entry\); without it, the one in `crew\.yaml`/);
+  assert.match(cycles, /absent or invalid in both: 3\./);
 });
 
 // The build records the tier's limit (design.prompt.md: "On-reject loops | 1 max | 2 max | 3 max").
-test('R1-07b: the build writes max_review_cycles next to on_reject, by crew tier (1, 2, 3); without it the runner still uses 3', () => {
-  assert.match(stepFormat, /max_review_cycles: \{N\} # ONLY for the review step: write it next to its `on_reject`\./);
-  assert.match(stepFormat, /By crew tier \(`crew\.tier` in design\.yaml\): Express 1, Standard 2, Full 3\./);
-  assert.match(cycles, /absent or invalid: 3\./);
+test('R1-07b: the build writes max_review_cycles in crew.yaml, by crew tier (1, 2, 3); without it the runner still uses 3', () => {
+  assert.match(stepFormat, /`max_review_cycles` goes in `crew\.yaml`, by crew # tier \(`crew\.tier` in design\.yaml\): Express 1, Standard 2, Full 3\./);
+  assert.match(cycles, /absent or invalid in both: 3\./);
 });
 
 test('R1-07b: at the limit the run stops; without VERIFICACAO:BLOQUEADA the user sees the reviewer feedback and the three options', () => {

@@ -10,7 +10,8 @@ On activation, perform these steps IN ORDER:
 1. Read the company context file: `{project-root}/_opencrew/_memory/company.md`
 2. Read the preferences file: `{project-root}/_opencrew/_memory/preferences.md`
 3. Check if company.md is empty or contains only the template — if so, trigger ONBOARDING
-   (except for `/opencrew documento` and the `
+   (except for `/opencrew documento` and the request to deliver a run that already ended: neither
+   uses the company context)
 4. Otherwise, display the MAIN MENU
 
 ## Onboarding Flow (first time only)
@@ -50,11 +51,11 @@ Route input to the matching action:
 |---------------|--------|
 | `/opencrew` or `/opencrew menu` | Show main menu |
 | `/opencrew help` | Show help text |
-| `/opencrew create <description>` | Load Architect → Create Crew flow |
-| `/opencrew list` | List all crews in `crews/` |
+| `/opencrew create <description>` | Load the Architect (`_opencrew/core/architect.agent.yaml`) → Create Crew flow: one prompt per phase, listed there |
+| `/opencrew list` | List all crews in `crews/` (a folder without `crew.yaml` is not a crew) |
 | `/opencrew run <name>` | Load Pipeline Runner → Execute crew |
-| `/opencrew edit <name> <changes>` | Load Architect → Edit Crew flow |
-| `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → fix agent names / rebuild crew-party.csv |
+| `/opencrew edit <name> <changes>` | Load the Architect → Edit Crew flow |
+| `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → show what an existing crew is missing and fix one point at a time, each with a `.bak` copy |
 | `/opencrew skills` | Load Skills Engine → Show skills menu |
 | `/opencrew install <name>` | Install a skill from the catalog |
 | `/opencrew uninstall <name>` | Remove an installed skill |
@@ -74,7 +75,8 @@ Route input to the matching action:
 
 When a specific agent needs to be activated:
 
-1. Read the agent's `.agent.md` file completely
+1. Read the agent's `.agent.md` file completely (the Architect is the exception: it lives in
+   `_opencrew/core/architect.agent.yaml`)
 2. Adopt the agent's persona (role, identity, communication_style, principles)
 3. Follow the agent's menu/workflow instructions
 4. When the agent's task is complete, return to the opencrew main context

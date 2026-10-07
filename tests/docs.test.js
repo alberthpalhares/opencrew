@@ -91,12 +91,13 @@ test('build.prompt.md specifies the crew-party.csv displayName column and gate',
   assert.match(build, /Gate 0b/, 'build.prompt.md must add the crew-party manifest gate');
 });
 
-test('repair.prompt.md exists and pulls names from .agent.md', async () => {
+// Since U4-1 the repair is done by `conserto.mjs`; the names still come from the agent files (tests/conserto*.test.js).
+test('repair.prompt.md exists and repairs names through the script', async () => {
   const repair = await read(path.join('_opencrew', 'core', 'prompts', 'repair.prompt.md'));
 
-  assert.match(repair, /crew-party\.csv/, 'repair prompt should rewrite crew-party.csv');
-  assert.match(repair, /displayName/, 'repair prompt should populate the displayName column');
-  assert.match(repair, /name:/, 'repair prompt should source names from .agent.md name: frontmatter');
+  assert.match(repair, /conserto\.mjs --crew/, 'repair prompt should run the repair script');
+  assert.match(repair, /--aplicar "manifesto"/, 'repair prompt should rebuild the manifest through the script');
+  assert.match(repair, /--aplicar "nome:\{id\}=\{Nome Sobrenome\}"/, 'repair prompt should write a missing persona name through the script');
 });
 
 test('AGENTS.md routes /opencrew repair to the repair prompt', async () => {
@@ -244,11 +245,13 @@ test('preferences.md includes Default Tier field', async () => {
   assert.match(prefs, /standard/, 'default tier must be standard');
 });
 
+// Since U4-1 the tier → model_tier mapping lives in the crew format file (one definition).
 test('runner.pipeline.md respects crew-level tier from crew.yaml', async () => {
   const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const formato = await read(path.join('_opencrew', 'core', 'formato-da-crew.md'));
   assert.match(runner, /crew\.tier/, 'runner must read crew.tier from crew.yaml');
-  assert.match(runner, /express.*fast/i, 'express tier must map to fast model_tier');
-  assert.match(runner, /full.*powerful/i, 'full tier must map to powerful model_tier');
+  assert.match(formato, /express.*fast/i, 'express tier must map to fast model_tier');
+  assert.match(formato, /full.*powerful/i, 'full tier must map to powerful model_tier');
   assert.match(runner, /Tier:.*express.*standard.*full/, 'startup message must show tier');
 });
 

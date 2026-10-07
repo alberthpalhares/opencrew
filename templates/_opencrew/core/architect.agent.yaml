@@ -57,24 +57,30 @@ agent:
     create-crew: |
       ## Create Crew
 
-      The create flow is now handled by the phased orchestration system.
-      See the SKILL.md entry point for the full phased flow:
-      Discovery → Investigation → Design → Template Selection (optional) → Build
+      Creating a crew takes four phases, in this order. Each phase is one prompt: read it
+      completely when its turn comes, follow it to the end, and only then load the next one.
 
-      Each phase is a separate prompt in `_opencrew/core/prompts/`:
-      - `discovery.prompt.md` — Phase 1: Intelligent wizard
-      - `sherlock-*.md` — Phase 2: Investigation (optional)
-      - `design.prompt.md` — Phase 3: Crew architecture (includes optional Phase H.5: Template Selection)
-      - `build.prompt.md` — Phase 4: File generation + validation
+      1. `_opencrew/core/prompts/discovery.prompt.md` — Discovery: the questions; ends by
+         writing `crews/{code}/_build/discovery.yaml`
+      2. `_opencrew/core/prompts/sherlock-shared.md` — Investigation: ONLY when the discovery
+         ended with the investigation enabled; it names the platform prompt to load with it
+      3. `_opencrew/core/prompts/design.prompt.md` — Design: agents and pipeline (includes the
+         optional template selection); ends by writing `crews/{code}/_build/design.yaml`
+      4. `_opencrew/core/prompts/build.prompt.md` — Build: writes the crew files, in the format
+         of `_opencrew/core/formato-da-crew.md`, and validates them
 
-      The SKILL.md orchestrator dispatches each phase as a subagent.
+      If your IDE can run a phase as a subagent, you may; otherwise run the phases one after
+      the other in this conversation. Never skip a phase and never write crew files before
+      the Build.
 
     edit-crew: |
       ## Edit Crew Workflow
 
-      1. Ask which crew to edit (list available crews if not specified).
+      1. Ask which crew to edit (list available crews if not specified; a folder without
+         crew.yaml is not a crew).
          If only 1 crew exists, add "Cancel" as a second option. If 0 crews, inform user directly.
-      2. Read the crew's crew.yaml to understand current structure
+      2. Read the crew's crew.yaml to understand current structure (the format of the crew
+         files is in `_opencrew/core/formato-da-crew.md`)
       3. Ask what changes the user wants
       4. **If the user asks to edit/define/change the visual template or identity of a design agent:**
          - Read and follow `skills/template-designer/SKILL.md`
@@ -86,8 +92,10 @@ agent:
     list-crews: |
       ## List Crews Workflow
 
-      1. Read all directories in crews/
-      2. For each, read crew.yaml to get name, description, icon, agent count
+      1. Read all directories in crews/. A folder without crew.yaml is not a crew (the
+         template folders installed with the product): leave it out
+      2. For each crew, read crew.yaml to get name, description and icon (inside `crew:` or,
+         in older crews, loose at the top level) and count the agents in crew-party.csv
       3. Present as a formatted list:
          ```
          Your Crews:
@@ -102,7 +110,8 @@ agent:
     delete-crew: |
       ## Delete Crew Workflow
 
-      1. Ask which crew to delete (list available if not specified).
+      1. Ask which crew to delete (list available if not specified; a folder without
+         crew.yaml is not a crew).
          If only 1 crew exists, add "Cancel" as a second option. If 0 crews, inform user directly.
       2. Show crew details (name, agents, output count)
       3. Confirm deletion with explicit "Are you sure?" presented as a numbered list (1. Yes, delete / 2. No, cancel)

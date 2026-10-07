@@ -28,13 +28,20 @@
 > logotipo, cabeçalho e rodapé num arquivo de texto do projeto). O que a 1.10.0 deixou de fora
 > (`specs/fase-u3b-documento-word.md`, §8) está numa entrada só, abaixo: "Documento Word: o que a
 > 1.10.0 não fez".
+>
+> Saíram em 2026-10-07, entregues na v1.11.0 (CHANGELOG): o conserto de crews antigas
+> (`/opencrew repair` com o script `conserto.mjs`), o formato da crew escrito num arquivo só, o
+> domínio de documento na criação e `init --ide=<lista> --yes`. O que a 1.11.0 deixou de fora
+> (`specs/fase-u4a-conserto-de-crews.md`, §8) está nas entradas abaixo. **A U4 saiu em três
+> fatias:** 1 = 1.11.0 (entregue); 2 = 1.12.0 (histórico confiável e modo equipe); 3 = 1.13.0
+> (estado da execução e `retomar`).
 
 ---
 
 ## `/opencrew retomar` — retomar um run interrompido
 - **O que já existe:** o estado do run vive só na memória do modelo (T-A11).
-- **Alocação:** → U4 — depende de `run-state.json` e do formato canônico de
-  `pipeline.yaml` (T-A10).
+- **Alocação:** → U4 fatia 3 (1.13.0) — depende de `run-state.json`; o formato da crew já está
+  escrito desde a 1.11.0.
 - **Custo de adiar:** run longo que estoura o contexto é perdido inteiro.
 - **Aprovação:** não.
 
@@ -80,24 +87,23 @@
      perguntas `--lembrar-documentos…`; `entrega.documentos` para `.md` sem formato; cabeçalho e
      rodapé por crew; citação, código e limpeza de HTML e de comentários; 3 níveis de recuo;
      carimbo SHA-256 da conferência;
-  8. dar `format: documento-oficial` aos passos de crews antigas; ativar por pedido em texto em
-     conversa nova; tarefa avulsa no histórico;
+  8. ativar por pedido em texto em conversa nova; tarefa avulsa no histórico (dar o formato
+     `documento-oficial` aos passos de crews antigas saiu na 1.11.0, com `/opencrew repair`);
   9. documento em outro idioma ("Página X de Y" e avisos só em PT-BR); a linha "Não medido" do
      verificador para `documento-oficial` (o formato não tem limite a medir; hoje a linha aparece
      e não bloqueia).
 - **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em
   2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou
   precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação
-  lado a lado pedir. Item 8 → U4 — conserto de crews antigas e modo equipe. Item 9 → U5.
+  lado a lado pedir. Item 8 → U4 fatia 2 (1.12.0) — é pedido avulso, como o modo equipe. Item 9 → U5.
 - **Custo de adiar:** quem tem um modelo `.dotx` ou logotipo que não é PNG ajusta à mão (converte
-  o logotipo, aplica o modelo no Word); crew antiga só gera o Word depois de o usuário pôr o
-  formato no passo; documento em outro idioma sai com "Página X de Y" em português.
+  o logotipo, aplica o modelo no Word); documento em outro idioma sai com "Página X de Y" em português.
 - **Aprovação:** não.
 
 ## Modo equipe: `/opencrew pedir <crew> "<tarefa>"`
 - **O que já existe:** só o pipeline completo. No uso real a crew virou equipe permanente com
   tarefas avulsas fora do pipeline, uma delas fora do histórico (dor 7).
-- **Alocação:** → U4 — com `runs.md` confiável para tarefas avulsas. Inclui a entrega avulsa
+- **Alocação:** → U4 fatia 2 (1.12.0) — com `runs.md` confiável para tarefas avulsas. Inclui a entrega avulsa
   (arquivos fora de uma execução, sem `--run`): é o modo equipe que cria a tarefa fora do
   pipeline (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** histórico e memória perdem o que acontece fora do pipeline.
@@ -157,15 +163,14 @@
   hashtags; imagem fora do tamanho da rede só é vista na hora de postar.
 - **Aprovação:** não.
 
-## Conserto (`repair`) de crews antigas: ordem de publicação, `fontes:`, proibições sem aspas
-- **O que já existe:** `/opencrew repair` só conserta nomes de agentes e o `crew-party.csv`; o
-  `update` não altera as crews do usuário. Crews criadas antes da 1.4.2 mantêm "publicar antes
-  do Review" (T-B15, H1-01); as anteriores à 1.6.0 não têm `fontes:` (H3-03); proibições antigas,
-  sem aspas, não viram trava do verificador (H2-05); crews sem `on_reject` não passam pelo
-  verificador (spec U1 §11).
-- **Alocação:** → U4 — junto do histórico confiável; mexe em `crews/`, então pede confirmação e
-  cópia (regra 3).
-- **Custo de adiar:** as melhorias da 1.4.2, da 1.5.0 e da 1.6.0 só valem inteiras para crews novas.
+## Conserto de crews: reordenar sozinho a publicação que vem antes da revisão
+- **O que já existe:** desde a 1.11.0, `/opencrew repair` aponta a crew que publica antes da revisão
+  ou da aprovação final (`publica-antes`), a que não tem revisão (`sem-revisao`) e a que não tem
+  aprovação final, e manda para `/opencrew edit`; não reordena nem cria passos (T-B15, H1-01).
+- **Alocação:** → sem fase — nenhuma crew real está assim (as do Projeto A foram recriadas na
+  1.6.0; a do B não publica), e mover passos mexe nos números que `on_reject` usa
+  (`specs/fase-u4a-conserto-de-crews.md`, decisão 5). Volta com um caso real.
+- **Custo de adiar:** quem tem uma crew anterior à 1.4.2 que publica reordena pela edição da crew.
 - **Aprovação:** não.
 
 ## Overlay local: arquivo de acréscimo em vez de cópia inteira + aviso no `update`
@@ -208,23 +213,23 @@
 > papel da IA da IDE (Codex), criou uma crew de 3 agentes e a rodou seguindo o runner ao pé da
 > letra. Tudo isto já existia antes da E1. Outras duas (a entrada do passo que não achava a saída anterior; os comandos só de bash) saíram daqui para a fase de reparo R3 (1.7.1, `specs/fase-r3-runner-em-uso-real.md`).
 
-## Formato canônico de `pipeline.yaml`, de `crew.yaml` e da crew criada — o que a execução real acrescenta
-- **O que já existe:** o assunto tem destino na auditoria de 2026-10-02 (§3): T-A10 (os dois
-  arquivos sem formato; `crew.tier` lido sem o build dizer onde gravar), T-A2 (criação sem
-  condutor), T-M14 (as 4 pastas de modelo em `crews/` parecem crews), T-M17 (Express: "o redator
-  se revisa" × revisor obrigatório), T-M19 (`id` do agente com três definições), T-M20 e T-B8
-  (agente-base reprova o Gate 1; `extends:` não poupa trabalho). A execução confirmou todos e
-  achou mais três: Express manda `model_tier: fast` em todo passo e o build manda omitir o campo
-  em passo inline; `agent_dependencies` é "OPTIONAL" e "ALWAYS emit" no mesmo parágrafo; no
-  Codex, o Architect aponta para o `SKILL.md`, que só aponta de volta para o `system.md`.
-- **Alocação:** → U4 — entram no formato canônico, junto de T-A10 e T-A2.
-- **Custo de adiar:** cada IA monta a crew de um jeito; o runner lê campos que ninguém gravou.
+## Agentes-base fora do formato do Build; `extends:`; nomes de campo do `design.yaml`
+- **O que já existe:** a 1.11.0 escreveu o formato da crew num arquivo só
+  (`_opencrew/core/formato-da-crew.md`) e acertou quem faz a junção de `extends:` (o Build). Ficou
+  fora: os cinco agentes-base não têm as seções que o Gate 1 do Build exige (T-M20), então
+  `extends:` não poupa trabalho (T-B8); o `design.yaml` usa `input_file`/`output_file` e o passo,
+  `inputFile`/`outputFile`.
+- **Alocação:** → U5 — pede reescrever os cinco agentes-base (`specs/fase-u4a-conserto-de-crews.md`,
+  decisão 9); o `design.yaml` é arquivo interno da criação e não chega ao runner.
+- **Custo de adiar:** o Build completa à mão o que falta no agente-base, a cada crew criada.
 - **Aprovação:** não.
 
 ## Histórico: o score do `runs.md` tem duas definições
 - **O que já existe:** o runner define o score como "agent outputs approved" e como
-  `{approved}/{total checkpoints}`. O histórico confiável já é da U4 (T-B6, T-A11).
-- **Alocação:** → U4 — junto do histórico confiável.
+  `{approved}/{total checkpoints}`; numa crew real o score saiu como nota ("8,2"), uma terceira
+  definição. Em outra, há pastas de execução sem linha no `runs.md` e linha sem pasta (leitura
+  das crews reais, 2026-10-07). O histórico confiável é da U4 (T-B6, T-A11).
+- **Alocação:** → U4 fatia 2 (1.12.0) — junto do histórico confiável.
 - **Custo de adiar:** o mesmo número quer dizer coisas diferentes de uma execução para outra.
 - **Aprovação:** não.
 
@@ -259,11 +264,30 @@
   comando para a hora e para a listagem.
 - **Aprovação:** não.
 
-## `init --ide=codex --yes` instala as pontes das 9 IDEs
-- **O que já existe:** visto na execução real: com `--ide=codex --yes` apareceram `.claude`,
-  `.cursor`, `.github`, `.trae`, `GEMINI.md`, `QWEN.md`. Conferido no código: é o desenho atual (`--yes` equivale a `--all` em `src/commands/init.js`, `resolveIdes`); com `--ide` junto, o `--ide` deveria vencer.
-- **Alocação:** → U4 — conferir junto do conserto de instalações; se for defeito, vira reparo.
-- **Custo de adiar:** projeto de quem usa uma IDE só ganha arquivos de oito outras.
+## Achados da execução real de aceite da 1.11.0 (2026-10-07) — prompts de criação e `conferir-fontes`
+- **Origem:** execução real por agente, no papel da IA da IDE (Codex), num projeto novo: criação
+  de uma crew de ata e conserto de uma crew antiga (`specs/fase-u4a-conserto-de-crews.md`, §10).
+  O que era desta fase foi corrigido nela. Ficou, tudo anterior à 1.11.0:
+  1. design: "template usado" é detectado por `tier` presente, que o discovery grava sempre; sem
+     linha de papel nem de guia para redator de documento; `extends:` × "do zero"; "Task tool" e
+     `ls` num prompt compartilhado; checkpoint de aprovação de conteúdo no tier Standard × "só com
+     passo de renderização";
+  2. build: `agent_dependencies` vem de um `inputFile` só, e o revisor lê duas saídas; a
+     conferência "skills instaladas em `skills/`" reprova `web_search`, que é nativa; exemplo de
+     saída com "20+" linhas num ponto e "15+" em outro; "6 tons padrão" sem definição; pesquisa
+     atribuída ao discovery;
+  3. discovery: "responda com um número" × "só apresente as opções"; a pergunta 1 é refeita mesmo
+     quando `/opencrew create <descrição>` já trouxe o objetivo; "2 a 3 perguntas" × as 3 de
+     documento mais a de fontes;
+  4. ponto de entrada: "senão, mostre o menu" não abre exceção para comando com argumento (só a
+     ponte da IDE diz para rotear); a saída do `init` está em inglês;
+  5. `conferir-fontes.mjs`: `FONTES:OK` com alerta aberto; "1 alertas"; com `--corrigir`, o
+     relatório sai duas vezes, a mensagem não diz o arquivo nem a cópia, e a cópia vira
+     `.bak-<data>` quando já existe `.bak`; a contagem de fontes muda sem explicação depois da
+     correção.
+- **Alocação:** → U5 — polimento de prompts e de mensagens; nenhum impediu criar a crew nem
+  consertar a antiga. O item "agentes-base fora do formato do Build" já tem entrada própria.
+- **Custo de adiar:** a IA improvisa nesses pontos, cada uma de um jeito.
 - **Aprovação:** não.
 
 ## Achados da execução real de aceite da 1.10.0 (2026-10-07)
@@ -280,13 +304,8 @@
      ambíguo para "Não encontrei {arquivo}." e "Só converto texto…" (deveria voltar à pergunta do arquivo);
   4. tabela com linha de mais células que o cabeçalho cria coluna sem aviso;
   5. "O que não foi conferido" lista imagens e redes numa entrega só de documentos.
-- **Criação e execução de crew (antigos):**
-  6. o discovery não tem domínio "documento" (ata, ofício, contrato): cai em perguntas de marketing;
-  7. o build não traz exemplo de `crew.yaml` nem de `pipeline.yaml`; o runner não diz onde fica `tier`;
-  8. `architect.agent.yaml` aponta para um fluxo de fases que o ponto de entrada instalado não descreve;
-  9. checkpoint com `outputFile` só tem o formato de foco de pesquisa;
-  10. o tier Express ("o redator revisa") conflita com "toda crew precisa de revisor";
+- **Criação e execução de crew (antigos):** os itens 6 a 10 saíram na 1.11.0.
   11. `conferir-fontes.mjs`: "1 fontes" e conta como fonte um caminho citado num passo.
-- **Alocação:** → U4 — itens 1 e 6 a 10 (conserto de crews e do caminho de criação) · → U5 — itens
-  2 a 5 e 11 (texto e avisos).
+- **Alocação:** → U5 — itens 1 a 5 e 11 (texto e avisos). O item 1 era da U4: é aviso do
+  verificador, não conserto de crew nem criação (`specs/fase-u4a-conserto-de-crews.md`, §8).
 - **Aprovação:** não.

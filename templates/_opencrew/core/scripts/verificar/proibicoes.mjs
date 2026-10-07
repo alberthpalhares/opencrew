@@ -12,6 +12,8 @@ const MARCADORES = new Set(['prefira', 'preferir', 'use', 'usar', 'utilize', 'ut
 const NEGACOES = new Set('nao nunca nem jamais sem evite evitar proibido proibida proibidos proibidas vetado vetada parar pare deixar deixe'.split(' '));
 // Com estas expressões a linha está escrita ao contrário: todos os termos continuam proibidos.
 const SEM_TROCA = /(?<![\p{L}\p{N}])(?:em vez de|ao inves de|no lugar de)(?![\p{L}\p{N}])/u;
+// Começo de um item de lista: `-`, `*`, `+` ou numerado.
+const MARCA_DE_ITEM = /^\s*(?:[-*+]|\d{1,3}[.)])\s+/;
 
 /** Fichas da linha, na ordem: termos entre aspas, e palavras e setas de fora das aspas. */
 function fichas(linha) {
@@ -74,9 +76,32 @@ function itensDaSecao(texto) {
   const inicio = titulos.findIndex((t) => t && semAcento(t[2]).replace(/^[^\p{L}\p{N}]+/u, '').startsWith('proibicoes explicitas'));
   if (inicio < 0) return [];
   const acima = new RegExp(`^#{1,${titulos[inicio][1].length}}\\s`);
-  const resto = linhas.slice(inicio + 1);
-  const fim = resto.findIndex((l) => acima.test(l) || l.trim() === '---');
-  return resto.slice(0, fim < 0 ? resto.length : fim).filter((l) => /^\s*(?:[-*+]|\d{1,3}[.)])\s+/.test(l));
+  const fim = linhas.findIndex((l, i) => i > inicio && (acima.test(l) || l.trim() === '---'));
+  const daSecao = linhas.map((texto, indice) => ({ texto, indice })).slice(inicio + 1, fim < 0 ? linhas.length : fim);
+  return daSecao.filter((l) => MARCA_DE_ITEM.test(l.texto));
+}
+
+/**
+ * Item que o usuário deixou para o revisor: termina em "(revisão humana)" ou começa por "Sem trava
+ * automática". Não é trava de texto nem pendência. Spec: fase-u4a-conserto-de-crews.md, regra 8.
+ */
+export function ehRevisaoHumana(linha) {
+  const item = semAcento(linha.replace(MARCA_DE_ITEM, '')).trim();
+  return item.endsWith('(revisao humana)') || item.startsWith('sem trava automatica');
+}
+
+/**
+ * Os itens da seção de proibições, numerados a partir de 1 na ordem do arquivo.
+ * @returns {Array<{ n: number, indice: number, texto: string, pendente: boolean }>} `indice`: a
+ *   linha no arquivo · `texto`: o item sem a marca de lista · `pendente`: sem termo entre aspas e
+ *   sem a marca de revisão humana
+ */
+export function itensDeProibicao(texto) {
+  return itensDaSecao(texto).map((l, i) => {
+    const { proibidos, preferidos } = lerLinha(l.texto);
+    const pendente = !proibidos.length && !preferidos.length && !ehRevisaoHumana(l.texto);
+    return { n: i + 1, indice: l.indice, texto: l.texto.replace(MARCA_DE_ITEM, '').trim(), pendente };
+  });
 }
 
 /**
@@ -88,9 +113,9 @@ export async function lerProibicoes(raiz, crew) {
   const arquivo = path.resolve(raiz, crew, '_memory', 'memories.md');
   const r = { existe: existsSync(arquivo), termos: [], preferidos: [], semAspas: 0 };
   if (!r.existe) return r;
-  for (const linha of itensDaSecao(await lerTexto(arquivo))) {
+  for (const { texto: linha } of itensDaSecao(await lerTexto(arquivo))) {
     const { proibidos, preferidos } = lerLinha(linha);
-    if (!proibidos.length && !preferidos.length) r.semAspas += 1;
+    if (!proibidos.length && !preferidos.length && !ehRevisaoHumana(linha)) r.semAspas += 1;
     r.termos.push(...proibidos);
     r.preferidos.push(...preferidos);
   }

@@ -70,52 +70,24 @@ Generate these files. Use the Write tool for all file creation — never use Bas
 
 ### Files to generate:
 
-1. **`crews/{code}/crew.yaml`** — Crew definition with pipeline
-   - Include a `skills:` section listing all skills:
-     ```yaml
-     skills:
-       - web_search
-       - web_fetch
-       # Add any skills from design.yaml:
-       # - apify
-       # - canva
-     ```
-   - Include a `data:` section listing all reference materials:
-     ```yaml
-     data:
-       - pipeline/data/research-brief.md
-       - pipeline/data/domain-framework.md
-       - pipeline/data/quality-criteria.md
-       - pipeline/data/output-examples.md
-       - pipeline/data/anti-patterns.md
-       - pipeline/data/tone-of-voice.md  # for content crews
-      ```
-    - Include a `fontes:` section with the project sources from `discovery.yaml →
-      project_sources` (omit it only if that list is empty). The Pipeline Runner reads them at the
-      start of every run and checks they still exist:
-      ```yaml
-      fontes:
-        - caminho: Memoria/01_Decisoes.md      # relative to the project root
-          para_que: decisões de público e posicionamento
-      ```
+**Read `_opencrew/core/formato-da-crew.md` before writing any file.** It is the single definition
+of `crew.yaml`, `pipeline.yaml`, the step frontmatter and the agent id, with a complete example of
+each. Write every file in that format; what follows here only adds what is specific to the Build.
+
+1. **`crews/{code}/crew.yaml`** — the crew: the `crew:` block (`code`, `name`, `description`,
+   `icon` and `tier`, all from `design.yaml`), `pipeline:`, `skills:`, `data:`, `fontes:`,
+   `agent_dependencies:` (only when the format file says so) and `max_review_cycles:`.
+    - `skills:` lists every skill from `design.yaml`; `data:` lists every reference material you
+      wrote in `pipeline/data/`.
+    - `fontes:` carries the project sources from `discovery.yaml → project_sources` (`path` →
+      `caminho`, `purpose` → `para_que`); omit it only if that list is empty. The Pipeline Runner
+      reads them at the start of every run and checks they still exist.
     - **Paths to the user's project files** — in `crew.yaml`, step files and tasks — are always
-      written as a caminho relativo à raiz do projeto (relative to the project root), between
-      backticks, e.g. `` `Ativos/Identidade Visual/logo.png` ``. NEVER write absolute paths
+      written as a caminho relativo à raiz do projeto (relative to the project root); in the
+      prose of step files and tasks, between backticks, e.g. `` `Ativos/Identidade Visual/logo.png` ``. NEVER write absolute paths
       (`C:/…`, `J:/…`, `/Users/…`): they break as soon as the user moves or syncs the folder.
-    - Include an `agent_dependencies:` section (OPTIONAL — enables runtime
-      Pre-Execution Agent Selection):
-      ```yaml
-      agent_dependencies:      # OPTIONAL — enables Pre-Execution Agent Selection at runtime
-        copywriter: [researcher]   # copywriter consumes researcher's output
-        designer: [copywriter]     # designer consumes copywriter's output
-        reviewer: [copywriter]     # reviewer consumes copywriter's output
-      ```
-      - `agent_dependencies` is OPTIONAL. ALWAYS emit it for crews that should show the
-        runtime agent-selection step — even as an empty map `agent_dependencies: {}` (the
-        selection step triggers on field presence, so an empty map enables selection with
-        no dependency warnings). Derive entries from the pipeline step order: for each
-        agent step, list the agent(s) whose output it reads via `inputFile`. Omit the field
-        entirely to keep the legacy behavior (run all agents, no selection step).
+    - `agent_dependencies:` — derive the entries from the step order: for each agent step, list
+      the agent(s) whose output it reads via `inputFile`.
 
 2. **`crews/{code}/crew-party.csv`** — Agent manifest
    - The header row MUST be EXACTLY these columns, in this order:
@@ -134,7 +106,7 @@ Generate these files. Use the Write tool for all file creation — never use Bas
      render the agent's name in "🤖 {name} is working…" announcements, and the Escritório
      (the optional live view) shows the same column. If `displayName` is missing, empty, or set
      to the role/title instead of the persona name, the crew renders with functions but no names.
-   - `id` = the `path` basename with `./agents/` and `.agent.md` stripped
+   - `id` = the agent id: the agent file name without `.agent.md`
      (e.g. `./agents/researcher.agent.md` → `researcher`).
    - `title` = the agent's `title:` frontmatter (the role/function label). This is a
      SEPARATE column from `displayName` — never merge or swap them.
@@ -145,7 +117,8 @@ Generate these files. Use the Write tool for all file creation — never use Bas
    - For ALL agents that include `tasks:` in their frontmatter, ALSO generate the task files:
      `crews/{code}/agents/{agent-id}/tasks/{task}.md` — one per entry in the `tasks:` list
 
-4. **`crews/{code}/pipeline/pipeline.yaml`** — Pipeline entry point
+4. **`crews/{code}/pipeline/pipeline.yaml`** — the order of the steps: one `step` + `file` entry
+   per step file, as in the format file
 
 5. **Step files** — `crews/{code}/pipeline/steps/step-NN-{name}.md` — one per pipeline step
 
@@ -185,7 +158,7 @@ Every agent file MUST contain ALL of the following sections. Target 120-200 line
 
 ```markdown
 ---
-id: "crews/{code}/agents/{agent}"
+id: "{agent-id}"                    # the file name without `.agent.md`
 name: "{Agent Name}"
 title: "{Agent Title}"
 icon: "{emoji}"
@@ -392,10 +365,10 @@ Every step file begins with YAML frontmatter followed by the markdown body. The 
 ```yaml
 ---
 execution: subagent   # subagent = runs in background via Task tool; inline = runs in the main conversation
-agent: {agent-id}     # the agent's id (matches the id field in their .agent.md frontmatter)
-format: {format-id}   # OPTIONAL — e.g., "instagram-feed". Pipeline Runner auto-injects from _opencrew/core/best-practices/
-                      # Use for content creation steps where platform-specific rules should guide the agent
-                      # Omit for non-content steps (research, analysis, review without platform context)
+agent: {agent-id}     # the agent id: the agent file name without `.agent.md`
+format: {format-id}   # e.g., "instagram-feed". Pipeline Runner auto-injects from _opencrew/core/best-practices/
+                      # REQUIRED on every step whose text the checker measures (from the `on_reject` step up to the review)
+                      # Omit for non-content steps (research, analysis, the review itself)
 inputFile: crews/{code}/output/{filename}.{ext}   # path to input file from previous step — MUST use output/ prefix
 outputFile: crews/{code}/output/{filename}.{ext}  # path where this step saves its output — MUST use output/ prefix
                                                     # NEVER use pipeline/data/ for outputFile — that folder is for static
@@ -410,8 +383,9 @@ side_effects: irreversible  # REQUIRED for any step that publishes, posts, sends
                             # distributes outside the project (it cannot be undone). The Pipeline
                             # Runner never retries these automatically, and Gate 2c places them last.
                             # Omit for every other step.
-max_review_cycles: {N}  # ONLY for the review step: write it next to its `on_reject`.
-                        # By crew tier (`crew.tier` in design.yaml): Express 1, Standard 2, Full 3.
+on_reject: {N}        # ONLY for the review step: the number of the step the pipeline goes back to
+                      # (the first writing step). `max_review_cycles` goes in `crew.yaml`, by crew
+                      # tier (`crew.tier` in design.yaml): Express 1, Standard 2, Full 3.
 ---
 ```
 
@@ -428,7 +402,8 @@ agent: {agent-id}   # OPTIONAL — ties this checkpoint to an agent; if that age
 ---
 ```
 
-For **research focus checkpoints** (where the user's response is saved to a file), use extended frontmatter with `outputFile`:
+For a **checkpoint whose answer the next step needs** (the research focus, the chosen angle, the
+request to be worked on), use extended frontmatter with `outputFile`:
 ```yaml
 ---
 type: checkpoint
@@ -437,7 +412,7 @@ agent: {agent-id}   # OPTIONAL — same semantics as above
 ---
 ```
 The Pipeline Runner writes the user's response to this file before proceeding.
-The next step (researcher) reads it as `inputFile: crews/{code}/output/research-focus.md`.
+The next step reads it as `inputFile: crews/{code}/output/research-focus.md`.
 Using `output/` ensures the path transformation applies and the file lands in the run_id folder.
 
 Every pipeline step file MUST contain ALL of the following sections. Target 60-120 lines per step.
@@ -593,7 +568,7 @@ For EACH agent step in the pipeline that produces visuals, renders images, or pu
 If ANY check fails:
 1. Insert a new `type: checkpoint` step immediately before the offending agent step
 2. Renumber all subsequent steps (e.g. step-05 becomes step-06, etc.)
-3. Add the new step to the `checkpoints:` list in pipeline.yaml
+3. Add the new step to `pipeline.yaml`
 4. Generate a step file for the new checkpoint that asks the user to review and approve the preceding agent's output before the visual/publish step runs
 5. Re-validate Gate 2b. Max 2 fix attempts — after that, present to user for manual decision.
 
@@ -602,7 +577,8 @@ If ANY check fails:
 For EACH step that publishes, posts, sends email or distributes outside the project:
 - [ ] Its frontmatter declares `side_effects: irreversible` and `execution: inline`
 - [ ] It comes AFTER the Review step (the reviewer has already approved the final content)
-- [ ] The IMMEDIATELY preceding step is a `type: checkpoint` (Final Approval) that itself comes after the Review
+- [ ] The IMMEDIATELY preceding step is a `type: checkpoint` (Final Approval) that itself comes
+      after the Review, or another irreversible step (two in a row share the same Final Approval)
 - [ ] Only other irreversible steps follow it (nothing is created, rendered or reviewed after publishing)
 
 If ANY check fails:

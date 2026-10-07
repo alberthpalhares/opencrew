@@ -63,6 +63,16 @@ test('U3a-14c: the tarball ships entregar.mjs, every module of scripts/entrega/ 
   }
 });
 
+// specs/fase-u4a-conserto-de-crews.md (AGENTS.md rule 5): the repair ships inside the payload.
+test('U4a: the tarball ships conserto.mjs, every module of scripts/conserto/ and formato-da-crew.md', () => {
+  const core = 'templates/_opencrew/core';
+  const modulos = readdirSync(path.join(root, core, 'scripts', 'conserto')).map((nome) => `${core}/scripts/conserto/${nome}`);
+  assert.ok(modulos.length > 0, 'scripts/conserto/ is empty');
+  for (const must of [`${core}/scripts/conserto.mjs`, ...modulos, `${core}/formato-da-crew.md`, `${core}/prompts/repair.prompt.md`]) {
+    assert.ok(files.includes(must), `missing from tarball: ${must}`);
+  }
+});
+
 // specs/fase-u3a2-entrega-no-projeto.md, rule 33: the copy to the project ships inside the payload.
 test('U3a-14c-f2: the tarball ships the new modules of scripts/entrega/ and of scripts/verificar/', () => {
   const scripts = 'templates/_opencrew/core/scripts';

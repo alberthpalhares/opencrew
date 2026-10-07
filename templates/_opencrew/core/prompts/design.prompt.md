@@ -107,10 +107,10 @@ Present the three tiers with concrete trade-offs:
 | Aspect | ⚡ Express | 🎯 Standard | 🔬 Full |
 |--------|-----------|-------------|---------|
 | Agent count | 2-3 | 3-5 | 5-7 |
-| Reviewer | Writer self-reviews | 1 dedicated reviewer | Reviewer + cross-review |
+| Reviewer | The writer does the review step (no reviewer agent) | 1 dedicated reviewer | Reviewer + cross-review |
 | Sherlock | Never | Only if user provided URLs | Always (social + web + trends) |
 | Checkpoints | Final approval only | Research focus + content approval + final | All checkpoints + angle selection |
-| model_tier per step | All `fast` | Mix (research=fast, create=powerful) | All `powerful` |
+| model_tier (subagent steps only) | `fast` | Mix (research=fast, create=powerful) | `powerful` |
 | Cross-review | None | None | Reviewer + second reviewer cross-check |
 | On-reject loops | 1 max | 2 max | 3 max |
 
@@ -219,7 +219,7 @@ Para {crew purpose}, sugiro este time:
   - Simple crews (1 format, 1 platform): 2-3 roles
   - Medium crews (content + review): 3-4 roles
   - Complex crews (multi-platform, multi-format): 4-6 roles
-- **Every crew needs a reviewer** — mandatory quality gate
+- **Every crew needs a review step** — mandatory quality gate (Express: done by the writer; Standard and Full: by a reviewer role)
 - **Allow editing** — after presenting roles, ask:
   > "Quer adicionar, remover ou modificar algum papel? Ou o time está bom?"
 
@@ -229,7 +229,7 @@ Never suggest fewer than 2 roles. The minimum viable crew has:
 - One creator/executor (the person who produces the output)
 - One reviewer (the person who checks quality before delivery)
 
-For very simple tasks, these two roles can be the same person with a self-review step — but the user must explicitly approve this simplification.
+In the Express tier these two roles are the same agent: the writer also does the review step. The step still exists (with `on_reject`), so the automatic checker runs before it.
 
 ---
 
@@ -365,7 +365,7 @@ execution: inline
 skills: []
 ---
 ```
-The Build phase copies the base agent from `_opencrew/agents/copywriter.agent.md` and the local file only needs to specify what's DIFFERENT — a different tone, specific output examples for this crew, or additional anti-patterns. The runner merges: base first, local overrides on top.
+The Build phase copies the base agent from `_opencrew/agents/copywriter.agent.md` and the local file only needs to specify what's DIFFERENT — a different tone, specific output examples for this crew, or additional anti-patterns. The Build phase does the merge (base first, local overrides on top) and writes a complete file; the Pipeline Runner never merges.
 
 ### Design Philosophy
 
@@ -382,7 +382,7 @@ Design the crew with appropriate agents:
 - Follow the deep `.agent.md` format with full sections: Persona (Role, Identity, Communication Style), Principles, Operational Framework, Voice Guidance, Output Examples, Anti-Patterns, Quality Criteria, Integration
 - Design each agent from scratch, informed by the relevant best-practices files read in Phase A
 - Each agent has exactly one clear responsibility
-- Every crew needs a reviewer agent for quality control
+- Every crew needs a review step for quality control (a reviewer agent in Standard and Full)
 - YAGNI — never create agents that aren't strictly necessary
 
 ### Agent Naming Convention (MANDATORY — never skip)
@@ -428,8 +428,7 @@ The name should make someone smile — it's a pun tying a common name to the pro
 
 ### Agent Composition Rules
 
-- One clear responsibility per agent; reviewer agent mandatory; YAGNI strictly applied
-- Research/data steps → `execution: subagent`; creative/writing steps → `execution: inline`
+- One clear responsibility per agent; review step mandatory (reviewer agent in Standard and Full); YAGNI strictly applied
 - Content crews must include `pipeline/data/tone-of-voice.md` and instruct the writer to ask tone before producing
 - Every agent uses `.agent.md` format with all sections: Persona, Principles, Operational Framework, Voice Guidance, Output Examples, Anti-Patterns, Quality Criteria, Integration
 
@@ -441,9 +440,9 @@ The name should make someone smile — it's a pun tying a common name to the pro
 
 - **Research/data-gathering steps** → `execution: subagent` (runs in background via Task tool)
 - **Creative/writing steps** → `execution: inline` (runs in the main conversation)
-- Always include reviewer agent before final output
 - Add checkpoints at every user decision point
-- Include `on_reject` loops from reviewer back to writer
+- The files the Build phase will write follow `_opencrew/core/formato-da-crew.md` (fields of `crew.yaml`, of `pipeline.yaml` and of each step): design nothing that format cannot hold
+- Always include a review step before final output (see the tier table for who does it), with `on_reject`: the number of the first writing step
 - A step whose result is a document to print, sign or file (minutes, official letter, statement, contract, formal report) gets `format: documento-oficial`, in any kind of crew: the writer follows that guide, and the text becomes a Word document in the delivery of the run (or with `/opencrew documento <arquivo>`)
 
 ### Research Focus Checkpoint (MANDATORY for crews with a researcher)
@@ -603,6 +602,7 @@ crew:
   code: "{code}"
   name: "{Crew Name}"
   description: "{one-line description}"
+  icon: "{emoji}"
   tier: "express" | "standard" | "full"
 
 agents:
@@ -656,7 +656,7 @@ pipeline:
   - step: 2
     name: "checkpoint-name"
     type: "checkpoint"
-    output_file: "{path}"        # optional, for research focus checkpoints
+    output_file: "{path}"        # optional, when the next step needs the user's answer
 
 investigation:                   # only if investigation ran
   enriched: true

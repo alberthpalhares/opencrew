@@ -3,6 +3,60 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.11.0] — 2026-10-07
+
+Fase U4, fatia 1: "Conserto de crews e caminho de criação" (`specs/fase-u4a-conserto-de-crews.md`).
+Chega a quem já usa com um `npx @aksp/opencrew@latest update`; as suas crews só mudam quando você
+pede o conserto e diz sim a cada ponto.
+
+Ainda não nesta versão: histórico confiável e pedido avulso à crew (`/opencrew pedir`), que vêm
+na 1.12.0; retomar uma execução interrompida, na 1.13.0. O conserto não reordena passos: crew
+sem revisão, sem aprovação final ou que publica antes da revisão é apontada e resolvida com
+`/opencrew edit`.
+
+### Added
+- **`/opencrew repair <crew>` conserta crews antigas.** Ele lê a crew e mostra, em português, o
+  que falta para as melhorias das versões seguintes valerem nela: passo sem o formato do texto
+  (o verificador media como post de blog), crew sem os arquivos do projeto que deve ler,
+  proibição sem trecho entre aspas (que o verificador não consegue barrar), nomes dos agentes,
+  passo que publica sem a marca. Conserta um ponto por vez, com o seu sim; cada arquivo alterado
+  ganha uma cópia `.bak`. Quem grava é um script (`_opencrew/core/scripts/conserto.mjs`), não a
+  IA; sem `--aplicar` ele só lê.
+- **Proibição que é regra de conteúdo** ("nunca prever votação por aclamação") pode ser marcada
+  como `(revisão humana)`: fica para o revisor e deixa de aparecer como pendência do verificador.
+- **Crew de documento na criação.** Pedir uma crew de ata, ofício, contrato ou proposta leva a
+  perguntas próprias (quais documentos, quem assina e quem recebe, papel timbrado, quais arquivos
+  mandam no texto), sem a oferta de investigar perfis de referência, e os passos já saem com o
+  formato `documento-oficial`.
+- **Formato da crew escrito num lugar só** (`_opencrew/core/formato-da-crew.md`): `crew.yaml`,
+  `pipeline.yaml`, os campos de cada passo e o `id` do agente, com um exemplo completo. A criação,
+  o runner e o conserto seguem esse arquivo; as formas que versões antigas gravaram continuam
+  sendo lidas.
+- Depois do `update`, quando o projeto tem ao menos uma crew, o resumo lembra do
+  `/opencrew repair`.
+
+### Changed
+- **`max_review_cycles` no `crew.yaml` passa a valer.** O runner só lia o limite de ciclos de
+  revisão no passo de revisão; crews que o declaravam no `crew.yaml` recebiam sempre 3.
+- **Tier Express tem passo de revisão**, feito pelo próprio redator: o verificador automático roda
+  também nele. Antes o texto dizia "o redator se revisa" e, em outro ponto, "toda crew precisa de
+  revisor".
+- **Checkpoint que guarda a resposta em arquivo** deixa de usar sempre o formato de "foco de
+  pesquisa": fora do checkpoint do pesquisador, grava o título, a sua resposta e a data.
+- O Architect lista os prompts de cada fase da criação, e o ponto de entrada diz onde ele está;
+  antes um apontava para o outro.
+- Pasta de `crews/` sem `crew.yaml` (os modelos instalados) não aparece mais como crew nas
+  listas.
+
+### Fixed
+- `init --ide=<lista> --yes` (e `--all`) instalava as pontes das 9 IDEs; agora a lista vence.
+  `--yes` sem `--ide` continua instalando todas.
+- Uma frase cortada no meio nas instruções instaladas (`_opencrew/core/system.md`, desde a
+  1.10.0): a rota do documento Word e o pedido de entrega de uma execução encerrada não exigem o
+  onboarding.
+- O Build exigia um checkpoint imediatamente antes de cada passo que publica, o que era
+  impossível com dois passos de publicação seguidos.
+
 ## [1.10.0] — 2026-10-07
 
 Fase U3b "Documento Word, com perfil de documento oficial" (`specs/fase-u3b-documento-word.md`).

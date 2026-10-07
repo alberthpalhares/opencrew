@@ -148,14 +148,13 @@ async function workspaceState(target) {
 }
 
 /**
- * Decide which IDEs to configure. --all / --yes → every IDE; --ide → validated list;
- * nothing → `fallback()` (the interactive prompt; in repair mode, the detection). Throws
- * UsageError if --ide names no valid IDE.
+ * Decide which IDEs to configure. --ide → validated list, whatever comes with it; without it,
+ * --all / --yes → every IDE; nothing → `fallback()` (the interactive prompt; in repair mode, the
+ * detection). Throws UsageError if --ide names no valid IDE.
  */
 async function resolveIdes(opts, fallback) {
-  if (opts.all || opts.yes) return allIdeIds();
   const ids = normalizeIdes(opts.ide);
-  if (!ids) return fallback();
+  if (!ids) return opts.all || opts.yes ? allIdeIds() : fallback();
   const invalid = ids.filter((id) => !ideById(id));
   const valid = ids.filter((id) => ideById(id));
   if (!valid.length) {

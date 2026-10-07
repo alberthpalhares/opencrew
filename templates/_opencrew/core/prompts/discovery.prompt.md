@@ -80,11 +80,14 @@ After the user answers Step 1, classify their intent into one of the following d
 
 | Domain | Signals in the user's answer |
 |---|---|
+| `document` | minutes (ata), official letter (ofício), contract, proposal, bylaws (estatuto), legal opinion (parecer), formal report, statement: a text to print, sign or file |
 | `content` | posts, articles, videos, captions, social media, campaigns, copy, newsletter, creative, reels, threads |
 | `research` | data, analysis, reports, competitor, market, insights, scraping, summarizing, monitoring |
 | `automation` | workflows, triggers, scheduling, notifications, integrations, pipelines, bots, recurring tasks |
 | `analysis` | metrics, dashboards, KPIs, performance, trends, tracking, visualization |
 | `mixed` | answer spans two or more domains above |
+
+When the request is a text to print, sign or file, the domain is `document` even if the words also fit `content` or `research`.
 
 Save the detected domain as `domain`.
 
@@ -98,6 +101,13 @@ Based on the detected domain, ask the most relevant contextual question first. W
 1. Who is this content for? (multiple choice: current customers / potential leads / general audience / other)
 2. What platforms or formats? (wait for answer — do not list formats yet, that comes in Step 6)
 3. What tone or personality should the content have? (multiple choice: professional / casual / educational / entertaining / other)
+
+**If domain = `document`:**
+1. Which documents should the crew produce? (open-ended: ata, ofício, contrato, proposta…)
+2. Who signs each document, and who receives it? (open-ended)
+3. Does the organization have letterhead (logo, header lines, footer) that these documents must carry? (yes / no / not sure — the letterhead itself is set up later, the first time a Word document is generated; here you only record the answer)
+
+The project sources question below matters most here: ask which files of the project rule the text (bylaws, previous minutes, price table, contract template).
 
 **If domain = `research`:**
 1. What sources will the crew draw from? (multiple choice: public websites / internal documents / social media / databases / other)
@@ -143,7 +153,9 @@ Do NOT ask the user about tools. Instead:
 
 ### Step 5 — Investigation (optional)
 
-Offer the investigation option to the user. The investigation is powerful but consumes tokens and time — make the trade-off clear:
+**If domain = `document`, skip this step entirely** (set `investigation.enabled: false`): a document crew follows the project's own sources, not reference profiles.
+
+For every other domain, offer the investigation option to the user. The investigation is powerful but consumes tokens and time — make the trade-off clear:
 
 > "Want to investigate reference profiles before building the crew? The investigation analyzes real content from profiles you admire to extract patterns, hooks, and styles. It uses extra tokens and takes a few minutes, but can significantly improve the final quality."
 >
@@ -194,7 +206,8 @@ Set `investigation.enabled: false` and continue.
 
 ### Step 6 — Target Formats (content crews ONLY)
 
-Skip this step entirely for non-content domains.
+If domain = `document`, do not ask: save `target_formats: ["documento-oficial"]`. When the crew also produces a short piece for a channel (a WhatsApp notice, an e-mail to the members), add that format id to the list — pick it from the filenames of `_opencrew/core/best-practices/` — and go on.
+Skip this step entirely for the other non-content domains.
 
 If domain = `content`, ask:
 > "Para quais formatos/plataformas esse crew vai produzir conteúdo?"
@@ -254,7 +267,7 @@ project_sources:                     # relative to the project root; becomes `fo
   - path: "{e.g. Memoria/01_Decisoes.md}"
     purpose: "{what the crew uses it for}"
 purpose: "{user's description from Step 1}"
-domain: "{content | research | automation | analysis | mixed}"
+domain: "{document | content | research | automation | analysis | mixed}"
 # When a template was used (Step 0), these fields are populated from discovery.template.yaml:
 domains: []                          # list of domain tags from template (e.g., [content-marketing, seo])
 tier: "standard"                     # from template or preferences Default Tier
@@ -272,6 +285,11 @@ company:
 language: "{user's preferred language}"
 
 context:
+  # For document crews:
+  documents: "{answer from Step 3}"
+  signer: "{who signs}"
+  recipients: "{who receives}"
+  letterhead: "{yes | no | not sure}"
   # For content crews:
   audience: "{answer from Step 3}"
   platforms: "{answer from Step 3}"
@@ -299,7 +317,7 @@ investigation:
       platform: "{instagram | youtube | twitter | linkedin}"
       investigation_mode: "{single_post | profile_1 | profile_3}"
 
-target_formats:  # content crews only; empty list for others
+target_formats:  # content and document crews; empty list for others
   - "{format-id}"
 ```
 
@@ -317,7 +335,7 @@ The `crew_code` must be a short, URL-safe slug derived from the crew's purpose (
 - **NEVER ask more than 8 questions total** — respect the user's time
 - **NEVER ask about tools** — auto-detect from installed skills and include in the summary
 - **NEVER ask about performance mode** — crews are always built lean and agile
-- **Investigation is always offered** — Step 5 presents the option for all domains, not just content
+- **Investigation is offered to every domain except `document`** — Step 5 presents the option; a document crew skips it
 - **Target formats are content-only** — Step 6 is skipped entirely for non-content crews
 - **One question at a time** — never combine two questions in one message, even if they feel related
 - **Domain detection is silent** — do not announce "I detected your domain is X"; just use the classification internally

@@ -184,8 +184,9 @@ meu-projeto/
 │   │   ├── runner.pipeline.md    ← executor de pipeline
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
+│   │   ├── formato-da-crew.md    ← o formato dos arquivos de uma crew (crew.yaml, pipeline.yaml, passos)
 │   │   ├── best-practices/       ← 23 guias de melhores práticas + _catalog.yaml
-│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega, documento Word e os scripts do Escritório
+│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega, documento Word, conserto de crews e os scripts do Escritório
 │   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
 │   │   └── prompts/              ← 15 prompts de fase (discovery, design, build, entrega, documento, etc.)
@@ -437,6 +438,13 @@ o que você fez:
   `# opencrew:end`)? Nenhuma linha sua é apagada: o `update` guarda o arquivo como estava e põe
   um bloco completo no fim. O bloco começa por um comentário que diz que ele é do OpenCrew: as
   suas linhas ficam fora dele.
+- **E as crews que você já tinha?** O `update` não mexe nelas. Para levar a elas o que veio
+  depois — o formato de cada texto (sem ele o verificador mede tudo como post de blog), os
+  arquivos do projeto que a crew deve ler, as proibições que o verificador consegue barrar —,
+  peça na sua IDE `/opencrew repair <nome>`. Ele mostra o que falta, pergunta antes de cada
+  mudança e deixa uma cópia `.bak` do arquivo que alterou. O que não dá para consertar assim
+  (crew sem passo de revisão, publicação antes da revisão) ele aponta e manda para
+  `/opencrew edit`.
 - **A instalação anterior parou no meio?** O `update` não altera nada e pede para você rodar
   `npx @aksp/opencrew init`, que conclui a instalação sem apagar o que já existe.
 - **Apagou um modelo de crew ou um skill do catálogo?** Ele volta no `update`, e a saída diz o
@@ -489,7 +497,7 @@ npx @aksp/opencrew update --check
 | `/opencrew run <nome>` | Executa o pipeline de uma crew |
 | `/opencrew list` | Lista todas as suas crews |
 | `/opencrew edit <nome>` | Modifica uma crew existente |
-| `/opencrew repair <nome>` | Conserta o manifesto de uma crew com nomes quebrados |
+| `/opencrew repair <nome>` | Mostra o que falta numa crew que você já tem (formato de cada texto, arquivos do projeto que ela deve ler, proibições que o verificador consegue barrar, nomes dos agentes) e conserta um ponto por vez, com o seu sim e uma cópia `.bak` |
 | `/opencrew delete <nome>` | Remove uma crew |
 | `/opencrew skills` | Navega, instala ou remove skills |
 | `/opencrew install <skill>` | Instala uma skill do catálogo |
@@ -509,7 +517,7 @@ npx @aksp/opencrew update --check
 | `npx @aksp/opencrew@latest update` | Atualiza o framework |
 | `npx @aksp/opencrew update --check` (ou `--dry-run`) | Verifica se há update disponível, sem alterar nada |
 | `npx @aksp/opencrew upgrade` | Atalho para `update` |
-| `npx @aksp/opencrew init --ide=claude-code,cursor` | Instala só as pontes das IDEs indicadas |
+| `npx @aksp/opencrew init --ide=claude-code,cursor` | Instala só as pontes das IDEs indicadas (também com `--yes`) |
 | `npx @aksp/opencrew init --all` (ou `-y`) | Instala as pontes de todas as IDEs |
 | `npx @aksp/opencrew@latest init --repair-bridges` | Regrava as pontes das IDEs já instaladas num workspace existente (`--ide=a,b`: só as indicadas; `--all`: as 9) |
 | `npx @aksp/opencrew version` | Mostra a versão instalada |
