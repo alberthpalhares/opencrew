@@ -11,8 +11,8 @@ import path from 'node:path';
 const DE_TEXTO = new Set(['.txt', '.md', '.html', '.htm', '.csv', '.json']);
 export const emLf = (texto) => texto.replace(/\r\n/g, '\n');
 
-/** Os bytes que um arquivo da entrega tem: o texto gerado, ou os do arquivo de origem. */
-export const bytesDe = async (a) => (a.texto != null ? Buffer.from(a.texto, 'utf8') : fs.readFile(a.de));
+/** Os bytes que um arquivo da entrega tem: os gerados (o Word), o texto gerado, ou os do arquivo de origem. */
+export const bytesDe = async (a) => a.bytes ?? (a.texto != null ? Buffer.from(a.texto, 'utf8') : fs.readFile(a.de));
 
 const ehTexto = (nome) => DE_TEXTO.has(path.extname(nome).toLowerCase());
 const mesmoConteudo = (nome, a, b) => a.equals(b) || (ehTexto(nome) && emLf(a.toString('utf8')) === emLf(b.toString('utf8')));

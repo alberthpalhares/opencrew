@@ -162,6 +162,10 @@ só, "(título, meta description)" (ajuste da execução real: o passo prometia 
    `_opencrew/best-practices.local/{formato}.md`, quando o arquivo declara `platform:`; senão, o
    do core. Sete pastas (`instagram`, `linkedin`, `blog`, `email`, `whatsapp`, `twitter`,
    `youtube`); o resto vai para `outros/`. Nada é exigido nem editado em `crews/`.
+   *(Correção, 1.10.0 — U3b: as pastas de canal passaram a oito. A plataforma `documento` ganhou a
+   pasta `documentos/`, depois de `youtube` e antes de `outros/`: o texto do item vira Word e o
+   LEIA-ME ganha `## Documentos`. Ver `specs/fase-u3b-documento-word.md`, decisão 9 e regra 12.
+   Entrega sem item dessa plataforma não muda.)*
 4. **Peças.** Legenda, hashtags, post, tweet, título e meta description vêm de `lerPecas`, com o
    formato do item; só as peças desse formato viram arquivo (decisão 4). As outras peças da §4
    vêm de um módulo novo, em `scripts/entrega/`, que reaproveita as funções de seção do

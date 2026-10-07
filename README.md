@@ -36,6 +36,9 @@ dentro da sua IDE.**
   colar, as imagens e um `LEIA-ME.md` com o passo a passo. O que não está pronto fica marcado.
 - 📁 **Entrega no seu projeto** — a crew pergunta uma vez onde guardar e copia a entrega para uma
   pasta do seu projeto, uma subpasta por execução, sem sobrescrever nada.
+- 📄 **Documento Word em papel timbrado** — ata, ofício, declaração: o texto em markdown vira um
+  arquivo do Word com as mesmas palavras, o seu logotipo no cabeçalho, "Página X de Y" no rodapé
+  e as linhas de assinatura. Um comando: `/opencrew documento <arquivo>`.
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
   ajusta com um clique. Agentes pulados não gastam tokens naquele run.
@@ -181,10 +184,11 @@ meu-projeto/
 │   │   ├── runner.pipeline.md    ← executor de pipeline
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
-│   │   ├── best-practices/       ← 22 guias de melhores práticas + _catalog.yaml
-│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega e os scripts do Escritório
+│   │   ├── best-practices/       ← 23 guias de melhores práticas + _catalog.yaml
+│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega, documento Word e os scripts do Escritório
+│   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
-│   │   └── prompts/              ← 14 prompts de fase (discovery, design, build, entrega, etc.)
+│   │   └── prompts/              ← 15 prompts de fase (discovery, design, build, entrega, documento, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
 │   │   ├── copywriter.agent.md
@@ -193,7 +197,8 @@ meu-projeto/
 │   │   └── strategist.agent.md
 │   ├── _memory/
 │   │   ├── company.md            ← perfil da sua empresa (onboarding)
-│   │   └── preferences.md        ← idioma, tier padrão, Escritório ligado ou desligado
+│   │   ├── preferences.md        ← idioma, tier padrão, Escritório ligado ou desligado
+│   │   └── documento-oficial.md  ← seu papel timbrado (só existe depois que você pede; veja "Documento Word")
 │   └── .opencrew-version
 │
 ├── crews/                        ← suas crews vivem aqui
@@ -231,6 +236,7 @@ entrega/
 ├── whatsapp/       ← mensagem.txt
 ├── twitter/        ← tweet.txt (na thread: tweet-1.txt, tweet-2.txt…)
 ├── youtube/        ← o roteiro
+├── documentos/     ← o Word (.docx) de cada texto de formato documento-oficial
 ├── outros/         ← arquivo sem canal (proposta, minuta, relatório), como está
 └── editaveis/      ← o HTML dos slides, para quem quiser ajustar
 ```
@@ -283,6 +289,83 @@ as pastas dos canais prontos.
 A entrega não gera PDF nem imagem: `artigo.md`, `corpo.md` e os roteiros saem em markdown, e o
 LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os nomes dos arquivos
 são sempre em português.
+
+---
+
+## Documento Word
+
+Ata, ofício, declaração, contrato: quando o resultado é um documento para imprimir, assinar ou
+protocolar, o OpenCrew transforma o texto em markdown num arquivo do Word (`.docx`) com **as
+mesmas palavras e os mesmos números, na mesma ordem**. Você escreve (ou a crew escreve) o texto;
+um comando gera o documento.
+
+**Como gerar:** no chat da sua IDE, digite `/opencrew documento Atas/ata.md` — ou escolha
+"Documento Word" em "Mais opções" do menu. O Word sai ao lado do texto, com o mesmo nome
+(`Atas/ata.docx`), e a IA mostra o relatório: onde gravou, qual papel timbrado usou e os avisos.
+Também funciona direto no terminal, na pasta do projeto:
+
+```bash
+node _opencrew/core/scripts/documento.mjs "Atas/ata.md"
+node _opencrew/core/scripts/documento.mjs "Atas/ata.md" --saida "Documentos/Prontos"
+node _opencrew/core/scripts/documento.mjs --criar-perfil     # cria o arquivo do papel timbrado
+```
+
+**Papel timbrado.** Na primeira vez, a IA pergunta se você quer configurar o papel timbrado do
+projeto. Com o "sim", ela cria o perfil de documento oficial em
+`_opencrew/_memory/documento-oficial.md`, pergunta o logotipo, as linhas do cabeçalho e o rodapé
+e preenche o arquivo. É um arquivo de texto, seu, que o `update` nunca toca. Nele ficam:
+
+- o logotipo (um PNG de até 2 MB, dentro do projeto) e a largura dele;
+- três linhas de cabeçalho (nome da organização, registro, site e contato);
+- o texto do rodapé e o "Página X de Y";
+- as margens, a fonte e o tamanho da letra.
+
+Com o "não", o documento sai sem timbre, com as margens padrão e "Página X de Y" no rodapé. É um
+perfil por projeto; mudar o perfil não muda os documentos já gerados.
+
+**Como escrever o texto.** Markdown comum, um parágrafo por linha, com três marcações a mais:
+
+```
+::: titulo ATA DA REUNIÃO DA DIRETORIA
+::: subtitulo Realizada em 5 de maio de 2026
+
+# I. Abertura
+Aos 5 dias do mês de maio de 2026, reuniu-se a diretoria.
+
+::: assinaturas
+Ana Lima | Presidente
+Rui Sá | Secretário
+:::
+
+::: quebra-de-pagina
+::: titulo ANEXO I — CALENDÁRIO
+```
+
+- `::: titulo` e `::: subtitulo` saem centralizados; `#`, `##` e `###` viram os títulos das
+  seções; tabela vira tabela; `- item` vira lista com marcador.
+- `::: quebra-de-pagina` começa uma página nova (para o anexo); `::: assinaturas`, uma linha
+  `Nome | Cargo` por pessoa e `:::` para fechar montam as linhas de assinatura.
+- **Os números são os seus.** "1.", "6.1.", "a)" e "§ 1º" vão como texto, do jeito que você
+  escreveu: nada é renumerado, reordenado nem corrigido.
+- **Nada é trocado sem você saber.** Se já existe um Word diferente com esse nome (você pode tê-lo
+  editado), nada é gravado: a IA pergunta antes de substituir.
+- **Avisos de conversão.** O relatório diz o que não coube no documento e ficou como texto: imagem,
+  marcação `:::` desconhecida, bloco de assinaturas sem o `:::` final. Perfil com erro (chave
+  desconhecida, logotipo que não existe) não gera documento: a mensagem diz a linha.
+- **O Word é uma cópia do texto.** O que você mudar no Word não volta para o texto: altere o texto
+  e gere de novo. Para ter um PDF, abra o documento no Word e use Salvar como PDF.
+
+**Dentro de uma crew.** O passo cujo resultado é um documento usa `format: documento-oficial` (o
+guia que ensina o redator a escrever assim). Na entrega, esse texto vira
+`entrega/documentos/<nome>.docx`, com o papel timbrado do projeto, e o LEIA-ME diz o que conferir.
+Crews novas já nascem assim; numa crew antiga, acrescente `format: documento-oficial` ao passo.
+
+**O que não faz.** Não põe imagem no corpo do texto, link clicável, sumário, nota de rodapé nem
+numeração automática; o logotipo é só PNG; tamanhos e cores dos títulos são fixos; não lê nem
+regrava um modelo `.dotx`. Os testes conferem a estrutura do arquivo; como ele fica na página,
+você confere no Word. No LibreOffice e no Google Docs o resultado não foi conferido.
+
+Quem já usa o OpenCrew recebe o documento Word com um `npx @aksp/opencrew@latest update`.
 
 ---
 
@@ -413,6 +496,7 @@ npx @aksp/opencrew update --check
 | `/opencrew settings` | Altera preferências (idioma, tier, Escritório) |
 | `/opencrew dashboard` | Liga e abre o Escritório ao vivo (a equipe trabalhando, no navegador) |
 | `/opencrew dashboard off` | Desliga o Escritório |
+| `/opencrew documento <arquivo>` | Transforma um texto (`.md` ou `.txt`) em documento Word, com o papel timbrado do projeto |
 | `/opencrew show-company` | Mostra o perfil da empresa |
 | `/opencrew edit-company` | Reconfigura o perfil da empresa |
 | `/opencrew help` | Mostra a lista de comandos |

@@ -61,17 +61,20 @@ const DO_CORE = {
   'blog-post': ['blog', BLOG], 'blog-seo': ['blog', BLOG], 'email-newsletter': ['email', EMAIL], 'email-sales': ['email', EMAIL],
   'whatsapp-broadcast': ['whatsapp', 'Oi! Temos novidade.\n'], 'twitter-post': ['twitter', 'Um tweet.\n'],
   'twitter-thread': ['twitter', 'TWEET 1/2\nPrimeiro.\n\nTWEET 2/2\nSegundo.\n'], 'youtube-script': ['youtube', 'Roteiro do vídeo.\n'], 'youtube-shorts': ['youtube', 'Roteiro do short.\n'],
+  'documento-oficial': ['documentos', 'Ata da reunião.\n'], // U3b (1.10.0): the eighth folder, for the platform `documento`
 };
+// The override keeps this test independent of the text of the best-practice: only its platform counts here.
+const DOCUMENTO = { core: { 'documento-oficial.md': '---\nplatform: "documento"\n---\n\nComo escrever um documento oficial.\n' } };
 
-test('U3a-02a: each of the 14 platform formats of the core lands in the folder of its platform', async (t) => {
+test('U3a-02a: each of the 15 platform formats of the core lands in the folder of its platform (eight folders since U3b)', async (t) => {
   const formatos = Object.keys(DO_CORE);
-  const raiz = await projeto(t, Object.fromEntries(formatos.map((f) => [`v1/de-${f}.md`, DO_CORE[f][1]])));
+  const raiz = await projeto(t, Object.fromEntries(formatos.map((f) => [`v1/de-${f}.md`, DO_CORE[f][1]])), DOCUMENTO);
   const r = await entregar(raiz, formatos.map((f) => `v1/de-${f}.md=${f}`));
   assert.equal(r.fim, 'ENTREGA:OK');
   const pastas = new Set((await arvore(raiz)).filter((rel) => rel.includes('/')).map((rel) => rel.split('/')[0]));
-  assert.deepEqual([...pastas].sort(), ['blog', 'email', 'instagram', 'linkedin', 'twitter', 'whatsapp', 'youtube']);
+  assert.deepEqual([...pastas].sort(), ['blog', 'documentos', 'email', 'instagram', 'linkedin', 'twitter', 'whatsapp', 'youtube']);
   const md = await leiame(raiz);
-  const NOME = { instagram: 'Instagram', linkedin: 'LinkedIn', blog: 'Blog', email: 'E-mail', whatsapp: 'WhatsApp', twitter: 'X/Twitter', youtube: 'YouTube' };
+  const NOME = { instagram: 'Instagram', linkedin: 'LinkedIn', blog: 'Blog', email: 'E-mail', whatsapp: 'WhatsApp', twitter: 'X/Twitter', youtube: 'YouTube', documentos: 'Documentos' };
   for (const f of formatos) assert.ok(secao(md, NOME[DO_CORE[f][0]]).includes(`${EXEC}/v1/de-${f}.md`), f);
 });
 

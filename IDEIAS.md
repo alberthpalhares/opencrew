@@ -22,6 +22,12 @@
 > projeto, o relatório do laço de revisão gravado pelo script, e, no `.gitignore`, o marcador órfão
 > e o comentário do bloco. O que a 1.9.0 deixou de fora (`specs/fase-u3a2-entrega-no-projeto.md`,
 > §8) está nas entradas abaixo.
+>
+> Saíram em 2026-10-07, entregues na v1.10.0 (CHANGELOG): "Documentos oficiais em DOCX/PDF" (o
+> documento Word) e "Papel timbrado / modelo `.dotx` do usuário" (o perfil de documento oficial:
+> logotipo, cabeçalho e rodapé num arquivo de texto do projeto). O que a 1.10.0 deixou de fora
+> (`specs/fase-u3b-documento-word.md`, §8) está numa entrada só, abaixo: "Documento Word: o que a
+> 1.10.0 não fez".
 
 ---
 
@@ -55,15 +61,38 @@
   U1–U4 acrescentam regras ao runner.
 - **Aprovação:** não.
 
-## Documentos oficiais em DOCX/PDF
-- **O que já existe:** no uso real o usuário escreveu um script Python + automação do Word à
-  parte (dor 6). O export de PDF, que não executava (T-M21), saiu na 1.9.0: o LEIA-ME da entrega
-  ensina a salvar como PDF. Desde a 1.9.0 a entrega é copiada para uma pasta do projeto.
-- **Alocação:** → U3b (documento Word, 1.10.0).
-  PDF direto → sem fase — precisa de motor de renderização; o Word salva como PDF.
-- **Custo de adiar:** o resultado não vira uso direto; gambiarras por projeto.
-- **Aprovação:** sim — dada em 2026-10-04 para o motor: gerador próprio de `.docx`, sem
-  dependência, em perfil fechado (`docs/auditoria/2026-10-04-revisao-specs.md` §2.5, decisão D5).
+## Documento Word: o que a 1.10.0 não fez
+- **O que já existe:** desde a 1.10.0, `documento.mjs` gera o `.docx` de um texto em markdown,
+  com o perfil de documento oficial do projeto (logotipo PNG, três linhas de cabeçalho, rodapé com
+  "Página X de Y", margens, fonte e tamanho do corpo), título e subtítulo centralizados, quebra de
+  página e assinaturas; na entrega, `documentos/<nome>.docx`. Ficou fora
+  (`specs/fase-u3b-documento-word.md`, §8):
+  1. ler ou regravar o `.dotx` do usuário; logotipo JPEG ou SVG;
+  2. imagem no corpo, hyperlink clicável, nota de rodapé, sumário automático;
+  3. numeração automática de seções e de listas;
+  4. tamanhos, cores e estilos por documento ou por perfil (além de margens, fonte e tamanho do
+     corpo); largura e alinhamento por coluna nas tabelas; data à direita;
+  5. mais de um perfil por projeto, ou perfil por crew, na entrega (`--perfil` atende o comando
+     avulso);
+  6. PDF direto, sem o Word;
+  7. da spec de 2026-10-04: nome do arquivo pelo título e sufixo `-v2`; vários arquivos por
+     chamada; `--crew` e a "conferência do texto"; modo plano (`entrega.documentos_em`) e as
+     perguntas `--lembrar-documentos…`; `entrega.documentos` para `.md` sem formato; cabeçalho e
+     rodapé por crew; citação, código e limpeza de HTML e de comentários; 3 níveis de recuo;
+     carimbo SHA-256 da conferência;
+  8. dar `format: documento-oficial` aos passos de crews antigas; ativar por pedido em texto em
+     conversa nova; tarefa avulsa no histórico;
+  9. documento em outro idioma ("Página X de Y" e avisos só em PT-BR); a linha "Não medido" do
+     verificador para `documento-oficial` (o formato não tem limite a medir; hoje a linha aparece
+     e não bloqueia).
+- **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em
+  2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou
+  precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação
+  lado a lado pedir. Item 8 → U4 — conserto de crews antigas e modo equipe. Item 9 → U5.
+- **Custo de adiar:** quem tem um modelo `.dotx` ou logotipo que não é PNG ajusta à mão (converte
+  o logotipo, aplica o modelo no Word); crew antiga só gera o Word depois de o usuário pôr o
+  formato no passo; documento em outro idioma sai com "Página X de Y" em português.
+- **Aprovação:** não.
 
 ## Modo equipe: `/opencrew pedir <crew> "<tarefa>"`
 - **O que já existe:** só o pipeline completo. No uso real a crew virou equipe permanente com
@@ -126,15 +155,6 @@
   renderização real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** texto que passa no verificador pode estourar o limite ao ser colado com as
   hashtags; imagem fora do tamanho da rede só é vista na hora de postar.
-- **Aprovação:** não.
-
-## Papel timbrado / modelo `.dotx` do usuário
-- **O que já existe:** nada. A spec U3 (não aprovada) previa `.docx` sem estilos de marca e
-  mandava este item para a U4 sem motivo (A-36, G-20); o gerador decidido para a U3b é de perfil
-  fechado (lista fixa de partes).
-- **Alocação:** → sem fase — só depois da U3b e com pedido real; exige ler e regravar o arquivo
-  de modelo do usuário.
-- **Custo de adiar:** o documento sai sem timbre; quem precisa aplica o modelo à mão no Word.
 - **Aprovação:** não.
 
 ## Conserto (`repair`) de crews antigas: ordem de publicação, `fontes:`, proibições sem aspas
@@ -244,4 +264,29 @@
   `.cursor`, `.github`, `.trae`, `GEMINI.md`, `QWEN.md`. Conferido no código: é o desenho atual (`--yes` equivale a `--all` em `src/commands/init.js`, `resolveIdes`); com `--ide` junto, o `--ide` deveria vencer.
 - **Alocação:** → U4 — conferir junto do conserto de instalações; se for defeito, vira reparo.
 - **Custo de adiar:** projeto de quem usa uma IDE só ganha arquivos de oito outras.
+- **Aprovação:** não.
+
+## Achados da execução real de aceite da 1.10.0 (2026-10-07)
+- **Origem:** execução real por agente, no papel da IA da IDE, num projeto novo (rota
+  `/opencrew documento`, nova geração, crew de ata até a entrega). Quatro ajustes entraram na
+  própria 1.10.0 (a rota não exige onboarding; a entrega avisa quando o Word sai sem papel
+  timbrado; "Antes de usar" no LEIA-ME de documento; o prompt da entrega trata erro de perfil).
+- **Documento Word, ficou para depois:**
+  1. o verificador não vê imagem, `:::` desconhecido nem assinaturas sem fim antes do revisor
+     (os avisos só aparecem na entrega), e a linha "Não medido" sugere um limite que não existe;
+  2. chave do perfil quase certa (`Logotipo:`, `rodapé:`, com espaço antes) é ignorada sem aviso;
+     perfil criado e vazio aparece no relatório como se houvesse timbre;
+  3. o prompt não tem texto fixo para a pergunta do logotipo, das três linhas e do rodapé, e é
+     ambíguo para "Não encontrei {arquivo}." e "Só converto texto…" (deveria voltar à pergunta do arquivo);
+  4. tabela com linha de mais células que o cabeçalho cria coluna sem aviso;
+  5. "O que não foi conferido" lista imagens e redes numa entrega só de documentos.
+- **Criação e execução de crew (antigos):**
+  6. o discovery não tem domínio "documento" (ata, ofício, contrato): cai em perguntas de marketing;
+  7. o build não traz exemplo de `crew.yaml` nem de `pipeline.yaml`; o runner não diz onde fica `tier`;
+  8. `architect.agent.yaml` aponta para um fluxo de fases que o ponto de entrada instalado não descreve;
+  9. checkpoint com `outputFile` só tem o formato de foco de pesquisa;
+  10. o tier Express ("o redator revisa") conflita com "toda crew precisa de revisor";
+  11. `conferir-fontes.mjs`: "1 fontes" e conta como fonte um caminho citado num passo.
+- **Alocação:** → U4 — itens 1 e 6 a 10 (conserto de crews e do caminho de criação) · → U5 — itens
+  2 a 5 e 11 (texto e avisos).
 - **Aprovação:** não.

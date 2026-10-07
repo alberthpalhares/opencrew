@@ -82,6 +82,29 @@ test('U3a-14c-f2: no module of scripts/ has more than 200 lines', () => {
     assert.ok(linhas <= 200, `${nome} has ${linhas} lines`);
   }
 });
+
+// specs/fase-u3b-documento-word.md, rules 11, 13 and 14: the Word document ships inside the payload.
+test('U3b-07a: the tarball ships documento.mjs, every module of scripts/documento/, entrega/documentos.mjs, the model, the prompt and the guide', () => {
+  const core = 'templates/_opencrew/core';
+  const modulos = readdirSync(path.join(root, core, 'scripts', 'documento')).map((nome) => `${core}/scripts/documento/${nome}`);
+  assert.ok(modulos.length >= 15, 'scripts/documento/ lost modules');
+  const novos = [
+    `${core}/scripts/documento.mjs`, ...modulos, `${core}/scripts/entrega/documentos.mjs`,
+    `${core}/modelos/documento-oficial.md`, `${core}/prompts/documento.prompt.md`, `${core}/best-practices/documento-oficial.md`,
+  ];
+  for (const must of novos) assert.ok(files.includes(must), `missing from tarball: ${must}`);
+});
+
+test('U3b-07a: the model of the profile cites no name, CNPJ, site nor path of the maintainer', () => {
+  const modelo = readFileSync(path.join(root, 'templates', '_opencrew', 'core', 'modelos', 'documento-oficial.md'), 'utf8');
+  assert.doesNotMatch(modelo, /alberth|palhares|klinsmann|aksp|poty/i);
+  for (const [cnpj] of modelo.matchAll(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g)) assert.equal(cnpj, '00.000.000/0001-00');
+  for (const [site] of modelo.matchAll(/(?:www\.|@|https?:\/\/)[\w.-]+/g)) assert.match(site, /exemplo\.org$/, `not a fictitious address: ${site}`);
+  assert.doesNotMatch(modelo, /[A-Za-z]:\\|\/Users\/|\/home\/|60-69/, 'a local path');
+  // The content keys ship empty: the user's letterhead is the user's.
+  for (const chave of ['logotipo', 'cabecalho_1', 'cabecalho_2', 'cabecalho_3', 'rodape']) assert.match(modelo, new RegExp(`^${chave}:[ \\t]*\\r?$`, 'm'));
+});
+
 // specs/fase-e1-escritorio-ao-vivo.md, rules 26 and 27: the Escritório ships inside the payload.
 test('E1-07a: the tarball ships estado.mjs, escritorio.mjs and every file of escritorio/, and no dashboard/', () => {
   const core = 'templates/_opencrew/core';

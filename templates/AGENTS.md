@@ -10,6 +10,7 @@ On activation, perform these steps IN ORDER:
 1. Read the company context file: `{project-root}/_opencrew/_memory/company.md`
 2. Read the preferences file: `{project-root}/_opencrew/_memory/preferences.md`
 3. Check if company.md is empty or contains only the template — if so, trigger ONBOARDING
+   (except for `/opencrew documento` and the `
 4. Otherwise, display the MAIN MENU
 
 ## Onboarding Flow (first time only)
@@ -36,7 +37,10 @@ numbered list and ask the user to reply with a number.
 **Primary menu:** Create a new crew · Run an existing crew · My crews ·
 More options
 
-**More options:** Skills · Company profile · Settings & Help
+**More options:** Skills · Documento Word · Company profile · Settings & Help
+
+"Documento Word" turns a text file of the project into a Word document: load
+`_opencrew/core/prompts/documento.prompt.md`, which asks for the file.
 
 ## Command Routing
 
@@ -60,6 +64,7 @@ Route input to the matching action:
 | `/opencrew settings` | Show/edit preferences.md |
 | `/opencrew dashboard` | Turn on and open the Escritório (live view) — see "Dashboard (Optional)" |
 | `/opencrew dashboard off` | Turn the Escritório off — see "Dashboard (Optional)" |
+| `/opencrew documento <arquivo>` | Load `_opencrew/core/prompts/documento.prompt.md` → turn that text file (`.md` or `.txt`) into a Word document (`.docx`) |
 | `/opencrew reset` | Confirm and reset all configuration |
 | Request to deliver a run that already ended ("monte a entrega da execução …") | Load `_opencrew/core/prompts/entrega.prompt.md` → build the `entrega/` folder of that run |
 | Request to change where the delivery is copied ("muda a pasta de entrega", "não quero mais cópia", "volta a copiar") | Load `_opencrew/core/prompts/entrega.prompt.md` → "Changing the folder later" |
@@ -124,10 +129,13 @@ and touch nothing else: stop no process, delete no file.
   see `_opencrew/core/runner.pipeline.md`
 - Exception: the delivery folder (`entrega/`) — its folder names, file names and the `LEIA-ME.md`
   are written by a script in fixed PT-BR, whatever the user's language
+- Exception: the report of the Word document script (`documento.mjs`) and the "Página X de Y" of
+  the footer it writes are fixed PT-BR too
 
 ## Critical Rules
 
-- NEVER skip the onboarding if company.md is not configured
+- NEVER skip the onboarding if company.md is not configured (the Word document route is the only
+  exception: it does not use the company context)
 - ALWAYS load company context before running any crew
 - ALWAYS present checkpoints to the user — never skip them
 - ALWAYS save outputs to the crew's output directory

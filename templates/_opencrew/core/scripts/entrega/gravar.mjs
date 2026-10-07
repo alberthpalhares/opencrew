@@ -25,10 +25,10 @@ async function limparSobras({ entrega, tmp, antiga }) {
   if ((await tipoDe(tmp)) === 'pasta') await apagar(tmp);
 }
 
-/** Grava um arquivo da entrega na pasta temporária: o texto gerado, ou os mesmos bytes da origem. */
+/** Grava um arquivo da entrega na pasta temporária: os bytes ou o texto gerados, ou os mesmos bytes da origem. */
 async function gravarArquivo(destino, a) {
   await fs.mkdir(path.dirname(destino), { recursive: true });
-  if (a.texto != null) await fs.writeFile(destino, a.texto, 'utf8');
+  if ((a.bytes ?? a.texto) != null) await fs.writeFile(destino, a.bytes ?? a.texto, 'utf8');
   else await fs.copyFile(a.de, destino);
 }
 
@@ -51,7 +51,7 @@ async function trocar({ entrega, tmp, antiga }, passo) {
 /**
  * Refaz `entrega/` do zero e grava, ao lado, o relatório da verificação.
  * @param {string} execucao pasta da execução (`crews/<crew>/output/<run>/`), absoluta
- * @param {object[]} arquivos `{ pasta, nome, texto | de }`
+ * @param {object[]} arquivos `{ pasta, nome, texto | bytes | de }`
  * @param {{ leiame: string, relatorio: string }} textos
  * @returns {Promise<string|null>} null quando gravou tudo; senão, o caminho que não foi gravado
  */

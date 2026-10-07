@@ -7,7 +7,9 @@
 export const ANTES_DE_POSTAR = 'Antes de postar, resolva o que está em Pendências. Corrija no arquivo de origem e peça para montar a entrega de novo: o que você mudar nesta pasta se perde.';
 /** O primeiro passo do canal entregue com ressalva. */
 export const CONFIRA_AS_RESSALVAS = 'Antes de postar, confira as ressalvas em "Antes de usar".';
-const MARKDOWN = 'Este texto está em markdown: se o seu editor não aceitar, ajuste títulos, negrito e links depois de colar.';
+/** O passo de `documentos` que só vale na pasta da entrega (a cópia não é refeita). Spec: fase-u3b-documento-word.md, §6. */
+export const NAO_EDITE_O_WORD = 'Não edite o Word dentro desta pasta: ela é refeita a cada entrega. Para mexer, copie o arquivo para outra pasta do projeto.';
+const MARKDOWN ='Este texto está em markdown: se o seu editor não aceitar, ajuste títulos, negrito e links depois de colar.';
 
 // Cada passo: [o que o faz aparecer, o texto]. null = sempre que o canal tem arquivo; um tipo de
 // arquivo = só quando a entrega tem arquivo desse tipo no canal; `tipo:um` e `tipo:varios` = só
@@ -58,6 +60,12 @@ const PASSOS = {
     [null, 'Confira e publique.'],
   ],
   youtube: [['roteiro', '`youtube/{arquivo}` é o roteiro para gravar: não é texto para colar.']],
+  documentos: [
+    ['documento', 'Abra `documentos/{arquivo}` no Word e confira: cabeçalho, páginas, tabelas e assinaturas.'],
+    ['documento', NAO_EDITE_O_WORD],
+    ['documento', 'Para ter um PDF: abra o documento no Word e use Arquivo → Salvar como → PDF.'],
+    ['documento', 'O Word é uma cópia do texto. O que você mudar nele não volta sozinho: altere o texto e gere de novo.'],
+  ],
 };
 // "texto": o roteiro e o arquivo que foi inteiro (carrossel em texto, peça não encontrada).
 const TIPOS = { texto: ['roteiro', 'inteiro'] };
@@ -100,5 +108,7 @@ function doQuadro(pasta, arquivos) {
 export function passosDe(pasta, arquivos, comPendencia = false, comRessalva = false) {
   const passos = doQuadro(pasta, arquivos);
   const antes = comPendencia ? ANTES_DE_POSTAR : comRessalva ? CONFIRA_AS_RESSALVAS : null;
-  return antes && passos.length ? [antes, ...passos] : passos;
+  // Documento não se posta: imprime-se, assina-se, protocola-se.
+  const frase = pasta === 'documentos' ? antes?.replace('Antes de postar', 'Antes de usar') : antes;
+  return frase && passos.length ? [frase, ...passos] : passos;
 }

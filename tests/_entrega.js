@@ -53,12 +53,13 @@ async function pastasTmp(dir) {
 /**
  * Runs the command line in `raiz`: exit code, lines, whole output and last line.
  * @param {string[]} [livres] paths (relative to the project, with `/`) the call may also change
+ * @param {object} [deps] other dependencies of `main` (U3b-05j: a `gerarDocx` that fails)
  */
-export async function rodar(raiz, argv, livres = []) {
+export async function rodar(raiz, argv, livres = [], deps = {}) {
   const fora = [`${EXEC}/`, ...livres];
   const antes = await foraDe(raiz, fora);
   const linhas = [];
-  const code = await main(argv, { cwd: raiz, escrever: (s) => linhas.push(...String(s).split('\n')) });
+  const code = await main(argv, { cwd: raiz, escrever: (s) => linhas.push(...String(s).split('\n')), ...deps });
   assert.deepEqual(await foraDe(raiz, fora), antes, 'U3a-14b-f2: nothing changes outside the run folder and the destination');
   assert.deepEqual(await pastasTmp(raiz), [], 'U3a-14b-f2: no .tmp folder is left');
   return { code, linhas, saida: linhas.join('\n'), fim: linhas.at(-1) };

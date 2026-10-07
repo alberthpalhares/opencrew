@@ -114,3 +114,8 @@ catalog:
     name: "WhatsApp Broadcast"
     whenToUse: "Creating agents that produce WhatsApp broadcast messages or conversational marketing content."
     file: whatsapp-broadcast.md
+
+  - id: documento-oficial
+    name: "Documento oficial (Word)"
+    whenToUse: "Creating agents that produce a document to print, sign or file (minutes, official letter, statement, contract, formal report) that becomes a Word file."
+    file: documento-oficial.md

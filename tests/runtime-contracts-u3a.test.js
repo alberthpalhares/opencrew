@@ -159,7 +159,7 @@ test('U3a-08h: a channel that has no item in the list is never passed, because t
   const publica = flat(sectionOf(prompt, '## Step 2'));
   assert.match(publica, /Only a channel that has an item in the list/);
   tem(publica, '`Canal não encontrado nesta entrega: {canal}.`');
-  for (const canal of ['instagram', 'linkedin', 'blog', 'email', 'whatsapp', 'twitter', 'youtube']) tem(publica, `\`${canal}\``);
+  for (const canal of ['instagram', 'linkedin', 'blog', 'email', 'whatsapp', 'twitter', 'youtube', 'documentos']) tem(publica, `\`${canal}\``);
 });
 
 // ── U3a-14a Rule 15 and the language exception (rule 33) ─────────────────────────────────────

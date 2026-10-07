@@ -3,6 +3,64 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.10.0] — 2026-10-07
+
+Fase U3b "Documento Word, com perfil de documento oficial" (`specs/fase-u3b-documento-word.md`).
+Chega a quem já usa com um `npx @aksp/opencrew@latest update`; o papel timbrado é criado só quando
+você pede.
+
+Ainda não nesta versão: imagem no corpo do texto, link clicável, sumário, nota de rodapé e
+numeração automática; logotipo em JPEG ou SVG; ler ou regravar um modelo `.dotx`; mais de um
+perfil por projeto na entrega; PDF direto (o Word salva como PDF). O resultado foi conferido no
+Word; no LibreOffice e no Google Docs, não.
+
+### Added
+- **Documento Word.** O texto em markdown (`.md` ou `.txt`) vira um arquivo do Word (`.docx`) com
+  as mesmas palavras e os mesmos números, na mesma ordem. No chat: `/opencrew documento <arquivo>`
+  (ou "Documento Word" no menu). No terminal:
+  `node _opencrew/core/scripts/documento.mjs "<arquivo.md>"`. O Word sai ao lado do texto, com o
+  mesmo nome; `--saida` escolhe outra pasta ou outro nome. Antes, quem precisava de um documento
+  oficial mantinha um script à parte, com o texto dentro do código.
+- **Papel timbrado (perfil de documento oficial).** Um arquivo de texto do projeto,
+  `_opencrew/_memory/documento-oficial.md`, guarda o logotipo (PNG), três linhas de cabeçalho, o
+  rodapé com "Página X de Y", as margens, a fonte e o tamanho da letra. Na primeira vez a IA
+  pergunta se você quer configurar e preenche o arquivo com as suas respostas; `--criar-perfil`
+  cria o arquivo a partir do modelo. O `update` não toca nele, e nenhum comando o sobrescreve.
+- **Três marcações para documento.** `::: titulo` e `::: subtitulo` (centralizados),
+  `::: quebra-de-pagina` (o anexo começa em página nova) e `::: assinaturas` … `:::` (as linhas
+  de assinatura, duas por linha, com o nome e o cargo). Títulos `#`, `##` e `###`, tabelas, listas,
+  negrito e itálico saem como estilos do Word.
+- **O texto oficial não muda.** Número de item escrito por você ("1.", "6.1.", "a)", "§ 1º") vai
+  como texto: nada é renumerado, reordenado nem corrigido.
+- **Na entrega, a pasta `documentos/`.** O passo com `format: documento-oficial` sai como
+  `entrega/documentos/<nome>.docx`, com o papel timbrado do projeto, e o LEIA-ME ganha a seção
+  "Documentos", com o que conferir no Word. Sem papel timbrado configurado, a entrega avisa e
+  diz como criar. A cópia para a pasta do projeto leva `documentos/`
+  junto.
+- **Guia `documento-oficial`** (o 23º guia de melhores práticas): ensina o redator a escrever um
+  texto que vira documento — um parágrafo por linha, número escrito à mão, anexo depois da quebra
+  de página, assinaturas no fim. Crews novas recebem esse formato no passo cujo resultado é um
+  documento para imprimir, assinar ou protocolar.
+- **Avisos de conversão.** O relatório diz o que ficou como texto (imagem, marcação `:::`
+  desconhecida, bloco de assinaturas sem o `:::` final) e quantos caracteres inválidos foram
+  removidos. Aviso não impede o documento.
+
+### Changed
+- **Um Word que já existe não é trocado em silêncio.** Se há um `.docx` diferente no destino, nada
+  é gravado e a IA pergunta antes de substituir (`--substituir`). Igual, byte a byte: nada a fazer.
+- **Perfil com erro não gera documento.** Chave desconhecida, valor fora da faixa, logotipo que
+  não existe, não é PNG ou passa de 2 MB: a mensagem diz a linha, e nada é gravado.
+- O menu "Mais opções" ganha "Documento Word".
+
+### Internal
+- `documento.mjs` e os módulos de `scripts/documento/` (sem dependência, sem `node:zlib`, até 200
+  linhas cada): zip sem compressão, com CRC-32 próprio e data fixa — o mesmo texto, com o mesmo
+  perfil, dá o mesmo arquivo, byte a byte. `modelos/documento-oficial.md` é o modelo do perfil;
+  `prompts/documento.prompt.md`, o prompt da rota. O `src/` não mudou; o runner não cresceu (874
+  linhas).
+- `AGENTS.md`: a regra 15 cita o `documento.mjs`; a regra 7 diz que abrir o `.docx` no Word não é
+  conferido pela porta.
+
 ## [1.9.0] — 2026-10-07
 
 Fase U3a, fatia 2 "Entrega no projeto" (`specs/fase-u3a2-entrega-no-projeto.md`). Chega a quem já

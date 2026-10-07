@@ -5,7 +5,7 @@
 // (ressalvas, a cópia e "Sobre esta pasta"), no repositório do OpenCrew.
 import { CANAIS, EDITAVEIS, OUTROS } from './canais.mjs';
 import { frasesDePendencia } from './pendencias.mjs';
-import { passosDe } from './passos.mjs';
+import { NAO_EDITE_O_WORD, passosDe } from './passos.mjs';
 
 export const TEXTO = {
   vaiPublicar: 'Esta crew publica este canal sozinha. Antes de postar à mão, confira se já saiu.',
@@ -64,7 +64,8 @@ function secaoDoCanal(d, pasta) {
   // Na cópia, o canal que não foi copiado traz só a situação e o que falta.
   if (d.ehCopia && pendencias.length) return secao(CANAIS[pasta], [situacao, ...bloco('Pendências:', pendencias)]);
   const arquivos = d.arquivos.filter((a) => a.pasta === pasta);
-  const passos = passosDe(pasta, arquivos, pendencias.length > 0, d.ressalvas.has(pasta)).map((p, i) => `${i + 1}. ${p}`);
+  const daPasta = passosDe(pasta, arquivos, pendencias.length > 0, d.ressalvas.has(pasta));
+  const passos = daPasta.filter((p) => !d.ehCopia || p !== NAO_EDITE_O_WORD).map((p, i) => `${i + 1}. ${p}`);
   return secao(CANAIS[pasta], [
     ...(d.vaiPublicar.includes(pasta) ? [TEXTO.vaiPublicar] : []),
     situacao,

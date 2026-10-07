@@ -17,7 +17,7 @@ const ehPasta = async (p) => fs.stat(p).then((s) => s.isDirectory(), () => false
 /** Grava um arquivo que ainda não existe ali: se existir, falha (nunca por cima). */
 async function gravarNovo(alvo, a) {
   await fs.mkdir(path.dirname(alvo), { recursive: true });
-  if (a.texto != null) await fs.writeFile(alvo, a.texto, { encoding: 'utf8', flag: 'wx' });
+  if ((a.bytes ?? a.texto) != null) await fs.writeFile(alvo, a.bytes ?? a.texto, { encoding: 'utf8', flag: 'wx' });
   else await fs.copyFile(a.de, alvo, constants.COPYFILE_EXCL);
 }
 

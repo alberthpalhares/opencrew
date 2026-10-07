@@ -45,8 +45,8 @@ sozinha. Antes de postar à mão, confira se já saiu."
   `_opencrew/best-practices.local/{format}.md` when that file declares `platform:`, otherwise in
   `_opencrew/core/best-practices/{format}.md`. For a step with no `format:`, the one of the skill
   (`instagram-publisher` → `instagram`). With neither, do not pass the option.
-- `{canal}` is the folder name: `instagram`, `linkedin`, `blog`, `email`, `whatsapp`, `twitter` or
-  `youtube`. Only a channel that has an item in the list (an item whose format has that
+- `{canal}` is the folder name: `instagram`, `linkedin`, `blog`, `email`, `whatsapp`, `twitter`,
+  `youtube` or `documentos` (the folder of `platform: "documento"`). Only a channel that has an item in the list (an item whose format has that
   `platform:`) — for any other the script stops with `Canal não encontrado nesta entrega: {canal}.`
 
 ## Step 3: Run the script
@@ -68,7 +68,8 @@ without the `ENTREGA:` line. Do not rewrite it and do not add files it does not 
 `entrega/` folder, the script also writes `crews/{name}/output/{run_id}/verificacao-entrega.md`,
 the report of the check made at delivery time (it is not part of the delivery).
 
-- `ENTREGA:OK` → go on with the run (Step 5 first, when it applies).
+- `ENTREGA:OK` → go on with the run (Step 5 first, when it applies). When the summary has a line
+  `
 - `ENTREGA:COM_RESSALVA` → everything that was missing is a ressalva the user accepted: the
   `LEIA-ME.md` opens with it and the channel is "Pronto, com ressalva"; go on as with `ENTREGA:OK`.
 - `ENTREGA:INCOMPLETA` → a channel is not ready, the destination was refused or a file could not be
@@ -102,7 +103,7 @@ the report of the check made at delivery time (it is not part of the delivery).
     "Não consegui gravar …"): show the message as it came and ask for another folder (Step 5, with
     the new answer) or for a new attempt, which is the same command again. A file of the list that
     does not exist: ask for it, or take it out of the list.
-
+  - **A Word document that was not generated** (the line `
   The first call never has `--aceitar-pendencias`. Outside option 2 it goes only when the user
   already chose "Aceitar assim mesmo" in the review loop of this run and what is missing is only
   what was accepted there: then run the command again with it, without asking.

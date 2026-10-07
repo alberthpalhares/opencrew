@@ -67,7 +67,8 @@ Exceção: `templates/skills/opencrew-skill-creator/` (código de terceiros adap
 `npm run verify` — lint, testes, version-sync, alerta de tamanho, conteúdo do pacote. Sai
 diferente de zero se qualquer passo reprovar. O CI e o publish chamam o mesmo comando.
 **Não cobre:** a execução real dos prompts por uma IA (conferir no `sandbox/`), o publish
-real no npm, a aparência do escritório no navegador.
+real no npm, a aparência do escritório no navegador. Nem abrir o `.docx` no Word: se abre sem
+aviso de reparo e como fica na página é conferência do dono.
 
 ### 8. Versão e release
 Nunca editar `version` à mão: `npm version <bump>` (carimba `.opencrew-version`). O release
@@ -103,22 +104,27 @@ Toda melhoria do runtime tem que chegar a um projeto que já tem uma versão ant
 `_opencrew/core/` ou dos skills do catálogo (o que o `update` renova), a mesma entrega inclui a
 migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no npm).
 **Trava:** `tests/upgrade.test.js` (simula um workspace pré-1.5 e atualiza), `tests/upgrade-r3.test.js`,
-`tests/upgrade-u3a.test.js` e `tests/upgrade-u3a2.test.js`.
+`tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js` e `tests/upgrade-u3b.test.js`.
 
 ### 15. Script do runtime só escreve onde foi combinado
 Script do runtime só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da
 crew, a pasta de saída da crew (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve
 arquivo do usuário, e só apaga a própria pasta de entrega e os temporários que ele mesmo criou.
+O `documento.mjs` grava o `.docx` pedido e o perfil que faltava (`--criar-perfil`); um `.docx`
+diferente que já existe só é trocado com `--substituir`, e ele nunca apaga nada.
 **Trava:** `tests/entregar*.test.js` (U3a-14b): em cada cenário, fora da pasta da execução — e,
 desde a 1.9.0, do destino escolhido e do `crew.yaml` + `.bak` (só com `--lembrar-destino`) —, a
-árvore do projeto é igual antes e depois, e não sobra pasta `.tmp`; `tests/upgrade-u3a2.test.js`.
+árvore do projeto é igual antes e depois, e não sobra pasta `.tmp`; `tests/upgrade-u3a2.test.js`;
+`tests/documento*.test.js` (U3b-04j): fora do `.docx` de saída — e do perfil, em `--criar-perfil` —,
+a árvore do projeto é igual antes e depois; `tests/entregar-documentos.test.js` e
+`tests/upgrade-u3b.test.js`.
 
 ## Regra → Trava
 
 | Regra | Trava | Tipo |
 |---|---|---|
 | 1 Ciclo | sem trava — revisão humana | — |
-| 2 Payload sem mantenedor | `tests/ides.test.js`, `tests/package.test.js` | Reprova |
+| 2 Payload sem mantenedor | `tests/ides.test.js`, `tests/package.test.js` (U3b-07a: o modelo do perfil), `tests/documento-contratos.test.js` (U3b-06a: o exemplo do guia) | Reprova |
 | 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`, `tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`, `tests/r2-*.test.js`, `tests/scripts-links.test.js` | Reprova |
 | 4 Referências existem | `tests/template-refs.test.js` | Reprova |
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
@@ -130,8 +136,8 @@ desde a 1.9.0, do destino escolhido e do `crew.yaml` + `.bak` (só com `--lembra
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js` | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js` | Reprova |
-| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`), `tests/upgrade-u3a2.test.js` | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js` | Reprova |
+| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js` | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.

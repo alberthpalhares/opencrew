@@ -6,6 +6,7 @@ import path from 'node:path';
 import { lerItem } from '../verificar/arquivos.mjs';
 import { semFrontmatter } from '../verificar/leitura.mjs';
 import { EDITAVEIS, OUTROS } from './canais.mjs';
+import { DOCUMENTOS, tipoDoDocumento } from './documentos.mjs';
 import { avisoDeFora, blocosFora } from './fora.mjs';
 import { PRINCIPAL, hashtagsSoltas, pecasDoLeitor } from './leitor.mjs';
 import { pecasDoBlog, pecasDoEmail, pecasDoWhatsapp, tweetsDaThread } from './longas.mjs';
@@ -82,6 +83,8 @@ async function separarItem(item, itens, p) {
     p.avisos.push({ pasta: OUTROS, tela: MSG.semCanal(item.rel) });
     return p.copias.push(copia(item, OUTROS, 'copia'));
   }
+  // Documento oficial: vai inteiro, sem procura de peças; `documentos.mjs` converte o texto em Word.
+  if (item.canal === DOCUMENTOS) return p.copias.push(copia(item, DOCUMENTOS, tipoDoDocumento(item.abs)));
   const lido = ['.md', '.txt'].includes(extensao(item)) ? await lerItem(item.abs) : null;
   if (lido?.tipo !== 'texto') return p.copias.push(copia(item, item.canal, ehImagem(item) ? 'imagem' : 'copia'));
   const texto = emLf(lido.texto);

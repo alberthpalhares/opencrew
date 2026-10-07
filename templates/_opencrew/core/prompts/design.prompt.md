@@ -444,6 +444,7 @@ The name should make someone smile — it's a pun tying a common name to the pro
 - Always include reviewer agent before final output
 - Add checkpoints at every user decision point
 - Include `on_reject` loops from reviewer back to writer
+- A step whose result is a document to print, sign or file (minutes, official letter, statement, contract, formal report) gets `format: documento-oficial`, in any kind of crew: the writer follows that guide, and the text becomes a Word document in the delivery of the run (or with `/opencrew documento <arquivo>`)
 
 ### Research Focus Checkpoint (MANDATORY for crews with a researcher)
 

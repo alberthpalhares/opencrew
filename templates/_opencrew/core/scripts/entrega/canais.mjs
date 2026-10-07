@@ -6,7 +6,9 @@ import path from 'node:path';
 import { lerFrontmatter, lerTexto } from '../verificar/leitura.mjs';
 
 /** Pasta do canal → nome no LEIA-ME, na ordem em que as seções aparecem. */
-export const CANAIS = { instagram: 'Instagram', linkedin: 'LinkedIn', blog: 'Blog', email: 'E-mail', whatsapp: 'WhatsApp', twitter: 'X/Twitter', youtube: 'YouTube' };
+export const CANAIS = { instagram: 'Instagram', linkedin: 'LinkedIn', blog: 'Blog', email: 'E-mail', whatsapp: 'WhatsApp', twitter: 'X/Twitter', youtube: 'YouTube', documentos: 'Documentos' };
+/** Plataforma cuja pasta tem outro nome (fase-u3b-documento-word.md, regra 12). */
+const PASTA_DA_PLATAFORMA = { documento: 'documentos' };
 export const OUTROS = 'outros';
 export const EDITAVEIS = 'editaveis';
 export const ehCanal = (pasta) => Object.hasOwn(CANAIS, pasta);
@@ -23,13 +25,15 @@ async function plataformaEm(raiz, pasta, formato) {
 /**
  * Canal de um formato: o `platform:` de `_opencrew/best-practices.local/<formato>.md`, quando o
  * arquivo o declara; senão, o do core. Sem formato, sem best-practice, sem `platform:` ou com
- * plataforma que não é uma das sete pastas: null (o arquivo vai para `outros/`).
+ * plataforma que não é uma das oito pastas: null (o arquivo vai para `outros/`). A plataforma
+ * `documento` é a pasta `documentos`.
  */
 export async function canalDoFormato(raiz, formato) {
   if (!formato || !/^[a-z0-9-]+$/.test(formato)) return null;
   const local = await plataformaEm(raiz, ['best-practices.local'], formato);
   const plataforma = local ?? (await plataformaEm(raiz, ['core', 'best-practices'], formato));
-  return plataforma && ehCanal(plataforma) ? plataforma : null;
+  const pasta = Object.hasOwn(PASTA_DA_PLATAFORMA, plataforma ?? '') ? PASTA_DA_PLATAFORMA[plataforma] : plataforma;
+  return pasta && ehCanal(pasta) ? pasta : null;
 }
 
 const PASTAS_DE_SERVICO = new Set(['entrega', 'entrega.tmp', 'export']);

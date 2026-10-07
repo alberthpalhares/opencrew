@@ -11,6 +11,8 @@
 //   --aceitar-pendencias: as pendências deste momento viram ressalvas ("entregar assim mesmo"); a
 //     ressalva vale enquanto a pendência dela existir: a que some sai do `ressalvas.json`.
 //   --vai-publicar: canal que a crew publica sozinha (pode repetir); o LEIA-ME avisa.
+// Item de formato com a plataforma `documento` (`.md` ou `.txt`) sai em `entrega/documentos/`, em
+// Word, com o perfil de documento oficial do projeto (fase-u3b-documento-word.md, regra 12).
 // Grava em crews/<crew>/output/<run>/: a pasta `entrega/` (refeita do zero a cada chamada, montada
 // em `entrega.tmp/`), `verificacao-entrega.md`, `ressalvas.json` (as pendências aceitas que ainda
 // existem) e `copia.json` (o retrato do que foi copiado, para a comparação seguinte). Fora
@@ -29,6 +31,7 @@ import { formatarRelatorio, verificar } from './verificar.mjs';
 import { USO, lerArgs, lerLista, limpar, runValido } from './entrega/argumentos.mjs';
 import { CANAIS, canalDoFormato, ehCanal, ehDeServico } from './entrega/canais.mjs';
 import { MSG as DESTINO, escolherDestino, validarDestino } from './entrega/destino.mjs';
+import { DOCUMENTOS, converterDocumentos, naoConferidoDoWord } from './entrega/documentos.mjs';
 import { MSG as COPIA, guardar } from './entrega/guardar.mjs';
 import { gravarEntrega } from './entrega/gravar.mjs';
 import { montarLeiame } from './entrega/leiame.mjs';
@@ -84,15 +87,18 @@ async function classificar(raiz, pedidos) {
 async function montar(raiz, args, itens, aceitas) {
   const arquivosDaLista = itens.map((i) => (i.formato ? { arquivo: i.arquivo, formato: i.formato } : i.arquivo));
   const verificacao = await verificar({ raiz, crew: args.crew, arquivos: arquivosDaLista, semPadraoDeBlog: true });
-  const { arquivos, avisos } = nomear(await separar(itens));
+  const separados = await converterDocumentos(raiz, await separar(itens), args.gerarDocx);
+  const { arquivos, avisos } = nomear(separados.produtos);
   const todas = pendenciasPorPasta(raiz, itens, verificacao);
+  // O texto que não virou Word é pendência de `documentos` (fase-u3b-documento-word.md, regra 12).
+  if (separados.pendencias.length) todas.set(DOCUMENTOS, [...(todas.get(DOCUMENTOS) ?? []), ...separados.pendencias]);
   const presentes = new Set([...arquivos.map((a) => a.pasta), ...todas.keys()]);
   const dados = {
     crew: path.basename(path.resolve(raiz, args.crew)), run: args.run, arquivos, avisos,
     ...separarPendencias(todas, aceitas, args.aceitar),
     pastas: Object.keys(CANAIS).filter((c) => presentes.has(c)),
     alertas: await alertasDeTamanho(raiz, itens, arquivos, verificacao),
-    naoConferido: naoConferido(raiz, itens, verificacao),
+    naoConferido: [...naoConferido(raiz, itens, verificacao), ...naoConferidoDoWord(arquivos)],
     vaiPublicar: args.vaiPublicar,
   };
   return { dados, relatorio: `${formatarRelatorio(verificacao)}\n` };
@@ -137,12 +143,13 @@ async function entregar(raiz, args, itens, escrever) {
 
 /**
  * @param {string[]} argv
- * @param {object} [deps] `cwd` (a pasta do projeto) e `escrever`
+ * @param {object} [deps] `cwd` (a pasta do projeto), `escrever` e `gerarDocx` (quem monta o Word
+ *   de um documento oficial; sem ele, o do `documento.mjs`)
  * @returns {Promise<number>} 0 = a linha `ENTREGA:` saiu (ou `--ajuda`) · 1 = erro de uso, ou erro
  *   que impediu a entrega inteira (uma linha em PT-BR, sem linha `ENTREGA:`, nada escrito)
  */
-export async function main(argv, { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`) } = {}) {
-  const args = lerArgs(argv);
+export async function main(argv, { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`), gerarDocx } = {}) {
+  const args = { ...lerArgs(argv), gerarDocx };
   const sair = (...linhas) => linhas.forEach((l) => escrever(l)) ?? 1;
   if (args.ajuda) return sair(USO) && 0;
   const pedidos = lerLista(args.arquivos);
