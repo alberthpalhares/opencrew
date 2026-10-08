@@ -223,8 +223,8 @@ test('R1 revisão: the script runs as a process, also when the project is opened
 test('R1 revisão: with nothing to point out, one blank line separates the title from the summary', async () => {
   const raiz = await projeto({ [PASSO]: '- `Docs/briefing.md`\n', 'Docs/briefing.md': 'x' });
   const limpo = formatar(await conferir({ raiz, crew: 'crews/c' }));
-  assert.equal(limpo, '## Conferência de fontes — crews/c\n\n**Resumo: 1 fontes — 1 ok, 0 pendentes, 0 alertas**\n');
+  assert.equal(limpo, '## Conferência de fontes — crews/c\n\n**Resumo: 1 fonte — 1 ok, 0 pendentes, 0 alertas**\n');
   await fs.rm(path.join(raiz, 'Docs/briefing.md'));
   const comPendencia = formatar(await conferir({ raiz, crew: 'crews/c' }));
-  assert.match(comPendencia, /^## Conferência de fontes — crews\/c\n\n- ❌ [^\n]+\n\n\*\*Resumo: 1 fontes — 0 ok, 1 pendentes, 0 alertas\*\*\n$/);
+  assert.match(comPendencia, /^## Conferência de fontes — crews\/c\n\n- ❌ [^\n]+\n\n\*\*Resumo: 1 fonte — 0 ok, 1 pendente, 0 alertas\*\*\n$/);
 });

@@ -104,7 +104,8 @@ Toda melhoria do runtime tem que chegar a um projeto que já tem uma versão ant
 `_opencrew/core/` ou dos skills do catálogo (o que o `update` renova), a mesma entrega inclui a
 migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no npm).
 **Trava:** `tests/upgrade.test.js` (simula um workspace pré-1.5 e atualiza), `tests/upgrade-r3.test.js`,
-`tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js` e `tests/upgrade-u4a.test.js`.
+`tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js` e
+`tests/upgrade-u5a.test.js`.
 
 ### 15. Script do runtime só escreve onde foi combinado
 Script do runtime só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da
@@ -137,9 +138,9 @@ crew e das cópias `.bak`, a árvore do projeto é igual antes e depois, e o dia
 | 9 Doc que mente | sem trava — revisão humana | — |
 | 10 Quando travar | sem trava — revisão humana | — |
 | 11 Continuidade | sem trava — revisão humana | — |
-| 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição) | Reprova |
+| 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js` | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js` | Reprova |
 | 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)

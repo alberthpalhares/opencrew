@@ -81,7 +81,7 @@ Compile all research into a structured research brief document. This will feed P
 
 After research completes, determine the crew's tier:
 
-1. If a template was used (check `discovery.yaml` → `tier` field is present and not null) → use the template's tier.
+1. If a template was used (`discovery.yaml` has the `template:` field, which the Discovery writes only in that case) → use the `tier` recorded there.
 2. Otherwise, read the default tier from `_opencrew/_memory/preferences.md` → `Default Tier` field.
 3. If neither is set, default to `standard`.
 
@@ -182,7 +182,7 @@ From the crew's purpose and domains (in `discovery.yaml`), identify what human r
 | Domain / Need | Possible Roles |
 |---|---|
 | Research, fact-finding, market analysis | 🔎 Pesquisador — finds trends, maps keywords, does market research |
-| Writing, copy, content creation | ✍️ Redator — writes strategic text based on research, including captions and hooks |
+| Writing, copy, content creation, documents | ✍️ Redator — writes strategic text based on research, including captions and hooks; in a document crew, writes the minutes, the letter, the contract or the proposal |
 | Strategy, positioning, planning | 🧠 Estrategista — defines angles, editorial calendar, competitive positioning |
 | Visual design, image creation | 🎨 Designer — creates visual content aligned with brand identity |
 | Quality review, accuracy check | 🔍 Revisor — validates quality, tone, accuracy against criteria |
@@ -244,7 +244,7 @@ For each approved role, consult this mapping to determine which skills and best-
 | Role | Typical Skills | Typical Best-Practices |
 |------|---------------|----------------------|
 | Pesquisador (Researcher) | `web_search`, `web_fetch` (native) | `researching.md` |
-| Redator (Writer/Copywriter) | `web_search` (native, for fact-checking) | `copywriting.md` + platform-specific format file |
+| Redator (Writer/Copywriter) | `web_search` (native, for fact-checking) | `copywriting.md` + platform-specific format file; for a text to print, sign or file: `documento-oficial.md`; for a text with no channel and no Word file (proposal, draft that becomes HTML or PDF, plan): `texto-livre.md` |
 | Estrategista (Strategist) | `web_search` (native) | `strategist.md` |
 | Designer (Visual Designer) | `image-creator`, `image-ai-generator`, `canva` | `image-design.md` |
 | Revisor (Reviewer) | None required | `review.md` |
@@ -342,7 +342,7 @@ Based on discovery answers + company context + research findings + extracted art
 
 Before designing any agent from scratch, check the shared registry at `_opencrew/agents/`:
 
-1. List available base agents: `ls _opencrew/agents/` — each `.agent.md` file is a reusable base agent
+1. List the files of `_opencrew/agents/` (with your folder-listing tool, no command) — each `.agent.md` file is a reusable base agent
 2. For each role approved in Phase D, check if a matching base agent exists:
    - Pesquisador → `_opencrew/agents/researcher.agent.md`
    - Redator → `_opencrew/agents/copywriter.agent.md`
@@ -380,7 +380,7 @@ Guidelines:
 
 Design the crew with appropriate agents:
 - Follow the deep `.agent.md` format with full sections: Persona (Role, Identity, Communication Style), Principles, Operational Framework, Voice Guidance, Output Examples, Anti-Patterns, Quality Criteria, Integration
-- Design each agent from scratch, informed by the relevant best-practices files read in Phase A
+- Use `extends:` when the Shared Agent Registry Check found a base agent that fits; design from scratch only the agents with no base, informed by the relevant best-practices files read in Phase A
 - Each agent has exactly one clear responsibility
 - Every crew needs a review step for quality control (a reviewer agent in Standard and Full)
 - YAGNI — never create agents that aren't strictly necessary

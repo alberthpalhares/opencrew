@@ -87,8 +87,9 @@ test('R1 revisão: files given with a repeated --arquivo or as separate argument
 test('R1 revisão: the script runs as a process, also when the project is opened through a folder link', async () => {
   const raiz = await projeto({ 'ruim.md': DOIS_BLOQUEIOS });
   const destino = path.join(raiz, '_opencrew', 'core', 'scripts');
-  await fs.mkdir(path.join(destino, 'verificar'), { recursive: true });
-  const modulos = (await fs.readdir(path.join(SCRIPTS, 'verificar'))).map((m) => `verificar/${m}`);
+  // Since U5-1 the checker reads a document with the converter's own reader: scripts/documento/ goes too.
+  for (const pasta of ['verificar', 'documento']) await fs.mkdir(path.join(destino, pasta), { recursive: true });
+  const modulos = (await Promise.all(['verificar', 'documento'].map(async (pasta) => (await fs.readdir(path.join(SCRIPTS, pasta))).map((m) => `${pasta}/${m}`)))).flat();
   for (const f of ['comum.mjs', 'verificar.mjs', ...modulos]) await fs.copyFile(path.join(SCRIPTS, f), path.join(destino, f));
   await fs.symlink(raiz, `${raiz}-elo`, 'junction');
   for (const cwd of [raiz, `${raiz}-elo`]) {

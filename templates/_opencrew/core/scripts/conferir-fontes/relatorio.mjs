@@ -7,7 +7,8 @@ const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
 export const MSG = {
   nadaACorrigir: 'Nada a corrigir.',
-  corrigidos: (n) => `${plural(n, 'caminho corrigido', 'caminhos corrigidos')} (cópia .bak ao lado de cada arquivo alterado).\n`,
+  corrigido: (arquivo, copia) => `Corrigi: ${arquivo} (cópia: ${copia})`,
+  comoCorrigir: 'Para trocar os caminhos que têm sugestão, rode de novo com --corrigir (cada arquivo alterado ganha uma cópia).',
   semCorrecaoAutomatica: (n) => `Não há correção automática para ${n} pendência(s): escolha um candidato ou corrija o caminho na crew.`,
   buscaParcial: (limite) => `Procurei só nos primeiros ${limite} itens do projeto; pode existir um arquivo com esse nome que eu não vi.`,
   linkParaFora: (arquivo) => `Não corrigi \`${arquivo}\`: é um link que aponta para fora da crew. O caminho citado nele continua como estava.`,
@@ -59,6 +60,7 @@ export function formatar(r) {
   }
   if (apontados.length) linhas.push(''); // sem pendência nem alerta, uma linha em branco só
   const alertas = contar('nao-portatil') + contar('nao-conferido');
-  linhas.push(`**Resumo: ${r.refs.length} fontes — ${contar('ok')} ok, ${contar('faltando')} pendentes, ${alertas} alertas**`, '');
+  const pendentes = contar('faltando');
+  linhas.push(`**Resumo: ${plural(r.refs.length, 'fonte', 'fontes')} — ${contar('ok')} ok, ${plural(pendentes, 'pendente', 'pendentes')}, ${plural(alertas, 'alerta', 'alertas')}**`, '');
   return linhas.join('\n');
 }

@@ -85,7 +85,8 @@ test('R2-04d: the commands that replaced the unquoted templates are quoted', () 
 
 test('R2-04d: the run folder command, written in a line of the runner text, also quotes the crew path', () => {
   const withPath = inlineCommands(runner).filter((l) => CREW_PATH.test(l));
-  assert.ok(withPath.includes(`${CAMINHO} pasta --run "{run_id}"`), `the run folder command changed: ${withPath}`);
+  // Since U5-1 the script names the run: `pasta` goes with no --run (specs/fase-u5a-polimento-do-uso.md).
+  assert.ok(withPath.includes(`${CAMINHO} pasta`), `the run folder command changed: ${withPath}`);
   assert.deepEqual(unquoted(withPath), []);
 });
 test('R2-04d: in export.prompt.md the crew path goes between double quotes', () => {

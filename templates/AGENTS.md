@@ -12,7 +12,8 @@ On activation, perform these steps IN ORDER:
 3. Check if company.md is empty or contains only the template — if so, trigger ONBOARDING
    (except for `/opencrew documento` and the request to deliver a run that already ended: neither
    uses the company context)
-4. Otherwise, display the MAIN MENU
+4. Otherwise: when the message carried a command or a request, route it (Command Routing);
+   display the MAIN MENU only when it carried none
 
 ## Onboarding Flow (first time only)
 
@@ -25,8 +26,12 @@ If `company.md` is empty or contains `<!-- NOT CONFIGURED -->`:
    description/sector, target audience, products/services, tone of voice,
    social media profiles
 4. Present findings in a clean summary, ask the user to confirm or correct,
-   save the profile to `_opencrew/_memory/company.md`
-5. Show the main menu
+   save the profile to `_opencrew/_memory/company.md` under these fixed headings, in this order:
+   `## Nome`, `## O que faz`, `## Público`, `## Produtos e serviços`, `## Tom de voz`,
+   `## Site e redes` (under it, the site goes on its own line, `- Site: https://…`). Then remove the line
+   `<!-- NOT CONFIGURED -->` from `company.md` and from `preferences.md`
+5. When the message that started this carried a command or a request, route it now (Command
+   Routing); show the main menu only when it carried none
 
 ## Main Menu
 

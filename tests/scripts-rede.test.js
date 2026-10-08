@@ -104,7 +104,7 @@ test('R2-05e: with a real pending item next to the network paths, the status is 
   const raiz = await projeto({ [PASSO]: cita([...REDE, 'Docs/sumiu.md']) });
   const { resultado: { linhas }, vistos } = await comDiscoVigiado(() => rodar(raiz, ['--crew', 'crews/c']));
   assert.deepEqual(comDuasBarras(vistos), []);
-  assert.ok(linhas.includes('**Resumo: 3 fontes — 0 ok, 1 pendentes, 2 alertas**'), linhas.join('\n'));
+  assert.ok(linhas.includes('**Resumo: 3 fontes — 0 ok, 1 pendente, 2 alertas**'), linhas.join('\n'));
   assert.equal(ultima(linhas), 'FONTES:PENDENTE');
 });
 

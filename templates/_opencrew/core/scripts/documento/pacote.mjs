@@ -22,6 +22,7 @@ function avisosDe(c) {
     c.imagens && plural(c.imagens, '1 imagem não incluída: o Word não leva imagem no texto.', '{n} imagens não incluídas: o Word não leva imagem no texto.'),
     c.desconhecidas && plural(c.desconhecidas, '1 linha com marcação desconhecida (`:::`) ficou como texto.', '{n} linhas com marcação desconhecida (`:::`) ficaram como texto.'),
     c.semFim && plural(c.semFim, 'Bloco de assinaturas sem a linha `:::` no fim: ficou como texto.', '{n} blocos de assinaturas sem a linha `:::` no fim: ficaram como texto.'),
+    c.celulas && plural(c.celulas, '1 linha de tabela com mais células que o cabeçalho: a coluna a mais ficou sem título.', '{n} linhas de tabela com mais células que o cabeçalho: a coluna a mais ficou sem título.'),
     c.invalidos && plural(c.invalidos, '1 caractere inválido removido.', '{n} caracteres inválidos removidos.'),
   ].filter(Boolean);
 }

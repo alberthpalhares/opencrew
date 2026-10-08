@@ -29,6 +29,22 @@ export function naExecucao(declarado, crew, run) {
   return { grupo: [`${saida}${run}`, ...partes].join('/'), nome };
 }
 
+const dois = (n) => String(n).padStart(2, '0');
+
+/**
+ * O nome de uma execução nova: `AAAA-MM-DD-HHmmss` na hora local; se já existe pasta com esse
+ * nome, `-2`, `-3`… (spec fase-u5a-polimento-do-uso.md, decisão 2).
+ * @param {Date} agora · @param {string[]} existentes as pastas que já estão em `output/`
+ */
+export function novoRun(agora, existentes) {
+  const base = `${agora.getFullYear()}-${dois(agora.getMonth() + 1)}-${dois(agora.getDate())}-${dois(agora.getHours())}${dois(agora.getMinutes())}${dois(agora.getSeconds())}`;
+  const usados = new Set(existentes);
+  for (let n = 1; ; n++) {
+    const nome = n === 1 ? base : `${base}-${n}`;
+    if (!usados.has(nome)) return nome;
+  }
+}
+
 /** O número de uma pasta de versão (`v` + número), ou `null` para qualquer outro nome. */
 function numero(nome) {
   const [, digitos] = /^v(\d{1,9})$/.exec(nome) ?? [];

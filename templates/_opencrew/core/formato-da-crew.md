@@ -132,7 +132,7 @@ outputFile: crews/atas-do-conselho/output/pauta.md   # optional: the user's answ
 |---|---|
 | `execution` | `subagent` runs in the background; `inline` runs in the conversation. A step that publishes or sends is always `inline` |
 | `agent` | the agent id |
-| `format` | every step whose text is checked before the review (from the `on_reject` step up to the review) declares one; without it the checker measures the text as a blog post. A text to print, sign or file is `documento-oficial`. Omit only for research, analysis and the review itself |
+| `format` | every step whose text is checked before the review (from the `on_reject` step up to the review) declares one; without it the writer does not get the guide of that kind of text and the checker looks in the file for pieces of a network (caption, post, blog title). A text to print, sign or file is `documento-oficial`; a text with no channel and no Word file (a proposal, a draft that becomes HTML or PDF, a plan) is `texto-livre`. Omit only for research, analysis and the review itself |
 | `inputFile`, `outputFile` | always under `crews/{code}/output/`; never `pipeline/data/` |
 | `model_tier` | `fast` or `powerful`, only on `subagent` steps. Express: `fast`. Standard: `fast` for research and data gathering, `powerful` for the rest. Full: `powerful`. Inline steps do not carry it |
 | `side_effects: irreversible` | every step that publishes, posts or sends outside the project; such steps come after the review and the final approval |

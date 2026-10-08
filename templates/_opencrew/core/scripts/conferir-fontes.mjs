@@ -87,18 +87,17 @@ export async function conferir({ raiz, crew, limite = LIMITE_DA_BUSCA }) {
   return { crew, raiz, refs, status, buscaParcial: Boolean(ctx.indice?.parcial), limite };
 }
 
+/** @returns {Promise<string>} o caminho da cópia que ficou */
 async function copiaDeSeguranca(arquivo) {
   const bak = existsSync(`${arquivo}.bak`) ? `${arquivo}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}` : `${arquivo}.bak`;
   await copyFile(arquivo, bak);
+  return bak;
 }
 
-/** Regrava a citação num arquivo; a cópia .bak é feita uma vez por arquivo. */
+/** Regrava a citação num arquivo; a cópia .bak é feita uma vez por arquivo (`tocados`: arquivo → cópia). */
 async function regravar(arquivo, item, tocados) {
   const texto = await readFile(arquivo, 'utf8');
-  if (!tocados.has(arquivo)) {
-    await copiaDeSeguranca(arquivo);
-    tocados.add(arquivo);
-  }
+  if (!tocados.has(arquivo)) tocados.set(arquivo, await copiaDeSeguranca(arquivo));
   await writeFile(arquivo, trocarCitacao(texto, item, path.basename(arquivo) === 'crew.yaml'));
 }
 
@@ -118,9 +117,10 @@ function guardaDeEscrita(raiz, crew) {
  * Troca, nos arquivos da crew, cada caminho com sugestão única — só a citação que a coleta leu,
  * nunca um pedaço de outro texto. O que a guarda de escrita barra não muda: `avisar` recebe uma
  * linha por arquivo pulado, ou uma só quando a crew inteira é um link para fora do projeto.
+ * `gravado` recebe cada arquivo alterado e a cópia que ficou dele.
  * @returns quantos caminhos foram gravados, em ao menos um arquivo
  */
-export async function corrigir({ resultado, avisar = () => {} }) {
+export async function corrigir({ resultado, avisar = () => {}, gravado = () => {} }) {
   const { raiz, crew } = resultado;
   const comSugestao = resultado.refs.filter((i) => i.sugestao && i.estado !== 'ok');
   const podeGravar = comSugestao.length ? guardaDeEscrita(raiz, crew) : null;
@@ -128,7 +128,7 @@ export async function corrigir({ resultado, avisar = () => {} }) {
     if (comSugestao.length) avisar(MSG.crewLigadaParaFora(crew));
     return 0;
   }
-  const tocados = new Set();
+  const tocados = new Map();
   const pulados = new Set();
   let gravados = 0;
   for (const item of comSugestao) {
@@ -138,19 +138,22 @@ export async function corrigir({ resultado, avisar = () => {} }) {
     if (dentro.length) gravados += 1;
   }
   for (const arquivo of pulados) avisar(MSG.linkParaFora(relativoAoProjeto(raiz, arquivo)));
+  for (const [arquivo, copia] of tocados) gravado(relativoAoProjeto(raiz, arquivo), path.basename(copia));
   return gravados;
 }
 
-/** --corrigir: troca o que tem sugestão única, diz o que pulou e quantas pendências ficam sem correção. */
+/**
+ * --corrigir: troca o que tem sugestão única e diz cada arquivo alterado, com a cópia; o relatório
+ * sai uma vez só — o de depois, quando algo mudou. Diz também o que pulou e o que ficou sem correção.
+ */
 async function corrigirEAvisar(r, escrever) {
   const pulados = [];
-  const n = await corrigir({ resultado: r, avisar: (linha) => pulados.push(linha) });
-  let atual = r;
-  if (n) {
-    escrever(MSG.corrigidos(n));
-    atual = await conferir({ raiz: r.raiz, crew: r.crew });
-    escrever(formatar(atual));
-  }
+  const feitos = [];
+  const n = await corrigir({ resultado: r, avisar: (linha) => pulados.push(linha), gravado: (arquivo, copia) => feitos.push(MSG.corrigido(arquivo, copia)) });
+  const atual = n ? await conferir({ raiz: r.raiz, crew: r.crew }) : r;
+  for (const linha of feitos) escrever(linha);
+  if (n) escrever('');
+  escrever(formatar(atual));
   for (const linha of pulados) escrever(linha);
   const semSugestao = atual.refs.filter((i) => i.estado === 'faltando' && !i.sugestao).length;
   if (semSugestao) escrever(MSG.semCorrecaoAutomatica(semSugestao));
@@ -177,8 +180,11 @@ export async function main(argv, { cwd = process.cwd(), escrever = (s) => proces
   }
   try {
     let r = await conferir({ raiz: cwd, crew });
-    escrever(formatar(r));
     if (argv.includes('--corrigir')) r = await corrigirEAvisar(r, escrever);
+    else {
+      escrever(formatar(r));
+      if (r.refs.some((i) => i.sugestao && i.estado !== 'ok')) escrever(MSG.comoCorrigir);
+    }
     escrever(`FONTES:${r.status}`);
     return 0;
   } catch (erroDeLeitura) {

@@ -14,6 +14,8 @@ export const MSG = {
 };
 /** A lista fixa do que o script nunca confere. */
 export const NUNCA_CONFERIDO = ['Links e fatos citados no texto.', 'Texto dentro das imagens.', 'Aparência final em cada rede.'];
+/** Canal que não é de rede: nele não há imagem a publicar nem aparência de rede a conferir. */
+const SEM_REDE = new Set(['documentos']);
 
 const ehNaoMedido = (i) => i.item === NAO_MEDIDO || i.item === NAO_VERIFICADO;
 const origem = (arquivo) => `origem: \`${arquivo}\``;
@@ -63,7 +65,8 @@ export function naoConferido(raiz, itens, r) {
     }
   }
   if (r.naoTexto.length) linhas.push(`${NAO_VERIFICADO} — não é texto: ${r.naoTexto.join(', ')}`);
-  return [...linhas, ...NUNCA_CONFERIDO];
+  const temRede = itens.some((i) => i.canal && !SEM_REDE.has(i.canal));
+  return [...linhas, ...(temRede ? NUNCA_CONFERIDO : NUNCA_CONFERIDO.slice(0, 1))];
 }
 
 const LIMITE = { legenda: 'caption_max_chars', post: 'post_max_chars', tweet: 'tweet_max_chars' };

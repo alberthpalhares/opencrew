@@ -37,10 +37,12 @@ Este projeto ainda não tem papel timbrado configurado. Quer configurar agora (l
   1. Run, from the project root: `node _opencrew/core/scripts/documento.mjs --criar-perfil`
      Its last line is `PERFIL:CRIADO` (the file was created from the model) or `PERFIL:JA-EXISTE`
      (it was already there and was not touched).
-  2. Ask the user for: the logo (a PNG file of up to 2 MB that is inside the project, with its
-     path from the root — or none), the three lines of the header (the name of the organization;
-     a second line; a third line, such as site and e-mail) and the text of the footer. Any of them
-     may stay empty: what is empty does not appear in the document.
+  2. Ask the user three questions, one at a time, with these words (the logo is a PNG file of up
+     to 2 MB inside the project, given by its path from the root):
+     - "Qual é o arquivo do logotipo? (PNG, dentro do projeto. Pode responder 'sem logotipo'.)"
+     - "Quais são as linhas do cabeçalho? Até três: nome da entidade, CNPJ ou registro, endereço."
+     - "Quer um texto no rodapé, além de 'Página X de Y'?"
+     Any of them may stay empty: what is empty does not appear in the document.
   3. Fill the file `_opencrew/_memory/documento-oficial.md` with the answers: write only the value
      after the colon of `logotipo`, `cabecalho_1`, `cabecalho_2`, `cabecalho_3` and `rodape`, each
      exactly as the user gave it. Leave every other line as it is (comments, margins, font).
@@ -103,7 +105,9 @@ one message in PT-BR and stops, with nothing written). Show the message to the u
 
 - **The message points to something in the command you wrote** (an option, a path, more than one
   file): fix the command and run it once more.
-- **The message starts with "Perfil, linha {n}:"** (an unknown key, a value out of range, a logo
+- **"Não encontrei {arquivo}." or "Só converto texto…"**: the file is not there, or it is not a
+  `.md` or `.txt`. Show the message and go back to the question of Step 1.
+- **The message starts with "Perfil, linha {n}:"** (an unknown or misspelled key, a value out of range, a logo
   that is missing, is not a PNG or is over 2 MB): the document is not generated with a wrong
   letterhead. Show the message, ask the user for the right value of that line, write it in the
   profile and run again. Do not switch to `--sem-perfil` by yourself.

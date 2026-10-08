@@ -3,21 +3,67 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.12.0] — 2026-10-07
+
+Fase U5, fatia 1: "Polimento do uso" (`specs/fase-u5a-polimento-do-uso.md`). A U5 é a fase de
+fechamento do projeto, em quatro fatias (`specs/fase-u5-roteiro.md`). Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`.
+
+Ainda não nesta versão: o runner dividido (1.13.0), o histórico confiável e o "retomar" (1.14.0)
+e o pedido avulso à crew (1.15.0).
+
+### Added
+- **Formato `texto-livre`** (o 24º guia): para o texto que não é post nem documento para
+  imprimir ou assinar — proposta, minuta que vira HTML ou PDF, plano, relatório interno. Não tem
+  limite de tamanho, não gera Word, e a entrega leva o arquivo inteiro para `outros/`. O
+  `/opencrew repair` passa a propô-lo para esse tipo de passo.
+- **O que o Word não vai converter aparece antes do revisor.** No passo com
+  `format: documento-oficial`, o verificador avisa de imagem, de marcação `:::` desconhecida e
+  de bloco de assinaturas sem fim. São alertas: quem decide é o revisor.
+- Aviso de conversão quando uma linha de tabela tem mais células que o cabeçalho.
+
+### Changed
+- **O nome da execução (`run_id`) vem do script**, com a data e a hora do computador
+  (`caminho.mjs <crew> pasta`, sem `--run`). Antes a IA montava a hora por conta própria.
+- **Conferência de fontes:** o resumo concorda em número ("1 fonte", "1 alerta"); quando há
+  caminho com sugestão, o relatório diz como corrigir; com `--corrigir`, cada arquivo alterado
+  aparece com o nome da cópia que ficou, e o relatório sai uma vez só.
+- Depois de um conserto por veto, o runner confere o arquivo de novo.
+- O runner não cita mais ferramenta de uma IDE só ("Task tool", `.claude/settings.local.json`).
+- **Perfil de documento oficial:** chave escrita quase certa (`Logotipo:`, `rodapé:`, com
+  espaço antes) agora é erro que diz a grafia certa; antes a linha era ignorada em silêncio.
+- O onboarding grava o `company.md` com seis cabeçalhos fixos e tira a marca
+  `NOT CONFIGURED` dos dois arquivos.
+- A linha "Não medido" some para formato que não declara limite (`documento-oficial`,
+  `texto-livre`).
+- Na entrega sem canal de rede, "O que não foi conferido" não cita imagens nem redes.
+- Prompts de criação: dez contradições que a execução real da 1.11.0 achou ganharam uma frase
+  cada (a pergunta de tier com modelo, `extends:` × "do zero", dependências de agente lidas
+  também do "Context Loading", skills nativas fora da conferência, exemplo de saída com 15
+  linhas, a pergunta 1 quando o comando já traz a descrição, entre outras).
+
+### Fixed
+- **Uma frase errada da 1.11.0.** O `/opencrew repair`, o README e este arquivo diziam que texto
+  sem formato "é medido como post de blog". Isso só acontece quando o arquivo tem `title:` no
+  frontmatter. O que acontece sempre, sem o formato: o redator não recebe o guia do tipo de
+  texto, e o verificador procura no arquivo peças de rede (legenda, post). A frase foi trocada
+  em todos os lugares.
+
 ## [1.11.0] — 2026-10-07
 
 Fase U4, fatia 1: "Conserto de crews e caminho de criação" (`specs/fase-u4a-conserto-de-crews.md`).
 Chega a quem já usa com um `npx @aksp/opencrew@latest update`; as suas crews só mudam quando você
 pede o conserto e diz sim a cada ponto.
 
-Ainda não nesta versão: histórico confiável e pedido avulso à crew (`/opencrew pedir`), que vêm
-na 1.12.0; retomar uma execução interrompida, na 1.13.0. O conserto não reordena passos: crew
+Ainda não nesta versão: histórico confiável, retomar uma execução interrompida e pedido avulso à
+crew (`/opencrew pedir`), que ficaram para a fase U5 (`specs/fase-u5-roteiro.md`). O conserto não reordena passos: crew
 sem revisão, sem aprovação final ou que publica antes da revisão é apontada e resolvida com
 `/opencrew edit`.
 
 ### Added
 - **`/opencrew repair <crew>` conserta crews antigas.** Ele lê a crew e mostra, em português, o
   que falta para as melhorias das versões seguintes valerem nela: passo sem o formato do texto
-  (o verificador media como post de blog), crew sem os arquivos do projeto que deve ler,
+  (o redator ficava sem o guia do tipo de texto), crew sem os arquivos do projeto que deve ler,
   proibição sem trecho entre aspas (que o verificador não consegue barrar), nomes dos agentes,
   passo que publica sem a marca. Conserta um ponto por vez, com o seu sim; cada arquivo alterado
   ganha uma cópia `.bak`. Quem grava é um script (`_opencrew/core/scripts/conserto.mjs`), não a

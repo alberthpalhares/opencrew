@@ -121,7 +121,7 @@ Before starting execution:
       - If yes → read `_opencrew/core/skills.engine.md`, follow Operation 2 (Install)
       - If no → **ERROR**: stop pipeline
    b. Read SKILL.md, parse frontmatter for type
-   c. If type: mcp, verify MCP is configured in `.claude/settings.local.json`
+   c. If type: mcp, verify the MCP server is configured in your IDE's MCP configuration (the project's `.mcp.json`, or the file your IDE uses)
       - If missing → **ERROR**: "Skill '{skill}' MCP not configured. Reinstall the skill."
    All skills must resolve successfully before the pipeline starts (fail fast).
 4. **Model tiers**: a `subagent` step declares its own `model_tier` (`fast` or `powerful`), set at crew creation by the crew's tier; inline steps carry none.
@@ -217,11 +217,11 @@ Before starting execution:
    ```
    When the selection step was skipped (no `agent_dependencies:` in crew.yaml), this is
    identical to today: all agents listed, no Skipped line.
-5b. **Initialize run folder**: Generate a unique run ID for this execution:
-   - Format: `YYYY-MM-DD-HHmmss` using the current timestamp (e.g. `2026-03-03-143022`)
-   - Check (folder-listing tool, no command) if `crews/{name}/output/{run_id}/` already exists
-     - If it does (sub-second collision), append `-2`, `-3`, etc. until the folder does not exist
-   - Create the folder: run the `pasta` command (see "Output Path Transformation" below) — never create a folder by command yourself
+5b. **Initialize run folder**: the script names the run — never build the date or the time yourself:
+   - Run the `pasta` command (see "Output Path Transformation" below). It creates the folder of this run and answers `CAMINHO:OK crews/{name}/output/{run_id}`
+   - The `run_id` is the last segment of that path: `YYYY-MM-DD-HHmmss` from the computer's clock (e.g. `2026-03-03-143022`; `-2`, `-3` when that folder already exists)
+   - The date of this run, wherever one is asked below, is the first 10 characters of the `run_id`
+   - Never create a folder by command yourself
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
 6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below).
 
@@ -230,7 +230,7 @@ Before starting execution:
 A local page that shows the crew at work, off by default. Follow this section only when the
 already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled` or
 plain `Dashboard: enabled`, any letter case); otherwise run none of these commands. When it is on,
-run via Bash, from the project root, the one-line command of each moment:
+run, from the project root, the one-line command of each moment:
 
 | Moment | Command |
 |---|---|
@@ -448,7 +448,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 
 | Moment | Command |
 |---|---|
-| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --run "{run_id}"` |
+| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta` (no `--run`: the script creates the `run_id`) |
 | Before a step, for its `inputFile` | `node _opencrew/core/scripts/caminho.mjs "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"` |
 | Before a step writes, for the first `outputFile` of each group | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` |
 | After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}"` |
@@ -476,7 +476,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
   and reads `…/v1/pesquisa.md`. Never assume `v1`.
 - **Script that does not run** (no Node, an error, or no `CAMINHO:` line): tell the user once per
   run `Não consegui rodar a conferência de caminhos; sigo pela regra escrita e marco os arquivos como não verificados.`,
-  build the path by the rule above (the Write tool creates the folder) and continue. A file handled
+  build the path by the rule above (your file-writing tool creates the folder) and continue. A file handled
   this way skips its gate and is listed at the final approval:
   `{arquivo} — não verificado: a conferência de caminhos não rodou`.
 
@@ -518,10 +518,10 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 - Read the step's `model_tier` frontmatter field (if present).
   Valid values: `fast` or `powerful`. If absent or any other value: default to `powerful`.
 - **Before building the subagent prompt**: Resolve all output paths referenced in the step file with the `saida` command (Output Path Transformation, once per group). Store the transformed path(s) in working memory — they will be used both in the prompt and in post-completion verification. Never pass raw paths from the step file to the subagent.
-- Use the Task tool to dispatch the step as a subagent:
+- Dispatch the step with your IDE's subagent mechanism (an IDE without one: run the step inline, in this conversation):
   - If `model_tier: fast`: use the fastest/lightest model available in your current IDE.
   - If `model_tier: powerful` or absent/invalid: use the default model (no model override needed)
-- In the Task prompt, include:
+- In the subagent's prompt, include:
   - The full agent persona from the party CSV
   - The full agent `.agent.md` content (persona, principles, voice guidance, anti-patterns)
   - If the agent has tasks: include ALL task files in order with instructions to execute sequentially, piping output from each task to the next
@@ -558,16 +558,16 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
   (e.g. the organization's name, the main audience), ask: "Isso vale para todas as crews?
   Atualizo o perfil da empresa?" — change `company.md` only after a yes.
 - **If the step frontmatter contains `outputFile`**: after collecting the user's full response,
-  insert only the run_id in the `outputFile` path (item 1 of the rule in Output Path Transformation — no version folder, no `saida` command), then write the response to that path using the Write tool (it creates the folder) before moving to the next step. Checkpoint files are user input captures, not versioned output: they live in the group itself, where `entrada` finds them.
+  insert only the run_id in the `outputFile` path (item 1 of the rule in Output Path Transformation — no version folder, no `saida` command), then write the response to that path with your file-writing tool (it creates the folder) before moving to the next step. Checkpoint files are user input captures, not versioned output: they live in the group itself, where `entrada` finds them.
   For the checkpoint that precedes the researcher, use this format:
   ```
   # Research Focus
 
   **Topic:** {user's typed topic}
   **Time Range:** {selected time range label, e.g., "Últimos 7 dias"}
-  **Date:** {today's date in YYYY-MM-DD format}
+  **Date:** {the date of this run, YYYY-MM-DD}
   ```
-  For any other checkpoint: `# {the checkpoint's title}`, the user's answer as given (the option chosen and every comment), and `**Date:** {today, YYYY-MM-DD}`.
+  For any other checkpoint: `# {the checkpoint's title}`, the user's answer as given (the option chosen and every comment), and `**Date:** {the date of this run, YYYY-MM-DD}`.
   This file is the `inputFile` of the step that follows.
 
 ### Post-Step Output Validation
@@ -599,7 +599,7 @@ After a step produces output (subagent or inline) and BEFORE Veto Condition Enfo
 - If the step does not declare an `outputFile` (e.g., steps that only produce inline console output) → skip output validation.
 - Checkpoint steps (`type: checkpoint`) are exempt — their output is the user's response, not a file.
 
-**IMPORTANT**: Do NOT rely on reading the file with the Read tool to "verify" output. The Read tool returns content that can be misinterpreted. Use ONLY the `conferir` command — its last line is binary and cannot be hallucinated.
+**IMPORTANT**: Do NOT rely on reading the file yourself to "verify" output: what you read can be misinterpreted. Use ONLY the `conferir` command — its last line is binary and cannot be hallucinated.
 
 ### Output Contract Validation
 
@@ -643,7 +643,7 @@ After an agent completes a step (before moving to the next step):
    - Check each condition (e.g., "slides exceed 30 words", "no CTA", "missing sources")
 3. If ANY veto condition is triggered:
    - Inform user: "⚠️ {Agent Name}'s output triggered a veto: {condition}"
-   - Ask the agent to fix the specific issue (re-execute with targeted correction)
+   - Ask the agent to fix the specific issue (re-execute with targeted correction), then run the `conferir` command on the rewritten file again (Post-Step Output Validation) before judging the veto once more
    - Maximum 2 veto fix attempts per step
    - After 2 failed attempts, present to user for manual decision
    - **Never auto-fix an irreversible step** (`side_effects: irreversible`): re-executing it
@@ -778,7 +778,7 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
    Then proceed to prepend the new row.
 
    Read `crews/{name}/_memory/runs.md`. Prepend one new row to the table (immediately after the header row), with:
-   - `Data`: today's date in YYYY-MM-DD format
+   - `Data`: the date of this run (the first 10 characters of the `run_id`)
    - `Run ID`: the `run_id` for this execution
    - `Tema`: the topic or user request from this run (1 sentence max)
    - `Output`: brief description of what was generated (e.g., "Carrossel 9 slides", "Thread 7 posts")

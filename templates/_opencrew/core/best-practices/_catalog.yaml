@@ -119,3 +119,8 @@ catalog:
     name: "Documento oficial (Word)"
     whenToUse: "Creating agents that produce a document to print, sign or file (minutes, official letter, statement, contract, formal report) that becomes a Word file."
     file: documento-oficial.md
+
+  - id: texto-livre
+    name: "Texto livre"
+    whenToUse: "Creating agents that write a text with no channel and no Word file: commercial proposal, draft that becomes HTML or PDF, work plan, internal report."
+    file: texto-livre.md

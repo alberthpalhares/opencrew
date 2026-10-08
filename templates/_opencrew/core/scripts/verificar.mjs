@@ -25,6 +25,7 @@ import { lerLimites, lerDominioDoSite, semFrontmatter } from './verificar/leitur
 import { lerProibicoes } from './verificar/proibicoes.mjs';
 import { lerPecas } from './verificar/pecas.mjs';
 import { medirPecas } from './verificar/medicao.mjs';
+import { FORMATO_DE_DOCUMENTO, alertasDeDocumento } from './verificar/documento.mjs';
 import { regrasGerais, temVariavel, item, FALTA_INFO, NAO_MEDIDO, NAO_VERIFICADO } from './verificar/regras.mjs';
 import { formatarRelatorio } from './verificar/relatorio.mjs';
 import { MSG as GRAVACAO, caminhoDoRelatorio, gravarRelatorio } from './verificar/gravacao.mjs';
@@ -86,7 +87,8 @@ async function verificarArquivo({ arquivo, formato }, ctx, regraDeTeste) {
   const envio = /^(email|whatsapp)-/.test(formato ?? '');
   if (envio && temVariavel(lido.texto)) ctx.notas.add(NOTA_VARIAVEL);
   const gerais = regrasGerais(lido.texto, ctx.proibidos, { variavelBloqueia: !envio });
-  const extras = regraDeTeste ? (await regraDeTeste({ arquivo, formato, texto: lido.texto })) ?? [] : [];
+  const doWord = formato === FORMATO_DE_DOCUMENTO && lido.comPecas ? alertasDeDocumento(lido.texto) : [];
+  const extras = [...doWord, ...(regraDeTeste ? (await regraDeTeste({ arquivo, formato, texto: lido.texto })) ?? [] : [])];
   const naoMedido = (i) => i.item === NAO_MEDIDO;
   const itens = [...medidos.filter((i) => !naoMedido(i)), ...gerais, ...extras, ...medidos.filter(naoMedido)];
   return { itens, fecho: fechoDe(itens, medidas, formato) };

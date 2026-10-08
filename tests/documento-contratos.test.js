@@ -36,10 +36,10 @@ test('U3b-06a: documento-oficial.md exists, is in the catalog, has platform "doc
   assert.match(catalogo, /- id: documento-oficial\r?\n(?: {4}.*\r?\n)*? {4}file: documento-oficial\.md/);
 });
 
-test('U3b-06a: the catalog lists every guide of the folder, and they are 23', () => {
+test('U3b-06a: the catalog lists every guide of the folder, and they are 24', () => {
   const pasta = readdirSync(new URL(`${CORE}/best-practices/`, raiz)).filter((f) => f.endsWith('.md')).sort();
   const noCatalogo = [...catalogo.matchAll(/^ {4}file: (\S+)\r?$/gm)].map((m) => m[1]).sort();
-  assert.equal(pasta.length, 23);
+  assert.equal(pasta.length, 24);
   assert.deepEqual(noCatalogo, pasta);
 });
 
@@ -161,7 +161,7 @@ test('U3b-07b: the README describes the Word document and the profile, and the c
   assert.match(secao, /papel timbrado/);
   assert.match(secao, /`::: assinaturas`/);
   assert.match(readme, /^\| `\/opencrew documento <arquivo>` \|/m, 'the command table of the README has the command');
-  tem(readme, '23 guias de melhores práticas');
+  tem(readme, '24 guias de melhores práticas');
 });
 
 test('U3b-07b: the README does not promise LibreOffice nor Google Docs', () => {

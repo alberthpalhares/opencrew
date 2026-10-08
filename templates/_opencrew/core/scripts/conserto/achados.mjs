@@ -52,7 +52,7 @@ function formato(crew) {
   const n = passos.length;
   return [
     `${n} ${plural(n, 'passo que a revisão confere não diz', 'passos que a revisão confere não dizem')} o formato do texto.`,
-    `Sem o formato, o verificador mede ${plural(n, 'esse texto', 'cada um')} como post de blog.`,
+    'Sem o formato, o redator não recebe o guia desse tipo de texto, e o verificador procura no arquivo peças de rede (legenda, post, título de blog).',
     `Passos: ${passos.map((p) => `${p.numero} (${saidaDe(p)})`).join(', ')}`,
     'Para consertar: --aplicar "formato:<passo>=<formato>"',
   ];

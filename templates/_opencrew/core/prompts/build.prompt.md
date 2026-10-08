@@ -87,7 +87,7 @@ each. Write every file in that format; what follows here only adds what is speci
       prose of step files and tasks, between backticks, e.g. `` `Ativos/Identidade Visual/logo.png` ``. NEVER write absolute paths
       (`C:/…`, `J:/…`, `/Users/…`): they break as soon as the user moves or syncs the folder.
     - `agent_dependencies:` — derive the entries from the step order: for each agent step, list
-      the agent(s) whose output it reads via `inputFile`.
+      the agent(s) whose output it reads, via `inputFile` or in its "Context Loading" list.
 
 2. **`crews/{code}/crew-party.csv`** — Agent manifest
    - The header row MUST be EXACTLY these columns, in this order:
@@ -450,7 +450,7 @@ that the agent knows exactly what to produce.]
 
 [A COMPLETE, realistic example of what this step should produce.
 This is not a template — it's a fully realized output with realistic content.
-Must be 20+ lines and demonstrate the expected quality, depth, and formatting.
+Must be 15+ lines and demonstrate the expected quality, depth, and formatting.
 The agent uses this as a reference for what "good" looks like.]
 
 ## Veto Conditions
@@ -607,7 +607,7 @@ Additional programmatic checks — read the filesystem to verify:
 - [ ] Every `agent_dependencies` key and value references a real agent `id` from crew-party.csv
 - [ ] All task files referenced in agent frontmatter exist
 - [ ] All step files referenced in `pipeline.yaml` exist
-- [ ] Skills listed in `crew.yaml` are installed in `skills/`
+- [ ] Skills listed in `crew.yaml` are installed in `skills/` (the native ones, `web_search` and `web_fetch`, need no folder)
 - [ ] Best-practices files referenced by `format:` fields in steps exist in `_opencrew/core/best-practices/`
 
 ---

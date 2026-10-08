@@ -69,7 +69,8 @@ without the `ENTREGA:` line. Do not rewrite it and do not add files it does not 
 the report of the check made at delivery time (it is not part of the delivery).
 
 - `ENTREGA:OK` → go on with the run (Step 5 first, when it applies). When the summary has a line
-  `
+  that starts with "Sem papel timbrado:", the Word documents came out with no letterhead: say so
+  and offer to set it up (`/opencrew documento`); after the profile exists, deliver again.
 - `ENTREGA:COM_RESSALVA` → everything that was missing is a ressalva the user accepted: the
   `LEIA-ME.md` opens with it and the channel is "Pronto, com ressalva"; go on as with `ENTREGA:OK`.
 - `ENTREGA:INCOMPLETA` → a channel is not ready, the destination was refused or a file could not be
@@ -103,7 +104,11 @@ the report of the check made at delivery time (it is not part of the delivery).
     "Não consegui gravar …"): show the message as it came and ask for another folder (Step 5, with
     the new answer) or for a new attempt, which is the same command again. A file of the list that
     does not exist: ask for it, or take it out of the list.
-  - **A Word document that was not generated** (the line `
+  - **A Word document that was not generated** (the line "Não consegui gerar o Word de
+    {arquivo}: …"): show the message as it came; this is never accepted with option 2. When the
+    reason starts with "Perfil, linha {n}:", the letterhead profile has a wrong line: ask the user
+    for the right value, write it in `_opencrew/_memory/documento-oficial.md` and run the same
+    command again.
   The first call never has `--aceitar-pendencias`. Outside option 2 it goes only when the user
   already chose "Aceitar assim mesmo" in the review loop of this run and what is missing is only
   what was accepted there: then run the command again with it, without asking.

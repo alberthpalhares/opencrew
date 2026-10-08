@@ -80,7 +80,8 @@ function separarPecas(item, texto, itens, p) {
 async function separarItem(item, itens, p) {
   if (ehEditavel(item, itens)) return p.copias.push(copia(item, EDITAVEIS, 'editavel'));
   if (!item.canal) {
-    p.avisos.push({ pasta: OUTROS, tela: MSG.semCanal(item.rel) });
+    // `texto-livre` é o formato de quem não tem canal: estar em `outros/` é o esperado, não um aviso.
+    if (item.formato !== 'texto-livre') p.avisos.push({ pasta: OUTROS, tela: MSG.semCanal(item.rel) });
     return p.copias.push(copia(item, OUTROS, 'copia'));
   }
   // Documento oficial: vai inteiro, sem procura de peças; `documentos.mjs` converte o texto em Word.

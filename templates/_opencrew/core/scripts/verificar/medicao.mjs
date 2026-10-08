@@ -108,7 +108,8 @@ function naoMedidos({ pecas, corpo, formato, limites }, semLimite, medidas) {
   for (const cabecalho of BLOG.includes(formato) ? secoesDeOutroCanal(corpo) : []) {
     linhas.push(item(NAO_MEDIDO, null, null, null, `seção de outro canal num arquivo de blog: ${curto(cabecalho)}`));
   }
-  if (formato && !tipos && limites[formato] && !medidas) {
+  // Formato que não declara limite nenhum (documento-oficial, texto-livre) não tem o que medir.
+  if (formato && !tipos && Object.keys(limites[formato] ?? {}).length && !medidas) {
     linhas.push(item(NAO_MEDIDO, null, null, null, `o verificador ainda não mede os limites do formato ${formato}`));
   }
   return linhas;

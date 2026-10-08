@@ -197,7 +197,7 @@ test('R1-06d: --corrigir still rewrites the unique suggestion and counts only wh
   const passo = await fs.readFile(path.join(raiz, 'crews/c/pipeline/steps/step-01.md'), 'utf8');
   assert.match(passo, /`Docs\/Novo\/regimento\.md`/);
   assert.match(passo, /`Docs\/Antigo\/ata\.md`/, 'the item without a unique suggestion does not change');
-  assert.ok(linhas.some((l) => l.startsWith('1 caminho corrigido')));
+  assert.ok(linhas.includes('Corrigi: crews/c/pipeline/steps/step-01.md (cópia: step-01.md.bak)'), linhas.join('\n'));
   assert.ok(linhas.includes(SEM_CORRECAO));
   assert.ok(!linhas.some((l) => /Nada a corrigir/.test(l)));
   assert.equal(ultima(linhas), 'FONTES:PENDENTE');

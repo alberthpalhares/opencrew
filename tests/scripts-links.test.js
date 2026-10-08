@@ -181,7 +181,8 @@ test('R2-05d: --corrigir skips what a link takes outside the crew, fixes the pla
   const pulados = ['crews/c/pipeline/steps/step-01.md', ...(comLinkDeArquivo ? ['crews/c/agents/ligado.agent.md'] : [])];
   assert.deepEqual(linhas.filter((l) => l.startsWith('Não corrigi')).sort(), pulados.map(NAO_CORRIGI).sort(), 'one line for each skipped file');
   // Two paths had a suggestion; only one was written somewhere.
-  assert.deepEqual(linhas.filter((l) => /caminhos? corrigidos? \(/.test(l)), ['1 caminho corrigido (cópia .bak ao lado de cada arquivo alterado).']);
+  // Since U5-1 each changed file is named, with its copy (specs/fase-u5a-polimento-do-uso.md, rule 5).
+  assert.deepEqual(linhas.filter((l) => l.startsWith('Corrigi: ')), ['Corrigi: crews/c/agents/comum.agent.md (cópia: comum.agent.md.bak)']);
   assert.ok(!linhas.includes('Nada a corrigir.'));
   assert.equal(ultima(linhas), 'FONTES:PENDENTE');
 });

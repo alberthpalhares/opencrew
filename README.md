@@ -185,7 +185,7 @@ meu-projeto/
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── formato-da-crew.md    ← o formato dos arquivos de uma crew (crew.yaml, pipeline.yaml, passos)
-│   │   ├── best-practices/       ← 23 guias de melhores práticas + _catalog.yaml
+│   │   ├── best-practices/       ← 24 guias de melhores práticas + _catalog.yaml
 │   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega, documento Word, conserto de crews e os scripts do Escritório
 │   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
@@ -439,12 +439,15 @@ o que você fez:
   um bloco completo no fim. O bloco começa por um comentário que diz que ele é do OpenCrew: as
   suas linhas ficam fora dele.
 - **E as crews que você já tinha?** O `update` não mexe nelas. Para levar a elas o que veio
-  depois — o formato de cada texto (sem ele o verificador mede tudo como post de blog), os
+  depois — o formato de cada texto (sem ele o redator não recebe o guia do tipo de texto), os
   arquivos do projeto que a crew deve ler, as proibições que o verificador consegue barrar —,
   peça na sua IDE `/opencrew repair <nome>`. Ele mostra o que falta, pergunta antes de cada
   mudança e deixa uma cópia `.bak` do arquivo que alterou. O que não dá para consertar assim
   (crew sem passo de revisão, publicação antes da revisão) ele aponta e manda para
   `/opencrew edit`.
+- **Texto que não é post nem documento para assinar?** Proposta, minuta que outro passo diagrama,
+  plano: o passo recebe o formato `texto-livre`. Não há limite de tamanho, nada vira Word, e a
+  entrega guarda o arquivo como está, em `outros/`.
 - **A instalação anterior parou no meio?** O `update` não altera nada e pede para você rodar
   `npx @aksp/opencrew init`, que conclui a instalação sem apagar o que já existe.
 - **Apagou um modelo de crew ou um skill do catálogo?** Ele volta no `update`, e a saída diz o

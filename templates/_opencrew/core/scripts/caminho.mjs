@@ -2,7 +2,8 @@
 // Caminho da execução de uma crew: diz onde cada passo grava, de onde lê e se o arquivo gravado
 // está lá. Quem calcula é este script, igual em qualquer sistema — a IA não monta o caminho.
 // Uso (na pasta do projeto): node _opencrew/core/scripts/caminho.mjs <crew> <ação> --run <id> [opções]
-//   pasta    --run <id>                       cria crews/<crew>/output/<id>/
+//   pasta    [--run <id>]                     cria crews/<crew>/output/<id>/; sem --run, o id é a
+//                                             data e a hora do computador (AAAA-MM-DD-HHmmss)
 //   saida    --run <id> --arquivo <declarado> onde o passo grava (abre a pasta de versão seguinte)
 //   entrada  --run <id> --arquivo <declarado> a saída mais nova desse arquivo
 //   conferir --arquivo <caminho já resolvido> [--secoes N] [--tldr]
@@ -17,7 +18,7 @@
 import path from 'node:path';
 import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
 import { USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
-import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, proximaVersao } from './caminho/nucleo.mjs';
+import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, novoRun, proximaVersao } from './caminho/nucleo.mjs';
 import { criarPasta, ehPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
 
 const ok = (caminho) => `CAMINHO:OK ${caminho}`;
@@ -31,7 +32,8 @@ const reprovado = (motivo) => `CAMINHO:REPROVADO ${motivo}`;
  */
 function erroDoArquivo(raiz, crew, { acao, run, arquivo }) {
   if (!dentroDoProjeto(raiz, arquivo)) return MSG.foraDoProjeto(limpar(arquivo));
-  const local = acao === 'conferir' ? null : naExecucao(arquivo, crew, run);
+  // `pasta` não usa arquivo, e `conferir` recebe o caminho já resolvido: nenhum dos dois o põe na execução.
+  const local = acao === 'conferir' || acao === 'pasta' ? null : naExecucao(arquivo, crew, run);
   if (!local) return null;
   if (!local.nome) return `Falta o nome do arquivo em --arquivo: ${limpar(arquivo)}`;
   const execucao = path.resolve(raiz, 'crews', crew, 'output', run);
@@ -88,23 +90,24 @@ function conferir(raiz, { arquivo, secoes, tldr }) {
   return motivo ? reprovado(motivo) : ok(caminho);
 }
 
-function responder(raiz, crew, args) {
+function responder(raiz, crew, args, agora) {
   if (args.acao === 'saida') return saida(raiz, crew, args);
   if (args.acao === 'entrada') return entrada(raiz, crew, args);
   if (args.acao === 'conferir') return conferir(raiz, args);
-  const pasta = `crews/${crew}/output/${args.run}`;
+  const run = args.run || novoRun(agora(), pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
+  const pasta = `crews/${crew}/output/${run}`;
   criarPasta(path.resolve(raiz, pasta));
   return ok(pasta);
 }
 
 /**
  * @param {string[]} argv
- * @param {object} [deps] `cwd` (a pasta do projeto) e `escrever`
+ * @param {object} [deps] `cwd` (a pasta do projeto), `escrever` e `agora` (o relógio, para o id da execução)
  * @returns {number} 0 = a linha `CAMINHO:` saiu · 1 = erro de uso, ou falha ao ler ou criar pasta
  *   (a linha de uso e o motivo, ou só o erro; sem linha `CAMINHO:`)
  */
 export function main(argv, deps = {}) {
-  const { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`) } = deps;
+  const { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`), agora = () => new Date() } = deps;
   const args = lerArgs(argv);
   const local = localizar(cwd, args);
   if (local.erro) {
@@ -113,7 +116,7 @@ export function main(argv, deps = {}) {
     return 1;
   }
   try {
-    escrever(responder(cwd, local.crew, args));
+    escrever(responder(cwd, local.crew, args, agora));
     return 0;
   } catch (erro) {
     escrever(`Não consegui resolver o caminho: ${limpar(erro?.message ?? erro)}`);

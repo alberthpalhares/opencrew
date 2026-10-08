@@ -41,7 +41,9 @@ export function erroDeArgumentos({ crew, acao, run, arquivo, secoes }) {
   if (!crew) return 'Falta o nome da crew.';
   if (!acao) return `Falta a ação. Ações: ${LISTA}.`;
   if (!ACOES.includes(acao)) return `Ação desconhecida: ${limpar(acao)}. Ações: ${LISTA}.`;
-  if (acao !== 'conferir' && !run) return MSG.faltaOpcao('--run');
+  // `pasta` sem --run: o script dá o nome à execução (data e hora do computador).
+  if (acao !== 'conferir' && acao !== 'pasta' && !run) return MSG.faltaOpcao('--run');
+  if (run === '') return MSG.faltaOpcao('--run'); // `--run` sem valor não vira "sem --run"
   if (run !== undefined && !RUN.test(run)) return 'O --run só aceita letras, dígitos, ponto, sublinhado e hífen.';
   if (acao !== 'pasta' && !arquivo) return MSG.faltaOpcao('--arquivo');
   if (secoes !== undefined && !INTEIRO.test(secoes)) return 'O --secoes é um número inteiro a partir de 1.';

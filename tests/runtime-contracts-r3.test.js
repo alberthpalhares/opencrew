@@ -18,7 +18,7 @@ const SCRIPT = 'node _opencrew/core/scripts/caminho.mjs';
 // Every command of the path script, wherever it is written (a table cell, a line, a block).
 const comandos = [...runner.matchAll(/node _opencrew\/core\/scripts\/caminho\.mjs[^`\n|]*/g)].map((m) => m[0].trim());
 const COMANDO = {
-  pasta: `${SCRIPT} "{name}" pasta --run "{run_id}"`,
+  pasta: `${SCRIPT} "{name}" pasta`, // since U5-1 the script creates the run_id (no --run)
   entrada: `${SCRIPT} "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"`,
   saida: `${SCRIPT} "{name}" saida --run "{run_id}" --arquivo "{outputFile}"`,
   conferir: `${SCRIPT} "{name}" conferir --arquivo "{path}"`,
@@ -122,7 +122,7 @@ test('R3-04d: discovery.prompt.md lists the crews with the folder-listing tool, 
 test('R3-04d: neither the runner nor the Architect tells anyone to create a folder by command', () => {
   assert.doesNotMatch(runner, /mkdir|New-Item/);
   assert.doesNotMatch(texto, /Create the folder using Bash/);
-  assert.match(texto, /\*\*Initialize run folder\*\*[\s\S]*run the `pasta` command[^.]*never create a folder by command/);
+  assert.match(texto, /\*\*Initialize run folder\*\*[\s\S]*Run the `pasta` command[\s\S]*Never create a folder by command yourself/);
   const mkdir = architect.split(/\r?\n/).filter((l) => /mkdir/i.test(l));
   assert.equal(mkdir.length, 1, 'the Architect mentions mkdir in one rule');
   assert.match(mkdir[0], /Never create directories by command/);

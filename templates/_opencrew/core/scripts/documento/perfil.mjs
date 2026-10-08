@@ -10,6 +10,7 @@ export const PADRAO = Object.freeze({
 
 export const MSG = {
   chave: (n, chave) => `Perfil, linha ${n}: não conheço a chave ${chave}.`,
+  grafia: (n, certa) => `Perfil, linha ${n}: a chave se escreve ${certa}: em minúsculas, sem acento, no começo da linha e sem espaço antes dos dois-pontos.`,
   valor: (n, chave, esperado, valor) => `Perfil, linha ${n}: ${chave} precisa ser ${esperado}. Recebi: ${valor}.`,
 };
 
@@ -38,6 +39,17 @@ const CHAVES = {
   tamanho_corpo_pt: { esperado: 'um número de 8 a 14 (aceita meio ponto)', ler: (valor) => (numero(valor) >= 8 && numero(valor) <= 14 && Number.isInteger(numero(valor) * 2) ? numero(valor) : undefined) },
 };
 
+// Linha que parece "chave: valor" mas não foi lida como chave: maiúscula, acento ou espaço antes.
+const QUASE = /^[ \t]*([\p{L}0-9_]+)[ \t]*:(?!\/\/)/u;
+const semAcento = (s) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+
+/** A chave conhecida que a linha quis escrever, quando não a escreveu do jeito certo; senão, null. */
+function chaveQuaseCerta(linha) {
+  const [, escrita] = QUASE.exec(linha) ?? [];
+  const certa = escrita ? semAcento(escrita) : '';
+  return Object.hasOwn(CHAVES, certa) && !linha.startsWith(`${certa}:`) ? certa : null;
+}
+
 /** Tira as aspas em volta do valor, se as duas pontas têm a mesma. */
 function semAspas(valor) {
   const v = valor.trim();
@@ -58,6 +70,8 @@ export function lerPerfil(bruto) {
   const semBom = bruto.charCodeAt(0) === 0xfeff ? bruto.slice(1) : bruto;
   for (const [i, linha] of semBom.split(/\r\n?|\n/).entries()) {
     const [, chave, escrito = ''] = LINHA.exec(linha.trimEnd()) ?? [];
+    const quase = chave ? null : chaveQuaseCerta(linha);
+    if (quase) return { perfil, linhas, erro: MSG.grafia(i + 1, quase) };
     if (!chave) continue;
     if (!Object.hasOwn(CHAVES, chave)) return { perfil, linhas, erro: MSG.chave(i + 1, chave) };
     linhas[chave] = i + 1;

@@ -35,13 +35,19 @@
 > (`specs/fase-u4a-conserto-de-crews.md`, §8) está nas entradas abaixo. **A U4 saiu em três
 > fatias:** 1 = 1.11.0 (entregue); 2 = 1.12.0 (histórico confiável e modo equipe); 3 = 1.13.0
 > (estado da execução e `retomar`).
+>
+> **Em 2026-10-07 o dono decidiu fechar o projeto na U5 e pausar** (`specs/fase-u5-roteiro.md`). As
+> fatias 2 e 3 da U4 viraram as fatias 3 e 4 da U5. Saíram, entregues na v1.12.0 (CHANGELOG): o
+> formato `texto-livre`, os consertos pequenos do runner (veto, hora do `run_id`), o onboarding e
+> as mensagens da conferência de fontes. O que continua com `→ U5` abaixo e não está numa das
+> quatro fatias vira `→ sem fase — projeto pausado` no fechamento (fatia 4).
 
 ---
 
 ## `/opencrew retomar` — retomar um run interrompido
 - **O que já existe:** o estado do run vive só na memória do modelo (T-A11).
-- **Alocação:** → U4 fatia 3 (1.13.0) — depende de `run-state.json`; o formato da crew já está
-  escrito desde a 1.11.0.
+- **Alocação:** → U5 fatia 3 (1.14.0, "execução registrada") — depende do registro da execução em disco;
+  o formato da crew já está escrito desde a 1.11.0 (`specs/fase-u5-roteiro.md`).
 - **Custo de adiar:** run longo que estoura o contexto é perdido inteiro.
 - **Aprovação:** não.
 
@@ -95,7 +101,7 @@
 - **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em
   2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou
   precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação
-  lado a lado pedir. Item 8 → U4 fatia 2 (1.12.0) — é pedido avulso, como o modo equipe. Item 9 → U5.
+  lado a lado pedir. Item 8 → U5 fatia 4 (1.15.0) — é pedido avulso, como o modo equipe. Item 9: a linha "Não medido" saiu na 1.12.0; documento em outro idioma → sem fase — projeto pausado.
 - **Custo de adiar:** quem tem um modelo `.dotx` ou logotipo que não é PNG ajusta à mão (converte
   o logotipo, aplica o modelo no Word); documento em outro idioma sai com "Página X de Y" em português.
 - **Aprovação:** não.
@@ -103,7 +109,7 @@
 ## Modo equipe: `/opencrew pedir <crew> "<tarefa>"`
 - **O que já existe:** só o pipeline completo. No uso real a crew virou equipe permanente com
   tarefas avulsas fora do pipeline, uma delas fora do histórico (dor 7).
-- **Alocação:** → U4 fatia 2 (1.12.0) — com `runs.md` confiável para tarefas avulsas. Inclui a entrega avulsa
+- **Alocação:** → U5 fatia 4 (1.15.0) — com o `runs.md` confiável da fatia 3 para tarefas avulsas. Inclui a entrega avulsa
   (arquivos fora de uma execução, sem `--run`): é o modo equipe que cria a tarefa fora do
   pipeline (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** histórico e memória perdem o que acontece fora do pipeline.
@@ -229,16 +235,8 @@
   `{approved}/{total checkpoints}`; numa crew real o score saiu como nota ("8,2"), uma terceira
   definição. Em outra, há pastas de execução sem linha no `runs.md` e linha sem pasta (leitura
   das crews reais, 2026-10-07). O histórico confiável é da U4 (T-B6, T-A11).
-- **Alocação:** → U4 fatia 2 (1.12.0) — junto do histórico confiável.
+- **Alocação:** → U5 fatia 3 (1.14.0) — é o histórico confiável.
 - **Custo de adiar:** o mesmo número quer dizer coisas diferentes de uma execução para outra.
-- **Aprovação:** não.
-
-## Onboarding: formato do `company.md` e a marca `NOT CONFIGURED`
-- **O que já existe:** o onboarding não define o formato do `company.md` nem manda tirar
-  `<!-- NOT CONFIGURED -->` de `preferences.md` depois de configurar.
-- **Alocação:** → U5 — polimento de prompt.
-- **Custo de adiar:** perfil da empresa em formato livre; a marca pode ficar no arquivo já
-  configurado.
 - **Aprovação:** não.
 
 ## Trecho visível da legenda e do post: limite declarado e não medido
@@ -255,57 +253,31 @@
 > As duas entradas abaixo vêm da execução real de aceite da R3 (2026-10-06, spec R3 §9). A
 > terceira (o relatório do laço de revisão copiado à mão) saiu na 1.9.0.
 
-## Runner: depois de um veto, o arquivo corrigido não é conferido de novo; restos de comando
-- **O que já existe:** a ordem é conferir → veto; reexecutado por veto, o passo regrava no mesmo
-  caminho e o runner não manda repetir o `conferir` (spec R3, §10). O `run_id` pede "a hora
-  atual" sem dizer de onde. `design.prompt.md` ainda manda `ls _opencrew/agents/`.
-- **Alocação:** → U5 — polimento de prompts; nenhum dos três parou a execução.
-- **Custo de adiar:** arquivo corrigido segue sem a conferência de seções; a IA improvisa um
-  comando para a hora e para a listagem.
-- **Aprovação:** não.
-
-## Achados da execução real de aceite da 1.11.0 (2026-10-07) — prompts de criação e `conferir-fontes`
-- **Origem:** execução real por agente, no papel da IA da IDE (Codex), num projeto novo: criação
-  de uma crew de ata e conserto de uma crew antiga (`specs/fase-u4a-conserto-de-crews.md`, §10).
-  O que era desta fase foi corrigido nela. Ficou, tudo anterior à 1.11.0:
-  1. design: "template usado" é detectado por `tier` presente, que o discovery grava sempre; sem
-     linha de papel nem de guia para redator de documento; `extends:` × "do zero"; "Task tool" e
-     `ls` num prompt compartilhado; checkpoint de aprovação de conteúdo no tier Standard × "só com
-     passo de renderização";
-  2. build: `agent_dependencies` vem de um `inputFile` só, e o revisor lê duas saídas; a
-     conferência "skills instaladas em `skills/`" reprova `web_search`, que é nativa; exemplo de
-     saída com "20+" linhas num ponto e "15+" em outro; "6 tons padrão" sem definição; pesquisa
-     atribuída ao discovery;
-  3. discovery: "responda com um número" × "só apresente as opções"; a pergunta 1 é refeita mesmo
-     quando `/opencrew create <descrição>` já trouxe o objetivo; "2 a 3 perguntas" × as 3 de
-     documento mais a de fontes;
-  4. ponto de entrada: "senão, mostre o menu" não abre exceção para comando com argumento (só a
-     ponte da IDE diz para rotear); a saída do `init` está em inglês;
-  5. `conferir-fontes.mjs`: `FONTES:OK` com alerta aberto; "1 alertas"; com `--corrigir`, o
-     relatório sai duas vezes, a mensagem não diz o arquivo nem a cópia, e a cópia vira
-     `.bak-<data>` quando já existe `.bak`; a contagem de fontes muda sem explicação depois da
-     correção.
-- **Alocação:** → U5 — polimento de prompts e de mensagens; nenhum impediu criar a crew nem
-  consertar a antiga. O item "agentes-base fora do formato do Build" já tem entrada própria.
+## Prompts de criação: o que a execução real da 1.11.0 achou e a 1.12.0 não tocou
+- **O que já existe:** a 1.12.0 resolveu dez contradições dos prompts de criação e as mensagens do
+  `conferir-fontes` (`specs/fase-u5a-polimento-do-uso.md`). Ficou: o checkpoint de aprovação de
+  conteúdo no tier Standard × "só com passo de renderização"; os "6 tons padrão" sem definição; a
+  pesquisa atribuída ao discovery no Build; a saída do `init` em inglês; `conferir-fontes` conta
+  como fonte um caminho citado num passo, e `FONTES:OK` não muda com alerta aberto (o relatório
+  agora avisa). A execução real da 1.12.0 confirmou esses e somou: a tabela de tier Standard
+  ("3 a 5 agentes", três checkpoints) não comporta a crew de dois agentes; o `Default Tier` é lido
+  e a pergunta é feita assim mesmo; a descrição dada com `/opencrew run <crew> "<descrição>"` só é
+  usada quando há `agent_dependencies:`; o runner não diz onde gravar o dado que o usuário dá para
+  um `[PREENCHER]` nem manda verificar de novo; a lista "Agent Loading" está numerada 1, 2, 3, 5,
+  6, 4; nomes de ferramenta de uma IDE só em `system.md` (`WebFetch`), no Architect e no Build
+  ("Write tool"); `preferences.md` tem o campo `IDEs:` que ninguém preenche; a cópia do
+  `conferir-fontes --corrigir` leva a hora em UTC.
+- **Alocação:** → sem fase — projeto pausado (`specs/fase-u5-roteiro.md`); nenhum impediu criar a
+  crew nem consertar a antiga.
 - **Custo de adiar:** a IA improvisa nesses pontos, cada uma de um jeito.
 - **Aprovação:** não.
 
-## Achados da execução real de aceite da 1.10.0 (2026-10-07)
-- **Origem:** execução real por agente, no papel da IA da IDE, num projeto novo (rota
-  `/opencrew documento`, nova geração, crew de ata até a entrega). Quatro ajustes entraram na
-  própria 1.10.0 (a rota não exige onboarding; a entrega avisa quando o Word sai sem papel
-  timbrado; "Antes de usar" no LEIA-ME de documento; o prompt da entrega trata erro de perfil).
-- **Documento Word, ficou para depois:**
-  1. o verificador não vê imagem, `:::` desconhecido nem assinaturas sem fim antes do revisor
-     (os avisos só aparecem na entrega), e a linha "Não medido" sugere um limite que não existe;
-  2. chave do perfil quase certa (`Logotipo:`, `rodapé:`, com espaço antes) é ignorada sem aviso;
-     perfil criado e vazio aparece no relatório como se houvesse timbre;
-  3. o prompt não tem texto fixo para a pergunta do logotipo, das três linhas e do rodapé, e é
-     ambíguo para "Não encontrei {arquivo}." e "Só converto texto…" (deveria voltar à pergunta do arquivo);
-  4. tabela com linha de mais células que o cabeçalho cria coluna sem aviso;
-  5. "O que não foi conferido" lista imagens e redes numa entrega só de documentos.
-- **Criação e execução de crew (antigos):** os itens 6 a 10 saíram na 1.11.0.
-  11. `conferir-fontes.mjs`: "1 fontes" e conta como fonte um caminho citado num passo.
-- **Alocação:** → U5 — itens 1 a 5 e 11 (texto e avisos). O item 1 era da U4: é aviso do
-  verificador, não conserto de crew nem criação (`specs/fase-u4a-conserto-de-crews.md`, §8).
+## Documento Word: perfil vazio no relatório
+- **O que já existe:** a 1.12.0 levou os avisos de documento ao verificador, acusa a chave do
+  perfil escrita quase certa, avisa da tabela com célula a mais e fixou as perguntas do prompt.
+  Ficou: perfil criado e ainda vazio aparece no relatório como se houvesse papel timbrado.
+- **Alocação:** → sem fase — projeto pausado; o documento sai certo (sem timbre), só a frase do
+  relatório engana.
+- **Custo de adiar:** quem criou o perfil e não preencheu lê "perfil usado" e não vê timbre.
 - **Aprovação:** não.
+

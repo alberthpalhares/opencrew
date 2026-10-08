@@ -37,6 +37,7 @@ function lerTabela(linhas, i, estado) {
   while (fim < linhas.length && linhas[fim].trim() && linhas[fim].includes('|')) fim++;
   const brutas = [linhas[i], ...linhas.slice(i + 2, fim)].map(celulas);
   const colunas = Math.max(...brutas.map((l) => l.length));
+  estado.avisos.celulas += brutas.slice(1).filter((l) => l.length > brutas[0].length).length;
   const completas = brutas.map((l) => [...l, ...Array(colunas - l.length).fill('')]);
   estado.por({ tipo: 'tabela', linhas: completas.map((l) => l.map((c) => lerLinha(c, estado.avisos))) });
   return fim;
@@ -56,7 +57,7 @@ function lerBloco(linha, avisos) {
 
 /** Onde os blocos se juntam: a quebra de página pedida vale para o próximo bloco, uma vez só. */
 function novoEstado() {
-  const estado = { blocos: [], avisos: { imagens: 0, desconhecidas: 0, semFim: 0, invalidos: 0 }, quebra: false };
+  const estado = { blocos: [], avisos: { imagens: 0, desconhecidas: 0, semFim: 0, invalidos: 0, celulas: 0 }, quebra: false };
   estado.por = (bloco) => {
     estado.blocos.push(estado.quebra ? { ...bloco, quebra: true } : bloco);
     estado.quebra = false;

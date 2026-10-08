@@ -45,7 +45,8 @@ test('U4a-03a: every finding of the script has its line in the prompt, with the 
     assert.ok(repair.includes(`| \`${codigo}\` |`), `no row for ${codigo}`);
   }
   tem(repair, 'Olhei a crew {nome}. Encontrei {n} ponto(s) para consertar. Vou mostrar um por vez; nada é gravado sem o seu sim, e cada arquivo alterado ganha uma cópia `.bak`.');
-  tem(repair, 'sem isso, o verificador mede cada um como post de blog. Minha proposta: {passo → formato}. Posso gravar assim?');
+  // The sentence about the blog post was wrong and left in U5-1 (tests/runtime-contracts-u5a.test.js, U5a-03a).
+  tem(repair, 'Minha proposta: {passo → formato}. Posso gravar assim?');
   tem(repair, 'Quais arquivos ou pastas ela precisa conhecer? (Pode responder \'nenhum\'.)');
   tem(repair, 'Qual trecho exato devo barrar?');
   tem(repair, 'Pronto: {k} conserto(s) gravado(s). Cópias do que mudou: {lista de .bak}. Ficou pendente: {lista ou \'nada\'}.');
@@ -62,7 +63,7 @@ test('U4a-03a: the repair prompt names --corrigir, hides the script codes from t
 });
 
 test('U4a-03d: the document answers have a field in discovery.yaml, and a second piece keeps its format', () => {
-  tem(discovery, '# For document crews: documents: "{answer from Step 3}" signer: "{who signs}" recipients: "{who receives}" letterhead: "{yes | no | not sure}"');
+  tem(discovery, '# For document crews: documents: "{answer from Step 3}" signer: "{who signs}" recipients: "{who receives}" word_file: "{yes | no}" letterhead: "{yes | no | not sure — only when word_file is yes}"');
   tem(discovery, 'When the crew also produces a short piece for a channel (a WhatsApp notice, an e-mail to the members), add that format id to the list');
   tem(discovery, 'target_formats: # content and document crews; empty list for others');
 });
@@ -95,10 +96,10 @@ test('U4a-03d: the discovery has the document domain, its questions, no investig
   assert.match(discovery, /^\| `document` \| minutes \(ata\), official letter \(ofício\), contract, proposal/m);
   tem(discovery, '**If domain = `document`:** 1. Which documents should the crew produce?');
   tem(discovery, '2. Who signs each document, and who receives it?');
-  tem(discovery, '3. Does the organization have letterhead');
+  tem(discovery, '3. Must the text become a Word file, to print, sign or file?'); // since U5-1 the letterhead is asked only on a "yes"
   tem(discovery, 'ask which files of the project rule the text');
   tem(discovery, '**If domain = `document`, skip this step entirely** (set `investigation.enabled: false`)');
-  tem(discovery, 'If domain = `document`, do not ask: save `target_formats: ["documento-oficial"]`');
+  tem(discovery, 'If domain = `document`, do not ask: save `target_formats: ["documento-oficial"]` when the text must become a Word file');
   tem(discovery, 'domain: "{document | content | research | automation | analysis | mixed}"');
   assert.doesNotMatch(discovery, /Investigation is always offered/);
 });
@@ -181,7 +182,7 @@ test('U4a-03g: Build Gate 2c accepts two irreversible steps in a row (rule 16)',
 test('U4a-03h: a checkpoint with outputFile has the research format and the general one (rule 18)', () => {
   tem(runner, 'For the checkpoint that precedes the researcher, use this format:');
   tem(runner, '# Research Focus');
-  tem(runner, 'For any other checkpoint: `# {the checkpoint\'s title}`, the user\'s answer as given (the option chosen and every comment), and `**Date:** {today, YYYY-MM-DD}`.');
+  tem(runner, 'For any other checkpoint: `# {the checkpoint\'s title}`, the user\'s answer as given (the option chosen and every comment), and `**Date:** {the date of this run, YYYY-MM-DD}`.');
   tem(build, 'For a **checkpoint whose answer the next step needs**');
 });
 
