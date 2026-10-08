@@ -13,6 +13,7 @@ preferred language.
 | `## Design Visual` | `memories.md` | Visual design preferences per crew |
 | `## Estrutura de Conteúdo` | `memories.md` | Content structure rules per crew |
 | `## Proibições Explícitas` | `memories.md` | User bans and hard blocks per crew |
+| `## Regras de Ouro` | `memories.md` | Corrections repeated in 3 or more runs, promoted at the end of a run |
 | `## Técnico (específico do crew)` | `memories.md` | Technical crew-specific settings |
 | `Data \| Run ID \| Tema \| Output \| Score \| Resultado` | `runs.md` | Run history table columns |
 
@@ -40,6 +41,8 @@ unless the user base expands beyond PT-BR — at that point, discuss a migration
         ## Estrutura de Conteúdo
 
         ## Proibições Explícitas
+
+        ## Regras de Ouro
 
         ## Técnico (específico do crew)
         ```

@@ -62,14 +62,14 @@ test('R3-upg-b: after update, the installed script finds the input pesquisa.md o
   // Imported from the WORKSPACE, not from templates/: proves every module arrived together.
   const entregue = pathToFileURL(path.join(core, 'scripts', 'caminho.mjs')).href;
   const { main } = await import(`${entregue}?r3-upg`);
-  const rodar = (...argv) => {
+  const rodar = async (...argv) => {
     const linhas = [];
-    return { code: main(['x', ...argv], { cwd: dir, escrever: (s) => linhas.push(s) }), linhas };
+    return { code: await main(['x', ...argv], { cwd: dir, escrever: (s) => linhas.push(s) }), linhas };
   };
   const antes = await snapshot(path.join(dir, 'crews'));
 
-  assert.deepEqual(rodar('entrada', '--run', RUN, '--arquivo', 'crews/x/output/pesquisa.md'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v1/pesquisa.md`] });
-  assert.deepEqual(rodar('entrada', '--run', RUN, '--arquivo', 'crews/x/output/post.md'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v2/post.md`] });
-  assert.deepEqual(rodar('conferir', '--arquivo', `crews/x/output/${RUN}/v1/pesquisa.md`, '--secoes', '2', '--tldr'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v1/pesquisa.md`] });
+  assert.deepEqual(await rodar('entrada', '--run', RUN, '--arquivo', 'crews/x/output/pesquisa.md'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v1/pesquisa.md`] });
+  assert.deepEqual(await rodar('entrada', '--run', RUN, '--arquivo', 'crews/x/output/post.md'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v2/post.md`] });
+  assert.deepEqual(await rodar('conferir', '--arquivo', `crews/x/output/${RUN}/v1/pesquisa.md`, '--secoes', '2', '--tldr'), { code: 0, linhas: [`CAMINHO:OK crews/x/output/${RUN}/v1/pesquisa.md`] });
   assert.deepEqual(await snapshot(path.join(dir, 'crews')), antes, 'reading an old run changes nothing');
 });

@@ -8,6 +8,7 @@ import { lerFrontmatter, semAcento, semBom } from '../verificar/leitura.mjs';
 import { ehRevisaoHumana, itensDeProibicao, lerLinha } from '../verificar/proibicoes.mjs';
 import { comChave, comFonte, comSufixo, comTitulo, montarCsv } from './edicoes.mjs';
 import { erroAntesDeGravar } from './gravar.mjs';
+import { historico } from './historico.mjs';
 
 const MSG = {
   semValor: (item) => `Sobra ou falta valor em --aplicar "${item.escrito}". Veja os itens com --ajuda.`,
@@ -134,7 +135,7 @@ function proibicao(crew, item, plano) {
   return plano.trocar(memoria, crew.memoria, novo);
 }
 
-const ACOES = { manifesto, nome, formato, fonte, proibicao, irreversivel };
+const ACOES = { manifesto, nome, formato, fonte, proibicao, irreversivel, historico };
 
 /**
  * Valida os itens e monta as mudanças, sem gravar.

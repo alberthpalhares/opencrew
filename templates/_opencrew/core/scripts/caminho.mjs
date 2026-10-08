@@ -2,24 +2,32 @@
 // Caminho da execução de uma crew: diz onde cada passo grava, de onde lê e se o arquivo gravado
 // está lá. Quem calcula é este script, igual em qualquer sistema — a IA não monta o caminho.
 // Uso (na pasta do projeto): node _opencrew/core/scripts/caminho.mjs <crew> <ação> --run <id> [opções]
-//   pasta    [--run <id>]                     cria crews/<crew>/output/<id>/; sem --run, o id é a
-//                                             data e a hora do computador (AAAA-MM-DD-HHmmss)
+//   pasta    [--run <id>] [--tema "<texto>"] [--passos N]
+//                                             cria crews/<crew>/output/<id>/ e o registro da
+//                                             execução; sem --run, o id é a data e a hora do
+//                                             computador (AAAA-MM-DD-HHmmss)
 //   saida    --run <id> --arquivo <declarado> onde o passo grava (abre a pasta de versão seguinte)
 //   entrada  --run <id> --arquivo <declarado> a saída mais nova desse arquivo
-//   conferir --arquivo <caminho já resolvido> [--secoes N] [--tldr]
+//   conferir --arquivo <caminho já resolvido> [--passo N] [--secoes N] [--tldr]
+//                                             com --passo, o arquivo aprovado entra no registro
 // <crew> é o nome da pasta em `crews/`. <declarado> é o `inputFile` ou `outputFile` do passo.
-// Só cria pastas, e só dentro de crews/<crew>/output/<id>/; nunca cria, altera nem apaga arquivo.
+// Só cria pastas, e só dentro de crews/<crew>/output/<id>/. O único arquivo que grava é o registro
+// da execução (`crews/<crew>/output/<id>/execucao.json`); nunca altera nem apaga outro arquivo.
+// Registro que não pôde ser gravado não muda a linha CAMINHO: — o aviso sai antes dela.
 // Última linha da saída (o runner lê esta linha): CAMINHO:OK <caminho>, CAMINHO:FALTA <caminho>
 // ou CAMINHO:REPROVADO <motivo>; o caminho sai relativo à pasta do projeto, com `/`.
 // Código de saída: 0 sempre que a linha CAMINHO: sai · 1 = erro de uso (ação ou opção faltando,
 // pasta sem `_opencrew/`, crew inexistente ou fora do projeto); com código 1 não há linha
 // CAMINHO: e nada é criado.
-// Spec: fase-r3-runner-em-uso-real.md (repositório do OpenCrew).
+// Specs: fase-r3-runner-em-uso-real.md e fase-u5c-execucao-registrada.md, regras 1 a 5
+// (repositório do OpenCrew).
 import path from 'node:path';
 import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
-import { USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
+import { RUN, USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
+import { acharCrew } from './caminho/crew.mjs';
+import { ARQUIVO, anotar, comPasso, limparTema } from './execucao/registro.mjs';
 import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, novoRun, proximaVersao } from './caminho/nucleo.mjs';
-import { criarPasta, ehPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
+import { criarPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
 
 const ok = (caminho) => `CAMINHO:OK ${caminho}`;
 const falta = (caminho) => `CAMINHO:FALTA ${caminho}`;
@@ -50,15 +58,10 @@ function erroDoArquivo(raiz, crew, { acao, run, arquivo }) {
 function localizar(raiz, args) {
   const erro = erroDeArgumentos(args);
   if (erro) return { erro };
-  if (!ehPasta(path.join(raiz, '_opencrew'))) return { erro: MSG.semRaiz };
-  const base = path.resolve(raiz, 'crews');
-  const nome = args.crew.replace(/^crews[\\/]+/, '');
-  if (!dentroDoProjeto(base, nome)) return { erro: MSG.foraDoProjeto(limpar(args.crew)) };
-  const pasta = path.resolve(base, nome);
-  if (path.dirname(pasta) !== base || !ehPasta(pasta)) return { erro: MSG.crewNaoEncontrada(limpar(args.crew)) };
-  const crew = path.basename(pasta);
-  const doArquivo = args.arquivo ? erroDoArquivo(raiz, crew, args) : null;
-  return doArquivo ? { erro: doArquivo } : { crew };
+  const achada = acharCrew(raiz, args.crew);
+  if (achada.erro) return achada;
+  const doArquivo = args.arquivo ? erroDoArquivo(raiz, achada.crew, args) : null;
+  return doArquivo ? { erro: doArquivo } : achada;
 }
 
 /** Regras 2 e 3: o caminho em que o passo grava; a pasta dele é criada. */
@@ -90,23 +93,53 @@ function conferir(raiz, { arquivo, secoes, tldr }) {
   return motivo ? reprovado(motivo) : ok(caminho);
 }
 
-function responder(raiz, crew, args, agora) {
-  if (args.acao === 'saida') return saida(raiz, crew, args);
-  if (args.acao === 'entrada') return entrada(raiz, crew, args);
-  if (args.acao === 'conferir') return conferir(raiz, args);
-  const run = args.run || novoRun(agora(), pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
-  const pasta = `crews/${crew}/output/${run}`;
-  criarPasta(path.resolve(raiz, pasta));
-  return ok(pasta);
+/**
+ * A execução de um arquivo conferido: a pasta logo depois de `crews/<crew>/output/`, se ela é de
+ * execução (tem registro, ou o nome começa por data) e fica mesmo dentro de `output/` — uma pasta
+ * qualquer do usuário, ou um atalho que leva para fora, não ganha registro.
+ */
+function execucaoDe(raiz, caminho, crew) {
+  const saida = `crews/${crew}/output/`;
+  const [run, ...resto] = caminho.startsWith(saida) ? caminho.slice(saida.length).split('/') : [];
+  if (!resto.length || !RUN.test(run) || resto.includes('..')) return null;
+  const pasta = path.resolve(raiz, saida, run);
+  const ehExecucao = /^\d{4}-\d{2}-\d{2}/.test(run) || temConteudo(path.join(pasta, ARQUIVO));
+  return ehExecucao && realDentroDe(path.resolve(raiz, saida), pasta) ? run : null;
+}
+
+/** Regra 2 da U5c: o arquivo que passou na conferência entra no registro, como a saída do passo. */
+async function conferirERegistrar(raiz, crew, args, em) {
+  const linha = conferir(raiz, args);
+  const [, caminho] = /^CAMINHO:OK (.*)$/.exec(linha) ?? [];
+  const run = caminho && args.passo ? execucaoDe(raiz, caminho, crew) : null;
+  if (!run) return [linha];
+  const pasta = path.resolve(raiz, 'crews', crew, 'output', run);
+  return [await anotar(pasta, { crew, run, em }, (registro) => comPasso(registro, { n: Number(args.passo), arquivo: caminho, em })), linha];
+}
+
+/** A pasta da execução; a que nasce agora ganha o registro (regras 1 e 3 da U5c: a que já existia fica como está). */
+async function pasta(raiz, crew, args, agora) {
+  const run = args.run || novoRun(agora, pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
+  const rel = `crews/${crew}/output/${run}`;
+  const nova = criarPasta(path.resolve(raiz, rel));
+  const base = { crew, run, tema: limparTema(args.tema), passos: args.passos ? Number(args.passos) : null, em: agora.toISOString() };
+  return [nova ? await anotar(path.resolve(raiz, rel), base, (registro) => registro) : null, ok(rel)];
+}
+
+async function responder(raiz, crew, args, agora) {
+  if (args.acao === 'saida') return [saida(raiz, crew, args)];
+  if (args.acao === 'entrada') return [entrada(raiz, crew, args)];
+  if (args.acao === 'conferir') return conferirERegistrar(raiz, crew, args, agora.toISOString());
+  return pasta(raiz, crew, args, agora);
 }
 
 /**
  * @param {string[]} argv
  * @param {object} [deps] `cwd` (a pasta do projeto), `escrever` e `agora` (o relógio, para o id da execução)
- * @returns {number} 0 = a linha `CAMINHO:` saiu · 1 = erro de uso, ou falha ao ler ou criar pasta
- *   (a linha de uso e o motivo, ou só o erro; sem linha `CAMINHO:`)
+ * @returns {Promise<number>} 0 = a linha `CAMINHO:` saiu · 1 = erro de uso, ou falha ao ler ou
+ *   criar pasta (a linha de uso e o motivo, ou só o erro; sem linha `CAMINHO:`)
  */
-export function main(argv, deps = {}) {
+export async function main(argv, deps = {}) {
   const { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`), agora = () => new Date() } = deps;
   const args = lerArgs(argv);
   const local = localizar(cwd, args);
@@ -116,7 +149,7 @@ export function main(argv, deps = {}) {
     return 1;
   }
   try {
-    escrever(responder(cwd, local.crew, args, agora));
+    (await responder(cwd, local.crew, args, agora())).filter(Boolean).forEach((linha) => escrever(linha));
     return 0;
   } catch (erro) {
     escrever(`Não consegui resolver o caminho: ${limpar(erro?.message ?? erro)}`);
@@ -124,4 +157,4 @@ export function main(argv, deps = {}) {
   }
 }
 
-if (ehPrincipal(import.meta.url)) process.exitCode = main(process.argv.slice(2));
+if (ehPrincipal(import.meta.url)) process.exitCode = await main(process.argv.slice(2));

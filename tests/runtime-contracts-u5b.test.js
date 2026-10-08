@@ -19,7 +19,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (rel) => readFileSync(path.join(root, rel), 'utf8');
 const flat = (s) => s.replace(/\s+/g, ' ').trim();
 const linhas = (s) => s.replace(/\r\n/g, '\n').split('\n').length;
-const ESPERADAS = ['contrato-de-saida.md', 'escritorio.md', 'fim-da-execucao.md', 'fontes-pendentes.md', 'memoria.md', 'selecao-de-agentes.md', 'tarefas-do-agente.md'];
+// Eight since U5-3: `retomar.md` (specs/fase-u5c-execucao-registrada.md, rule 14).
+const ESPERADAS = ['contrato-de-saida.md', 'escritorio.md', 'fim-da-execucao.md', 'fontes-pendentes.md', 'memoria.md', 'retomar.md', 'selecao-de-agentes.md', 'tarefas-do-agente.md'];
 // What makes the AI read each part (spec ยง4).
 const CONDICAO = {
   'selecao-de-agentes.md': 'ONLY if `crew.yaml` declares an `agent_dependencies:` field',
@@ -29,6 +30,7 @@ const CONDICAO = {
   'contrato-de-saida.md': 'Only when the step\'s frontmatter declares an `output_contract:` field',
   'fontes-pendentes.md': 'Otherwise (`FONTES:PENDENTE`, or the script did not run)',
   'fim-da-execucao.md': '**Close the run**',
+  'retomar.md': 'only on `/opencrew retomar {name}`',
 };
 
 /** The stub of a part: from the line it starts with to the next blank line (a heading stub: its paragraph). */
@@ -42,7 +44,7 @@ function toco(comeco) {
   return todas.slice(de, ate);
 }
 
-test('U5b-01a: the seven parts exist, each starts with a # title and has at most 120 lines', () => {
+test('U5b-01a: the parts exist, each starts with a # title and has at most 120 lines', () => {
   assert.deepEqual(PARTES, ESPERADAS);
   for (const nome of PARTES) {
     const texto = parte(nome);
@@ -52,10 +54,11 @@ test('U5b-01a: the seven parts exist, each starts with a # title and has at most
   }
 });
 
-test('U5b-01b: the core has at most 560 lines; core plus parts, at most 930', () => {
+// 980 since U5-3: the core kept its 560, and the part read only on `/opencrew retomar` was added.
+test('U5b-01b: the core has at most 560 lines; core plus parts, at most 980', () => {
   const total = linhas(nucleo) + PARTES.reduce((soma, nome) => soma + linhas(parte(nome)), 0);
   assert.ok(linhas(nucleo) <= 560, `runner.pipeline.md has ${linhas(nucleo)} lines`);
-  assert.ok(total <= 930, `core + parts have ${total} lines`);
+  assert.ok(total <= 980, `core + parts have ${total} lines`);
 });
 
 test('U5b-02a: every part has a stub in the core that names its path, says "completely" and has at most 8 lines', () => {
@@ -96,9 +99,9 @@ test('U5b-03c: estado.mjs is not in the core; its six commands are in the part; 
   assert.ok(flat(nucleo).includes('never read, write or describe `crews/{name}/state.json` yourself, and a failure there never stops the run'));
 });
 
-test('U5b-03d: the commands written in the core are the ones of the other four scripts', () => {
+test('U5b-03d: the commands written in the core are the ones of the other five scripts', () => {
   const scripts = [...new Set([...nucleo.matchAll(/node _opencrew\/core\/scripts\/([a-z-]+\.mjs)/g)].map((m) => m[1]))].sort();
-  assert.deepEqual(scripts, ['caminho.mjs', 'conferir-fontes.mjs', 'entregar.mjs', 'verificar.mjs']);
+  assert.deepEqual(scripts, ['caminho.mjs', 'conferir-fontes.mjs', 'entregar.mjs', 'execucao.mjs', 'verificar.mjs']);
   for (const acao of ['pasta', 'entrada', 'saida', 'conferir']) assert.ok(nucleo.includes(`caminho.mjs "{name}" ${acao}`), `no caminho.mjs ${acao} in the core`);
 });
 
@@ -130,14 +133,14 @@ test('U5b-04b: the final menu the delivery prompt cites is still in the runner โ
   assert.ok(parte('fim-da-execucao.md').includes('Edit this content'));
 });
 
-test('U5b-05a: the tarball ships the seven parts of the runner', () => {
+test('U5b-05a: the tarball ships the parts of the runner', () => {
   const res = spawnSync('npm pack --dry-run --json --ignore-scripts', { cwd: root, shell: true, encoding: 'utf8' });
   assert.equal(res.status, 0, res.stderr);
   const arquivos = JSON.parse(res.stdout)[0].files.map((f) => f.path);
   for (const nome of ESPERADAS) assert.ok(arquivos.includes(`templates/_opencrew/core/runner/${nome}`), `missing from tarball: ${nome}`);
 });
 
-test('U5b-upg-a: update from 1.12.0 (whole runner, no runner/ folder) delivers the new core and the seven parts; crews and memory untouched', async (t) => {
+test('U5b-upg-a: update from 1.12.0 (whole runner, no runner/ folder) delivers the new core and the parts; crews and memory untouched', async (t) => {
   const dir = await mkTmp('upgrade-u5b');
   t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 3 }));
   await captureOutput(() => withCwd(dir, () => init({ ide: ['claude-code'] })));

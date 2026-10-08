@@ -41,18 +41,36 @@
 > formato `texto-livre`, os consertos pequenos do runner (veto, hora do `run_id`), o onboarding e
 > as mensagens da conferência de fontes. O que continua com `→ U5` abaixo e não está numa das
 > quatro fatias vira `→ sem fase — projeto pausado` no fechamento (fatia 4).
+>
+> Saíram em 2026-10-08, entregues na v1.14.0 (CHANGELOG; `specs/fase-u5c-execucao-registrada.md`):
+> `/opencrew retomar` e o histórico confiável (registro da execução em disco, `runs.md` gravado
+> por script, uma definição de score, conserto do histórico). O que a 1.14.0 deixou de fora está na
+> §8 daquela spec, com destino.
 
 ---
 
-## `/opencrew retomar` — retomar um run interrompido
-- **O que já existe:** o estado do run vive só na memória do modelo (T-A11).
-- **Alocação:** → U5 fatia 3 (1.14.0, "execução registrada") — depende do registro da execução em disco;
-  o formato da crew já está escrito desde a 1.11.0 (`specs/fase-u5-roteiro.md`).
-- **Custo de adiar:** run longo que estoura o contexto é perdido inteiro.
-- **Aprovação:** não.
+## Achados da execução real de aceite da 1.14.0 (fora do registro da execução)
+- **O que já existe:** a execução real (2026-10-08, pasta `%TEMP%\opencrew-u5c-real-1275`) seguiu o
+  runner ao pé da letra e apontou lacunas que já existiam antes da 1.14.0: (1) correção pedida num
+  checkpoint do meio não tem procedimento — o texto manda gravar na memória e seguir, sem dizer quem
+  refaz o arquivo, se abre versão nova nem se o checkpoint é reapresentado; (2) a lista "Agent
+  Loading" está numerada 1, 2, 3, 5, 6, 4; (3) o revisor é mandado ao `review.md` e a dar nota sem
+  que nada mande ler o guia nem diga a escala; (4) "título do checkpoint" não é definido; (5) no
+  resumo da aprovação final, a linha "limites não medidos" do relatório convive com "0 não medidos";
+  (6) o `runs.md` criado pelo script usa o código da crew no título, e o prompt, o nome de exibição.
+  Da segunda conversa (retomar e conserto): (7) preencher `[PREENCHER]` na aprovação final não diz
+  se grava no lugar ou abre versão, nem se confere de novo — o relatório do ciclo fica dizendo "3 a
+  preencher"; (8) dado preenchido ali é `aprovado` ou `corrigido`? (9) o cabeçalho "Pipeline: N
+  steps" não tem forma para a execução retomada, e a seleção de agentes é refeita sem o registro
+  guardar a primeira; (10) no conserto, responder "nenhum" à pergunta das fontes deixa a crew
+  `CONSERTO:PENDENTE` para sempre; (11) o resumo da entrega de `texto-livre` não diz "Pronto";
+  (12) modelos de texto em inglês (cabeçalho, menu final, "Run it:") para usuário em PT-BR.
+- **Alocação:** itens 1 e 10 → U5 fatia 4 (1.15.0) — decisão do dono em 2026-10-08; itens 2 a 9, 11 e
+  12 → sem fase — projeto pausado.
+- **Custo de adiar:** item 1: um modelo literal pode mandar ao revisor o texto sem a correção pedida.
+- **Aprovação:** itens 1 e 10, sim (2026-10-08).
 
-## Orçamento de custo por run
-- **O que já existe:** nada; skills pagas (OpenRouter, Apify, Resend) sem teto (T-A12).
+## Orçamento de custo por run- **O que já existe:** nada; skills pagas (OpenRouter, Apify, Resend) sem teto (T-A12).
 - **Alocação:** → U5 — `Budget:` em `preferences.md`, confirmação antes de lote pago,
   teto de `--batch` no `generate.py`.
 - **Custo de adiar:** gasto inesperado do usuário; retries multiplicam o custo.
@@ -231,15 +249,6 @@
 - **Alocação:** → U5 — pede reescrever os cinco agentes-base (`specs/fase-u4a-conserto-de-crews.md`,
   decisão 9); o `design.yaml` é arquivo interno da criação e não chega ao runner.
 - **Custo de adiar:** o Build completa à mão o que falta no agente-base, a cada crew criada.
-- **Aprovação:** não.
-
-## Histórico: o score do `runs.md` tem duas definições
-- **O que já existe:** o runner define o score como "agent outputs approved" e como
-  `{approved}/{total checkpoints}`; numa crew real o score saiu como nota ("8,2"), uma terceira
-  definição. Em outra, há pastas de execução sem linha no `runs.md` e linha sem pasta (leitura
-  das crews reais, 2026-10-07). O histórico confiável é da U4 (T-B6, T-A11).
-- **Alocação:** → U5 fatia 3 (1.14.0) — é o histórico confiável.
-- **Custo de adiar:** o mesmo número quer dizer coisas diferentes de uma execução para outra.
 - **Aprovação:** não.
 
 ## Trecho visível da legenda e do post: limite declarado e não medido

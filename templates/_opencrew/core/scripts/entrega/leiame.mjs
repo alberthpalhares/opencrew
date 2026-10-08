@@ -2,7 +2,8 @@
 // aparece. Arquivo da entrega é citado com caminho relativo à pasta do LEIA-ME; o de origem,
 // relativo ao projeto. Sem hora: as mesmas entradas geram os mesmos bytes. PT-BR fixo.
 // Specs: fase-u3a1-pasta-de-entrega.md, §4 e §6, e fase-u3a2-entrega-no-projeto.md, §4 e §6
-// (ressalvas, a cópia e "Sobre esta pasta"), no repositório do OpenCrew.
+// (ressalvas, a cópia e "Sobre esta pasta"), e fase-u5c-execucao-registrada.md, regra 10 (o tema
+// no título), no repositório do OpenCrew.
 import { CANAIS, EDITAVEIS, OUTROS } from './canais.mjs';
 import { frasesDePendencia } from './pendencias.mjs';
 import { NAO_EDITE_O_WORD, passosDe } from './passos.mjs';
@@ -97,6 +98,7 @@ function sobre(d) {
 /**
  * @param {object} d
  * @param {string} d.crew nome da crew · @param {string} d.run id da execução
+ * @param {string} [d.tema] o tema do registro da execução; com ele, o título é `{tema} ({run})`
  * @param {string[]} d.pastas os canais presentes, na ordem das seções
  * @param {object[]} d.arquivos `{ pasta, nome, tipo, origem, titulo, numerado }` — no LEIA-ME da
  *   cópia, só os que foram copiados
@@ -113,7 +115,7 @@ function sobre(d) {
 export function montarLeiame(d) {
   const temMd = d.arquivos.some((a) => a.nome.toLowerCase().endsWith('.md'));
   const partes = [
-    `# Entrega — ${d.crew} — ${d.run}${d.reentrega > 1 ? ` (reentrega ${d.reentrega})` : ''}`,
+    `# Entrega — ${d.crew} — ${d.tema ? `${d.tema} (${d.run})` : d.run}${d.reentrega > 1 ? ` (reentrega ${d.reentrega})` : ''}`,
     ...antesDeUsar(d),
     ...d.pastas.flatMap((pasta) => secaoDoCanal(d, pasta)),
     ...secaoDaPasta(d, OUTROS, 'Outros arquivos'),

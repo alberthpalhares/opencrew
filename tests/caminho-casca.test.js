@@ -138,7 +138,7 @@ test('R3-03d: called as a process — the exit code and the last line are the on
 
 // ── R3-03e O que o script toca ──────────────────────────────────────────────────────
 
-test('R3-03e: after a sequence of actions no file was created, changed or deleted, and every new folder is inside output/<run>/', async (t) => {
+test('R3-03e: after a sequence of actions no file was changed or deleted, the only new file is the record of the new run, and every new folder is inside output/<run>/', async (t) => {
   const raiz = await projeto(t);
   await gravar(raiz, 'crews/x/crew.yaml', 'name: x\n');
   await gravar(raiz, 'crews/x/output/antiga/v1/pesquisa.md', '## TL;DR\n');
@@ -161,7 +161,10 @@ test('R3-03e: after a sequence of actions no file was created, changed or delete
   ];
   for (const argv of SEQUENCIA) await rodar(raiz, ['x', ...argv]);
 
-  assert.deepEqual(await snapshot(raiz), arquivosAntes);
+  // Since U5-3 the folder `pasta` creates (r2) is born with the run record; r1 already existed and gets none.
+  const registro = (l) => l.split(path.sep).join('/').startsWith('crews/x/output/r2/execucao.json:');
+  assert.deepEqual((await snapshot(raiz)).filter((l) => !registro(l)), arquivosAntes);
+  assert.equal((await snapshot(raiz)).filter(registro).length, 1);
   const novas = (await pastas(raiz)).filter((p) => !pastasAntes.includes(p));
   assert.deepEqual(novas.sort(), ['crews/x/output/r1/slides', 'crews/x/output/r1/slides/v1', 'crews/x/output/r1/v2', 'crews/x/output/r2']);
   for (const p of novas) assert.match(p, /^crews\/x\/output\/r[12](\/|$)/);

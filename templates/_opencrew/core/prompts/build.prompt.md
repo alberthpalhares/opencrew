@@ -36,6 +36,8 @@ Generate these files directly — they are compilations of data already gathered
 
    ## Proibições Explícitas
 
+   ## Regras de Ouro
+
    ## Técnico (específico do crew)
    ```
    - `crews/{code}/_memory/runs.md` — empty run history log:

@@ -79,7 +79,7 @@ test('R2-04d: the commands that replaced the unquoted templates are quoted', () 
   for (const cmd of [
     `${CAMINHO} entrada --run "{run_id}" --arquivo "{inputFile}"`,
     `${CAMINHO} saida --run "{run_id}" --arquivo "{outputFile}"`,
-    `${CAMINHO} conferir --arquivo "{path}"`,
+    `${CAMINHO} conferir --arquivo "{path}" --passo {step}`, // since U5-3 the checked file goes to the run record
   ]) {
     assert.ok(lines.includes(cmd), `not found: ${cmd}`);
   }
@@ -87,8 +87,9 @@ test('R2-04d: the commands that replaced the unquoted templates are quoted', () 
 
 test('R2-04d: the run folder command, written in a line of the runner text, also quotes the crew path', () => {
   const withPath = inlineCommands(runner).filter((l) => CREW_PATH.test(l));
-  // Since U5-1 the script names the run: `pasta` goes with no --run (specs/fase-u5a-polimento-do-uso.md).
-  assert.ok(withPath.includes(`${CAMINHO} pasta`), `the run folder command changed: ${withPath}`);
+  // Since U5-1 the script names the run: `pasta` goes with no --run (specs/fase-u5a-polimento-do-uso.md);
+  // since U5-3 it carries the theme and the number of steps (specs/fase-u5c-execucao-registrada.md).
+  assert.ok(withPath.includes(`${CAMINHO} pasta --tema "{tema}" --passos {N}`), `the run folder command changed: ${withPath}`);
   assert.deepEqual(unquoted(withPath), []);
 });
 test('R2-04d: in export.prompt.md the crew path goes between double quotes', () => {

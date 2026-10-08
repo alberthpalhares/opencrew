@@ -1,5 +1,5 @@
-// Leitura de uma crew para o conserto: `crew.yaml`, os passos do pipeline, os agentes, o manifesto
-// e a memória. A leitura é tolerante (aceita as formas que versões antigas gravaram) e nunca grava.
+// Leitura de uma crew para o conserto: `crew.yaml`, os passos do pipeline, os agentes, o manifesto,
+// a memória e o histórico (`runs.md`). A leitura é tolerante (aceita as formas que versões antigas gravaram) e nunca grava.
 // Spec: fase-u4a-conserto-de-crews.md, regra 5 (repositório do OpenCrew).
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -121,6 +121,7 @@ export function lerCrew(raiz, crew) {
     agentes: agentesDe(pasta),
     csv: lerBruto(arquivo('crew-party.csv')),
     memoria: lerBruto(arquivo('_memory', 'memories.md')),
-    arquivos: { yaml: arquivo('crew.yaml'), csv: arquivo('crew-party.csv'), memoria: arquivo('_memory', 'memories.md') },
+    runs: lerBruto(arquivo('_memory', 'runs.md')),
+    arquivos: { yaml: arquivo('crew.yaml'), csv: arquivo('crew-party.csv'), memoria: arquivo('_memory', 'memories.md'), runs: arquivo('_memory', 'runs.md') },
   };
 }

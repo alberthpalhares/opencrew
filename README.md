@@ -182,12 +182,12 @@ meu-projeto/
 │   ├── core/
 │   │   ├── system.md             ← 🧠 sistema completo do OpenCrew
 │   │   ├── runner.pipeline.md    ← executor de pipeline (o que toda execução usa)
-│   │   ├── runner/               ← 7 partes do executor, lidas só quando é o caso (painel, fim da execução…)
+│   │   ├── runner/               ← 8 partes do executor, lidas só quando é o caso (painel, fim da execução, retomar…)
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── formato-da-crew.md    ← o formato dos arquivos de uma crew (crew.yaml, pipeline.yaml, passos)
 │   │   ├── best-practices/       ← 24 guias de melhores práticas + _catalog.yaml
-│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, entrega, documento Word, conserto de crews e os scripts do Escritório
+│   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, registro da execução, entrega, documento Word, conserto de crews e os scripts do Escritório
 │   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
 │   │   └── prompts/              ← 15 prompts de fase (discovery, design, build, entrega, documento, etc.)
@@ -206,6 +206,7 @@ meu-projeto/
 ├── crews/                        ← suas crews vivem aqui
 │   ├── blog-semanal/             ← template: blog semanal
 │   │   └── output/<execução>/    ← criada a cada execução
+│   │       ├── execucao.json     ← registro da execução, gravado por script (é o que o `/opencrew retomar` lê)
 │   │       ├── v1/  v2/  …       ← o que cada passo gravou
 │   │       └── entrega/          ← o que você usa: LEIA-ME.md + uma pasta por canal (copiada para a pasta do projeto que você escolher)
 │   ├── instagram-carrossel/      ← template: Instagram carrossel
@@ -293,6 +294,25 @@ LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os n
 são sempre em português.
 
 ---
+
+## Histórico e execução interrompida
+
+Cada execução deixa um registro na pasta dela (`crews/<crew>/output/<execução>/execucao.json`):
+o tema, os passos já gravados e conferidos, o que você respondeu em cada aprovação. Quem grava é
+um script, a cada passo — a IA não escreve nesse arquivo.
+
+- **O histórico da crew** (`crews/<crew>/_memory/runs.md`) ganha uma linha por execução, também
+  gravada pelo script: a que terminou, a que você abortou e a que a revisão rejeitou. A coluna
+  Score tem um significado só: aprovações suas sem pedido de correção, sobre as aprovações que você
+  respondeu (`2/3`).
+- **A conversa caiu no meio?** Em qualquer conversa nova, peça `/opencrew retomar <nome>`. A IA
+  mostra o tema, o que já está pronto e de que passo vai continuar, e espera o seu sim. O que já
+  foi gravado e conferido não é refeito; o passo que estava no meio é refeito inteiro. O que foi
+  combinado só na conversa anterior, sem ter sido gravado, não volta.
+- **Execução antiga fora do histórico?** O `/opencrew repair <nome>` mostra as pastas de execução
+  sem linha no histórico, pergunta o tema de cada uma e grava a linha como `Registrada depois`,
+  com cópia `runs.md.bak`. Linha sem pasta e pasta vazia são só apontadas: nada é apagado.
+- Execução feita antes da 1.14.0 não tem registro: não dá para retomar.
 
 ## Documento Word
 
@@ -499,9 +519,10 @@ npx @aksp/opencrew update --check
 | `/opencrew` | Abre o menu principal |
 | `/opencrew create <descrição>` | Cria uma nova crew a partir da sua descrição |
 | `/opencrew run <nome>` | Executa o pipeline de uma crew |
+| `/opencrew retomar <nome>` | Continua a execução que parou no meio (a conversa caiu, o contexto acabou): mostra o que já está pronto e segue do passo seguinte, sem refazer o que foi gravado |
 | `/opencrew list` | Lista todas as suas crews |
 | `/opencrew edit <nome>` | Modifica uma crew existente |
-| `/opencrew repair <nome>` | Mostra o que falta numa crew que você já tem (formato de cada texto, arquivos do projeto que ela deve ler, proibições que o verificador consegue barrar, nomes dos agentes) e conserta um ponto por vez, com o seu sim e uma cópia `.bak` |
+| `/opencrew repair <nome>` | Mostra o que falta numa crew que você já tem (formato de cada texto, arquivos do projeto que ela deve ler, proibições que o verificador consegue barrar, nomes dos agentes, execuções que ficaram fora do histórico) e conserta um ponto por vez, com o seu sim e uma cópia `.bak` |
 | `/opencrew delete <nome>` | Remove uma crew |
 | `/opencrew skills` | Navega, instala ou remove skills |
 | `/opencrew install <skill>` | Instala uma skill do catálogo |

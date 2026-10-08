@@ -6,15 +6,16 @@ import { ACOES } from './nucleo.mjs';
 export const USO = 'Uso: node _opencrew/core/scripts/caminho.mjs <crew> <ação> --run <id> [opções]';
 
 const LISTA = ACOES.join(', ');
-const OPCAO = /^--(run|arquivo|secoes|tldr)(?:=(.*))?$/s;
-const RUN = /^(?!\.+$)[A-Za-z0-9._-]+$/;
+const OPCAO = /^--(run|arquivo|secoes|tldr|tema|passos|passo)(?:=(.*))?$/s;
+/** O nome de uma execução: letras, dígitos, ponto, sublinhado e hífen (nunca só pontos). */
+export const RUN = /^(?!\.+$)[A-Za-z0-9._-]+$/;
 const INTEIRO = /^[1-9]\d{0,8}$/;
 
 /** Texto que veio da linha de comando e volta numa mensagem: uma linha só, até 200 caracteres. */
 export const limpar = (valor) => String(valor).replace(/\s+/g, ' ').trim().slice(0, 200);
 
 /**
- * `argv` → `{ crew, acao, run, arquivo, secoes, tldr }`. Os dois primeiros argumentos soltos são
+ * `argv` → `{ crew, acao, run, arquivo, secoes, tldr, tema, passos, passo }`. Os dois primeiros argumentos soltos são
  * a crew e a ação. Opção vale como `--nome valor` e `--nome=valor`; `--tldr` não leva valor.
  * Opção ausente fica `undefined`.
  */
@@ -37,7 +38,7 @@ export function lerArgs(argv) {
  * caminho já resolvido: é a única ação que não precisa de `--run`.
  * @returns {string|null} o motivo em PT-BR, ou `null`
  */
-export function erroDeArgumentos({ crew, acao, run, arquivo, secoes }) {
+export function erroDeArgumentos({ crew, acao, run, arquivo, secoes, passos, passo }) {
   if (!crew) return 'Falta o nome da crew.';
   if (!acao) return `Falta a ação. Ações: ${LISTA}.`;
   if (!ACOES.includes(acao)) return `Ação desconhecida: ${limpar(acao)}. Ações: ${LISTA}.`;
@@ -47,5 +48,7 @@ export function erroDeArgumentos({ crew, acao, run, arquivo, secoes }) {
   if (run !== undefined && !RUN.test(run)) return 'O --run só aceita letras, dígitos, ponto, sublinhado e hífen.';
   if (acao !== 'pasta' && !arquivo) return MSG.faltaOpcao('--arquivo');
   if (secoes !== undefined && !INTEIRO.test(secoes)) return 'O --secoes é um número inteiro a partir de 1.';
+  if (passos !== undefined && !INTEIRO.test(passos)) return 'O --passos é um número inteiro a partir de 1.';
+  if (passo !== undefined && !INTEIRO.test(passo)) return 'O --passo é um número inteiro a partir de 1.';
   return null;
 }

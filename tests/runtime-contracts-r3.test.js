@@ -20,10 +20,10 @@ const SCRIPT = 'node _opencrew/core/scripts/caminho.mjs';
 // Every command of the path script, wherever it is written (a table cell, a line, a block).
 const comandos = [...runner.matchAll(/node _opencrew\/core\/scripts\/caminho\.mjs[^`\n|]*/g)].map((m) => m[0].trim());
 const COMANDO = {
-  pasta: `${SCRIPT} "{name}" pasta`, // since U5-1 the script creates the run_id (no --run)
+  pasta: `${SCRIPT} "{name}" pasta --tema "{tema}" --passos {N}`, // since U5-1 the script creates the run_id (no --run); since U5-3 it opens the run record
   entrada: `${SCRIPT} "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"`,
   saida: `${SCRIPT} "{name}" saida --run "{run_id}" --arquivo "{outputFile}"`,
-  conferir: `${SCRIPT} "{name}" conferir --arquivo "{path}"`,
+  conferir: `${SCRIPT} "{name}" conferir --arquivo "{path}" --passo {step}`, // since U5-3 the checked file goes to the run record
 };
 const paths = sectionOf(runner, '### Output Path Transformation');
 
@@ -77,7 +77,7 @@ test('R3-04a: the examples no longer suggest that everything lives in v1', () =>
 test('R3-04b: in every caminho.mjs command the crew name and the paths go between double quotes', () => {
   assert.ok(comandos.length >= 4, `expected at least the four commands, got ${comandos.length}`);
   for (const comando of comandos) {
-    assert.match(comando, /^node _opencrew\/core\/scripts\/caminho\.mjs "\{name\}" (pasta|saida|entrada|conferir)( --run "\{run_id\}")?( --arquivo "\{[^"{}]+\}")?$/, comando);
+    assert.match(comando, /^node _opencrew\/core\/scripts\/caminho\.mjs "\{name\}" (pasta|saida|entrada|conferir)( --run "\{run_id\}")?( --arquivo "\{[^"{}]+\}")?( --tema "\{tema\}" --passos \{N\}| --passo \{step\})?$/, comando);
   }
   assert.match(flat(paths), /safe-name rule \(nome seguro\)/);
 });

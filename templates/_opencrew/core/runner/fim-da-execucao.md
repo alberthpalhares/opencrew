@@ -31,46 +31,35 @@ After applying all candidates, write the updated `memories.md`.
 
 If no candidates are found (the run had no explicit user feedback), skip writing `memories.md` entirely — do not write an unmodified copy. Always proceed to step 2b regardless.
 
-### 2b. Prepend to `runs.md` (reverse-chronological log — newest run first)
+### 2b. Prepend to `runs.md` — the script writes the row
 
-If `crews/{name}/_memory/runs.md` does not exist, create it first with:
-```markdown
-# Run History: {crew-name}
+Never write `crews/{name}/_memory/runs.md` yourself. Close the run with the `fechar` command of the runner ("Run record"): `--resultado` is `aprovado` (the final approval was given), `publicado` (an irreversible step published or sent) or `rejeitado` (the review rejected at the last cycle and the user aborted); `--saida` is a brief description of what was generated (e.g. "Carrossel 9 slides", "Thread 7 posts"); add `--tema "{tema}"` (1 sentence max) if no command of this run carried the topic yet.
 
-| Data | Run ID | Tema | Output | Score | Resultado |
-|------|--------|------|--------|-------|-----------|
-```
-Then proceed to prepend the new row.
+The script writes the row of this run right below the header — `Data | Run ID | Tema | Output | Score | Resultado`, newest run first; a row this run already had is replaced — and prints it. No other data.
 
-Read `crews/{name}/_memory/runs.md`. Prepend one new row to the table (immediately after the header row), with:
-- `Data`: the date of this run (the first 10 characters of the `run_id`)
-- `Run ID`: the `run_id` for this execution
-- `Tema`: the topic or user request from this run (1 sentence max)
-- `Output`: brief description of what was generated (e.g., "Carrossel 9 slides", "Thread 7 posts")
-- `Score`: `{approved}/{total}` agent outputs approved without corrections (e.g., `4/5`)
-- `Resultado`: one of — `Aprovado` / `Rejeitado` / `Publicado` / `Abortado`
+`Score` has one definition, and the script counts it from the recorded checkpoints: the checkpoints the user approved without corrections ÷ the checkpoints the user answered (approved + corrected; a skipped one does not count), e.g. `2/3`; `—` when none was answered. Never compute it yourself.
 
-No other data.
-
-The `Score` column tracks how many agent outputs were approved by the user without corrections in this run. Count only explicit checkpoint approvals (not "skip" or "continue"). Format: `{approved}/{total checkpoints}` (e.g., `4/5` means 4 of 5 agent outputs were approved as-is).
+- Last line `EXECUCAO:FECHADA {resultado} {score}` → go on to 2c. A line `Não consegui gravar o histórico desta execução: {motivo}` before it → show it to the user as it came.
+- The script did not run (no Node, an error, no `EXECUCAO:` line) → tell the user `⚠️ Não consegui gravar o histórico desta execução: {motivo}` and go on. Do not write the row by hand.
 
 ### 2c. Post-Run Reflection (pattern detection)
 
-After updating `memories.md` and `runs.md`, run a reflection pass. This is a lightweight analysis — not a full agent execution, just pattern matching on the run's feedback and past memory.
+After updating `memories.md` and closing the run, run a reflection pass. This is a lightweight analysis — not a full agent execution, just pattern matching on the corrections of this run and of the last runs.
 
 1. **Collect this run's corrections**: From checkpoint responses, gather every user rejection or correction. A correction is:
    - A rejected output with a reason ("tom muito informal", "cor não combina", "fonte sem data")
    - A modification request during checkpoint ("muda o título para X", "usa azul em vez de verde")
 
-2. **Look for recurrence**: Compare each correction against past runs recorded in `memories.md`:
-   - Search `memories.md` for similar patterns (same category, same agent, same type of correction)
-   - Count: how many past runs have a correction matching this pattern?
-   - A "match" means the same agent + same type of error (e.g., "redator + tom informal", "designer + cores saturadas")
+2. **Look for recurrence**: use the list the `fechar` command printed under `Correções das últimas execuções:` — one line per correction recorded in the last 10 closed runs of this crew, this one included (`- {run_id} · passo {N} · {nota}`).
+   - Do not search `memories.md` for past runs: by rule it keeps no run data.
+   - Count: in how many different runs of that list does the same pattern appear?
+   - A "match" means the same step (so the same agent) + the same type of error (e.g. "redator + tom informal", "designer + cores saturadas")
+   - No list was printed → there is nothing to compare: skip items 3 and 4.
 
 3. **Promote to Regra de Ouro**: If the SAME pattern appears in **3 or more runs** (including this one):
-   a. Add a new entry under `## Regras de Ouro` in `memories.md`:
+   a. Add a new entry under `## Regras de Ouro` in `memories.md` (the header is exactly this, fixed PT-BR; create the section if the file does not have it):
       ```markdown
-      ## Regras de Ouro (promovidas após 3+ ocorrências)
+      ## Regras de Ouro
 
       - **{Agent role}**: SEMPRE {correct behavior}. {Why — grounded in user feedback}.
         (Runs: #{run1}, #{run2}, #{run3})
@@ -94,7 +83,7 @@ After updating `memories.md` and `runs.md`, run a reflection pass. This is a lig
 
 5. **Bail out early**: If this run had zero corrections (all checkpoints approved), skip the entire reflection — nothing to learn.
 
-6. **Reflection budget**: Maximum 30 seconds of analysis. If the crew has a long history (>20 past runs), sample the most recent 10 runs for pattern matching. This is a quick scan, not an exhaustive audit.
+6. **Reflection budget**: Maximum 30 seconds of analysis: the list of the script is all the history you read. This is a quick scan, not an exhaustive audit.
 
 3. Present completion summary:
 ```

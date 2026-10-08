@@ -17,6 +17,7 @@ export const parte = (nome) => ler(`runner/${nome}`);
 
 // [the line the stub starts with, the part, the indentation the block had inside the runner]
 const TOCOS = [
+  ['**Resuming**', 'retomar.md', 0],
   ['1b. **Memory format**', 'memoria.md', 3],
   ['    If the last line is `FONTES:OK`', 'fontes-pendentes.md', 4],
   ['4b. **Pre-Execution Agent Selection**', 'selecao-de-agentes.md', 4],

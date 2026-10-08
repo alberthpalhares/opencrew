@@ -59,6 +59,7 @@ Route input to the matching action:
 | `/opencrew create <description>` | Load the Architect (`_opencrew/core/architect.agent.yaml`) → Create Crew flow: one prompt per phase, listed there |
 | `/opencrew list` | List all crews in `crews/` (a folder without `crew.yaml` is not a crew) |
 | `/opencrew run <name>` | Load Pipeline Runner → Execute crew |
+| `/opencrew retomar <name>` | Load Pipeline Runner → resume the run of that crew that stopped in the middle (`_opencrew/core/runner/retomar.md`) |
 | `/opencrew edit <name> <changes>` | Load the Architect → Edit Crew flow |
 | `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → show what an existing crew is missing and fix one point at a time, each with a `.bak` copy |
 | `/opencrew skills` | Load Skills Engine → Show skills menu |

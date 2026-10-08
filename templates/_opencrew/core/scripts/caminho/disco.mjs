@@ -1,5 +1,6 @@
 // O que o `caminho.mjs` faz no disco: lê nomes de pastas, confere se um arquivo tem conteúdo, lê
-// um arquivo e cria pastas. Nunca cria, altera nem apaga arquivo.
+// um arquivo e cria pastas. Nunca cria, altera nem apaga arquivo (o registro da execução é gravado
+// por `execucao/registro.mjs`).
 // Spec: fase-r3-runner-em-uso-real.md, regra 6 (repositório do OpenCrew).
 import { mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
@@ -32,5 +33,5 @@ export function temConteudo(arquivo) {
 
 export const lerTexto = (arquivo) => readFileSync(arquivo, 'utf8');
 
-/** Cria a pasta com as pastas-mãe; pasta que já existe não é erro. */
-export const criarPasta = (pasta) => { mkdirSync(pasta, { recursive: true }); };
+/** Cria a pasta com as pastas-mãe; pasta que já existe não é erro. @returns {boolean} criou alguma pasta? */
+export const criarPasta = (pasta) => mkdirSync(pasta, { recursive: true }) !== undefined;

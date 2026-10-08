@@ -13,9 +13,10 @@ export const AJUDA = [
   '  proibicao:<n>=<trecho>           o trecho do item n vira trava do verificador',
   '  proibicao:<n>=revisao-humana     o item n fica para o revisor',
   '  irreversivel:<passo>             marca o passo que publica ou envia',
+  '  historico:<execução>=<tema>      põe no histórico a execução que ficou sem linha',
 ];
 
-export const TIPOS = ['manifesto', 'nome', 'formato', 'fonte', 'proibicao', 'irreversivel'];
+export const TIPOS = ['manifesto', 'nome', 'formato', 'fonte', 'proibicao', 'irreversivel', 'historico'];
 const OPCAO = /^--(crew|aplicar|ajuda)(?:=(.*))?$/s;
 const ITEM = /^([a-z-]+)(?::([^=]*))?(?:=(.*))?$/s;
 

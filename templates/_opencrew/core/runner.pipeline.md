@@ -24,6 +24,7 @@ included), digits, space and `. _ - / \ : ( )`. With any other character (`$`, b
 
 ## Initialization
 
+**Resuming** — only on `/opencrew retomar {name}`: before any step below, read `_opencrew/core/runner/retomar.md` completely and follow it — it asks the user first, then says when to do this Initialization, with no step 5b (no new folder: the run goes on with its `run_id`).
 Before starting execution:
 
 1. You have already loaded:
@@ -90,7 +91,7 @@ Before starting execution:
    When the selection step was skipped (no `agent_dependencies:` in crew.yaml), this is
    identical to today: all agents listed, no Skipped line.
 5b. **Initialize run folder**: the script names the run — never build the date or the time yourself:
-   - Run the `pasta` command (see "Output Path Transformation" below). It creates the folder of this run and answers `CAMINHO:OK crews/{name}/output/{run_id}`
+   - Run the `pasta` command (see "Output Path Transformation" below). It creates the folder of this run and its record, and answers `CAMINHO:OK crews/{name}/output/{run_id}`
    - The `run_id` is the last segment of that path: `YYYY-MM-DD-HHmmss` from the computer's clock (e.g. `2026-03-03-143022`; `-2`, `-3` when that folder already exists)
    - The date of this run, wherever one is asked below, is the first 10 characters of the `run_id`
    - Never create a folder by command yourself
@@ -265,10 +266,10 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 
 | Moment | Command |
 |---|---|
-| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta` (no `--run`: the script creates the `run_id`) |
+| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --tema "{tema}" --passos {N}` (no `--run`: the script creates the `run_id`) |
 | Before a step, for its `inputFile` | `node _opencrew/core/scripts/caminho.mjs "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"` |
 | Before a step writes, for the first `outputFile` of each group | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` |
-| After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}"` |
+| After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}" --passo {step}` |
 
 - **Values** — `{name}`: the crew code. `{inputFile}` / `{outputFile}`: the path as the step
   declares it (raw, without the run_id). `{path}`: the path `saida` returned. The safe-name rule
@@ -296,6 +297,20 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
   build the path by the rule above (your file-writing tool creates the folder) and continue. A file handled
   this way skips its gate and is listed at the final approval:
   `{arquivo} — não verificado: a conferência de caminhos não rodou`.
+
+### Run record (registro da execução)
+
+The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/execucao.json`): `/opencrew retomar` and the history (`runs.md`) are read from it. `pasta` and `conferir` feed it; you add one command at three moments:
+
+| Moment | Command |
+|---|---|
+| A checkpoint was answered and its answer saved | `node _opencrew/core/scripts/execucao.mjs "{name}" marcar --run "{run_id}" --passo {step} --evento checkpoint --resultado {resultado} --nota "{nota}"` |
+| The reviewer gave the verdict (each cycle) | `node _opencrew/core/scripts/execucao.mjs "{name}" marcar --run "{run_id}" --passo {step} --evento revisao --resultado {resultado} --nota "{nota}"` |
+| End of the run, and whenever it is aborted | `node _opencrew/core/scripts/execucao.mjs "{name}" fechar --run "{run_id}" --resultado {resultado} --saida "{saída}"` |
+
+- **Values** — `{step}`: the step's number in `pipeline.yaml` (`step:`; without it, its position, from 1) — the same in `conferir --passo`. `{resultado}`: checkpoint → `aprovado` (the user judged something the crew produced and accepted it as it is), `corrigido` (the answer asked for any change) or `pulado` (no judgement: the checkpoint only collected an answer — a topic, a choice — or was skipped); revisao → `aprovado` or `rejeitado`; fechar → `aprovado`, `publicado` (an irreversible step published or sent), `rejeitado` (the review rejected at the last cycle and the user aborted) or `abortado`. `{nota}`: the correction asked or the reason of the rejection — no `--nota` on an approval. `{tema}`: the topic of this run, in a few words; when only a checkpoint reveals it, start with no `--tema` and add `--tema "{tema}"` to that checkpoint's `marcar`. `{N}`: how many steps will run, checkpoints included. `{saída}`: what was produced ("Carrossel 9 slides").
+- **Text on the command line** (`{tema}`, `{nota}`, `{saída}`) — one line between double quotes, only letters (accents included), digits, spaces and `. , : ; - ( ) / ?`; drop every other sign, and omit the option when no text is left.
+- The scripts are the only writers: never read, write or describe `execucao.json` yourself, and never write `runs.md`. A warning `Não consegui gravar o registro desta execução`, or one of these commands not running, never stops the run: tell the user once and go on.
 
 ### For each pipeline step:
 
@@ -365,6 +380,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 - **Always include the file path** of any generated content the user needs to review. Example: "Review the content at `crews/{name}/output/{run_id}/v2/content.md` and let me know if it looks good." (the path the script returned)
 - Wait for user input before proceeding
 - Save the user's choice/response for the next step
+- Record the answer with the `marcar` command (`--evento checkpoint`, see "Run record") — last thing of the checkpoint, after the memory and the `outputFile` below are written
 - **Correction → memory, right away**: if the answer corrects something (tone, audience, a term,
   a fact, a format), write it to `crews/{name}/_memory/memories.md` in the matching section
   **before the next step** (antes do próximo passo) — not only at the end of the run, which may
@@ -470,7 +486,7 @@ When a step has `on_reject: {step-id}` (a review step):
    final approval below collects the missing data from the user.
 3. Track the review cycle count: a **cycle** is one pass of the reviewer. The maximum is
    `max_review_cycles`, an integer from 1: the one declared where the step declares `on_reject` (the
-   step frontmatter or its `pipeline.yaml` entry); without it, the one in `crew.yaml`; absent or invalid in both: 3. On every rejection, with or
+   step frontmatter or its `pipeline.yaml` entry); without it, the one in `crew.yaml`; absent or invalid in both: 3. After each verdict — once the review file passed `conferir` — run `marcar` (`--evento revisao`, see "Run record"). On every rejection, with or
    without a block, send the reviewer's feedback to the writer and go back to the referenced step.
 4. If the last allowed pass also rejects, stop; the status of the last report picks the message, as
    in item 2 — `VERIFICACAO:BLOQUEADA`: the blocks; any other status: the reviewer's feedback, also
@@ -512,7 +528,7 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 1b. **Escritório** — if it is on, run `concluir` (see "Escritório" above).
 
 2. **Close the run** — read `_opencrew/core/runner/fim-da-execucao.md` completely and follow it, in its
-   order: update `memories.md`, add the line to `runs.md`, the post-run reflection and the completion
+   order: update `memories.md`, close the run with the `fechar` command (the script writes the line of `runs.md`), the post-run reflection and the completion
    summary with the final menu. Never skip it, and never write the memory or the history from what you
    remember of it.
 
@@ -525,7 +541,7 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 - If a step file is missing, inform the user and suggest running `/opencrew edit {crew}` to fix.
 - If company.md is empty, stop and redirect to onboarding.
 - Never continue past a checkpoint without user input.
-- When the run is aborted: if the Escritório is on, run `falhar` (see "Escritório" above).
+- When the run is aborted (by the user, by an error, or rejected at the last review cycle): run `fechar` with `abortado` or `rejeitado` (see "Run record") and, if the Escritório is on, run `falhar` (see "Escritório" above). A run that just stopped (the conversation ended) stays open: `/opencrew retomar` finds it.
 
 ## Pipeline State
 
@@ -540,4 +556,4 @@ Track pipeline state in memory during execution:
 - filtered_steps — the ordered steps that will actually run this execution
 - missing_dependency — true if the user knowingly ran with a broken dependency
 
-This state does NOT persist to disk — it exists only during the current run.
+This state lives in memory; what `/opencrew retomar` needs is on disk, in the run record (see "Run record").

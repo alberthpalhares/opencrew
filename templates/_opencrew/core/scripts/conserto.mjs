@@ -6,14 +6,15 @@
 //   node _opencrew/core/scripts/conserto.mjs --crew "crews/<crew>" --aplicar "<item>"   grava
 // Itens de --aplicar: manifesto · nome:<agente>=<Nome Sobrenome> · formato:<passo>=<formato> ·
 //   fonte:<caminho>=<para que> · proibicao:<n>=<trecho> · proibicao:<n>=revisao-humana ·
-//   irreversivel:<passo> (ver --ajuda).
-// Só grava `crew.yaml`, `crew-party.csv`, `agents/*.agent.md`, `pipeline/steps/*.md` e
-// `_memory/memories.md` da crew, e a cópia `<arquivo>.bak` de cada um (a cópia que já existe
-// não é sobrescrita). Nunca apaga.
+//   irreversivel:<passo> · historico:<execução>=<tema> (ver --ajuda).
+// Só grava `crew.yaml`, `crew-party.csv`, `agents/*.agent.md`, `pipeline/steps/*.md`,
+// `_memory/memories.md` e `_memory/runs.md` da crew, e a cópia `<arquivo>.bak` de cada um (a
+// cópia que já existe não é sobrescrita). Nunca apaga.
 // Última linha da saída: CONSERTO:OK (nada a consertar) · CONSERTO:PENDENTE (há achados) ·
 // CONSERTO:APLICADO (tudo o que foi pedido está gravado) · CONSERTO:ERRO (nada foi gravado).
 // Código de saída: 0, menos com CONSERTO:ERRO (1).
-// Spec: fase-u4a-conserto-de-crews.md (repositório do OpenCrew).
+// Specs: fase-u4a-conserto-de-crews.md e fase-u5c-execucao-registrada.md, regras 12 e 13
+// (repositório do OpenCrew).
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { ehPrincipal, erroDeUso } from './comum.mjs';
@@ -22,6 +23,7 @@ import { planejar } from './conserto/aplicar.mjs';
 import { AJUDA, lerArgs, lerItem, limpar } from './conserto/argumentos.mjs';
 import { lerCrew } from './conserto/crew.mjs';
 import { gravar } from './conserto/gravar.mjs';
+import { notasDoHistorico } from './conserto/historico.mjs';
 
 const MSG = {
   estranho: (arg) => `Argumento desconhecido: ${limpar(arg)}. Veja as opções com --ajuda.`,
@@ -46,9 +48,9 @@ function erroDaChamada(raiz, args) {
 /** As linhas do diagnóstico: um bloco por achado e a linha de situação. */
 function relatorio(crew) {
   const achados = diagnosticar(crew);
-  if (!achados.length) return [MSG.emDia(crew.nome), 'CONSERTO:OK'];
+  if (!achados.length) return [MSG.emDia(crew.nome), ...notasDoHistorico(crew), 'CONSERTO:OK'];
   const blocos = achados.flatMap(({ codigo, linhas: [titulo, ...resto] }) => ['', `[${codigo}] ${titulo}`, ...resto.map((l) => `  ${l}`)]);
-  return [MSG.titulo(crew.nome, achados.length), ...blocos, '', 'CONSERTO:PENDENTE'];
+  return [MSG.titulo(crew.nome, achados.length), ...blocos, '', ...notasDoHistorico(crew), 'CONSERTO:PENDENTE'];
 }
 
 /** As linhas de um `--aplicar`: o que foi gravado, as cópias e a linha de situação. */

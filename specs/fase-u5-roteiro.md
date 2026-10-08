@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 1. Polimento do uso | 1.12.0 | `fase-u5a-polimento-do-uso.md` | formato para texto sem canal e sem Word; mensagens da conferência de fontes; avisos de documento antes do revisor; consertos pequenos do runner; contradições dos prompts de criação; onboarding |
 | 2. Runner dividido | 1.13.0 | `fase-u5b-runner-dividido.md` (a escrever) | o `runner.pipeline.md` fica com o que toda execução usa; cada bloco condicional vira um arquivo em `_opencrew/core/runner/`, com um toco no molde da seção `### Entrega`. Nenhuma regra muda de texto |
-| 3. Execução registrada | 1.14.0 | `fase-u5c-execucao-registrada.md` (a escrever) | registro da execução em disco, gravado por script; `runs.md` gravado pelo script (uma definição de score, execução abortada registrada); conciliação do histórico antigo no `/opencrew repair`; Regra de Ouro contada pelo registro; `/opencrew retomar` |
+| 3. Execução registrada | 1.14.0 | `fase-u5c-execucao-registrada.md` | registro da execução em disco, gravado por script; `runs.md` gravado pelo script (uma definição de score, execução abortada registrada); conciliação do histórico antigo no `/opencrew repair`; Regra de Ouro contada pelo registro; `/opencrew retomar` |
 | 4. Modo equipe | 1.15.0 | `fase-u5d-modo-equipe.md` (a escrever) | `/opencrew pedir <crew> "<tarefa>"`; entrega avulsa (`entregar.mjs` sem `--run`); documento Word por pedido em texto |
 | Fechamento | no commit da fatia 4 | — | `IDEIAS.md`: o que não entrou vira `→ sem fase — projeto pausado`; roteiro das auditorias e da jornada fechado; `STATUS.md` com "Como retomar" |
 

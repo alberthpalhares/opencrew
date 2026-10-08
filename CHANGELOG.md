@@ -3,6 +3,46 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.14.0] — 2026-10-08
+
+Fase U5, fatia 3: "Execução registrada" (`specs/fase-u5c-execucao-registrada.md`). Chega a quem já
+usa com um `npx @aksp/opencrew@latest update`; as crews e as execuções antigas ficam como estão.
+
+Ainda não nesta versão: o pedido avulso à crew (1.15.0).
+
+### Added
+- **`/opencrew retomar <nome>`.** A execução que parou no meio — a conversa caiu, o contexto
+  acabou — continua de onde parou, em qualquer conversa nova. A IA mostra o tema, o que já está
+  pronto e de que passo vai seguir, e espera o seu sim. O que foi gravado e conferido não é
+  refeito; o passo que estava no meio é refeito inteiro.
+- **Registro da execução.** Cada execução deixa na pasta dela um `execucao.json`, gravado por
+  script a cada passo: o tema, os passos conferidos, as suas respostas nas aprovações e os
+  vereditos da revisão. A IA não escreve nesse arquivo. Não há comando a mais por passo: o
+  registro pega carona no que a execução já rodava.
+- **`/opencrew repair` olha o histórico.** Pasta de execução sem linha no `runs.md` vira um ponto
+  do conserto: ele pergunta o tema e grava a linha como `Registrada depois`, com cópia
+  `runs.md.bak`. Linha sem pasta e pasta vazia são só apontadas: nada é apagado.
+
+### Changed
+- **O histórico (`runs.md`) é gravado pelo script, não pela IA** — também quando a execução é
+  abortada ou rejeitada, que antes ficavam de fora. As colunas são as mesmas, e as linhas que já
+  existem não mudam.
+- **O Score tem uma definição só:** aprovações suas sem pedido de correção, sobre as aprovações
+  que você respondeu (`2/3`). Quem conta é o script. Antes o texto dava duas contas diferentes, e
+  numa crew real saiu uma nota.
+- **Regra de Ouro contada de verdade.** As correções ficam no registro de cada execução; no fim, o
+  script mostra as das 10 últimas e a IA procura ali o que se repetiu em 3 ou mais. Antes ela
+  procurava na memória da crew, que não guarda dado de execução. A seção se chama
+  `## Regras de Ouro`, um nome só.
+- O `LEIA-ME.md` da entrega abre com o tema da execução, quando o registro tem um.
+
+### Limites
+- O registro só sabe o que os comandos contam: se a IA pular o aviso de uma aprovação, o score
+  sai errado para menos.
+- Execução feita antes desta versão não tem registro: não dá para retomar, e só entra no
+  histórico pelo conserto.
+- Ao retomar, o que foi combinado só na conversa anterior, sem ter sido gravado, não volta.
+
 ## [1.13.0] — 2026-10-07
 
 Fase U5, fatia 2: "Runner dividido" (`specs/fase-u5b-runner-dividido.md`). Chega a quem já usa

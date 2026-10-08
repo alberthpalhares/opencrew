@@ -71,7 +71,7 @@ test('U5a-09a: the document prompt has the three fixed questions and goes back t
 
 test('U5a-10c: the runner takes the run_id from the script and never builds the time itself', () => {
   tem(runner, 'the script names the run — never build the date or the time yourself');
-  tem(runner, '`node _opencrew/core/scripts/caminho.mjs "{name}" pasta` (no `--run`: the script creates the `run_id`)');
+  tem(runner, '`node _opencrew/core/scripts/caminho.mjs "{name}" pasta --tema "{tema}" --passos {N}` (no `--run`: the script creates the `run_id`)');
   tem(runner, 'The `run_id` is the last segment of that path');
   tem(runner, 'The date of this run, wherever one is asked below, is the first 10 characters of the `run_id`');
   assert.doesNotMatch(runner, /using the current timestamp/);
@@ -176,7 +176,8 @@ test('U5a-15a: the onboarding writes company.md under six fixed headings and rem
 
 test('U5a-16a: runner, build and design did not grow', () => {
   assert.ok(linhas(runner) <= 872, `runner.pipeline.md has ${linhas(runner)} lines`);
-  assert.ok(linhas(build) <= 649, `build.prompt.md has ${linhas(build)} lines`);
+  // 651 since U5-3: the memory template gained the `## Regras de Ouro` header (specs/fase-u5c-execucao-registrada.md, U5c-10b).
+  assert.ok(linhas(build) <= 651, `build.prompt.md has ${linhas(build)} lines`);
   assert.ok(linhas(design) <= 703, `design.prompt.md has ${linhas(design)} lines`);
 });
 

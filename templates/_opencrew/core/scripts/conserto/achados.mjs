@@ -6,6 +6,7 @@ import { lerFrontmatter, semBom } from '../verificar/leitura.mjs';
 import { itensDeProibicao } from '../verificar/proibicoes.mjs';
 import { idDoAgente, lerBruto, listaDe } from './crew.mjs';
 import { lerCsv } from './edicoes.mjs';
+import { achadoDoHistorico } from './historico.mjs';
 
 const EXPORTACAO = new Set(['pdf', 'csv', 'formatted-post']);
 const plural = (n, um, varios) => (n === 1 ? um : varios);
@@ -146,6 +147,7 @@ const CONFERENCIAS = [
   ['nome-de-agente', nomeDeAgente], ['manifesto', manifesto], ['formato', formato], ['fontes', fontes],
   ['proibicao', proibicao], ['irreversivel', semMarca], ['sem-revisao', semRevisao],
   ['sem-aprovacao-final', semAprovacaoFinal], ['publica-antes', publicaAntes], ['passo-faltando', passoFaltando],
+  ['historico', achadoDoHistorico],
 ];
 
 /**

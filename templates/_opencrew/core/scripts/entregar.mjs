@@ -35,6 +35,7 @@ import { DOCUMENTOS, converterDocumentos, naoConferidoDoWord } from './entrega/d
 import { MSG as COPIA, guardar } from './entrega/guardar.mjs';
 import { gravarEntrega } from './entrega/gravar.mjs';
 import { montarLeiame } from './entrega/leiame.mjs';
+import { lerRegistro } from './execucao/registro.mjs';
 import { lembrarDestino } from './entrega/lembrar.mjs';
 import { nomear } from './entrega/nomes.mjs';
 import { alertasDeTamanho, naoConferido, pendenciasPorPasta } from './entrega/pendencias.mjs';
@@ -95,6 +96,7 @@ async function montar(raiz, args, itens, aceitas) {
   const presentes = new Set([...arquivos.map((a) => a.pasta), ...todas.keys()]);
   const dados = {
     crew: path.basename(path.resolve(raiz, args.crew)), run: args.run, arquivos, avisos,
+    tema: (await lerRegistro(path.resolve(raiz, args.crew, 'output', args.run)))?.tema ?? '',
     ...separarPendencias(todas, aceitas, args.aceitar),
     pastas: Object.keys(CANAIS).filter((c) => presentes.has(c)),
     alertas: await alertasDeTamanho(raiz, itens, arquivos, verificacao),

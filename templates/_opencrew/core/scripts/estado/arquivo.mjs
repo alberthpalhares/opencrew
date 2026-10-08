@@ -32,22 +32,29 @@ async function trocarNome(de, para, { renomear = fs.rename, esperar = pausa }) {
 }
 
 /**
- * Grava o estado num temporário da mesma pasta (`state.json.<pid>.tmp`) e troca o nome: quem lê
- * vê o arquivo antigo ou o novo, nunca um pela metade.
- * @param {string} arquivo caminho do `state.json`
- * @param {object} estado
+ * Grava o texto num temporário da mesma pasta (`<arquivo>.<pid>.tmp`) e troca o nome: quem lê vê
+ * o arquivo antigo ou o novo, nunca um pela metade. Quando desiste, o arquivo fica como estava, o
+ * temporário é apagado e o erro sobe.
  * @param {{ renomear?: Function, esperar?: Function }} [deps] SÓ PARA TESTE: a troca de nome
  *   (`(de, para) => Promise`) e a espera entre as tentativas (`(ms) => Promise`)
- * @returns {Promise<boolean>} `false` quando desistiu: o arquivo fica como estava e o temporário é apagado
  */
-export async function gravarEstado(arquivo, estado, deps = {}) {
+export async function gravarTexto(arquivo, texto, deps = {}) {
   const temporario = `${arquivo}.${process.pid}.tmp`;
   try {
-    await fs.writeFile(temporario, `${JSON.stringify(estado, null, 2)}\n`);
+    await fs.writeFile(temporario, texto);
     await trocarNome(temporario, arquivo, deps);
-    return true;
-  } catch {
+  } catch (erro) {
     await fs.rm(temporario, { force: true }).catch(() => {});
-    return false;
+    throw erro;
   }
+}
+
+/**
+ * Grava o `state.json`, inteiro ou nada (ver `gravarTexto`).
+ * @param {string} arquivo caminho do `state.json`
+ * @param {object} estado
+ * @returns {Promise<boolean>} `false` quando desistiu
+ */
+export async function gravarEstado(arquivo, estado, deps = {}) {
+  return gravarTexto(arquivo, `${JSON.stringify(estado, null, 2)}\n`, deps).then(() => true, () => false);
 }
