@@ -8,9 +8,11 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'nod
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkTmp } from './_helpers.js';
+import { runnerCompleto } from './_runner.js';
 
 const tpl = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates');
-const runner = readFileSync(path.join(tpl, '_opencrew', 'core', 'runner.pipeline.md'), 'utf8');
+// Since U5-2 the runner is a core file plus parts read on demand: these contracts read it with every part loaded (tests/_runner.js).
+const runner = runnerCompleto;
 const build = readFileSync(path.join(tpl, '_opencrew', 'core', 'prompts', 'build.prompt.md'), 'utf8');
 
 // One line, single spaces: a rule re-wrapped by a later edit (or a CRLF checkout) still matches.

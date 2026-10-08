@@ -181,7 +181,8 @@ meu-projeto/
 ├── _opencrew/
 │   ├── core/
 │   │   ├── system.md             ← 🧠 sistema completo do OpenCrew
-│   │   ├── runner.pipeline.md    ← executor de pipeline
+│   │   ├── runner.pipeline.md    ← executor de pipeline (o que toda execução usa)
+│   │   ├── runner/               ← 7 partes do executor, lidas só quando é o caso (painel, fim da execução…)
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── formato-da-crew.md    ← o formato dos arquivos de uma crew (crew.yaml, pipeline.yaml, passos)

@@ -171,7 +171,9 @@ test('E1-upg-a: update from a 1.6.x workspace delivers the two scripts and escri
   for (const novo of NOVOS_E1) assert.equal(await exists(path.join(core, ...novo)), true, `missing after update: ${novo.join('/')}`);
   const pagina = await fs.readdir(path.join(templatesDir, '_opencrew', 'core', 'escritorio'));
   assert.deepEqual((await fs.readdir(path.join(core, 'escritorio'))).sort(), pagina.sort(), 'every file of the page arrived');
-  assert.match(await fs.readFile(path.join(core, 'runner.pipeline.md'), 'utf8'), /scripts\/estado\.mjs/);
+  // Since U5-2 the commands of the Escritório live in a part of the runner.
+  assert.match(await fs.readFile(path.join(core, 'runner', 'escritorio.md'), 'utf8'), /scripts\/estado\.mjs/);
+  assert.match(await fs.readFile(path.join(core, 'runner.pipeline.md'), 'utf8'), /_opencrew\/core\/runner\/escritorio\.md/);
   assert.equal(await fs.readFile(path.join(dir, '_opencrew', '_memory', 'preferences.md'), 'utf8'), PREFS_16);
   assert.deepEqual(await snapshot(path.join(dir, 'crews')), crewsAntes);
 });

@@ -9,6 +9,7 @@ crews/{code}/
 ├── crew.yaml               the crew: identity, sources, limits
 ├── crew-party.csv          one row per agent (the names shown to the user)
 ├── agents/{agent-id}.agent.md
+├── agents/{agent-id}/tasks/   the task files of an agent that declares `tasks:` (optional)
 ├── pipeline/
 │   ├── pipeline.yaml       the order of the steps
 │   ├── steps/step-NN-{name}.md

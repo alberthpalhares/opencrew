@@ -3,11 +3,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { runnerCompleto } from './_runner.js';
 
 const read = (rel) => readFileSync(new URL(`../templates/${rel}`, import.meta.url), 'utf8');
 const design = read('_opencrew/core/prompts/design.prompt.md');
 const build = read('_opencrew/core/prompts/build.prompt.md');
-const runner = read('_opencrew/core/runner.pipeline.md');
+// Since U5-2 the runner is a core file plus parts read on demand: these contracts read it with every part loaded (tests/_runner.js).
+const runner = runnerCompleto;
 
 function sections(md) {
   return md.split(/\n(?=#{2,4} )/);

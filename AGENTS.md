@@ -140,7 +140,7 @@ crew e das cópias `.bak`, a árvore do projeto é igual antes e depois, e o dia
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js` | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a) | Reprova |
 | 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)

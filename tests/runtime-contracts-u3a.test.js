@@ -5,10 +5,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { runnerCompleto } from './_runner.js';
 
 const raiz = new URL('../', import.meta.url);
 const ler = (rel) => (existsSync(new URL(rel, raiz)) ? readFileSync(new URL(rel, raiz), 'utf8') : '');
-const runner = ler('templates/_opencrew/core/runner.pipeline.md');
+// Since U5-2 the runner is a core file plus parts read on demand: these contracts read it with every part loaded (tests/_runner.js).
+const runner = runnerCompleto;
 const prompt = ler('templates/_opencrew/core/prompts/entrega.prompt.md');
 const system = ler('templates/AGENTS.md');
 const regras = ler('AGENTS.md');

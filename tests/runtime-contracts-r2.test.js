@@ -5,9 +5,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runnerCompleto } from './_runner.js';
 
 const read = (rel) => readFileSync(new URL(`../templates/${rel}`, import.meta.url), 'utf8');
-const runner = read('_opencrew/core/runner.pipeline.md');
+// Since U5-2 the runner is a core file plus parts read on demand: these contracts read it with every part loaded (tests/_runner.js).
+const runner = runnerCompleto;
 const engine = read('_opencrew/core/skills.engine.md');
 const exportPrompt = read('_opencrew/core/prompts/export.prompt.md');
 const sherlock = read('_opencrew/core/prompts/sherlock-shared.md');

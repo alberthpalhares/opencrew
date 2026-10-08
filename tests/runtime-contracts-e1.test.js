@@ -7,10 +7,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { nucleo, runnerCompleto } from './_runner.js';
 
 const tpl = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const ler = (...partes) => readFileSync(path.join(tpl, ...partes), 'utf8');
-const runner = ler('_opencrew', 'core', 'runner.pipeline.md');
+// Since U5-2 the runner is a core file plus parts read on demand: these contracts read it with every part loaded (tests/_runner.js).
+const runner = runnerCompleto;
 
 // One line, single spaces: a rule re-wrapped by a later edit (or a CRLF checkout) still matches.
 const flat = (s) => s.replace(/\s+/g, ' ').trim();
@@ -82,7 +84,9 @@ test('E1-03a: the runner does not describe the JSON', () => {
 
 test('E1-03a: the runner does not tell the AI to write, read or copy state.json', () => {
   assert.doesNotMatch(fora, /state\.json/, 'state.json is mentioned outside the Escritório section');
-  assert.equal(escritorio.split('state.json').length - 1, 1, 'state.json is named once, to forbid it');
+  // Since U5-2: once in the stub that stays in the core and once in the part, both times to forbid it.
+  assert.equal(escritorio.split('state.json').length - 1, 2, 'state.json is named in the stub and in the part, to forbid it');
+  tem(flat(nucleo), 'never read, write or describe `crews/{name}/state.json` yourself');
   tem(texto, 'The script is the only writer: never read, write or describe `crews/{name}/state.json` yourself.');
 });
 

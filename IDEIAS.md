@@ -65,13 +65,16 @@
 - **Custo de adiar:** disco e leitura de contexto crescem com o uso.
 - **Aprovação:** não.
 
-## Dividir o `runner.pipeline.md`
-- **O que já existe:** 874 linhas depois da U3a fatia 1 (eram 865 na 1.7.1, 882 depois da E1, 965 na 1.6.3 e 829 na auditoria de 2026-10-02) lidas em
-  todo run; overhead fixo de 25–35k tokens contra os "~5K" anunciados no tier Express.
-- **Alocação:** → U5 — núcleo de ~250 linhas + arquivos carregados sob demanda
-  (Escritório, seleção de agentes, reflexão); carregar os agentes uma vez só (T-M11).
-- **Custo de adiar:** cada run paga o custo; a divisão fica mais cara à medida que a
-  U1–U4 acrescentam regras ao runner.
+## Prompts de criação acima do alvo de tamanho
+- **O que já existe:** a 1.13.0 dividiu o `runner.pipeline.md` (872 → 543 linhas, com sete partes
+  lidas sob demanda em `_opencrew/core/runner/`). Continuam acima do alvo de 400 linhas:
+  `sherlock-shared.md` (757), `design.prompt.md` (703), `build.prompt.md` (649) e
+  `skills.engine.md` (495); o próprio runner ficou em 543, porque o resto dele é lido em quase
+  toda execução (`specs/fase-u5b-runner-dividido.md`, decisão 1). T-M11 (carregar os agentes uma
+  vez só) também não foi feito.
+- **Alocação:** → sem fase — projeto pausado; esses prompts são lidos só na criação da crew, não
+  a cada execução.
+- **Custo de adiar:** criar uma crew continua custando a leitura de três prompts longos.
 - **Aprovação:** não.
 
 ## Documento Word: o que a 1.10.0 não fez
@@ -266,7 +269,14 @@
   um `[PREENCHER]` nem manda verificar de novo; a lista "Agent Loading" está numerada 1, 2, 3, 5,
   6, 4; nomes de ferramenta de uma IDE só em `system.md` (`WebFetch`), no Architect e no Build
   ("Write tool"); `preferences.md` tem o campo `IDEs:` que ninguém preenche; a cópia do
-  `conferir-fontes --corrigir` leva a hora em UTC.
+  `conferir-fontes --corrigir` leva a hora em UTC. A execução real da 1.13.0 (runner dividido)
+  achou mais, tudo anterior à divisão: agente com `tasks:` num passo `subagent` tem duas regras
+  (todas as tarefas num prompt só × um prompt por tarefa); o revisor é mandado "ver `review.md`"
+  mas nada o carrega; o arquivo "Research Focus" pede um intervalo de tempo que o checkpoint pode
+  não oferecer; depois de um REJECT não se diz se os passos entre o alvo e a revisão rodam de
+  novo; a seção `## Regras de Ouro` tem dois nomes e não existe no modelo de memória; o contrato
+  de saída não tem campo para "exige TL;DR"; textos mostrados ao usuário em inglês na seleção de
+  agentes, no contrato e no menu final; nota de mantenedor dentro do payload (`memoria.md`).
 - **Alocação:** → sem fase — projeto pausado (`specs/fase-u5-roteiro.md`); nenhum impediu criar a
   crew nem consertar a antiga.
 - **Custo de adiar:** a IA improvisa nesses pontos, cada uma de um jeito.

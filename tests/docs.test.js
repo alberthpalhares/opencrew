@@ -6,13 +6,15 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { templatesDir } from '../src/lib/paths.js';
+// Since U5-2 the runner is a core file plus parts read on demand: these checks read it with every part loaded.
+import { runnerCompleto } from './_runner.js';
 
 async function read(relPath) {
   return fs.readFile(path.join(templatesDir, relPath), 'utf8');
 }
 
 test('runner.pipeline.md: the Escritório is opt-in — no command without Dashboard: enabled, no forced delay', async () => {
-  const runner = (await read(path.join('_opencrew', 'core', 'runner.pipeline.md'))).replace(/\s+/g, ' ');
+  const runner = runnerCompleto.replace(/\s+/g, ' ');
 
   assert.match(runner, /only when the already-loaded `preferences\.md` has `Dashboard: enabled`/,
     'runner should gate every Escritório command on the Dashboard preference');
@@ -165,7 +167,7 @@ test('discovery.prompt.md supports template selection at Step 0', async () => {
 // Since 1.9.0 (specs/fase-u3a2-entrega-no-projeto.md, rule 27) csv is the only export format: pdf
 // had a method that does not run, and the delivery by channel replaced formatted-post.
 test('runner.pipeline.md dispatches the export format correctly', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   assert.match(runner, /export\.prompt\.md/, 'runner must reference export.prompt.md for the export format');
   assert.match(runner, /\*\*Export format\*\* — if format is `csv`/, 'runner must have the export format dispatch');
   assert.doesNotMatch(runner, /format is one of `pdf`, `csv`, or `formatted-post`/, 'pdf and formatted-post are no longer export formats');
@@ -247,7 +249,7 @@ test('preferences.md includes Default Tier field', async () => {
 
 // Since U4-1 the tier → model_tier mapping lives in the crew format file (one definition).
 test('runner.pipeline.md respects crew-level tier from crew.yaml', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   const formato = await read(path.join('_opencrew', 'core', 'formato-da-crew.md'));
   assert.match(runner, /crew\.tier/, 'runner must read crew.tier from crew.yaml');
   assert.match(formato, /express.*fast/i, 'express tier must map to fast model_tier');
@@ -256,7 +258,7 @@ test('runner.pipeline.md respects crew-level tier from crew.yaml', async () => {
 });
 
 test('runner.pipeline.md includes post-run reflection and memory injection', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   assert.match(runner, /Post-Run Reflection/, 'must have post-run reflection step');
   assert.match(runner, /Regras? de Ouro/, 'must promote recurring patterns to golden rules');
   assert.match(runner, /Crew Memory Rules/, 'must inject crew memory into agent context');
@@ -297,13 +299,13 @@ test('build.prompt.md supports extends: in agent generation', async () => {
 });
 
 test('runner.pipeline.md documents extends lineage in agent loading', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   assert.match(runner, /extends.*base-id/, 'runner must document extends lineage');
   assert.match(runner, /lineage is preserved/, 'extends lineage must be visible in loaded agents');
 });
 
 test('runs.md table includes Score column', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   assert.match(runner, /Score.*Resultado/, 'runs.md header must include Score column');
   const build = await read(path.join('_opencrew', 'core', 'prompts', 'build.prompt.md'));
   assert.match(build, /Score.*Resultado/, 'build.prompt.md runs.md template must include Score');
@@ -327,7 +329,7 @@ test('skills.engine.md includes Operation 3a for automatic skill generation', as
 });
 
 test('runner.pipeline.md supports pre-execution agent selection', async () => {
-  const runner = await read(path.join('_opencrew', 'core', 'runner.pipeline.md'));
+  const runner = runnerCompleto;
   assert.match(runner, /Pre-Execution Agent Selection/, 'must document agent selection step');
   assert.match(runner, /agent_dependencies/, 'must reference agent_dependencies field');
   assert.match(runner, /skipped_agents/, 'must track skipped_agents in pipeline state');

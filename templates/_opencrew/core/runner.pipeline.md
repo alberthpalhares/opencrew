@@ -35,77 +35,21 @@ Before starting execution:
 
 1a. **Escritório toggle** — the optional live view is off unless `preferences.md` turns it on (see "Escritório" below).
 
-> **Note on language**: The structural labels listed below are **fixed PT-BR** and must
-> never be translated — opencrew's primary supported audience is PT-BR (see AGENTS.md →
-> Language Handling). Only the *content* written under these headers follows the user's
-> preferred language.
->
-> | Fixed PT-BR header | Location | Purpose |
-> |---|---|---|
-> | `## Estilo de Escrita` | `memories.md` | Writing style rules accumulated per crew |
-> | `## Design Visual` | `memories.md` | Visual design preferences per crew |
-> | `## Estrutura de Conteúdo` | `memories.md` | Content structure rules per crew |
-> | `## Proibições Explícitas` | `memories.md` | User bans and hard blocks per crew |
-> | `## Técnico (específico do crew)` | `memories.md` | Technical crew-specific settings |
-> | `Data \| Run ID \| Tema \| Output \| Score \| Resultado` | `runs.md` | Run history table columns |
->
-> When adding new structural sections to `memories.md` or `runs.md`, keep headers in PT-BR
-> unless the user base expands beyond PT-BR — at that point, discuss a migration strategy
-> (e.g. i18n key mapping) rather than mixing languages in a single file.
-
-1b. **Memory format migration** — After loading `memories.md`, check whether it uses the new format: it does when it has the `## Estilo de Escrita` section header (read the file with the read tool — no command).
-   - If it has the header → proceed normally.
-   - If it does not (or the file is empty / does not exist) → migrate before proceeding:
-     a0. If the file exists and is not empty, FIRST copy it to `crews/{name}/_memory/memories.md.bak`
-        (never lose what the crew learned), then tell the user in one line:
-        "Atualizei o formato da memória da crew; a versão anterior está em `memories.md.bak`."
-        Move every rule you can recognize from the old file into the matching new section.
-     a. Write `crews/{name}/_memory/memories.md` with the new sections format:
-        ```markdown
-        # Crew Memory: {crew-name}
-
-        ## Estilo de Escrita
-
-        ## Design Visual
-
-        ## Estrutura de Conteúdo
-
-        ## Proibições Explícitas
-
-        ## Técnico (específico do crew)
-        ```
-        (Use the crew's display name for `{crew-name}`, and the crew code for `{name}` in file paths — they refer to the same crew.)
-     b. Check if `crews/{name}/_memory/runs.md` exists (read tool — no command).
-        If it does not exist, create it with:
-        ```markdown
-        # Run History: {crew-name}
-
-        | Data | Run ID | Tema | Output | Score | Resultado |
-        |------|--------|------|--------|-------|-----------|
-        ```
-   - Do not pause execution for this migration (the one-line notice above is enough).
+1b. **Memory format** — check, with the read tool (no command), whether `memories.md` has the
+    `## Estilo de Escrita` section header. It has → proceed. It does not, or the file is empty or does not
+    exist → read `_opencrew/core/runner/memoria.md` completely and follow it before proceeding (it migrates
+    the file, with a `.bak` copy, without pausing the run). The section headers of `memories.md` (`## Estilo de
+    Escrita`, `## Design Visual`, `## Estrutura de Conteúdo`, `## Proibições Explícitas`, `## Técnico (específico do
+    crew)`) and the columns of `runs.md` are fixed PT-BR, whatever the user's language: never translate them.
 
 1c. **Source check** — before loading the project sources (1d), run:
     ```bash
     node _opencrew/core/scripts/conferir-fontes.mjs --crew "crews/{name}"
     ```
-    If the last line is `FONTES:PENDENTE` (a cited file was moved, renamed or deleted), show the
-    report and ask — never continue silently with a missing source:
-    ```
-    Alguns arquivos que a crew usa não estão mais onde ela espera:
-    {resumo do relatório}
-
-    1. Corrigir os caminhos sugeridos (troco nos arquivos da crew e guardo .bak)
-    2. Seguir assim mesmo
-    3. Parar
-    ```
-    On 1, run the same command with `--corrigir`, show the new result and re-read `crew.yaml` and
-    any agent file already loaded (it may have changed them); 1d then loads the sources from the
-    corrected paths. If the new result still ends in `FONTES:PENDENTE`, ask again with options 2 and
-    3 only. Alerts — not portable (absolute paths) or "não conferido" (a network path or a site
-    address: the script never accesses the network) — are mentioned once, without stopping. If the
-    script did not run (no Node, an error, or no `FONTES:` status line), tell the user "⚠️ A
-    conferência de fontes não rodou: {motivo}" and continue; the final approval repeats the warning.
+    If the last line is `FONTES:OK`, go on: an alert in the report (an absolute path, a network path or a
+    site address) is mentioned once, without stopping. Otherwise (`FONTES:PENDENTE`, or the script did not
+    run): read `_opencrew/core/runner/fontes-pendentes.md` completely and follow it — never continue
+    silently with a missing source.
 
 1d. **Project sources (`fontes:`)** — if `crew.yaml` has a `fontes:` list (files or folders of
     the user's project, paths relative to the project root), read them now: a file in full up to
@@ -128,82 +72,10 @@ Before starting execution:
    - Read the crew's tier for the run header: `crew.tier` in `crew.yaml` (older crews: `tier` loose at the top level).
    - A subagent step with no `model_tier` → `powerful` at dispatch.
 
-4b. **Pre-Execution Agent Selection** — Decide which agents actually run for this task.
-    Run this step ONLY if `crew.yaml` declares an `agent_dependencies:` field (even an
-    empty map `{}`). If the field is absent → skip this entire step and run ALL agents
-    exactly as before (legacy behavior).
-
-    When active, in this order:
-
-    a. **Capture the task** — Determine the user's request for this run:
-       - If the run was invoked with a description (e.g. `/opencrew run {name} {description}`),
-         use that text as the task.
-       - Otherwise ask: `📝 What is the task for this run? Reply in one line.`
-         Wait for the user's reply before continuing.
-
-    b. **Analyze against the decision matrix** — Scan the task text (case-insensitive,
-       PT-BR and EN keywords) for the signals below. Start with ALL agents suggested as
-       SELECTED (`required`). For each matching signal, find the affected agent(s) in
-       `crew-party.csv` by matching the role terms against the agent's `id` and `title`
-       (and `displayName` if ambiguous), then apply the suggested status:
-
-       | Signal in the task | Role terms to match (id / title) | Suggested status |
-       |--------------------|----------------------------------|------------------|
-       | "já pesquisei", "com base em", "fontes que tenho", "material pronto", "baseado nas fontes", "research already done" | researcher, pesquisad, research | optional |
-       | "revise", "melhore", "corrija", "refine", "edite" (sem criar do zero), "improve this draft" | copywriter, redator, writer, criador | optional |
-       | "só texto", "sem imagem", "sem visual", "sem arte", "no image" | designer, design, visual | skip |
-       | "já revisei", "já foi aprovado", "aprovado por terceiros", "revisão feita", "already reviewed" | reviewer, revisor | optional |
-       | "quero só revisar este texto", "apenas revisar", "review only" | researcher AND copywriter | skip |
-       | "tenho o conteúdo pronto", "forneço o documento", "docs em anexo", "segue o material", "here is the content" | copywriter, writer, creator | optional |
-
-       Resolution rules:
-       - `optional` = agent stays selected but may be unchecked.
-       - `skip` = agent is suggested deselected.
-       - Conflicting signals on the same agent → the more restrictive wins (`skip` > `optional`).
-       - Never suggest skipping an agent whose output is the run's final deliverable unless the
-         signal is explicit.
-       - No signal matches → suggest keeping all agents (no change).
-
-    c. **Present the selection** — IDE-neutral numbered multi-select. List every agent from
-       `crew-party.csv` in party order:
-       ```
-       🧑‍🤝‍🧑 Which agents should work on this task?
-
-       Suggested selection:
-       1. [x] {icon} {displayName} ({id}) — {title}
-       2. [x] {icon} {displayName} ({id}) — {title}
-       3. [ ] {icon} {displayName} ({id}) — {title}
-       ...
-       [x] = suggested selected · [ ] = suggested deselected
-
-       Reply with the numbers of the agents you want to INCLUDE, separated by commas.
-       Example: "1, 2"   ·   Reply "all" to run everyone.
-       ```
-       Wait for the user's reply. Parse it into `selected_agents`. At least one agent must
-       be selected — if the user replies with none, repeat the prompt once.
-
-    d. **Dependency warnings** — Using `crew.yaml → agent_dependencies`
-       (e.g. `copywriter: [researcher]` = copywriter consumes researcher's output):
-       for every dependency `dependent → required_agent`, if `dependent` is selected but
-       `required_agent` is NOT, warn:
-       ```
-       ⚠️ {dependent} normally depends on {required_agent}'s output, which you deselected.
-
-       1. Re-select {required_agent} (recommended)
-       2. Keep going without it — I will supply the input myself
-       3. Deselect {dependent} too
-       ```
-       Wait for the user's choice and apply it. If they pick option 2, set
-       `missing_dependency = true` in working memory (the existing Pre-Step Input
-       Validation recovery — "Skip step and continue / Abort" — then handles any
-       downstream gap).
-
-    e. **Build the filtered step list** — Set `skipped_agents = all party agents − selected_agents`.
-       Build `filtered_steps` by walking `pipeline.yaml` in order, keeping a step when:
-       - its frontmatter has NO `agent:` field (checkpoints / generic steps), OR
-       - its `agent:` value is in `selected_agents`.
-       Store `selected_agents`, `skipped_agents`, and `filtered_steps` in working memory for
-       the per-step loop (steps 5 and 6 below reflect them).
+4b. **Pre-Execution Agent Selection** — ONLY if `crew.yaml` declares an `agent_dependencies:` field (even an
+    empty map `{}`): read `_opencrew/core/runner/selecao-de-agentes.md` completely and follow it now; it
+    leaves `selected_agents`, `skipped_agents`, `filtered_steps` and `missing_dependency` in working memory.
+    If the field is absent, read nothing: run ALL agents, with no selection step.
 
 5. Inform the user that the crew is starting:
    ```
@@ -227,39 +99,11 @@ Before starting execution:
 
 ## Escritório (optional live view)
 
-A local page that shows the crew at work, off by default. Follow this section only when the
-already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled` or
-plain `Dashboard: enabled`, any letter case); otherwise run none of these commands. When it is on,
-run, from the project root, the one-line command of each moment:
-
-| Moment | Command |
-|---|---|
-| Start of the run (Initialization, step 6) | `node _opencrew/core/scripts/estado.mjs "{name}" iniciar --passos {N}` |
-| Right after `iniciar`, once per deselected agent | `node _opencrew/core/scripts/estado.mjs "{name}" pular --agente {id}` |
-| Before each step, each time it starts | `node _opencrew/core/scripts/estado.mjs "{name}" passo --n {K} --agente {id} --rotulo "{rótulo}" --mensagem "{frase}"` |
-| Before asking the question of a checkpoint (instead of `passo`) | `node _opencrew/core/scripts/estado.mjs "{name}" checkpoint --n {K} --agente {id} --rotulo "{rótulo}"` |
-| End of the run (After Pipeline Completion) | `node _opencrew/core/scripts/estado.mjs "{name}" concluir` |
-| Run aborted after `iniciar`, by the user or by an error | `node _opencrew/core/scripts/estado.mjs "{name}" falhar --motivo "{motivo}"` |
-
-- **One at a time** — Run these commands one at a time, waiting for the `ESTADO:` line of each
-  before the next — never in parallel or in the background (each one reads and rewrites the same file).
-- **Values** — `{name}`: the crew code. `{N}`: how many steps will run, checkpoints included (a
-  deselected agent's steps do not count). `{K}`: the step's position among them, from 1. `{id}`: the agent's `id` column in
-  `crew-party.csv`; a step or checkpoint with no `agent:` goes without `--agente`
-  (the table shows the full form). `{rótulo}`: the step's name, in
-  a few words. `--mensagem` goes only when the agent changed since the last `passo` (so never on the first
-  one): one sentence on what the previous agent delivered — never look at the next step. `{motivo}`: why the run stopped.
-- **Text on the command line** — `--rotulo`, `--mensagem` and `--motivo` go between double quotes,
-  on one line, starting with a letter or a digit, with only letters (accents included), digits,
-  spaces and `. , : ; - ( ) / ?`. Drop every other sign (quotes of any kind, `$`, backtick, `\`,
-  `%`, `!`, emoji). If no text is left, omit the option. Write them in the user's language.
-- **After `iniciar`**, when it answers `ESTADO:OK`, show the user once:
-  `Escritório ligado. Se a página não estiver aberta, rode em outro terminal: node _opencrew/core/scripts/escritorio.mjs`
-- **The Escritório never stops the run.** A command that fails, does not run or answers
-  `ESTADO:IGNORADO`: go on, do not repeat that event, ask nothing, and tell the user once per run,
-  in one line: `O escritório não foi atualizado nesta execução; o trabalho segue normalmente.` With
-  the reason "escritório desligado", say nothing and stop calling the script for the rest of this run.
-- The script is the only writer: never read, write or describe `crews/{name}/state.json` yourself.
+Only when the already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled`
+or plain `Dashboard: enabled`, any letter case): read `_opencrew/core/runner/escritorio.md` completely,
+once, and follow it at each moment it names (start of the run, each step, each checkpoint, end, abort).
+With the Dashboard off, read nothing and run none of its commands. Either way: never read, write or
+describe `crews/{name}/state.json` yourself, and a failure there never stops the run.
 
 ## Execution Rules
 
@@ -408,36 +252,9 @@ when passing prior agents' outputs as context:
 
 ### Task-Based Agent Execution
 
-When an agent's `.agent.md` frontmatter contains a `tasks:` field:
-
-1. **Load task list**: Read the `tasks:` array from the agent's frontmatter
-   - Each entry is a relative path to a task file (e.g., `tasks/analyze-source.md`)
-   - Tasks execute in the order listed
-
-2. **For each task in sequence**:
-   a. Read the task file from the agent's directory (e.g., `crews/{crew-name}/agents/{agent}/tasks/{task}.md`)
-   b. Construct the execution prompt:
-      - Agent persona + principles (from agent.md — fixed across all tasks)
-      - Task description and process (from task file)
-      - Task output format (from task file)
-      - Task quality criteria and veto conditions (from task file)
-      - Input: For the first task, use the step's input. For subsequent tasks, use the previous task's output.
-   c. Execute the task (inline or subagent, matching the step's execution mode)
-   d. Collect the task output
-   e. Check task veto conditions (same enforcement as step veto conditions below)
-
-3. **Final output**: The output of the LAST task in the chain becomes the step's output
-   - Resolve the `outputFile` path with the `saida` command (Output Path Transformation) before saving — this applies regardless of whether the step runs as `execution: inline` or `execution: subagent`
-   - Save to the **transformed** outputFile path
-   - This is what the next step (or checkpoint) receives
-
-4. **Progress reporting**: For inline execution, announce each task:
-   ```
-   {icon} {Agent Name} — Task {N}/{total}: {task name}...
-   ```
-
-5. **Backward compatibility**: If the agent's frontmatter does NOT contain a `tasks:` field,
-   execute the agent monolithically as before (current behavior unchanged).
+Only when the agent's `.agent.md` frontmatter contains a `tasks:` field: read
+`_opencrew/core/runner/tarefas-do-agente.md` completely and follow it for that step. Without the field,
+execute the agent as a whole, as always.
 
 ### Output Path Transformation
 
@@ -535,7 +352,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 - Proceed to Post-Step Output Validation (below) before advancing.
 
 #### If `execution: inline`
-- Switch to the agent's persona (read from party CSV)
+- Switch to the agent's persona (read from party CSV); an agent with `tasks:` runs them as `Task-Based Agent Execution` says
 - Announce: `{icon} {Agent Name} is working...`
 - Follow the step instructions
 - Present output directly in the conversation
@@ -603,35 +420,9 @@ After a step produces output (subagent or inline) and BEFORE Veto Condition Enfo
 
 ### Output Contract Validation
 
-If the step's frontmatter declares an `output_contract:` field, apply structured validation
-in the same call as the basic file existence check (Post-Step Output Validation):
-
-1. **Required sections check**: If `output_contract.required_sections` is defined, add
-   `--secoes {min_sections}` to the same `conferir` command: the file needs at least that many
-   lines starting with `## `.
-
-2. **TL;DR check**: If the output contract requires a TL;DR section, add `--tldr` to the same
-   `conferir` command.
-
-3. **If a check fails** (the last line is `CAMINHO:REPROVADO {motivo}`, with a motivo other than
-   `arquivo ausente ou vazio`; the script reports the first one):
-   - Present to user: "⚠️ Output from {Agent Name} is incomplete: {motivo}"
-   - Options as numbered list:
-     1. Accept anyway and continue
-     2. Retry step (re-execute the agent)
-     3. Abort pipeline
-
-4. **If no `output_contract` is defined**, skip this validation entirely (backward compatible).
-
-Example `output_contract` in step frontmatter:
-```yaml
-output_contract:
-  required_sections:
-    - "Fontes Pesquisadas"
-    - "Principais Descobertas"
-    - "TL;DR"
-  min_sections: 3
-```
+Only when the step's frontmatter declares an `output_contract:` field: read
+`_opencrew/core/runner/contrato-de-saida.md` completely and follow it — it adds `--secoes` and `--tldr`
+to the same `conferir` call of the Post-Step Output Validation. Without the field, skip this validation.
 
 ### Veto Condition Enforcement
 
@@ -706,23 +497,6 @@ When a step has `on_reject: {step-id}` (a review step):
    and write it into the text before approving. If the user does not have it, do not insist and
    never invent: keep the `[PREENCHER]`, say `Sem problema: deixo [PREENCHER: {o que falta}] no texto. Na entrega você escolhe entre preencher depois e entregar assim mesmo, com ressalva.` and go on.
 
-### Step Execution Order (Summary)
-
-For reference, the complete execution order for each pipeline step is:
-
-```
-0. Agent deselection check (skip step if its agent was deselected)
-0b. Escritório command (passo or checkpoint) — only if it is on
-0c. Entrega (delivery script) — only before the first step that publishes or sends
-1. Pre-Step Input Validation (script gate: `entrada`)
-2. Read step file
-3. Check execution mode and execute (subagent / inline / checkpoint)
-4. Post-Step Output Validation (script gate: `conferir`)
-5. Veto Condition Enforcement
-```
-
-Steps 1 and 4 are binary script gates. If either fails, the pipeline does NOT advance — the user is consulted.
-
 ### Entrega
 
 One script turns the approved files into `crews/{name}/output/{run_id}/entrega/` (a folder per channel, text ready to paste, a `LEIA-ME.md`) and copies what is ready to the folder of the project the user chose. Read `_opencrew/core/prompts/entrega.prompt.md` and follow it: how to build `{lista}`, when to add `--vai-publicar`, what to do with `ENTREGA:OK`, `ENTREGA:COM_RESSALVA` and `ENTREGA:INCOMPLETA`, the question about the folder of the project that keeps a copy (asked once per crew) and what to do with a script that did not run.
@@ -737,112 +511,10 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 1. **Entrega** — if the delivery has not run in this run, run it now (see "Entrega" above).
 1b. **Escritório** — if it is on, run `concluir` (see "Escritório" above).
 
-2. **Update crew memory** — write to BOTH files:
-
-   ### 2a. Update `memories.md` (living preferences)
-
-   Read `crews/{name}/_memory/memories.md` in full. Then identify candidates from this run: **only explicit user feedback** — approvals with comments, rejections with reasons, direct requests ("prefiro X", "não quero Y"). Never infer preferences.
-
-   For each candidate:
-   - If an equivalent memory already exists and is compatible → skip (no duplicate)
-   - If an equivalent memory exists but contradicts the new item → replace with the newer version
-   - If no equivalent exists → add to the correct semantic section:
-     - Writing style choices → `## Estilo de Escrita`
-     - Visual/design preferences → `## Design Visual`
-     - Content structure choices → `## Estrutura de Conteúdo`
-     - Explicit rejections or prohibitions → `## Proibições Explícitas`, in the canonical form
-       (`- Nunca usar "termo"` or `- Nunca usar "termo" → usar "outro"`)
-     - Crew-specific technical patterns → `## Técnico (específico do crew)`
-
-   **Never write to `memories.md`:**
-   - Runner inferences ("usuário parece preferir X")
-   - Run scores, review grades, output file paths, topics from past runs
-
-   **Technical routing:** For any technical learning (bugs, workarounds, API behavior):
-   - If it affects any crew (Playwright bugs, OS rendering quirks, API limits) → write to `_opencrew/best-practices.local/{format}.md` instead of `memories.md` (copy the core file there first if the local one does not exist yet — the core folder is replaced by every `update`; the local one is never touched)
-   - If it is specific to this crew's output type or toolchain → add to `## Técnico (específico do crew)` following the dedup rules above
-
-   After applying all candidates, write the updated `memories.md`.
-
-   If no candidates are found (the run had no explicit user feedback), skip writing `memories.md` entirely — do not write an unmodified copy. Always proceed to step 2b regardless.
-
-   ### 2b. Prepend to `runs.md` (reverse-chronological log — newest run first)
-
-   If `crews/{name}/_memory/runs.md` does not exist, create it first with:
-   ```markdown
-   # Run History: {crew-name}
-
-   | Data | Run ID | Tema | Output | Score | Resultado |
-   |------|--------|------|--------|-------|-----------|
-   ```
-   Then proceed to prepend the new row.
-
-   Read `crews/{name}/_memory/runs.md`. Prepend one new row to the table (immediately after the header row), with:
-   - `Data`: the date of this run (the first 10 characters of the `run_id`)
-   - `Run ID`: the `run_id` for this execution
-   - `Tema`: the topic or user request from this run (1 sentence max)
-   - `Output`: brief description of what was generated (e.g., "Carrossel 9 slides", "Thread 7 posts")
-   - `Score`: `{approved}/{total}` agent outputs approved without corrections (e.g., `4/5`)
-   - `Resultado`: one of — `Aprovado` / `Rejeitado` / `Publicado` / `Abortado`
-
-   No other data.
-
-   The `Score` column tracks how many agent outputs were approved by the user without corrections in this run. Count only explicit checkpoint approvals (not "skip" or "continue"). Format: `{approved}/{total checkpoints}` (e.g., `4/5` means 4 of 5 agent outputs were approved as-is).
-
-   ### 2c. Post-Run Reflection (pattern detection)
-
-   After updating `memories.md` and `runs.md`, run a reflection pass. This is a lightweight analysis — not a full agent execution, just pattern matching on the run's feedback and past memory.
-
-   1. **Collect this run's corrections**: From checkpoint responses, gather every user rejection or correction. A correction is:
-      - A rejected output with a reason ("tom muito informal", "cor não combina", "fonte sem data")
-      - A modification request during checkpoint ("muda o título para X", "usa azul em vez de verde")
-
-   2. **Look for recurrence**: Compare each correction against past runs recorded in `memories.md`:
-      - Search `memories.md` for similar patterns (same category, same agent, same type of correction)
-      - Count: how many past runs have a correction matching this pattern?
-      - A "match" means the same agent + same type of error (e.g., "redator + tom informal", "designer + cores saturadas")
-
-   3. **Promote to Regra de Ouro**: If the SAME pattern appears in **3 or more runs** (including this one):
-      a. Add a new entry under `## Regras de Ouro` in `memories.md`:
-         ```markdown
-         ## Regras de Ouro (promovidas após 3+ ocorrências)
-
-         - **{Agent role}**: SEMPRE {correct behavior}. {Why — grounded in user feedback}.
-           (Runs: #{run1}, #{run2}, #{run3})
-         ```
-         Example:
-         ```markdown
-         - **Redator**: SEMPRE verificar se o CTA contém link rastreável antes de finalizar.
-           (Runs: #2026-08-01-143022, #2026-08-05-091530, #2026-08-10-160845)
-         ```
-      b. Remove the individual entries from their original sections (`## Estilo de Escrita`, `## Design Visual`, etc.) — the Regra de Ouro replaces them.
-      c. Display to the user:
-         ```
-         💡 Regra de Ouro detectada:
-         "{correct behavior}" aconteceu 3 vezes.
-         Vou aplicar automaticamente a partir de agora.
-         ```
-
-   4. **Mark improvement**: If a previously recurring error did NOT happen this run:
-      - Add a `✅` marker to the Regra de Ouro entry: `✅ **Redator**: SEMPRE ...`
-      - This tracks that the crew is improving — the rule is working.
-
-   5. **Bail out early**: If this run had zero corrections (all checkpoints approved), skip the entire reflection — nothing to learn.
-
-   6. **Reflection budget**: Maximum 30 seconds of analysis. If the crew has a long history (>20 past runs), sample the most recent 10 runs for pattern matching. This is a quick scan, not an exhaustive audit.
-
-3. Present completion summary:
-   ```
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ✅ Pipeline complete!
-   📁 Delivery: crews/{name}/output/{run_id}/entrega/ — start with LEIA-ME.md
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-   What would you like to do?
-   ● Run again (new topic)
-   ○ Edit this content
-   ○ Back to menu
-   ```
+2. **Close the run** — read `_opencrew/core/runner/fim-da-execucao.md` completely and follow it, in its
+   order: update `memories.md`, add the line to `runs.md`, the post-run reflection and the completion
+   summary with the final menu. Never skip it, and never write the memory or the history from what you
+   remember of it.
 
 ## Error Handling
 

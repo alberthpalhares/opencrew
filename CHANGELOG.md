@@ -3,6 +3,23 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.13.0] — 2026-10-07
+
+Fase U5, fatia 2: "Runner dividido" (`specs/fase-u5b-runner-dividido.md`). Chega a quem já usa
+com um `npx @aksp/opencrew@latest update`. Nenhuma regra mudou de texto: mudou de lugar.
+
+### Changed
+- **O executor de pipeline ficou menor.** O `runner.pipeline.md`, lido no começo de toda execução,
+  foi de 872 para 543 linhas. Sete blocos que só valem em alguma condição passaram para arquivos
+  próprios em `_opencrew/core/runner/`, lidos só quando é o caso: seleção de agentes, migração do
+  formato da memória, Escritório, tarefas do agente, contrato de saída, fontes pendentes e o fim
+  da execução (memória, histórico, reflexão e menu final). No lugar de cada um ficou um trecho
+  curto que diz quando ler o arquivo. Numa execução comum a IA lê 654 linhas em vez de 872, e as
+  regras do fim da execução são lidas no fim, quando valem.
+- O painel (Escritório) só custa leitura para quem o ligou.
+
+### Removed
+- O resumo "Step Execution Order", que repetia a ordem dos passos já descrita logo acima dele.
 ## [1.12.0] — 2026-10-07
 
 Fase U5, fatia 1: "Polimento do uso" (`specs/fase-u5a-polimento-do-uso.md`). A U5 é a fase de
