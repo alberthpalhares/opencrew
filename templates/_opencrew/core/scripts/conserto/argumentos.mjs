@@ -10,6 +10,7 @@ export const AJUDA = [
   '  nome:<agente>=<Nome Sobrenome>   grava o nome de duas palavras no arquivo do agente',
   '  formato:<passo>=<formato>        grava o formato do texto no passo',
   '  fonte:<caminho>=<para que>       registra um arquivo ou pasta do projeto em fontes:',
+  '  fonte:nenhuma                    registra que a crew não lê arquivos do projeto',
   '  proibicao:<n>=<trecho>           o trecho do item n vira trava do verificador',
   '  proibicao:<n>=revisao-humana     o item n fica para o revisor',
   '  irreversivel:<passo>             marca o passo que publica ou envia',

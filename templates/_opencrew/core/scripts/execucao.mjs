@@ -24,7 +24,7 @@ import { ehPasta } from './caminho/disco.mjs';
 import { gravarTexto } from './estado/arquivo.mjs';
 import { USO, erroDeArgumentos, lerArgs } from './execucao/argumentos.mjs';
 import { ROTULO, comLinha, dataDe, linhaDe } from './execucao/historico.mjs';
-import { anotar, comMarco, comTema, fechado, gravarRegistro, lerRegistro, limparNota, motivoDe, novoRegistro, score } from './execucao/registro.mjs';
+import { PEDIDO, anotar, comMarco, comTema, fechado, gravarRegistro, lerRegistro, limparNota, motivoDe, novoRegistro, score } from './execucao/registro.mjs';
 import { correcoesRecentes, retomar } from './execucao/retomar.mjs';
 
 const MSG = {
@@ -78,13 +78,16 @@ async function gravarHistorico({ raiz, crew, base: { run } }, linha) {
   }
 }
 
+/** Regra 8 da U5d: no histórico, o tema de um pedido começa por "Pedido: ". */
+const temaNoHistorico = (registro) => (registro.tipo === PEDIDO ? `Pedido: ${registro.tema || 'sem tema'}` : registro.tema);
+
 async function fechar(ctx, args) {
   const { raiz, crew, pasta, base, agora } = ctx;
   const lido = await lerRegistro(pasta);
   const registro = fechado(comTema(lido ?? novoRegistro(base), args.tema), { resultado: args.resultado, saida: args.saida, em: base.em });
   const avisos = [lido ? null : MSG.semRegistro, await gravarRegistro(pasta, registro)];
   const pontos = score(registro);
-  const linha = linhaDe({ data: dataDe(base.run, agora), run: base.run, tema: registro.tema, saida: registro.saida, score: pontos, resultado: ROTULO[args.resultado] });
+  const linha = linhaDe({ data: dataDe(base.run, agora), run: base.run, tema: temaNoHistorico(registro), saida: registro.saida, score: pontos, resultado: ROTULO[args.resultado] });
   const semHistorico = await gravarHistorico(ctx, linha);
   return [...avisos, semHistorico ?? linha, ...(await correcoesRecentes(raiz, crew)), `EXECUCAO:FECHADA ${args.resultado} ${pontos}`];
 }

@@ -4,7 +4,7 @@
 import path from 'node:path';
 import { pastasDe, temConteudo } from '../caminho/disco.mjs';
 import { lerCrew } from '../conserto/crew.mjs';
-import { lerRegistro } from './registro.mjs';
+import { PEDIDO, lerRegistro } from './registro.mjs';
 
 const MSG = {
   abertas: 'Execuções abertas (a mais recente primeiro):',
@@ -32,7 +32,7 @@ const maisNova = (campo) => (a, b) => String(b[campo] ?? '').localeCompare(Strin
 export async function correcoesRecentes(raiz, crew) {
   const fechadas = (await registrosDe(raiz, crew)).filter((r) => r.status !== 'aberta').sort(maisNova('fechadaEm')).slice(0, 10);
   const corrigiu = (m) => (m.resultado === 'corrigido' || m.resultado === 'rejeitado') && m.nota;
-  const linhas = fechadas.flatMap((r) => r.marcos.filter(corrigiu).map((m) => `- ${r.run} · passo ${m.passo} · ${m.nota}`));
+  const linhas = fechadas.flatMap((r) => r.marcos.filter(corrigiu).map((m) => `- ${r.run}${r.tipo === PEDIDO ? ' (pedido)' : ''} · passo ${m.passo} · ${m.nota}`));
   return linhas.length ? [MSG.correcoes, ...linhas] : [];
 }
 
@@ -91,7 +91,10 @@ const grupo = (titulo, linhas) => (linhas.length ? [titulo, ...linhas] : []);
 /** As linhas que descrevem uma execução aberta e a linha `EXECUCAO:RETOMAR`. */
 function descrever(raiz, crew, registro) {
   const existe = (arquivo) => temConteudo(path.resolve(raiz, String(arquivo)));
-  const { feito, n, fim, incerto } = proximoPasso(registro, passosDaCrew(raiz, crew), existe);
+  const ehPedido = registro.tipo === PEDIDO;
+  // O pedido não tem pipeline: os passos dele são 1 (o trabalho), 2, 3… e a revisão rejeitada volta ao 1.
+  const passos = ehPedido ? registro.marcos.filter((m) => m.evento === 'revisao').map((m) => ({ numero: m.passo, volta: 1 })) : passosDaCrew(raiz, crew);
+  const { feito, n, fim, incerto } = proximoPasso(registro, passos, existe);
   const linha = (p) => `- passo ${p.n}: ${p.arquivo}${existe(p.arquivo) ? '' : MSG.sumiu}`;
   // Pronto é só o que fica antes do passo de onde a execução continua; o resto será feito de novo.
   const prontos = registro.passos.filter((p) => p.n < n).map(linha);
@@ -99,13 +102,14 @@ function descrever(raiz, crew, registro) {
   return [
     `Execução: ${registro.run}`,
     `Tema: ${registro.tema || '(sem tema)'}`,
+    ...(ehPedido ? ['Tipo: pedido', `Agente: ${registro.agente || '(não registrado)'}`, `Formato: ${registro.formato || '(não registrado)'}`] : []),
     ...(prontos.length ? ['Passos conferidos:', ...prontos] : ['Passos conferidos: nenhum']),
     ...grupo(MSG.refeitos, registro.passos.filter((p) => p.n >= n).map(linha)),
     ...grupo('Checkpoints respondidos:', doEvento('checkpoint')),
     ...grupo('Revisões:', doEvento('revisao')),
     ...(feito === null ? [] : [`Parou depois do passo ${feito}.`]),
     ...(incerto ? [MSG.voltaIncerta(feito, n)] : []),
-    ...(fim && n > feito ? [MSG.tudoFeito] : []),
+    ...(fim && n > feito && !ehPedido ? [MSG.tudoFeito] : []),
     `EXECUCAO:RETOMAR ${registro.run} ${n}`,
   ];
 }

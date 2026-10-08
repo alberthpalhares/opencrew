@@ -17,6 +17,10 @@ what was written and checked is not redone; the step that was in the middle is d
      (each with its file), the checkpoints already answered and the verdicts of the review. Go to 3.
    - The output starts with `Execuções abertas` → more than one run is open: show the list and ask
      which one. For one that is not the newest, run the command again with `--run "{run_id}"`.
+   - A line `Tipo: pedido` after `Tema:` → the open run is a request outside the pipeline: after
+     the yes of item 3, read `_opencrew/core/prompts/pedido.prompt.md` and go on from its step
+     `{N}` ("Resuming a request" there) — items 4 and 5 below, which are about the pipeline, do
+     not apply.
    - A line `Não consegui ler na crew para qual passo a revisão … volta` → show it and confirm the
      step with the user before going on.
    - No `EXECUCAO:` line (no Node, an error) → show the message as it came and stop. Never rebuild
@@ -41,8 +45,8 @@ what was written and checked is not redone; the step that was in the middle is d
      checkpoint saved (the `inputFile` of the step after it), or in the note the script printed.
    - Step `{N}` is done whole, even when a file of it is already there (`saida` opens a new version).
    - A review cycle the script listed counts: the cycles left are `max_review_cycles` minus the
-     verdicts under `Revisões:` for that review step (no such section: none), and the next
-     `verificacao-ciclo-{N}.md` is that number plus 1.
+     `rejeitado` verdicts under `Revisões:` for that review step (no such section: none), and the
+     next `verificacao-ciclo-{N}.md` is the number of verdicts there plus 1.
    - The `Tema:` line says whether the record has a topic: `(sem tema)` → send `--tema` with the
      next `marcar` or with `fechar`.
    - `{N}` is after the last step of the pipeline (the script says `Todos os passos já foram feitos`)

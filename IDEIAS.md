@@ -46,6 +46,14 @@
 > `/opencrew retomar` e o histórico confiável (registro da execução em disco, `runs.md` gravado
 > por script, uma definição de score, conserto do histórico). O que a 1.14.0 deixou de fora está na
 > §8 daquela spec, com destino.
+>
+> Saíram em 2026-10-08, entregues na v1.15.0 (CHANGELOG; `specs/fase-u5d-modo-equipe.md`): o modo
+> equipe (`/opencrew pedir`), o procedimento da correção num checkpoint, a resposta "nenhuma" nas
+> fontes e o documento Word por pedido em texto.
+>
+> **Projeto pausado desde a 1.15.0 (2026-10-08).** Nenhuma entrada abaixo tem fase: cada uma diz
+> `sem fase — projeto pausado` e, entre parênteses, de onde veio. Para retomar, comece por
+> "Como retomar o projeto", no `CONTRIBUTING.md`.
 
 ---
 
@@ -65,13 +73,37 @@
   guardar a primeira; (10) no conserto, responder "nenhum" à pergunta das fontes deixa a crew
   `CONSERTO:PENDENTE` para sempre; (11) o resumo da entrega de `texto-livre` não diz "Pronto";
   (12) modelos de texto em inglês (cabeçalho, menu final, "Run it:") para usuário em PT-BR.
-- **Alocação:** itens 1 e 10 → U5 fatia 4 (1.15.0) — decisão do dono em 2026-10-08; itens 2 a 9, 11 e
+- **Alocação:** itens 1 e 10: entregues na v1.15.0 (decisão do dono em 2026-10-08); itens 2 a 9, 11 e
   12 → sem fase — projeto pausado.
 - **Custo de adiar:** item 1: um modelo literal pode mandar ao revisor o texto sem a correção pedida.
 - **Aprovação:** itens 1 e 10, sim (2026-10-08).
 
+## Achados da execução real de aceite da 1.15.0 (fora do pedido)
+- **O que já existe:** a execução real da 1.15.0 (2026-10-08, `%TEMP%\opencrew-u5d-real-9310`)
+  apontou, fora do que a fase entregou: (1) o arquivo entregue leva o nome do `outputFile` do passo
+  (`rascunho.md` para um texto aprovado); (2) a opção "Corrigir agora" do `entrega.prompt.md` manda
+  editar no lugar, contra a regra de versão nova; (3) nada confere datas (dia da semana errado, data
+  passada); (4) checkpoint que pergunta três coisas e recebe uma: o texto não diz o que fazer;
+  (5) o revisor não tem escala de nota definida, e o `review.md` é citado sem ser mandado ler;
+  (6) o pedido lê quase o runner inteiro (três seções, mais a inicialização e o carregamento do
+  agente); (7) num pedido, as versões do texto e as revisões se intercalam (`v1` texto, `v2` revisão,
+  `v3` texto…); (8) "Run it: /opencrew run" no fim do conserto, em inglês e nem sempre o próximo
+  passo certo.
+- **Alocação:** → sem fase — projeto pausado.
+- **Custo de adiar:** nenhum trava o uso; o 1 e o 3 são os que o usuário mais nota.
+- **Aprovação:** não.
+## Testes deixam pastas temporárias sem apagar
+- **O que já existe:** vários testes criam o projeto de mentira com `mkTmp` (`tests/_helpers.js`,
+  `projetoFalso`) e não o removem no fim. Em 2026-10-08 havia 99.677 pastas `opencrew-*` no `%TEMP%`
+  da máquina do mantenedor, 64 mil delas `opencrew-verif-*`; cada `npm run verify` deixa mais de mil.
+  Os testes escritos da U3a em diante removem a pasta (`t.after`).
+- **Alocação:** → sem fase — projeto pausado; é higiene da máquina de quem desenvolve e do CI (que é
+  descartável), não chega ao usuário. Conserto: `projetoFalso` receber o `t` e registrar a remoção.
+- **Custo de adiar:** disco e lentidão para listar o `%TEMP%`; um teste que olha a pasta-mãe do
+  projeto de mentira pode achar sobra de outro (aconteceu em 2026-10-08 com `%TEMP%\x`).
+- **Aprovação:** não.
 ## Orçamento de custo por run- **O que já existe:** nada; skills pagas (OpenRouter, Apify, Resend) sem teto (T-A12).
-- **Alocação:** → U5 — `Budget:` em `preferences.md`, confirmação antes de lote pago,
+- **Alocação:** → sem fase — projeto pausado (era U5): `Budget:` em `preferences.md`, confirmação antes de lote pago,
   teto de `--batch` no `generate.py`.
 - **Custo de adiar:** gasto inesperado do usuário; retries multiplicam o custo.
 - **Aprovação:** não.
@@ -79,7 +111,7 @@
 ## `/opencrew cleanup` + retenção
 - **O que já existe:** `runs.md`, `output/{run_id}/vN/`, `_investigations/` (com `.wav`)
   crescem sem poda.
-- **Alocação:** → U5.
+- **Alocação:** → sem fase — projeto pausado (era U5).
 - **Custo de adiar:** disco e leitura de contexto crescem com o uso.
 - **Aprovação:** não.
 
@@ -122,23 +154,14 @@
 - **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em
   2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou
   precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação
-  lado a lado pedir. Item 8 → U5 fatia 4 (1.15.0) — é pedido avulso, como o modo equipe. Item 9: a linha "Não medido" saiu na 1.12.0; documento em outro idioma → sem fase — projeto pausado.
+  lado a lado pedir. Item 8: entregue na v1.15.0 (Word por pedido em texto; pedido à crew no histórico). Item 9: a linha "Não medido" saiu na 1.12.0; documento em outro idioma → sem fase — projeto pausado.
 - **Custo de adiar:** quem tem um modelo `.dotx` ou logotipo que não é PNG ajusta à mão (converte
   o logotipo, aplica o modelo no Word); documento em outro idioma sai com "Página X de Y" em português.
 - **Aprovação:** não.
 
-## Modo equipe: `/opencrew pedir <crew> "<tarefa>"`
-- **O que já existe:** só o pipeline completo. No uso real a crew virou equipe permanente com
-  tarefas avulsas fora do pipeline, uma delas fora do histórico (dor 7).
-- **Alocação:** → U5 fatia 4 (1.15.0) — com o `runs.md` confiável da fatia 3 para tarefas avulsas. Inclui a entrega avulsa
-  (arquivos fora de uma execução, sem `--run`): é o modo equipe que cria a tarefa fora do
-  pipeline (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
-- **Custo de adiar:** histórico e memória perdem o que acontece fora do pipeline.
-- **Aprovação:** não.
-
 ## `/opencrew feedback` — relato de uso para issue
 - **O que já existe:** nenhum canal; usuários do npm não deixam rastro (U0).
-- **Alocação:** → U5 — monta um texto (versão, etapa, onde travou, sem conteúdo do cliente)
+- **Alocação:** → sem fase — projeto pausado (era U5): monta um texto (versão, etapa, onde travou, sem conteúdo do cliente)
   que o próprio usuário cola numa issue; + issue template "Relato de uso".
 - **Custo de adiar:** decisões de produto sem evidência de quem usa.
 - **Aprovação:** não.
@@ -147,7 +170,7 @@
 - **O que já existe:** U2 confere os caminhos citados pela crew; no Projeto A o manual de marca
   (uma fonte) lista nomes de logo que não existem na pasta — a crew usou texto no lugar do logo,
   sem aviso.
-- **Alocação:** → U3a fatia 3 (sem versão; depois da U4) — é conferência de fontes, não entrega,
+- **Alocação:** → sem fase — projeto pausado (era U3a fatia 3): é conferência de fontes, não entrega,
   e não cabia na 1.9.0 (`specs/fase-u3a2-entrega-no-projeto.md`, §8). Como aviso que não para a
   execução: não muda `FONTES:` e o `--corrigir` nunca reescreve a fonte.
 - **Custo de adiar:** peças visuais sem logo, falha silenciosa.
@@ -183,7 +206,7 @@
   de mais de um canal vai inteiro para um canal só; HTML editável com caminho `file://` não é
   avisado, e a skill `image-creator` manda embutir imagem por caminho absoluto (regras 5, 9, 10,
   11 e 26 da spec grande; U3a-09a a 09f, 04c a 04p, 03m a 03u, 07k a 07p).
-- **Alocação:** → U3a fatia 3 (sem versão; depois da U4) — muda o que bloqueia: texto que hoje
+- **Alocação:** → sem fase — projeto pausado (era U3a fatia 3): muda o que bloqueia: texto que hoje
   passa pode parar, e pede a conferência do dono em cada rede; mudar a skill pede teste de
   renderização real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** texto que passa no verificador pode estourar o limite ao ser colado com as
@@ -205,7 +228,7 @@
   do core para `_opencrew/best-practices.local/`; daí em diante, correção de limite feita no core
   não chega mais àquele formato, e ninguém avisa (H3-01). A parte urgente (mesclar os
   `constraints:` com os do core e avisar quando o arquivo local não os declara) vai na R1.
-- **Alocação:** → U5 — muda o desenho do overlay; as cópias inteiras que já existem continuam
+- **Alocação:** → sem fase — projeto pausado (era U5): muda o desenho do overlay; as cópias inteiras que já existem continuam
   valendo.
 - **Custo de adiar:** cada cópia local congela os limites daquele formato no projeto.
 - **Aprovação:** sim — muda como o usuário guarda os próprios best-practices.
@@ -214,14 +237,14 @@
 - **O que já existe:** exemplos de caminho tirados dos casos reais (cenários da spec U2) estão em
   `build.prompt.md`, em `discovery.prompt.md` e em `tests/conferir-fontes.test.js`; a trava de
   conteúdo do mantenedor (`tests/template-refs.test.js`) não os procura (G-29).
-- **Alocação:** → U5 — higiene, sem urgência: são nomes genéricos de pasta, sem texto de cliente.
+- **Alocação:** → sem fase — projeto pausado (era U5): higiene, sem urgência: são nomes genéricos de pasta, sem texto de cliente.
 - **Custo de adiar:** esses nomes seguem no prompt instalado em todo usuário.
 - **Aprovação:** não.
 
 ## Contagem de caracteres por canal (X/Twitter)
 - **O que já existe:** o verificador conta todo emoji como 1 e a URL inteira, em qualquer canal
   (`verificar/regras.mjs`); no X, emoji vale 2 e todo link vale 23 (H2-17).
-- **Alocação:** → U5 — polimento: o limite do tweet já é medido, só o peso muda.
+- **Alocação:** → sem fase — projeto pausado (era U5): polimento: o limite do tweet já é medido, só o peso muda.
 - **Custo de adiar:** tweet com emojis passa acima do limite real; tweet com link longo é
   bloqueado sem motivo.
 - **Aprovação:** não.
@@ -230,7 +253,7 @@
 - **O que já existe:** o runner lê cada fonte inteira até ~300 linhas; acima disso, só os títulos
   e os trechos que julgar relevantes (`runner.pipeline.md`, passo 1c). A spec U2 (§11) adiou a
   busca semântica (H3-12).
-- **Alocação:** → U5 — custo (tokens por execução).
+- **Alocação:** → sem fase — projeto pausado (era U5): custo (tokens por execução).
 - **Custo de adiar:** em fonte longa, um trecho importante pode ficar fora da leitura.
 - **Aprovação:** não.
 
@@ -246,7 +269,7 @@
   fora: os cinco agentes-base não têm as seções que o Gate 1 do Build exige (T-M20), então
   `extends:` não poupa trabalho (T-B8); o `design.yaml` usa `input_file`/`output_file` e o passo,
   `inputFile`/`outputFile`.
-- **Alocação:** → U5 — pede reescrever os cinco agentes-base (`specs/fase-u4a-conserto-de-crews.md`,
+- **Alocação:** → sem fase — projeto pausado (era U5): pede reescrever os cinco agentes-base (`specs/fase-u4a-conserto-de-crews.md`,
   decisão 9); o `design.yaml` é arquivo interno da criação e não chega ao runner.
 - **Custo de adiar:** o Build completa à mão o que falta no agente-base, a cada crew criada.
 - **Aprovação:** não.
@@ -256,7 +279,7 @@
   `post_visible_chars: 210` (`linkedin-post`) estão no frontmatter `constraints:`; na execução
   real o verificador mediu caracteres e hashtags da legenda, mas não o gancho de 125. Fere a
   regra 12 do AGENTS.md. Os outros máximos sem medição já têm destino (spec U1 §12, H2-13).
-- **Alocação:** → U5 — junto do resto do H2-13.
+- **Alocação:** → sem fase — projeto pausado (era U5): junto do resto do H2-13.
 - **Custo de adiar:** o gancho passa do corte do "ver mais" sem aviso.
 - **Aprovação:** não.
 

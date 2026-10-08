@@ -2,10 +2,11 @@
 // Caminho da execução de uma crew: diz onde cada passo grava, de onde lê e se o arquivo gravado
 // está lá. Quem calcula é este script, igual em qualquer sistema — a IA não monta o caminho.
 // Uso (na pasta do projeto): node _opencrew/core/scripts/caminho.mjs <crew> <ação> --run <id> [opções]
-//   pasta    [--run <id>] [--tema "<texto>"] [--passos N]
+//   pasta    [--run <id>] [--tema "<texto>"] [--passos N | --pedido [--agente <id>] [--formato <id>]]
 //                                             cria crews/<crew>/output/<id>/ e o registro da
 //                                             execução; sem --run, o id é a data e a hora do
-//                                             computador (AAAA-MM-DD-HHmmss)
+//                                             computador (AAAA-MM-DD-HHmmss); --pedido: a execução
+//                                             é um pedido avulso à crew, sem pipeline
 //   saida    --run <id> --arquivo <declarado> onde o passo grava (abre a pasta de versão seguinte)
 //   entrada  --run <id> --arquivo <declarado> a saída mais nova desse arquivo
 //   conferir --arquivo <caminho já resolvido> [--passo N] [--secoes N] [--tldr]
@@ -25,7 +26,7 @@ import path from 'node:path';
 import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
 import { RUN, USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
 import { acharCrew } from './caminho/crew.mjs';
-import { ARQUIVO, anotar, comPasso, limparTema } from './execucao/registro.mjs';
+import { ARQUIVO, PEDIDO, anotar, comPasso, limparTema } from './execucao/registro.mjs';
 import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, novoRun, proximaVersao } from './caminho/nucleo.mjs';
 import { criarPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
 
@@ -122,7 +123,7 @@ async function pasta(raiz, crew, args, agora) {
   const run = args.run || novoRun(agora, pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
   const rel = `crews/${crew}/output/${run}`;
   const nova = criarPasta(path.resolve(raiz, rel));
-  const base = { crew, run, tema: limparTema(args.tema), passos: args.passos ? Number(args.passos) : null, em: agora.toISOString() };
+  const base = { crew, run, tema: limparTema(args.tema), passos: args.passos ? Number(args.passos) : null, tipo: args.pedido ? PEDIDO : undefined, agente: args.agente, formato: args.formato, em: agora.toISOString() };
   return [nova ? await anotar(path.resolve(raiz, rel), base, (registro) => registro) : null, ok(rel)];
 }
 

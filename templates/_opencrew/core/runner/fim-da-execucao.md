@@ -53,7 +53,7 @@ After updating `memories.md` and closing the run, run a reflection pass. This is
 2. **Look for recurrence**: use the list the `fechar` command printed under `Correções das últimas execuções:` — one line per correction recorded in the last 10 closed runs of this crew, this one included (`- {run_id} · passo {N} · {nota}`).
    - Do not search `memories.md` for past runs: by rule it keeps no run data.
    - Count: in how many different runs of that list does the same pattern appear?
-   - A "match" means the same step (so the same agent) + the same type of error (e.g. "redator + tom informal", "designer + cores saturadas")
+   - A "match" means the same step (so the same agent) + the same type of error (e.g. "redator + tom informal", "designer + cores saturadas"). A line marked `(pedido)` is a request outside the pipeline: its step numbers are not the pipeline's — compare it by the type of error only.
    - No list was printed → there is nothing to compare: skip items 3 and 4.
 
 3. **Promote to Regra de Ouro**: If the SAME pattern appears in **3 or more runs** (including this one):

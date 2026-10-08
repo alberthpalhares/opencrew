@@ -66,7 +66,7 @@ max_review_cycles: 2                # express 1 · standard 2 · full 3
 | `max_review_cycles` | Build | Runner (Review Loops) |
 | `entrega.destino` | `entregar.mjs --lembrar-destino` only | `entregar.mjs` |
 
-- **`fontes`** is omitted only when the discovery found no project source.
+- **`fontes`** is omitted only when the discovery found no project source. `fontes: []` is the recorded answer "this crew reads no project file" (written by `/opencrew repair`).
 - **`agent_dependencies`** is written when at least one agent can be left out of a run without
   breaking another (for example, one writer per channel). Each key is an agent `id`; its value
   lists the agents whose output it reads. When every agent is needed in every run, omit the

@@ -18,6 +18,8 @@ const MSG = {
   fontesNaLinha: 'Não altero o `crew.yaml`: a lista `fontes:` está escrita numa linha só. Ajuste pela edição da crew.',
   trechoIlegivel: 'O verificador não consegue ler esse trecho como trava: use até 200 caracteres, sem crase nem aspas.',
   semFormato: (id) => `Formato "${id}" não encontrado em \`_opencrew/best-practices.local/\` nem em \`_opencrew/core/best-practices/\`.`,
+  fontesDeOutraForma: 'Não altero o `crew.yaml`: a lista `fontes:` tem itens escritos de outra forma. Ajuste pela edição da crew.',
+  jaTemFonte: 'A crew já tem fonte registrada: "fonte:nenhuma" não vale para ela.',
   fonteAbsoluta: (c) => `A fonte tem de ser um caminho relativo à pasta do projeto: ${c}`,
   fonteFora: (c) => `Caminho fora do projeto: ${c}`,
   fonteAusente: (c) => `Não encontrei no projeto: ${c}`,
@@ -77,7 +79,39 @@ function irreversivel(crew, item, plano) {
 
 const ehAbsoluto = (c) => path.isAbsolute(c) || /^[A-Za-z]:/.test(c) || /^[\\/]/.test(c);
 
+// A chave `fontes:` no começo da linha, com a marca de ordem de bytes na frente quando é a primeira do arquivo.
+const MARCA = String.fromCharCode(0xfeff);
+const CHAVE_FONTES = new RegExp(`^${MARCA}?fontes\\s*:`);
+// A linha em pedaços: a chave, o espaço, o valor, o espaço, o comentário e o fim de linha.
+const PEDACOS_DA_CHAVE = new RegExp(`^(${MARCA}?fontes\\s*:)(\\s*?)(\\S.*?)?([ \\t]*)(#.*?)?(\\r?\\n)?$`, 's');
+
+/** `fonte:nenhuma`: a crew fica registrada como sem arquivos do projeto para ler (`fontes: []`). */
+function semFontes(crew, plano) {
+  const { yaml } = crew.arquivos;
+  const texto = plano.texto(yaml, crew.yaml) ?? '';
+  const linhas = texto.split(/(?<=\n)/);
+  const i = linhas.findIndex((l) => CHAVE_FONTES.test(l));
+  if (i < 0) return plano.trocar(yaml, crew.yaml, comFontesVaziasNoFim(texto));
+  const [, chave, , valor = '', espaco, comentario, fim = ''] = linhas[i].match(PEDACOS_DA_CHAVE);
+  if (/^\[\s*\]$/.test(valor)) return null;
+  if (valor) return MSG.fontesNaLinha;
+  // O que está embaixo da chave, até a próxima chave do mesmo nível: só pode ser linha em branco ou comentário.
+  const proxima = linhas.findIndex((l, n) => n > i && /^[^\s#-]/.test(l));
+  const daLista = linhas.slice(i + 1, proxima < 0 ? linhas.length : proxima).filter((l) => l.trim() && !/^\s*#/.test(l));
+  if (daLista.some((l) => /^\s*(?:-\s*)?caminho\s*:\s*\S/.test(l))) return MSG.jaTemFonte;
+  if (daLista.length) return MSG.fontesDeOutraForma;
+  linhas[i] = `${chave} []${comentario ? `${espaco || ' '}${comentario}` : ''}${fim}`;
+  return plano.trocar(yaml, crew.yaml, linhas.join(''));
+}
+
+/** O `crew.yaml` que não tem a chave `fontes:` ganha `fontes: []` no fim, com o fim de linha do arquivo. */
+function comFontesVaziasNoFim(texto) {
+  const eol = /\r\n/.test(texto) ? '\r\n' : '\n';
+  return `${texto}${texto && !texto.endsWith('\n') ? eol : ''}${texto.trim() ? eol : ''}fontes: []${eol}`;
+}
+
 function fonte(crew, item, plano) {
+  if (item.alvo === 'nenhuma' && !item.valor) return semFontes(crew, plano);
   if (!item.alvo || !item.valor) return MSG.semValor(item);
   if (ehAbsoluto(item.alvo)) return MSG.fonteAbsoluta(item.alvo);
   if (!dentroDoProjeto(crew.raiz, item.alvo)) return MSG.fonteFora(item.alvo);

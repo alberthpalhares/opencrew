@@ -182,7 +182,7 @@ meu-projeto/
 │   ├── core/
 │   │   ├── system.md             ← 🧠 sistema completo do OpenCrew
 │   │   ├── runner.pipeline.md    ← executor de pipeline (o que toda execução usa)
-│   │   ├── runner/               ← 8 partes do executor, lidas só quando é o caso (painel, fim da execução, retomar…)
+│   │   ├── runner/               ← 9 partes do executor, lidas só quando é o caso (painel, fim da execução, retomar, correção…)
 │   │   ├── skills.engine.md      ← gerenciador de skills
 │   │   ├── architect.agent.yaml  ← definição do Arquiteto
 │   │   ├── formato-da-crew.md    ← o formato dos arquivos de uma crew (crew.yaml, pipeline.yaml, passos)
@@ -190,7 +190,7 @@ meu-projeto/
 │   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, registro da execução, entrega, documento Word, conserto de crews e os scripts do Escritório
 │   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
-│   │   └── prompts/              ← 15 prompts de fase (discovery, design, build, entrega, documento, etc.)
+│   │   └── prompts/              ← 16 prompts de fase (discovery, design, build, entrega, documento, pedido, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
 │   │   ├── copywriter.agent.md
@@ -294,6 +294,29 @@ LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os n
 são sempre em português.
 
 ---
+
+## Pedido avulso à crew
+
+Nem tudo o que você quer da crew é o pipeline inteiro. Para uma tarefa só — "refaz o comunicado
+com a data nova", "escreve o ofício para a prefeitura" —, peça:
+
+```
+/opencrew pedir comunicados "escreve o ofício para a prefeitura sobre a poda das árvores"
+```
+
+Também vale em texto: "peça à crew comunicados: …".
+
+- **Quem faz é um agente da própria crew**, com a memória dela, as proibições, as fontes do projeto
+  e o guia do tipo de texto. Antes de começar, a IA diz quem vai fazer e o que vai sair, e espera o
+  seu sim; você pode trocar.
+- **O texto passa pelo verificador** e, se a crew tem revisor, por ele. Depois vem a sua aprovação:
+  aprovar, pedir um ajuste ou cancelar.
+- **A entrega é a de sempre:** uma pasta `entrega/` com o `LEIA-ME.md` (e o Word, quando o texto é
+  um documento oficial), copiada para a pasta do projeto que a crew já usa.
+- **Fica no histórico da crew**, com o tema começado por "Pedido:". Se a conversa cair no meio,
+  `/opencrew retomar <nome>` continua.
+- **Um pedido não publica nem envia nada**, e usa um agente só. Para publicar, ou para um trabalho
+  em várias etapas, rode o pipeline.
 
 ## Histórico e execução interrompida
 
@@ -465,7 +488,8 @@ o que você fez:
   peça na sua IDE `/opencrew repair <nome>`. Ele mostra o que falta, pergunta antes de cada
   mudança e deixa uma cópia `.bak` do arquivo que alterou. O que não dá para consertar assim
   (crew sem passo de revisão, publicação antes da revisão) ele aponta e manda para
-  `/opencrew edit`.
+  `/opencrew edit`. Se a crew não precisa ler nenhum arquivo do projeto, responda "nenhum": a
+  resposta fica gravada e o ponto não volta.
 - **Texto que não é post nem documento para assinar?** Proposta, minuta que outro passo diagrama,
   plano: o passo recebe o formato `texto-livre`. Não há limite de tamanho, nada vira Word, e a
   entrega guarda o arquivo como está, em `outros/`.
@@ -519,6 +543,7 @@ npx @aksp/opencrew update --check
 | `/opencrew` | Abre o menu principal |
 | `/opencrew create <descrição>` | Cria uma nova crew a partir da sua descrição |
 | `/opencrew run <nome>` | Executa o pipeline de uma crew |
+| `/opencrew pedir <nome> "<tarefa>"` | Pede uma tarefa só a uma crew, fora do pipeline dela: um agente da crew faz, o verificador confere, você aprova, sai a entrega e fica no histórico |
 | `/opencrew retomar <nome>` | Continua a execução que parou no meio (a conversa caiu, o contexto acabou): mostra o que já está pronto e segue do passo seguinte, sem refazer o que foi gravado |
 | `/opencrew list` | Lista todas as suas crews |
 | `/opencrew edit <nome>` | Modifica uma crew existente |
@@ -549,6 +574,13 @@ npx @aksp/opencrew update --check
 | `npx @aksp/opencrew help` | Mostra ajuda dos comandos CLI |
 
 ---
+
+## Situação do projeto
+
+O OpenCrew está **em manutenção desde a versão 1.15.0** (outubro de 2026): o que está aqui funciona
+e continua recebendo conserto de defeito, mas não há fase nova planejada. O que ficou de fora está
+no `IDEIAS.md`; quem quiser continuar o desenvolvimento começa por "Como retomar o projeto", no
+`CONTRIBUTING.md`.
 
 ## Para quem é
 

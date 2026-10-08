@@ -381,15 +381,7 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
 - Wait for user input before proceeding
 - Save the user's choice/response for the next step
 - Record the answer with the `marcar` command (`--evento checkpoint`, see "Run record") — last thing of the checkpoint, after the memory and the `outputFile` below are written
-- **Correction → memory, right away**: if the answer corrects something (tone, audience, a term,
-  a fact, a format), write it to `crews/{name}/_memory/memories.md` in the matching section
-  **before the next step** (antes do próximo passo) — not only at the end of the run, which may
-  never come. A term the user asked to remove goes to `## Proibições Explícitas` **between
-  quotes** (entre aspas), in the canonical form — `- Nunca usar "termo"` or, with a replacement,
-  `- Nunca usar "termo" → usar "outro"` — so the automatic checker blocks it next time.
-- **Correction vs. company profile**: if the correction contradicts `_opencrew/_memory/company.md`
-  (e.g. the organization's name, the main audience), ask: "Isso vale para todas as crews?
-  Atualizo o perfil da empresa?" — change `company.md` only after a yes.
+
 - **If the step frontmatter contains `outputFile`**: after collecting the user's full response,
   insert only the run_id in the `outputFile` path (item 1 of the rule in Output Path Transformation — no version folder, no `saida` command), then write the response to that path with your file-writing tool (it creates the folder) before moving to the next step. Checkpoint files are user input captures, not versioned output: they live in the group itself, where `entrada` finds them.
   For the checkpoint that precedes the researcher, use this format:
@@ -402,6 +394,8 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
   ```
   For any other checkpoint: `# {the checkpoint's title}`, the user's answer as given (the option chosen and every comment), and `**Date:** {the date of this run, YYYY-MM-DD}`.
   This file is the `inputFile` of the step that follows.
+
+**Correction at a checkpoint** — only when the answer asks for a change (tone, audience, a term, a fact, a format, another version of a file) or gives the data of a `[PREENCHER]`: read `_opencrew/core/runner/correcao-no-checkpoint.md` completely and follow it before the `marcar` of that checkpoint.
 
 ### Post-Step Output Validation
 

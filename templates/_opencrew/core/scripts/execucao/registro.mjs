@@ -7,6 +7,8 @@ import path from 'node:path';
 import { gravarTexto } from '../estado/arquivo.mjs';
 
 export const ARQUIVO = 'execucao.json';
+/** O `tipo` do registro de um pedido avulso à crew (spec fase-u5d-modo-equipe.md); execução de pipeline não tem o campo. */
+export const PEDIDO = 'pedido';
 /** O `--resultado` do `fechar` → o `status` do registro. */
 export const STATUS = { aprovado: 'aprovada', rejeitado: 'rejeitada', abortado: 'abortada', publicado: 'publicada' };
 
@@ -30,7 +32,8 @@ function conferido(lido) {
   if (!lido || typeof lido !== 'object' || Array.isArray(lido)) return null;
   const passos = lista(lido.passos).filter((p) => inteiro(p.n)).map((p) => ({ ...p, arquivo: umaLinha(p.arquivo, 500), em: umaLinha(p.em, 40) }));
   const marcos = lista(lido.marcos).filter((m) => inteiro(m.passo)).map((m) => ({ ...m, evento: umaLinha(m.evento, 20), resultado: umaLinha(m.resultado, 20), nota: limparNota(m.nota), em: umaLinha(m.em, 40) }));
-  return { ...lido, tema: limparTema(lido.tema), saida: limparTema(lido.saida), status: umaLinha(lido.status, 20), passos, marcos };
+  const doPedido = Object.fromEntries(['agente', 'formato'].filter((c) => lido[c] !== undefined).map((c) => [c, umaLinha(lido[c], 80)]));
+  return { ...lido, ...doPedido, tema: limparTema(lido.tema), saida: limparTema(lido.saida), status: umaLinha(lido.status, 20), passos, marcos };
 }
 
 /**
@@ -55,15 +58,15 @@ async function lerParaGravar(pasta) {
 export const lerRegistro = (pasta) => lerParaGravar(pasta).catch(() => null);
 
 /** Um registro novo, aberto. @param {{ crew, run, tema?, passos?, em }} base `em`: a hora, em ISO */
-export function novoRegistro({ crew, run, tema = '', passos = null, em }) {
-  return { versao: 1, crew, run, tema, status: 'aberta', iniciadaEm: em, passosPrevistos: passos, passos: [], marcos: [], saida: '' };
+export function novoRegistro({ crew, run, tema = '', passos = null, tipo, agente, formato, em }) {
+  return { versao: 1, crew, run, tema, tipo, agente, formato, status: 'aberta', iniciadaEm: em, passosPrevistos: passos, passos: [], marcos: [], saida: '' };
 }
 
-/** Os campos na ordem da spec (`fechadaEm` só existe depois do fecho). */
+/** Os campos na ordem da spec (`tipo`, `agente` e `formato` só existem no pedido; `fechadaEm`, depois do fecho). */
 function ordenado(r) {
-  const { versao, crew, run, tema, status, iniciadaEm, fechadaEm, passosPrevistos, passos, marcos, saida, ...resto } = r;
-  const fecho = fechadaEm === undefined ? {} : { fechadaEm };
-  return { versao, crew, run, tema, status, iniciadaEm, ...fecho, passosPrevistos, passos, marcos, saida, ...resto };
+  const { versao, crew, run, tema, tipo, agente, formato, status, iniciadaEm, fechadaEm, passosPrevistos, passos, marcos, saida, ...resto } = r;
+  const so = (campos) => Object.fromEntries(Object.entries(campos).filter(([, valor]) => valor !== undefined));
+  return { versao, crew, run, tema, ...so({ tipo, agente, formato }), status, iniciadaEm, ...so({ fechadaEm }), passosPrevistos, passos, marcos, saida, ...resto };
 }
 
 /** O passo conferido: troca a entrada do mesmo número (fica a última saída). */

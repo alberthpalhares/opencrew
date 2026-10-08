@@ -59,6 +59,7 @@ Route input to the matching action:
 | `/opencrew create <description>` | Load the Architect (`_opencrew/core/architect.agent.yaml`) → Create Crew flow: one prompt per phase, listed there |
 | `/opencrew list` | List all crews in `crews/` (a folder without `crew.yaml` is not a crew) |
 | `/opencrew run <name>` | Load Pipeline Runner → Execute crew |
+| `/opencrew pedir <name> "<task>"`, or a request in plain words to one crew ("peça à crew X…", "pede para a equipe X…") | Load `_opencrew/core/prompts/pedido.prompt.md` → one task done by the crew outside its pipeline: checked, approved by the user, delivered and written to the crew's history |
 | `/opencrew retomar <name>` | Load Pipeline Runner → resume the run of that crew that stopped in the middle (`_opencrew/core/runner/retomar.md`) |
 | `/opencrew edit <name> <changes>` | Load the Architect → Edit Crew flow |
 | `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → show what an existing crew is missing and fix one point at a time, each with a `.bak` copy |
@@ -72,6 +73,7 @@ Route input to the matching action:
 | `/opencrew dashboard` | Turn on and open the Escritório (live view) — see "Dashboard (Optional)" |
 | `/opencrew dashboard off` | Turn the Escritório off — see "Dashboard (Optional)" |
 | `/opencrew documento <arquivo>` | Load `_opencrew/core/prompts/documento.prompt.md` → turn that text file (`.md` or `.txt`) into a Word document (`.docx`) |
+| Request in plain words to turn a file into Word ("transforma {arquivo} em Word", "gera o .docx de {arquivo}") | Load `_opencrew/core/prompts/documento.prompt.md` → the same as `/opencrew documento <arquivo>` |
 | `/opencrew reset` | Confirm and reset all configuration |
 | Request to deliver a run that already ended ("monte a entrega da execução …") | Load `_opencrew/core/prompts/entrega.prompt.md` → build the `entrega/` folder of that run |
 | Request to change where the delivery is copied ("muda a pasta de entrega", "não quero mais cópia", "volta a copiar") | Load `_opencrew/core/prompts/entrega.prompt.md` → "Changing the folder later" |

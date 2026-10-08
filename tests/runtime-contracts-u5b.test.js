@@ -19,8 +19,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (rel) => readFileSync(path.join(root, rel), 'utf8');
 const flat = (s) => s.replace(/\s+/g, ' ').trim();
 const linhas = (s) => s.replace(/\r\n/g, '\n').split('\n').length;
-// Eight since U5-3: `retomar.md` (specs/fase-u5c-execucao-registrada.md, rule 14).
-const ESPERADAS = ['contrato-de-saida.md', 'escritorio.md', 'fim-da-execucao.md', 'fontes-pendentes.md', 'memoria.md', 'retomar.md', 'selecao-de-agentes.md', 'tarefas-do-agente.md'];
+// Eight since U5-3: `retomar.md` (specs/fase-u5c-execucao-registrada.md, rule 14); nine since U5-4:
+// `correcao-no-checkpoint.md` (specs/fase-u5d-modo-equipe.md, rule 11).
+const ESPERADAS = ['contrato-de-saida.md', 'correcao-no-checkpoint.md', 'escritorio.md', 'fim-da-execucao.md', 'fontes-pendentes.md', 'memoria.md', 'retomar.md', 'selecao-de-agentes.md', 'tarefas-do-agente.md'];
 // What makes the AI read each part (spec §4).
 const CONDICAO = {
   'selecao-de-agentes.md': 'ONLY if `crew.yaml` declares an `agent_dependencies:` field',
@@ -31,6 +32,7 @@ const CONDICAO = {
   'fontes-pendentes.md': 'Otherwise (`FONTES:PENDENTE`, or the script did not run)',
   'fim-da-execucao.md': '**Close the run**',
   'retomar.md': 'only on `/opencrew retomar {name}`',
+  'correcao-no-checkpoint.md': 'only when the answer asks for a change',
 };
 
 /** The stub of a part: from the line it starts with to the next blank line (a heading stub: its paragraph). */
@@ -54,11 +56,12 @@ test('U5b-01a: the parts exist, each starts with a # title and has at most 120 l
   }
 });
 
-// 980 since U5-3: the core kept its 560, and the part read only on `/opencrew retomar` was added.
-test('U5b-01b: the core has at most 560 lines; core plus parts, at most 980', () => {
+// 980 since U5-3 (the part read only on `/opencrew retomar`); 1020 since U5-4 (the correction at a
+// checkpoint left the core and gained its procedure). The core kept its 560.
+test('U5b-01b: the core has at most 560 lines; core plus parts, at most 1020', () => {
   const total = linhas(nucleo) + PARTES.reduce((soma, nome) => soma + linhas(parte(nome)), 0);
   assert.ok(linhas(nucleo) <= 560, `runner.pipeline.md has ${linhas(nucleo)} lines`);
-  assert.ok(total <= 980, `core + parts have ${total} lines`);
+  assert.ok(total <= 1020, `core + parts have ${total} lines`);
 });
 
 test('U5b-02a: every part has a stub in the core that names its path, says "completely" and has at most 8 lines', () => {

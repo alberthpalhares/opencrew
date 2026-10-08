@@ -24,6 +24,7 @@ const TOCOS = [
   ['## Escritório (optional live view)', 'escritorio.md', 0],
   ['### Task-Based Agent Execution', 'tarefas-do-agente.md', 0],
   ['### Output Contract Validation', 'contrato-de-saida.md', 0],
+  ['**Correction at a checkpoint**', 'correcao-no-checkpoint.md', 0],
   ['2. **Close the run**', 'fim-da-execucao.md', 3],
 ];
 

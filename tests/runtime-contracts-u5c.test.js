@@ -83,7 +83,7 @@ test('U5c-10c: runner/retomar.md exists with its stub in the core, the route is 
   tem(retomar, `${EXECUCAO} retomar`);
   tem(retomar, '**except step 5b**: do not run `pasta`');
   tem(retomar, 'Only now, after the yes (nothing of the runner\'s Initialization runs before the question)');
-  tem(retomar, 'the next `verificacao-ciclo-{N}.md` is that number plus 1');
+  tem(retomar, 'next `verificacao-ciclo-{N}.md` is the number of verdicts there plus 1');
   assert.ok(nucleo.indexOf('**Resuming**') < nucleo.indexOf('1c. **Source check**'), 'the stub comes before the first command of the Initialization');
   tem(retomar, 'Step `{N}` is done whole, even when a file of it is already there');
   tem(retomar, 'never read `execucao.json` yourself');

@@ -85,8 +85,33 @@ development rules.
    one cell fails. It then checks the tag against `package.json` and runs `npm publish`. A manual
    run (`workflow_dispatch`) is a rehearsal by default (`dry_run`): it does not publish.
 
-## Forking
+## Como retomar o projeto
 
+O OpenCrew está **em pausa desde a 1.15.0** (2026-10-08): funciona como está e recebe só conserto
+de defeito. Para voltar a desenvolver:
+
+1. **Leia, nesta ordem:** `AGENTS.md` (as 15 regras e a tabela Regra → Trava), `GLOSSARIO.md` (os
+   nomes do domínio) e `specs/fase-u5-roteiro.md` (o que a última fase entregou e o que ficou de
+   fora). Cada versão publicada tem a spec dela em `specs/` e a entrada no `CHANGELOG.md`.
+2. **O que ficou por fazer** está no `IDEIAS.md`: toda entrada diz `sem fase — projeto pausado` e de
+   onde veio. Nada ali está prometido; escolha uma, escreva a spec e peça a aprovação do dono antes
+   do código (ciclo da regra 1).
+3. **A porta é uma só:** `npm run verify` (lint, testes, versão, tamanho, conteúdo do pacote). O CI
+   e a publicação chamam o mesmo comando. Ela não cobre a IA seguindo os prompts: isso se confere
+   com uma execução real numa pasta de teste (`sandbox/` ou uma pasta temporária), como as specs
+   das fases U3 a U5 registram na seção de critérios de aceite.
+4. **O que cada parte do produto é:** o CLI (`src/`) só instala e atualiza; o que a IA do usuário
+   executa são os prompts e os scripts de `templates/_opencrew/core/`. O executor é o
+   `runner.pipeline.md` (no teto de 560 linhas: regra nova vai para uma parte em `runner/`); os
+   scripts gravam o que a IA não deve gravar (caminhos, registro da execução, histórico, entrega,
+   conserto).
+5. **Release:** a ordem da seção "Releasing", acima — `main` enviado, CI verde nas quatro células,
+   e só então a tag `v*`, que publica no npm; depois, o release no GitHub com as notas do
+   `CHANGELOG.md`. A máquina local pode estar num Node mais novo que o piso (20.17): só o CI prova.
+6. **Toda mudança tem de chegar a quem já usa** com um `npx @aksp/opencrew@latest update`, sem tocar
+   em `crews/` nem em `_opencrew/_memory/` (regras 3 e 14): cada fase tem um teste `upgrade-*`.
+
+## Forking
 If you publish your own fork of opencrew under a different name:
 
 1. **Catalog URL** — Edit `templates/skills/catalog.json` → `baseUrl` to point to your

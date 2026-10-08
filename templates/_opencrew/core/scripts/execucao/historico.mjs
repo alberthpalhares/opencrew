@@ -46,9 +46,11 @@ export function runsDoHistorico(texto) {
 }
 
 /** Onde a linha entra: logo abaixo dos traços, ou (`porData`) antes da primeira execução mais antiga. */
-function posicao(pedacos, { tracos, fim }, data) {
-  if (data === null) return tracos + 1;
-  for (let i = tracos + 1; i <= fim; i++) if (celulas(pedacos[i]) && (celulas(pedacos[i])[0] ?? '') < data) return i;
+function posicao(pedacos, { tracos, fim }, chave) {
+  if (chave === null) return tracos + 1;
+  // Mais antiga é a de data menor; na mesma data, a de `run_id` menor (o id começa pela hora).
+  const antiga = ([data = '', run = '']) => data < chave.data || (data === chave.data && run < chave.run);
+  for (let i = tracos + 1; i <= fim; i++) if (celulas(pedacos[i]) && antiga(celulas(pedacos[i]))) return i;
   return fim + 1;
 }
 
@@ -67,7 +69,7 @@ export function comLinha(texto, { crew, run, linha, porData = false }) {
   const igual = pedacos.findIndex((p, i) => i > t.tracos && i <= t.fim && celulas(p)?.[1] === run);
   if (igual >= 0) pedacos[igual] = `${linha}${/\r?\n$/.exec(pedacos[igual])?.[0] ?? ''}`;
   else {
-    const i = posicao(pedacos, t, porData ? linha.split('|')[1].trim() : null);
+    const i = posicao(pedacos, t, porData ? { data: linha.split('|')[1].trim(), run } : null);
     // Depois de uma linha sem quebra no fim (a última do arquivo), a quebra vem antes da linha nova.
     const semQuebra = i > 0 && !pedacos[i - 1].endsWith('\n');
     pedacos.splice(i, 0, semQuebra ? `${fimDeLinha}${linha}` : `${linha}${fimDeLinha}`);

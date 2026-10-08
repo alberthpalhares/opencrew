@@ -65,10 +65,12 @@ function fontes(crew) {
   const fim = linhas.findIndex((l, i) => i > inicio && /^[^\s#-]/.test(l));
   const daLista = inicio < 0 ? [] : linhas.slice(inicio + 1, fim < 0 ? linhas.length : fim);
   if (daLista.some((l) => /^\s*(?:-\s*)?caminho\s*:\s*\S/.test(l))) return null;
+  // `fontes: []` é a resposta "nenhuma", gravada pelo conserto (spec fase-u5d-modo-equipe.md, regra 13).
+  if (inicio >= 0 && /^fontes\s*:\s*\[\s*\]\s*(?:#.*)?$/.test(linhas[inicio])) return null;
   return [
     'A crew não registra os arquivos do projeto que ela precisa ler.',
     'Sem isso, ela escreve sem conhecer o que o projeto já decidiu.',
-    'Para consertar: --aplicar "fonte:<caminho>=<para que>" (um por arquivo ou pasta)',
+    'Para consertar: --aplicar "fonte:<caminho>=<para que>" (um por arquivo ou pasta), ou --aplicar "fonte:nenhuma" se ela não lê nenhum',
   ];
 }
 

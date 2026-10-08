@@ -6,7 +6,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { REGISTRADA_DEPOIS, comLinha, dataDe, linhaDe, runsDoHistorico } from '../execucao/historico.mjs';
 import { RUN } from '../caminho/argumentos.mjs';
-import { ARQUIVO, limparTema } from '../execucao/registro.mjs';
+import { ARQUIVO, PEDIDO, limparTema } from '../execucao/registro.mjs';
 
 const MSG = {
   semLinha: (n) => `${n} ${n === 1 ? 'execução' : 'execuções'} sem linha no histórico.`,
@@ -25,12 +25,13 @@ const MAXIMO_DE_NOMES = 8;
 const entradas = (pasta) => (existsSync(pasta) ? readdirSync(pasta, { withFileTypes: true }) : []);
 const saidaDe = (crew) => path.join(crew.pasta, 'output');
 
-/** O `status` do registro da pasta, ou `null` (sem registro, ou ilegível). */
-function statusDe(pasta) {
+/** O `status` e o `tipo` do registro da pasta; `{}` sem registro, ou com ele ilegível. */
+function registroDe(pasta) {
   try {
-    return JSON.parse(readFileSync(path.join(pasta, ARQUIVO), 'utf8')).status ?? null;
+    const { status = null, tipo = null } = JSON.parse(readFileSync(path.join(pasta, ARQUIVO), 'utf8')) ?? {};
+    return { status, tipo };
   } catch {
-    return null;
+    return {};
   }
 }
 
@@ -48,7 +49,7 @@ function execucoes(crew) {
     // O registro (e um temporário dele) não conta como arquivo da execução: a pasta que só tem isso é abandonada.
     const doRegistro = (nome) => nome === ARQUIVO || (nome.startsWith(`${ARQUIVO}.`) && nome.endsWith('.tmp'));
     const topo = entradas(pasta).filter((e) => !doRegistro(e.name)).flatMap((e) => (e.isDirectory() ? daPasta(pasta, e.name) : [e.name])).sort();
-    return { run, topo, status: statusDe(pasta), ehExecucao: COM_DATA.test(run) || existsSync(path.join(pasta, ARQUIVO)) };
+    return { run, topo, status: registroDe(pasta).status ?? null, ehExecucao: COM_DATA.test(run) || existsSync(path.join(pasta, ARQUIVO)) };
   }).filter((e) => e.ehExecucao);
 }
 
@@ -97,6 +98,8 @@ export function historico(crew, item, plano) {
   if (runsDoHistorico(texto).includes(run)) return MSG.jaTemLinha(run);
   if (!limparTema(item.valor)) return MSG.semValor(item);
   const data = dataDe(run, statSync(pasta).mtime); // id sem data: o dia em que a pasta mudou pela última vez
-  const linha = linhaDe({ data, run, tema: limparTema(item.valor), saida: '', score: '', resultado: REGISTRADA_DEPOIS });
+  // O pedido avulso entra no histórico como entraria pelo `fechar`: com "Pedido: " na frente do tema.
+  const tema = `${registroDe(pasta).tipo === PEDIDO ? 'Pedido: ' : ''}${limparTema(item.valor)}`;
+  const linha = linhaDe({ data, run, tema, saida: '', score: '', resultado: REGISTRADA_DEPOIS });
   return plano.trocar(runs, crew.runs, comLinha(texto, { crew: crew.nome, run, linha, porData: true }));
 }

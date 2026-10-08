@@ -3,6 +3,39 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.15.0] — 2026-10-08
+
+Fase U5, fatia 4: "Modo equipe" (`specs/fase-u5d-modo-equipe.md`). Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`; nenhuma crew precisa mudar.
+
+Esta é a última versão da fase de fechamento: **o projeto entra em manutenção**. O que ficou de
+fora está no `IDEIAS.md`, e o `CONTRIBUTING.md` diz como retomar.
+
+### Added
+- **`/opencrew pedir <nome> "<tarefa>"` — pedido avulso à crew.** Uma tarefa só, fora do pipeline:
+  um agente da crew faz, com a memória, as proibições, as fontes e o guia do tipo de texto; o
+  verificador confere (e o revisor, se a crew tem um); você aprova, pede ajuste ou cancela; sai a
+  entrega de sempre e o pedido entra no histórico da crew, com o tema começado por "Pedido:".
+  Também vale em texto ("peça à crew X: …"). Se a conversa cair, `/opencrew retomar` continua.
+  Um pedido não publica nem envia, e usa um agente só.
+- **Documento Word por pedido em texto.** "Transforma {arquivo} em Word", dito em qualquer conversa,
+  leva ao mesmo caminho do `/opencrew documento`.
+- **"Nenhum" é uma resposta no conserto.** Se a crew não precisa ler arquivo do projeto, o
+  `/opencrew repair` grava isso (`fontes: []`) e o ponto deixa de aparecer como pendente.
+
+### Changed
+- **Correção pedida no meio da execução tem procedimento.** Quando você pede uma mudança numa
+  aprovação do meio, o agente que escreveu o arquivo reescreve, numa versão nova, o arquivo é
+  conferido e a aprovação é mostrada de novo — antes o texto só mandava anotar na memória e seguir,
+  e o revisor podia receber o texto sem a correção. Dado que você fornece para um `[PREENCHER]`
+  segue o mesmo caminho e não conta como correção.
+- O executor de pipeline ficou 6 linhas menor (554): essa regra foi para uma parte lida só quando
+  há correção.
+
+### Limites
+- Quem escolhe o agente e o formato do pedido é a IA; você confere na pergunta "Posso começar?".
+- O pedido não procura sozinho o que a crew produziu antes: diga qual arquivo.
+
 ## [1.14.0] — 2026-10-08
 
 Fase U5, fatia 3: "Execução registrada" (`specs/fase-u5c-execucao-registrada.md`). Chega a quem já
