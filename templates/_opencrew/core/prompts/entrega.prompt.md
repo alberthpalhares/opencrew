@@ -85,13 +85,16 @@ the report of the check made at delivery time (it is not part of the delivery).
   3. Deixar para depois (o canal fica como "Não está pronto" e não é copiado)
   ```
   Wait for the answer.
-  - **1** — for each item that is missing, fix it in the source file the pending item names, never
-    inside `entrega/`, and in place — the same file at the same path, no new `vN` folder and no
-    copy — so the list does not change: ask the user for the real information of every
-    `[PREENCHER: …]`, shorten what is over a limit, write again a file that is not there. Then run
-    the checker on that file
-    (`node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{caminho}={formato}"`)
-    and only then run the delivery again, with the same list.
+  - **1** — for each item that is missing, fix the file the pending item names, never inside
+    `entrega/`, as a **new version**: read `_opencrew/core/runner/correcao-no-checkpoint.md` and
+    follow its item 3 (the agent of the step that wrote the file rewrites it, `saida` opens the
+    next `vN`, `conferir --passo` of that step; in a pedido the step is 1). Ask the user for the
+    real information of every `[PREENCHER: …]`, shorten what is over a limit, write again a file
+    that is not there. Then run the checker on the new file, saving the report as the next
+    `verificacao-ciclo-{N}.md` of the run
+    (`node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{caminho}={formato}" --relatorio "crews/{name}/output/{run_id}/verificacao-ciclo-{N}.md"`)
+    and only then run the delivery again, with the list that has the **new** path in place of the
+    old one. The reviewer does not run again and the `marcar` of the approval is not repeated.
   - **2** — run the same command again, ending with `--aceitar-pendencias`: the script records
     each pending item as a ressalva (in `ressalvas.json`, in the run folder, and at the top of the
     `LEIA-ME.md`), the channel becomes "Pronto, com ressalva" and is copied like the ready ones.
@@ -113,7 +116,7 @@ the report of the check made at delivery time (it is not part of the delivery).
   already chose "Aceitar assim mesmo" in the review loop of this run and what is missing is only
   what was accepted there: then run the command again with it, without asking.
 
-After "Edit this content" (the final menu of the runner) changes an approved file, or any step
+After "Editar este conteúdo" (the final menu of the runner) changes an approved file, or any step
 runs again after the delivery, run the delivery again with the new paths: the folder is rebuilt
 from scratch, so whatever was edited inside `entrega/` is lost — the `LEIA-ME.md` says so. The copy
 in the project is never overwritten: when something already copied changed, the script puts the

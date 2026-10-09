@@ -25,10 +25,11 @@ import { MSG as COMUM, dentroDoProjeto, ehPrincipal, relativoAoProjeto } from '.
 import { MSG, USO, lerArgs, limpar } from './documento/argumentos.mjs';
 import { gravarDocx } from './documento/gravar.mjs';
 import { gerarDocx } from './documento/pacote.mjs';
+import { AVISO_PERFIL_VAZIO, perfilVazio } from './documento/perfil.mjs';
 import { PERFIL, criarPerfil, lerPerfilDoProjeto } from './documento/projeto.mjs';
 
 export { gerarDocx } from './documento/pacote.mjs';
-export { lerPerfil } from './documento/perfil.mjs';
+export { AVISO_PERFIL_VAZIO, lerPerfil, perfilVazio } from './documento/perfil.mjs';
 export { PERFIL, lerPerfilDoProjeto } from './documento/projeto.mjs';
 
 const TEXTO = /\.(md|txt)$/i;
@@ -93,7 +94,8 @@ async function montar(raiz, pedido) {
   const lido = pedido.perfil ? await lerPerfilDoProjeto(raiz, pedido.perfil) : {};
   if (lido.erro) return erro(lido.erro);
   const documento = gerarDocx({ texto, perfil: lido.perfil, logotipo: lido.logotipo });
-  return documento.vazio ? erro(MSG.semTexto(pedido.origem.rel)) : documento;
+  if (documento.vazio) return erro(MSG.semTexto(pedido.origem.rel));
+  return lido.perfil && perfilVazio(lido.perfil) ? { ...documento, avisos: [...documento.avisos, AVISO_PERFIL_VAZIO] } : documento;
 }
 
 function relatorio(raiz, pedido, estado, avisos) {

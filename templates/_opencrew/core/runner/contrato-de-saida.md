@@ -14,11 +14,11 @@ in the same call as the basic file existence check (Post-Step Output Validation)
 
 3. **If a check fails** (the last line is `CAMINHO:REPROVADO {motivo}`, with a motivo other than
    `arquivo ausente ou vazio`; the script reports the first one):
-   - Present to user: "⚠️ Output from {Agent Name} is incomplete: {motivo}"
+   - Present to user: "⚠️ A saída de {Agent Name} está incompleta: {motivo}"
    - Options as numbered list:
-     1. Accept anyway and continue
-     2. Retry step (re-execute the agent)
-     3. Abort pipeline
+     1. Aceitar assim mesmo e seguir
+     2. Refazer o passo (executar o agente de novo)
+     3. Abortar a execução
 
 4. **If no `output_contract` is defined**, skip this validation entirely (backward compatible).
 

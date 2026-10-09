@@ -88,12 +88,14 @@ After updating `memories.md` and closing the run, run a reflection pass. This is
 3. Present completion summary:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Pipeline complete!
-📁 Delivery: crews/{name}/output/{run_id}/entrega/ — start with LEIA-ME.md
+✅ Execução concluída!
+📁 Entrega: crews/{name}/output/{run_id}/entrega/ — comece pelo LEIA-ME.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-What would you like to do?
-● Run again (new topic)
-○ Edit this content
-○ Back to menu
+O que você quer fazer?
+● Rodar de novo (outro tema)
+○ Editar este conteúdo
+○ Voltar ao menu
 ```
+
+(The text between the lines is fixed PT-BR, whatever the user's language.)

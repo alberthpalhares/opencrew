@@ -92,7 +92,7 @@ Todo limite que o produto promete (tamanho de título, legenda, post, hashtags, 
 frontmatter `constraints:` do best-practice — com nome canônico — e é medido por
 `_opencrew/core/scripts/verificar.mjs` antes do revisor. Limite só escrito em prosa é intenção.
 **Trava:** `tests/verificar*.test.js` + `tests/runtime-contracts.test.js` (U1-05) e
-`tests/runtime-contracts-r1.test.js`.
+`tests/runtime-contracts-r1.test.js` e `tests/verificar-datas.test.js` (U6a-01: o dia da semana que não bate com a data).
 
 ### 13. Texto que o usuário vê: PT-BR correto
 Mensagens, perguntas e relatórios mostrados ao usuário final são em português do Brasil, com
@@ -139,7 +139,7 @@ muda a linha da execução.
 | 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`, `tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`, `tests/r2-*.test.js`, `tests/scripts-links.test.js` | Reprova |
 | 4 Referências existem | `tests/template-refs.test.js` | Reprova |
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
-| 6 Tamanho | `scripts/check-size.js`; o núcleo do runner em até 560 linhas: `tests/runtime-contracts-u5b.test.js` (U5b-01b), `tests/runtime-contracts-u5c.test.js` (U5c-10a) e `tests/runtime-contracts-u5d.test.js` (U5d-05a) | Alerta; o teto do runner reprova |
+| 6 Tamanho | `scripts/check-size.js`; o núcleo do runner em até 560 linhas: `tests/runtime-contracts-u5b.test.js` (U5b-01b), `tests/runtime-contracts-u5c.test.js` (U5c-10a) e `tests/runtime-contracts-u5d.test.js` (U5d-05a; U6a-06a: núcleo ≤ 560, total ≤ 1.030) | Alerta; o teto do runner reprova |
 | 7 Porta única | `scripts/verify.js` + proveta `tests/verify.test.js` | Reprova |
 | 8 Versão | `scripts/check-version-sync.js`, passo tag × versão no `publish.yml`, `tests/release-gate.test.js`, `tests/node-piso.test.js` | Reprova |
 | 9 Doc que mente | sem trava — revisão humana | — |
@@ -147,7 +147,7 @@ muda a linha da execução.
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a) | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a) | Reprova |
 | 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)

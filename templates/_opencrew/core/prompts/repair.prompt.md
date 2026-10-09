@@ -95,7 +95,7 @@ Run the diagnosis of Step 2 once more and close with what really happened:
 "Pronto: {k} conserto(s) gravado(s). Cópias do que mudou: {lista de .bak}. Ficou pendente:
 {lista ou 'nada'}." — `{k}` is the number of points the user said yes to and the script wrote.
 
-Then: `Run it: /opencrew run {code}`.
+Then: `Para rodar: /opencrew run {code}`.
 
 ## Rules
 

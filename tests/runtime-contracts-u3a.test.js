@@ -81,7 +81,7 @@ for (const antigo of ['Output saved to', 'Run folder', 'Save final output']) {
 }
 
 test('U3a-08a: the final menu is still there', () => {
-  for (const opcao of ['Run again (new topic)', 'Edit this content', 'Back to menu']) tem(fim, opcao);
+  for (const opcao of ['Rodar de novo (outro tema)', 'Editar este conteúdo', 'Voltar ao menu']) tem(fim, opcao);
 });
 
 // ── U3a-01e-f1 Who builds the list, and with what (rule 2) ───────────────────────────────────
@@ -141,9 +141,9 @@ test('U3a-08c: a script that did not run — the warning of spec §6, the list o
 
 // ── U3a-08d The delivery runs again after an edit ────────────────────────────────────────────
 
-test('U3a-08d: after "Edit this content" the delivery runs again', () => {
-  assert.match(flat(entrega), /After "Edit this content" changes an approved file, run it again/);
-  assert.match(texto, /After "Edit this content"[^.]*run the delivery again/);
+test('U3a-08d: after "Editar este conteúdo" the delivery runs again', () => {
+  assert.match(flat(entrega), /After "Editar este conteúdo" changes an approved file, run it again/);
+  assert.match(texto, /After "Editar este conteúdo"[^.]*run the delivery again/);
 });
 
 // ── U3a-08h and U3a-08n, the runner side: when --vai-publicar goes (rule 24) ─────────────────

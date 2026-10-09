@@ -122,7 +122,7 @@ Before executing any step that references an agent:
    - Use Output Examples as quality reference
    - Avoid Anti-Patterns listed in the agent definition
    - Apply Voice Guidance (vocabulary always/never use, tone rules)
-5. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
+4. **Inject format context**: Check if the current step's frontmatter contains a `format:` field.
    If present:
    a. **Export format** — if format is `csv`:
       - Read `_opencrew/core/prompts/export.prompt.md` and append its Markdown body to the agent's
@@ -148,7 +148,7 @@ Before executing any step that references an agent:
       {format file markdown body}
       ```
    If the step has no `format:` field, skip this step entirely (backward compatible).
-6. **Inject skill context (Two-Tier)**:
+5. **Inject skill context (Two-Tier)**:
     a. Build a Tier 1 skill index from each declared skill's frontmatter `name`, `description` and `side_effects` (~30 tokens per skill)
     b. Append the index after format injection (the second form is for every skill with `side_effects: irreversible`):
        ```
@@ -165,7 +165,7 @@ Before executing any step that references an agent:
    Agent (.agent.md) → Crew Memory Rules → Platform Best Practices → Skill Index (Tier 1) → Skill Instructions (Tier 2, on-demand)
    ```
 
-4. **Inject crew memory rules**: Before building the agent's execution prompt, inject accumulated correction rules from `crews/{name}/_memory/memories.md`:
+6. **Inject crew memory rules**: Before building the agent's execution prompt, inject accumulated correction rules from `crews/{name}/_memory/memories.md`:
    a. Read `memories.md` and extract:
       - `## Proibições Explícitas` — hard blocks, injected as NUNCA rules
       - `## Regras de Ouro` — promoted patterns, injected as SEMPRE rules
@@ -206,6 +206,7 @@ Before executing any step that references an agent:
       - O checklist só marca o que o relatório confirma; item "não medido" ou "não verificado" é
         dito assim, nunca como aprovado.
       ```
+      The reviewer reads `_opencrew/core/best-practices/review.md` before judging, and its verdict is `APROVADO` or `REPROVADO` with a "nota X/10" (0 to 10).
 
 ### Context Compression (Summary-Based Handoff)
 
@@ -379,6 +380,9 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
 - If the checkpoint requires a choice (numbered list), present options as a numbered list
 - **Always include the file path** of any generated content the user needs to review. Example: "Review the content at `crews/{name}/output/{run_id}/v2/content.md` and let me know if it looks good." (the path the script returned)
 - Wait for user input before proceeding
+- **Partial answer**: if the answer covers only part of what was asked, ask **once** for what is
+  missing, saying what it is; if the user does not have it, go on with what there is and note
+  what was left out in the checkpoint file.
 - Save the user's choice/response for the next step
 - Record the answer with the `marcar` command (`--evento checkpoint`, see "Run record") — last thing of the checkpoint, after the memory and the `outputFile` below are written
 
@@ -502,7 +506,8 @@ When a step has `on_reject: {step-id}` (a review step):
    `{arquivo} — {motivo}`, then the lines under `**Notas:**` in that report, as they are written,
    and repeat every "não rodou" warning of this run (checker and source check) and the line of
    every file left unchecked by the safe-name rule. List the same way every file the path script
-   did not check (see Output Path Transformation). If the approved
+   did not check (see Output Path Transformation). For each `Datas` alert, ask which is right, the weekday
+   or the date, before approving. If the approved
    text still contains `[PREENCHER: …]`, ask the user for each missing piece of real information
    and write it into the text before approving. If the user does not have it, do not insist and
    never invent: keep the `[PREENCHER]`, say `Sem problema: deixo [PREENCHER: {o que falta}] no texto. Na entrega você escolhe entre preencher depois e entregar assim mesmo, com ressalva.` and go on.
@@ -514,7 +519,7 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 - **Command** — from the project root, by the safe-name rule (nome seguro), everything between double quotes: `node _opencrew/core/scripts/entregar.mjs --crew "crews/{name}" --run "{run_id}" --arquivo "{lista}"`
 - **When** — once, after the final approval, immediately before the first step that publishes or sends (`side_effects: irreversible`, in the step or in the agent's skill); with no such step, after the last step. Always before the end-of-run command of the Escritório. If the irreversible step comes before the final approval (a crew built by an old version), the delivery runs at the end.
 - **Crew with no final approval checkpoint** — same moments, and show `Esta crew não tem aprovação final: confira os arquivos antes de usar.` **Never** for a run that was rejected, aborted before the final approval or left with no approved file.
-- The output of the script is the final summary of the run: show it as it came; if the run stops later, at an irreversible step, show it before stopping. After "Edit this content" changes an approved file, run it again.
+- The output of the script is the final summary of the run: show it as it came; if the run stops later, at an irreversible step, show it before stopping. After "Editar este conteúdo" changes an approved file, run it again.
 
 ### After Pipeline Completion
 

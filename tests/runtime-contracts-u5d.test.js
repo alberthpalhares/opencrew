@@ -92,7 +92,7 @@ test('U5d-05a: the correction at a checkpoint lives in its part, with the proced
   tem(correcao, 'An irreversible step (`side_effects: irreversible`) is never taken again here');
   const total = linhas(nucleo) + PARTES.reduce((soma, nome) => soma + linhas(parte(nome)), 0);
   assert.ok(linhas(nucleo) <= 560, `runner.pipeline.md has ${linhas(nucleo)} lines`);
-  assert.ok(linhas(correcao) <= 120 && total <= 1020, `core + parts have ${total} lines`);
+  assert.ok(linhas(correcao) <= 120 && total <= 1030, `core + parts have ${total} lines`);
 });
 
 test('U5d-06c: the repair prompt takes "nenhum" as an answer and records it with the script', () => {

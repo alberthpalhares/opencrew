@@ -36,7 +36,10 @@ what was written and checked is not redone; the step that was in the middle is d
 4. Only now, after the yes (nothing of the runner's Initialization runs before the question): do the Initialization of the runner in full (memory format, source check, project
    sources, pipeline, skills, tiers, agent selection, the header) **except step 5b**: do not run
    `pasta` — the `run_id` is the one of the `EXECUCAO:RETOMAR` line.
-   Step 6 (the Escritório) happens as in a new run.
+   Step 6 (the Escritório) happens as in a new run. The header of step 5 says `Retomando do passo {N} de {total}`
+   (`{total}`: the steps of the pipeline) in place of the line `Pipeline: … steps`. Agent selection: when
+   `crew.yaml` declares `agent_dependencies:`, ask it again and say once `A escolha de agentes da
+   execução anterior não foi guardada; escolha de novo.`
 5. Go on at step `{N}` of "For each pipeline step", with that `run_id`:
    - Every input comes from the `entrada` command, as always: it finds what the earlier steps wrote.
    - The paths under `Passos conferidos` are the stored paths of those steps: use them to show a

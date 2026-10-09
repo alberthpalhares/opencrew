@@ -40,17 +40,17 @@ b. **Analyze against the decision matrix** — Scan the task text (case-insensit
 c. **Present the selection** — IDE-neutral numbered multi-select. List every agent from
    `crew-party.csv` in party order:
    ```
-   🧑‍🤝‍🧑 Which agents should work on this task?
+   🧑‍🤝‍🧑 Quais agentes devem trabalhar nesta tarefa?
 
-   Suggested selection:
+   Seleção sugerida:
    1. [x] {icon} {displayName} ({id}) — {title}
    2. [x] {icon} {displayName} ({id}) — {title}
    3. [ ] {icon} {displayName} ({id}) — {title}
    ...
-   [x] = suggested selected · [ ] = suggested deselected
+   [x] = sugerido para rodar · [ ] = sugerido para ficar de fora
 
-   Reply with the numbers of the agents you want to INCLUDE, separated by commas.
-   Example: "1, 2"   ·   Reply "all" to run everyone.
+   Responda com os números dos agentes que você quer INCLUIR, separados por vírgula.
+   Exemplo: "1, 2"   ·   Responda "todos" para rodar todos (vale também "all").
    ```
    Wait for the user's reply. Parse it into `selected_agents`. At least one agent must
    be selected — if the user replies with none, repeat the prompt once.
@@ -60,11 +60,11 @@ d. **Dependency warnings** — Using `crew.yaml → agent_dependencies`
    for every dependency `dependent → required_agent`, if `dependent` is selected but
    `required_agent` is NOT, warn:
    ```
-   ⚠️ {dependent} normally depends on {required_agent}'s output, which you deselected.
+   ⚠️ {dependent} normalmente depende do resultado de {required_agent}, que você deixou de fora.
 
-   1. Re-select {required_agent} (recommended)
-   2. Keep going without it — I will supply the input myself
-   3. Deselect {dependent} too
+   1. Incluir {required_agent} de novo (recomendado)
+   2. Seguir sem ele — eu mesmo forneço o dado
+   3. Deixar {dependent} de fora também
    ```
    Wait for the user's choice and apply it. If they pick option 2, set
    `missing_dependency = true` in working memory (the existing Pre-Step Input

@@ -56,12 +56,12 @@ test('U5b-01a: the parts exist, each starts with a # title and has at most 120 l
   }
 });
 
-// 980 since U5-3 (the part read only on `/opencrew retomar`); 1020 since U5-4 (the correction at a
+// 980 since U5-3 (the part read only on `/opencrew retomar`); 1030 since U6-1 (1020 since U5-4) (the correction at a
 // checkpoint left the core and gained its procedure). The core kept its 560.
-test('U5b-01b: the core has at most 560 lines; core plus parts, at most 1020', () => {
+test('U5b-01b: the core has at most 560 lines; core plus parts, at most 1030', () => {
   const total = linhas(nucleo) + PARTES.reduce((soma, nome) => soma + linhas(parte(nome)), 0);
   assert.ok(linhas(nucleo) <= 560, `runner.pipeline.md has ${linhas(nucleo)} lines`);
-  assert.ok(total <= 1020, `core + parts have ${total} lines`);
+  assert.ok(total <= 1030, `core + parts have ${total} lines`);
 });
 
 test('U5b-02a: every part has a stub in the core that names its path, says "completely" and has at most 8 lines', () => {
@@ -115,7 +115,7 @@ test('U5b-03e: the "Step Execution Order (Summary)" recap is gone', () => {
 
 test('U5b-03a: what the end of the run needs is in its part, in order', () => {
   const fim = parte('fim-da-execucao.md');
-  const ordem = ['### 2a. Update `memories.md`', '### 2b. Prepend to `runs.md`', '### 2c. Post-Run Reflection', '3. Present completion summary:', 'What would you like to do?'];
+  const ordem = ['### 2a. Update `memories.md`', '### 2b. Prepend to `runs.md`', '### 2c. Post-Run Reflection', '3. Present completion summary:', 'O que você quer fazer?'];
   let ultimo = -1;
   for (const marco of ordem) {
     const i = fim.indexOf(marco);
@@ -133,7 +133,7 @@ test('U5b-04a: the entry point no longer repeats the agent selection; it follows
 test('U5b-04b: the final menu the delivery prompt cites is still in the runner — in its end-of-run part', () => {
   const entrega = ler('templates/_opencrew/core/prompts/entrega.prompt.md');
   assert.ok(entrega.includes('(the final menu of the runner)'));
-  assert.ok(parte('fim-da-execucao.md').includes('Edit this content'));
+  assert.ok(parte('fim-da-execucao.md').includes('Editar este conteúdo'));
 });
 
 test('U5b-05a: the tarball ships the parts of the runner', () => {

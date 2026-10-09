@@ -3,6 +3,53 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.16.0] — 2026-10-09
+
+Fase U6, fatia 1: "Polimento do uso real" (`specs/fase-u6a-polimento-do-uso-real.md`). Chega a quem já usa
+com um `npx @aksp/opencrew@latest update`; nenhuma crew precisa mudar. Nada muda no que o verificador
+bloqueia nem no que o produto apaga.
+
+### Added
+- **Alerta de data com o dia da semana errado.** O verificador avisa quando o texto traz o dia da semana
+  junto da data e os dois não batem: `‘20 de setembro, sábado’: 20 de setembro de 2026 cai num domingo.
+  Confira a data.` Também avisa data que não existe (30 de fevereiro). É só alerta: não bloqueia, e não
+  julga data passada (uma ata cita datas passadas de propósito). Um dia da semana entre duas datas
+  ("5 de maio, quarta, 6 de maio") serve às duas; listas de dias ("segunda a sexta") não são conferidas.
+  Sem ano escrito, vale o ano do relógio do computador (e o seguinte, se a data já passou), e a mensagem
+  diz qual usou. A IA pergunta qual está certo, o dia ou a data, antes da aprovação.
+- **Linha "Outros arquivos" no resumo da entrega.** O texto sem canal (proposta, minuta, relatório)
+  passa a mostrar `- Outros arquivos: Pronto` — antes não aparecia nenhuma situação para ele.
+- **Aviso de perfil de documento vazio.** Quem criou o perfil do papel timbrado e ainda não preencheu
+  logotipo nem cabeçalho passa a ler `Perfil de documento encontrado, mas sem logotipo nem cabeçalho: o
+  documento sai sem papel timbrado.`, no comando e na entrega. O Word sai igual a antes.
+
+### Changed
+- **"Corrigir agora" na entrega abre uma versão nova** do arquivo, como a correção num checkpoint, em vez
+  de editar o arquivo no lugar; a entrega é montada de novo com o caminho novo.
+- **No pedido, as revisões saem da numeração do texto:** `v1`, `v2`… são só do texto; os vereditos ficam
+  em `revisao/v1`, `revisao/v2`….
+- **Resposta parcial num checkpoint:** quando você responde só parte do que foi perguntado, a IA pergunta
+  uma vez só pelo que falta; se você não tem, segue com o que há e anota o que ficou de fora.
+- **O revisor tem escala:** veredito `APROVADO` ou `REPROVADO`, com "nota X/10", e lê o guia de revisão
+  antes de julgar (o `APPROVE` e o `CONDITIONAL APPROVE` do guia valem `APROVADO`; `REJECT`, `REPROVADO`).
+- **"Corrigir agora" guarda o relatório da nova verificação** (`verificacao-ciclo-N.md`) e não repete o
+  revisor nem a aprovação.
+- **Textos fixos em português:** o fim da execução ("✅ Execução concluída!" e o menu), a seleção de
+  agentes, o aviso de saída incompleta e o "Para rodar:" do conserto.
+- **A execução retomada** mostra `Retomando do passo N de T` e pergunta a seleção de agentes de novo (a
+  escolha anterior não é guardada), avisando disso.
+- **A lista do carregamento de agente no executor** passa a ser numerada de 1 a 6 na ordem em que vale.
+
+### Fixed
+- Os testes do projeto deixavam mais de mil pastas temporárias a cada `npm run verify`; agora apagam o
+  que criam. (Só afeta quem desenvolve o OpenCrew.)
+
+### Limites
+- O alerta de data só lê o par dia da semana + data escritos por extenso em português; "20/09 (sáb)" não é lido.
+- Dia da semana que começa a frase seguinte, depois de vírgula ("Reabre em 9 de outubro, sábado é dia de
+  festa"), é lido como o dia daquela data; data dentro de bloco de código também é conferida.
+- O arquivo entregue continua com o nome do passo (`rascunho.md`).
+
 ## [1.15.0] — 2026-10-08
 
 Fase U5, fatia 4: "Modo equipe" (`specs/fase-u5d-modo-equipe.md`). Chega a quem já usa com um

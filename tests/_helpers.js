@@ -1,13 +1,27 @@
 // Shared test helpers (not a test file itself — no .test.js suffix).
-import { promises as fs } from 'node:fs';
+import { promises as fs, rmSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { verificar, main } from '../templates/_opencrew/core/scripts/verificar.mjs';
 
+// Every folder made by `mkTmp` goes away when the test process ends (spec fase-u6a-polimento-do-uso-real.md,
+// rule 12): before that, each `npm run verify` left more than a thousand folders in the temp directory.
+const criadas = new Set();
+process.once('exit', () => {
+  // Limpeza que não consegue (pasta em uso no Windows) não pode reprovar um arquivo de teste que passou.
+  for (const pasta of criadas) {
+    try {
+      rmSync(pasta, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    } catch { /* fica para o sistema */ }
+  }
+});
+
 export async function mkTmp(prefix) {
-  return fs.mkdtemp(path.join(os.tmpdir(), `opencrew-${prefix}-`));
+  const pasta = await fs.mkdtemp(path.join(os.tmpdir(), `opencrew-${prefix}-`));
+  criadas.add(pasta);
+  return pasta;
 }
 
 export async function withCwd(dir, fn) {

@@ -333,7 +333,7 @@ test('runner.pipeline.md supports pre-execution agent selection', async () => {
   assert.match(runner, /Pre-Execution Agent Selection/, 'must document agent selection step');
   assert.match(runner, /agent_dependencies/, 'must reference agent_dependencies field');
   assert.match(runner, /skipped_agents/, 'must track skipped_agents in pipeline state');
-  assert.match(runner, /Reply with the numbers of the agents you want to INCLUDE/, 'must present IDE-neutral multi-select');
+  assert.match(runner, /Responda com os números dos agentes que você quer INCLUIR/, 'must present IDE-neutral multi-select');
   assert.doesNotMatch(runner, /AskUserQuestion/, 'selection must stay IDE-neutral — no AskUserQuestion');
 });
 

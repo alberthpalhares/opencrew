@@ -8,6 +8,10 @@ export const PADRAO = Object.freeze({
   margem_esquerda_cm: 3, margem_direita_cm: 2, margem_superior_cm: 2.5, margem_inferior_cm: 2.5, fonte: 'Arial', tamanho_corpo_pt: 11,
 });
 
+/** Perfil que existe mas não tem logotipo nem nenhuma linha de cabeçalho: o documento sai sem papel timbrado. */
+export const perfilVazio = (perfil) => !perfil.logotipo && !perfil.cabecalho_1 && !perfil.cabecalho_2 && !perfil.cabecalho_3;
+export const AVISO_PERFIL_VAZIO = 'Perfil de documento encontrado, mas sem logotipo nem cabeçalho: o documento sai sem papel timbrado.';
+
 export const MSG = {
   chave: (n, chave) => `Perfil, linha ${n}: não conheço a chave ${chave}.`,
   grafia: (n, certa) => `Perfil, linha ${n}: a chave se escreve ${certa}: em minúsculas, sem acento, no começo da linha e sem espaço antes dos dois-pontos.`,

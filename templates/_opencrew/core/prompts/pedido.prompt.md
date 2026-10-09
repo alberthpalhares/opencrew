@@ -6,7 +6,7 @@ its whole pipeline. A pedido is a run like any other, with no pipeline: it has i
 record on disk, one agent of the crew doing the work, the automatic check, the user's approval,
 the delivery and a row in the crew's history.
 
-Speak to the user in their language (`_opencrew/_memory/preferences.md`). The scripts answer in fixed PT-BR: when the user's language is another one, translate what you show.
+Speak to the user in their language (`_opencrew/_memory/preferences.md`); the scripts answer in fixed PT-BR: translate what you show.
 
 Everything below that is a command follows three sections of `_opencrew/core/runner.pipeline.md` —
 read them now: "Safe names in commands (nome seguro)", "Output Path Transformation" (what `saida`
@@ -97,7 +97,8 @@ node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path
 - **The crew has a reviewer** (an agent whose role is to review) and the output is text: the
   reviewer reads the file and the report, with the rules of "Review Loops" of the runner (items 1
   and 2: a block is a rejection, `VERIFICACAO:AGUARDANDO_USUARIO` is not). It writes its verdict to
-  `crews/{name}/output/revisao.md` through `saida` and `conferir --passo 2`, and then:
+  `crews/{name}/output/revisao/revisao.md` through `saida` and `conferir --passo 2` (verdicts in
+  `revisao/v1`, `revisao/v2`…; the text keeps `v1`, `v2`… alone), and then:
   `node _opencrew/core/scripts/execucao.mjs "{name}" marcar --run "{run_id}" --passo 2 --evento revisao --resultado {aprovado or rejeitado} --nota "{nota}"`
   (`--nota` only on a rejection: its reason in a few words — never the score)
   Rejected → the agent of Step 5 rewrites (a new `saida`, `conferir --passo 1`), and the check and
@@ -111,8 +112,8 @@ node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path
 Show the path of the file, the summary of the last report (`Verificação automática: {N} bloqueios,
 {M} alertas, {Z} não medidos`, with `{P} a preencher` when it counts any, the alerts and the notes)
 and the reviewer's verdict when there is one. If the text still has `[PREENCHER: …]`, ask for each
-missing piece now; the user does not have it → keep it and say `Sem problema: deixo [PREENCHER: {o que falta}] no texto. Na entrega você escolhe entre preencher depois e entregar assim mesmo, com ressalva.`
-Then ask: "Aprova como está, quer um ajuste ou cancela?"
+missing piece now; the user does not have it → keep it and say the `Sem problema: …` sentence of "Review Loops" item 5.
+For each `Datas` alert in the report, ask which is right, the weekday or the date, and fix it as an adjustment. Then ask: "Aprova como está, quer um ajuste ou cancela?"
 
 - **Um ajuste**, or data for a `[PREENCHER]` → read `_opencrew/core/runner/correcao-no-checkpoint.md`
   and follow it: the step that wrote the file is step 1 and its `outputFile` is the path of Step 5
@@ -145,15 +146,14 @@ Then ask: "Aprova como está, quer um ajuste ou cancela?"
 You are here from `/opencrew retomar` (`_opencrew/core/runner/retomar.md`) with a `run_id` and a
 step `{N}`. The script printed `Agente:` and `Formato:`: they are the agent and the format of this
 pedido — use them, do not choose again; `(não registrado)` → ask the user which, before going on.
-Do Step 2 above, do **not** run `pasta` and do not ask "Posso começar?" again (the yes to resume is
-enough), and go on with that `run_id`: `{N}` = 1 → Step 5; `{N}` = 2 → Step 6 when the crew has a reviewer, else Step 7;
-`{N}` = 3 or more → Step 7 (ask the approval again: the script cannot tell an approval that was
-answered from one that was also delivered and closed). The file of step 1 is the path the script listed under `Passos conferidos`.
+Do Step 2 above, do **not** run `pasta`, do not ask "Posso começar?" again (the yes to resume is enough),
+and go on with that `run_id`: `{N}` = 1 → Step 5; `{N}` = 2 → Step 6 when the crew has a reviewer, else
+Step 7; `{N}` = 3 or more → Step 7 (ask the approval again: the script cannot tell an answered approval from
+one also delivered and closed). The file of step 1 is the path listed under `Passos conferidos`.
 
 ## Rules
 
-- **DO** ask "Posso começar?" before opening the pedido, and the approval before delivering.
-- **DO** write every file through `saida` and check it with `conferir --passo`.
-- **DO NOT** change the crew (agents, steps, `crew.yaml`) to fit a pedido: that is `/opencrew edit`.
+- **DO** ask "Posso começar?" before opening, and the approval before delivering; write every file through `saida` and check it with `conferir --passo`.
+- **DO NOT** change the crew (agents, steps, `crew.yaml`): that is `/opencrew edit`.
 - **DO NOT** publish, post or send anything, and do not chain a second agent to produce a second
   piece: one pedido, one piece of work. For more, the user asks again or runs the pipeline.

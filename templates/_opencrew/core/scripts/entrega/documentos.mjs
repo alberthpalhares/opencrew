@@ -7,7 +7,7 @@
 // Spec: fase-u3b-documento-word.md, decisão 9, regra 12 e §6 (repositório do OpenCrew).
 import { existsSync, promises as fs, statSync } from 'node:fs';
 import path from 'node:path';
-import { PERFIL, gerarDocx, lerPerfilDoProjeto } from '../documento.mjs';
+import { AVISO_PERFIL_VAZIO, PERFIL, gerarDocx, lerPerfilDoProjeto, perfilVazio } from '../documento.mjs';
 import { limpar } from './argumentos.mjs';
 
 /** A pasta da entrega e o tipo do arquivo que é (ou vai virar) um Word. */
@@ -99,6 +99,9 @@ export async function converterDocumentos(raiz, produtos, gerar = gerarDocx) {
     else saida.copias.push(copia);
   }
   // Sem perfil, o Word sai sem cabeçalho: a entrega diz, para ninguém procurar um timbre que não existe.
-  if (!lido.perfil && !lido.erro && saida.copias.some((c) => c.pasta === DOCUMENTOS && c.bytes)) saida.avisos.push(aviso(MSG.semPerfil));
+  const temWord = saida.copias.some((c) => c.pasta === DOCUMENTOS && c.bytes);
+  if (!lido.perfil && !lido.erro && temWord) saida.avisos.push(aviso(MSG.semPerfil));
+  // Perfil criado e ainda vazio: também sem timbre, e a entrega diz.
+  if (lido.perfil && perfilVazio(lido.perfil) && temWord) saida.avisos.push(aviso(AVISO_PERFIL_VAZIO));
   return { produtos: { ...produtos, copias: saida.copias, avisos: saida.avisos }, pendencias: saida.pendencias };
 }

@@ -66,6 +66,7 @@ version: "1.0.0"
    - **APPROVE** if overall score is 7/10 or above AND no single criterion is below 4/10.
    - **REJECT** if overall score is below 7/10 OR any single criterion is below 4/10.
    - **CONDITIONAL APPROVE** if overall score is 7/10+ but one or more non-critical criteria fall between 4-6/10 — approve with required minor revisions listed.
+   - In the OpenCrew runner (PT-BR) the verdict is written `APROVADO` or `REPROVADO`, with "nota X/10": APPROVE and CONDITIONAL APPROVE are `APROVADO` (for the conditional one, list the minor revisions); REJECT is `REPROVADO`.
 
 6. **Write the structured review.** Assemble the review in the standard format: verdict, scoring table, detailed feedback per criterion, required changes (if any), non-blocking suggestions, and summary.
 

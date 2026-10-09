@@ -14,7 +14,7 @@
 // código 1 não há linha VERIFICACAO:.
 // Specs: fase-u1-revisor-com-dentes.md, fase-r1-reparos-1-6-1.md, fase-r2-update-e-envio-seguros.md
 // (regra 23: "dentro do projeto" pelo texto ou pelo lugar real) e fase-u3a2-entrega-no-projeto.md
-// (regras 35 e 36), no repositório do OpenCrew.
+// (regras 35 e 36), e fase-u6a-polimento-do-uso-real.md (regra 1: o alerta de data), no repositório do OpenCrew.
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { erroDeUso, ehPrincipal, relativoAoProjeto } from './comum.mjs';
@@ -25,6 +25,7 @@ import { lerLimites, lerDominioDoSite, semFrontmatter } from './verificar/leitur
 import { lerProibicoes } from './verificar/proibicoes.mjs';
 import { lerPecas } from './verificar/pecas.mjs';
 import { medirPecas } from './verificar/medicao.mjs';
+import { alertasDeDatas } from './verificar/datas.mjs';
 import { FORMATO_DE_DOCUMENTO, alertasDeDocumento } from './verificar/documento.mjs';
 import { regrasGerais, temVariavel, item, FALTA_INFO, NAO_MEDIDO, NAO_VERIFICADO } from './verificar/regras.mjs';
 import { formatarRelatorio } from './verificar/relatorio.mjs';
@@ -40,14 +41,14 @@ const naoVerificado = (motivo) => item(NAO_VERIFICADO, null, null, 'alerta', mot
 const plural = (n, um, varios) => (n === 1 ? um : varios);
 
 /** O que vale para a execução inteira: notas, proibições, site e os limites já lidos. */
-async function prepararContexto(raiz, crew, formatoDeBlog) {
+async function prepararContexto(raiz, crew, formatoDeBlog, hoje) {
   const notas = new Set();
   const proibicoes = await lerProibicoes(raiz, crew);
   if (!proibicoes.existe) notas.add('Sem proibições registradas (a crew não tem memories.md).');
   const n = proibicoes.semAspas;
   if (n) notas.add(`${n} ${plural(n, 'proibição', 'proibições')} sem termo entre aspas ${plural(n, 'não é verificada', 'não são verificadas')} automaticamente — escreva o termo entre aspas na memória para virar trava.`);
   if (proibicoes.preferidos.length) notas.add(`Termos lidos como preferidos (não bloqueiam): ${proibicoes.preferidos.map((t) => `"${t}"`).join(', ')}`);
-  return { raiz, formatoDeBlog, notas, proibidos: proibicoes.termos, dominio: await lerDominioDoSite(raiz), limites: {} };
+  return { raiz, formatoDeBlog, hoje, notas, proibidos: proibicoes.termos, dominio: await lerDominioDoSite(raiz), limites: {} };
 }
 
 /** Limites dos formatos pedidos, lidos uma vez por execução; cada aviso vira nota. */
@@ -88,7 +89,8 @@ async function verificarArquivo({ arquivo, formato }, ctx, regraDeTeste) {
   if (envio && temVariavel(lido.texto)) ctx.notas.add(NOTA_VARIAVEL);
   const gerais = regrasGerais(lido.texto, ctx.proibidos, { variavelBloqueia: !envio });
   const doWord = formato === FORMATO_DE_DOCUMENTO && lido.comPecas ? alertasDeDocumento(lido.texto) : [];
-  const extras = [...doWord, ...(regraDeTeste ? (await regraDeTeste({ arquivo, formato, texto: lido.texto })) ?? [] : [])];
+  const doDia = lido.comPecas ? alertasDeDatas(lido.texto, ctx.hoje) : [];
+  const extras = [...doWord, ...doDia, ...(regraDeTeste ? (await regraDeTeste({ arquivo, formato, texto: lido.texto })) ?? [] : [])];
   const naoMedido = (i) => i.item === NAO_MEDIDO;
   const itens = [...medidos.filter((i) => !naoMedido(i)), ...gerais, ...extras, ...medidos.filter(naoMedido)];
   return { itens, fecho: fechoDe(itens, medidas, formato) };
@@ -123,6 +125,7 @@ function resumir(arquivos, naoTexto, notas) {
  * @param {string} [o.formato] limites de blog do item sem formato declarado que tem título no frontmatter
  * @param {boolean} [o.semPadraoDeBlog] só a entrega passa true: no item sem formato declarado, o
  *   título do frontmatter não é medido como blog (fase-u3a1-pasta-de-entrega.md, regra 17)
+ * @param {Function} [o.agora] SÓ PARA TESTE: o relógio; o ano e o dia dele valem para a data escrita sem ano
  * @param {Function} [o.regraDeTeste] SÓ PARA TESTE: regra extra, chamada com `{ arquivo, formato,
  *   texto }` em cada arquivo de texto; serve para simular uma regra que lança erro
  * @returns {Promise<object>} `{ arquivos, naoTexto, notas, bloqueios, aPreencher, alertas, naoMedidos,
@@ -133,11 +136,11 @@ function resumir(arquivos, naoTexto, notas) {
  *   · `naoTexto`: caminhos que não são texto · `naoMedidos`: linhas "Não medido"/"Não verificado"
  *   · `status`: OK, BLOQUEADA ou AGUARDANDO_USUARIO
  */
-export async function verificar({ raiz, crew, arquivos, formato = 'blog-post', semPadraoDeBlog = false, regraDeTeste }) {
+export async function verificar({ raiz, crew, arquivos, formato = 'blog-post', semPadraoDeBlog = false, regraDeTeste, agora = () => new Date() }) {
   const entradas = semRepetidas(raiz, arquivos.map(normalizar));
   const erro = erroDeUso({ raiz, crew, caminhos: entradas.map((e) => e.arquivo) });
   if (erro) throw new Error(erro);
-  const ctx = await prepararContexto(raiz, crew, semPadraoDeBlog ? null : formato);
+  const ctx = await prepararContexto(raiz, crew, semPadraoDeBlog ? null : formato, agora());
   const resultado = [];
   const naoTexto = [];
   for (const entrada of entradas) {
@@ -154,7 +157,7 @@ export async function verificar({ raiz, crew, arquivos, formato = 'blog-post', s
  * @returns {Promise<number>} 0 = verificou (ao menos um caminho da lista existe) · 1 = erro de uso,
  *   ou erro que impediu a verificação inteira (uma linha em PT-BR, sem linha de status)
  */
-export async function main(argv, { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`) } = {}) {
+export async function main(argv, { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`), agora } = {}) {
   const args = lerArgs(argv);
   const arquivos = args.arquivos.join(',').split(',').map((s) => s.trim()).filter(Boolean).map(lerItemDaLista);
   const caminhos = arquivos.map((a) => a.arquivo ?? a);
@@ -172,7 +175,7 @@ export async function main(argv, { cwd = process.cwd(), escrever = (s) => proces
     return 1;
   }
   try {
-    const relatorio = formatarRelatorio(await verificar({ raiz: cwd, crew: args.crew, arquivos, formato: args.formato || 'blog-post' }));
+    const relatorio = formatarRelatorio(await verificar({ raiz: cwd, crew: args.crew, arquivos, formato: args.formato || 'blog-post', agora }));
     // O relatório sai na tela mesmo quando o arquivo não pôde ser gravado.
     if (alvo && !(await gravarRelatorio(alvo, relatorio))) escrever(GRAVACAO.naoGravou(relativoAoProjeto(cwd, alvo)));
     escrever(relatorio);

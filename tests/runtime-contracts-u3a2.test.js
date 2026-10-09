@@ -71,8 +71,9 @@ test('U3a-08b-f2: ENTREGA:INCOMPLETA shows what is missing and the three options
 });
 
 test('U3a-08b-f2: option 1 fixes the source file, never entrega/, and runs the checker before delivering again', () => {
-  assert.match(resultado, /\*\*1\*\* — [^.]*fix it in the source file the pending item names, never inside `entrega\/`/);
-  assert.match(resultado, /Then run the checker on that file \(`node _opencrew\/core\/scripts\/verificar\.mjs --crew "crews\/\{name\}" --arquivo "\{caminho\}=\{formato\}"`\) and only then run the delivery again, with the same list/);
+  // U6a-03a: the fix is a new version (rule 3 of specs/fase-u6a-polimento-do-uso-real.md), and the list gets the new path.
+  assert.match(resultado, /\*\*1\*\* — [^.]*fix the file the pending item names, never inside `entrega\/`, as a \*\*new version\*\*/);
+  assert.match(resultado, /Then run the checker on the new file, saving the report as the next `verificacao-ciclo-\{N\}\.md` of the run \(`node _opencrew\/core\/scripts\/verificar\.mjs --crew "crews\/\{name\}" --arquivo "\{caminho\}=\{formato\}" --relatorio "crews\/\{name\}\/output\/\{run_id\}\/verificacao-ciclo-\{N\}\.md"`\) and only then run the delivery again, with the list that has the \*\*new\*\* path in place of the old one/);
 });
 
 test('U3a-08b-f2: --aceitar-pendencias goes only in option 2, or when what is missing is only what was accepted in the review loop', () => {
@@ -146,8 +147,9 @@ test('U3a (real-2): in an INCOMPLETA the ready channels were already copied, bef
   assert.match(resultado, /The channels that are ready were already copied by this same call, before the user answers/);
 });
 
-test('U3a (real-2): "corrigir agora" fixes the source file in place, and the checker and the delivery run again with the same list', () => {
-  assert.match(resultado, /in place — the same file at the same path, no new `vN` folder and no copy — so the list does not change/);
+test('U3a (real-2) / U6a-03a: "corrigir agora" opens a new version of the source file (item 3 of the correction part), and the checker and the delivery run again with the new path', () => {
+  assert.match(resultado, /read `_opencrew\/core\/runner\/correcao-no-checkpoint\.md` and follow its item 3/);
+  assert.doesNotMatch(resultado, / in place — |no new `vN`/);
 });
 
 test('U3a (real-2): the one line "Não copiei: …" with no ENTREGA: line is a refused destination, not a script that did not run', () => {
