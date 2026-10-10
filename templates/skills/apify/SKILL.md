@@ -39,6 +39,13 @@ You have access to Apify tools for web scraping and data extraction.
 - Popular Actors: web-scraper, instagram-scraper, google-search-scraper, youtube-scraper, twitter-scraper, tiktok-scraper
 - Each Actor has its own input schema -- check documentation before running
 
+### Cost (confirm before a big run)
+
+Apify bills by use and OpenCrew does not know the price. Before any run that asks for **more than 20
+items** (results requested, pages, or Actor runs in a batch), tell the user how many items and ask
+`Vou pedir {n} itens ao Apify; isso pode gerar cobrança. Posso seguir?` and wait. Never repeat a failed
+run by yourself: ask first.
+
 ### Best practices
 
 - Start with the simplest Actor that meets the need

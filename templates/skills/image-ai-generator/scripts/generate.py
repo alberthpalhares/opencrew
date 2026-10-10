@@ -33,6 +33,11 @@ MODELS = {
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Spend guards (spec fase-u6b-dados-e-custo.md, rule 12): a batch has a ceiling and a failed image is
+# tried at most twice. The ceiling is the script's, so it holds even if the model miscounts the cost.
+MAX_BATCH = 12
+ATTEMPTS = 2
+
 
 def fail(message):
     """Tell the user what went wrong and exit with code 1, without a traceback."""
@@ -166,6 +171,17 @@ def generate_image(prompt, output_path, mode, api_key, reference_image=None):
     return True
 
 
+def generate_with_retry(prompt, output_path, mode, api_key, reference_image=None):
+    """Generate one image; a failure is tried again once (ATTEMPTS in all), never more."""
+    for attempt in range(1, ATTEMPTS + 1):
+        if generate_image(prompt, output_path, mode, api_key, reference_image=reference_image):
+            return True
+        if attempt < ATTEMPTS:
+            print(f"  Nova tentativa ({attempt + 1}/{ATTEMPTS})...", file=sys.stderr)
+            time.sleep(1)
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate images via Openrouter API")
     parser.add_argument("--prompt-file", help="UTF-8 text file with the prompt for single image generation")
@@ -175,6 +191,8 @@ def main():
     parser.add_argument("--mode", choices=["test", "production"], default="test",
                         help="Generation mode: test (cheap) or production (high-quality)")
     parser.add_argument("--reference", help="Path to reference image to include in the prompt")
+    parser.add_argument("--max-itens", type=int, default=MAX_BATCH,
+                        help=f"Ceiling of images in a batch (default {MAX_BATCH}); raise it only after the user confirmed the cost")
     args = parser.parse_args()
 
     if args.prompt_file and args.batch:
@@ -183,6 +201,9 @@ def main():
         parser.error("Either --prompt-file or --batch is required")
     # The input files are read first: a bad file stops here, before the key and any API call.
     items = read_batch(args.batch) if args.batch else None
+    if items is not None and len(items) > args.max_itens:
+        fail(f"O lote tem {len(items)} imagens e o teto é {args.max_itens}. Nada foi gerado. "
+             "Divida o lote, ou use --max-itens depois de confirmar o gasto com o usuário.")
     prompt = read_prompt_file(args.prompt_file) if args.prompt_file else args.prompt
 
     api_key = load_api_key()
@@ -198,7 +219,7 @@ def main():
             output = item["output"]
             ref = item.get("reference")
             print(f"[{i}/{len(items)}] {os.path.basename(output)}...")
-            if generate_image(prompt, output, args.mode, api_key, reference_image=ref):
+            if generate_with_retry(prompt, output, args.mode, api_key, reference_image=ref):
                 success += 1
             if i < len(items):
                 time.sleep(1)  # Rate limiting
@@ -209,7 +230,7 @@ def main():
         if not args.output:
             parser.error("--output is required for single image generation")
         print(f"Generating: {os.path.basename(args.output)}...")
-        ok = generate_image(prompt, args.output, args.mode, api_key, reference_image=args.reference)
+        ok = generate_with_retry(prompt, args.output, args.mode, api_key, reference_image=args.reference)
         sys.exit(0 if ok else 1)
 
 

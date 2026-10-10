@@ -117,8 +117,30 @@ Each item can optionally include a `"reference": "path/to/ref.png"` field.
 - Include "clean composition" to avoid cluttered outputs
 - Avoid requesting text in images — AI models struggle with text rendering
 
-### Cost awareness
+### Budget (before and after every generation)
 
+Every generation — single image or batch — goes through the cost script of the run, from the project
+root, with the crew code and the run id between double quotes (safe-name rule):
+
+```bash
+node _opencrew/core/scripts/custo.mjs "{crew}" estimar --run "{run_id}" --modo {test|production} --itens {N}
+```
+
+- `CUSTO:OK` → generate. `CUSTO:ACIMA {sobra}` → do **not** generate yet: tell the user, in these words,
+  `Esta chamada custa cerca de R$ {x}; já foram R$ {y} nesta execução e o orçamento é R$ {z}. Quer seguir mesmo assim, gerar só {sobra} imagem(ns) ou parar?` and do what they choose.
+- A batch of **more than 6 images** is confirmed with the user even with no `Budget:` set:
+  `Vou gerar {n} imagens (cerca de R$ {x}). Posso seguir?` One question is enough: when the `CUSTO:ACIMA`
+  question was already asked and answered, do not ask this one too, and that answer is the confirmation
+  `--max-itens` asks for.
+- Every path of the run (`--output`, `--batch`, prompts) comes from the `saida` command of
+  `_opencrew/core/scripts/caminho.mjs`, which may add a version folder (`assets/v1/`): use what it returns.
+- After generating, record what **really** came out (the images the script reported as done, not the
+  number requested): `node _opencrew/core/scripts/custo.mjs "{crew}" registrar --run "{run_id}" --modo {modo} --itens {N}`.
+  A retry costs again: record it too.
+- `generate.py` itself refuses a batch of more than 12 images (`--max-itens` raises the ceiling — only
+  after the user confirmed the cost) and tries a failed image at most twice.
+
+### Cost awareness
 - Each production image costs approximately R$0.07-0.10
 - Each test image costs approximately R$0.01-0.02
 - A typical carousel with 8 images costs ~R$0.60-0.80 in production mode

@@ -28,7 +28,7 @@ const lista = (valor) => (Array.isArray(valor) ? valor.filter((i) => i && typeof
 const inteiro = (valor) => Number.isInteger(valor) && valor > 0;
 
 /** O que veio do disco é dado: cada campo que vai para a tela vira uma linha, e passo sem número sai. */
-function conferido(lido) {
+export function conferido(lido) {
   if (!lido || typeof lido !== 'object' || Array.isArray(lido)) return null;
   const passos = lista(lido.passos).filter((p) => inteiro(p.n)).map((p) => ({ ...p, arquivo: umaLinha(p.arquivo, 500), em: umaLinha(p.em, 40) }));
   const marcos = lista(lido.marcos).filter((m) => inteiro(m.passo)).map((m) => ({ ...m, evento: umaLinha(m.evento, 20), resultado: umaLinha(m.resultado, 20), nota: limparNota(m.nota), em: umaLinha(m.em, 40) }));

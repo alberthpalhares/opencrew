@@ -190,7 +190,7 @@ meu-projeto/
 │   │   ├── scripts/              ← verificador, conferência de fontes, caminhos, registro da execução, entrega, documento Word, conserto de crews e os scripts do Escritório
 │   │   ├── modelos/              ← modelo do perfil de documento oficial (papel timbrado)
 │   │   ├── escritorio/           ← página do Escritório ao vivo (abre com /opencrew dashboard)
-│   │   └── prompts/              ← 16 prompts de fase (discovery, design, build, entrega, documento, pedido, etc.)
+│   │   └── prompts/              ← 18 prompts de fase (discovery, design, build, entrega, documento, pedido, limpeza, relato, etc.)
 │   ├── agents/                   ← 5 agentes base compartilhados
 │   │   ├── researcher.agent.md
 │   │   ├── copywriter.agent.md
@@ -544,6 +544,8 @@ npx @aksp/opencrew update --check
 | `/opencrew create <descrição>` | Cria uma nova crew a partir da sua descrição |
 | `/opencrew run <nome>` | Executa o pipeline de uma crew |
 | `/opencrew pedir <nome> "<tarefa>"` | Pede uma tarefa só a uma crew, fora do pipeline dela: um agente da crew faz, o verificador confere, você aprova, sai a entrega e fica no histórico |
+| `/opencrew cleanup <nome>` | Libera espaço das execuções antigas de uma crew: mostra o que sairia, pergunta e só apaga o que você aprovar (o histórico fica) |
+| `/opencrew feedback` | Monta um relato de uso, sem nada do seu cliente, para você colar numa issue |
 | `/opencrew retomar <nome>` | Continua a execução que parou no meio (a conversa caiu, o contexto acabou): mostra o que já está pronto e segue do passo seguinte, sem refazer o que foi gravado |
 | `/opencrew list` | Lista todas as suas crews |
 | `/opencrew edit <nome>` | Modifica uma crew existente |
@@ -574,6 +576,23 @@ npx @aksp/opencrew update --check
 | `npx @aksp/opencrew help` | Mostra ajuda dos comandos CLI |
 
 ---
+
+## Espaço, custo e relato de uso
+
+- **Liberar espaço.** As execuções ficam em `crews/<crew>/output/` e só crescem. Peça `/opencrew cleanup
+  <nome>`: a IA mostra as execuções antigas que podem sair, quanto espaço volta e o que fica e por quê, e
+  pergunta antes de apagar. Só entra execução **fechada**, fora das 10 mais recentes (mude em `Retencao:`
+  nas preferências) e com a entrega já copiada para uma pasta do projeto — ou que você diga, execução por
+  execução, que não precisa da entrega. O histórico (`runs.md`) nunca é apagado, e a execução aberta
+  (que o `/opencrew retomar` continua) também não. Áudio `.wav` antigo de `_investigations/` entra à parte.
+- **Orçamento.** Em `_opencrew/_memory/preferences.md`, `- **Budget:** R$ 5,00` dá um teto por execução
+  para a geração de imagens (o OpenCrew conhece o preço delas; o de Apify e Resend, não). Antes de gerar,
+  a IA estima o custo; acima do teto ela pergunta se segue, gera só o que cabe ou para. Lote de mais de 6
+  imagens, ou de mais de 20 itens no Apify ou no Resend, pede confirmação mesmo sem `Budget`. O script de
+  imagens também recusa lote de mais de 12 e tenta cada imagem no máximo duas vezes.
+- **Relato de uso.** `/opencrew feedback` junta versão, sistema, IDE e o estado da última execução — sem
+  tema, nome de arquivo, nome de crew nem texto seu — para você colar numa [issue](https://github.com/alberthpalhares/opencrew/issues/new?template=relato-de-uso.md).
+  O OpenCrew não envia nada sozinho.
 
 ## Situação do projeto
 

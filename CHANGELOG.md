@@ -3,6 +3,41 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.17.0] — 2026-10-09
+
+Fase U6, fatia 2: "Dados e custo" (`specs/fase-u6b-dados-e-custo.md`). Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`; nada muda se você não usar os comandos novos.
+
+### Added
+- **`/opencrew cleanup <nome>` — libera espaço das execuções antigas.** A IA mostra o que pode sair, o
+  espaço que volta e o que fica (e por quê), pergunta e só então apaga os `run_id` que você aprovou.
+  Só entra execução **fechada**, fora das 10 mais recentes (`Retencao:` nas preferências muda o número)
+  e com a entrega já copiada para uma pasta do projeto; a que só existe na pasta da execução é perguntada
+  uma a uma. O histórico (`runs.md`) nunca é tocado, a execução aberta nunca entra, e atalho que leva para
+  fora nunca é seguido. Áudio `.wav` com mais de 30 dias de `_investigations/` entra à parte (`--audio`).
+- **A limpeza não segue atalho** (link ou junção): se a pasta da crew, `output/` ou `_investigations/` aponta para outro lugar (um Drive ou OneDrive, por exemplo), o comando para sem ler nem apagar nada. Execução cujo registro existe e não pôde ser lido (arquivo em uso, cortado) fica; só as situações `aprovada`, `rejeitada`, `abortada` e `publicada` contam como fechadas. Se uma pasta só foi apagada em parte, o comando diz e termina em `LIMPEZA:PARCIAL`.
+- **Orçamento por execução.** `- **Budget:** R$ 5,00` em `preferences.md` dá um teto para a geração de
+  imagens; antes de gerar, a IA estima o custo (`custo.mjs`) e, acima do teto, pergunta se segue, gera só o
+  que cabe ou para. O que realmente saiu fica registrado em `custo.json`, na pasta da execução. Apify e
+  Resend não têm preço que o OpenCrew conheça: para eles vale a confirmação antes de lote com mais de 20
+  itens.
+- **Teto no gerador de imagens.** O `generate.py` recusa lote de mais de 12 imagens (`--max-itens` muda,
+  depois de você confirmar o gasto) e tenta cada imagem no máximo duas vezes. Lote de mais de 6 imagens
+  pede confirmação mesmo sem `Budget`.
+- **`/opencrew feedback` — relato de uso para colar numa issue.** Versão, Node, sistema, IDE e o estado da
+  última execução, sem tema, nota, caminho, nome de crew nem de agente. O OpenCrew não envia nada: você
+  lê e cola. Vem com o modelo de issue "Relato de uso".
+
+### Changed
+- `preferences.md` ganha os campos `Budget` e `Retencao` (o `update` não mexe no arquivo: quem já tem
+  preferências acrescenta as linhas à mão, se quiser).
+
+### Limites
+- O preço por imagem é o teto da faixa publicada na skill (R$ 0,02 em teste, R$ 0,10 em produção): o gasto
+  real pode ser menor; o orçamento é uma trava de segurança, não uma fatura.
+- A IA pode esquecer de estimar ou registrar; o que fica garantido é o teto do `generate.py`.
+- Execução sem registro de cópia da entrega pode ter sido copiada à mão: por isso o OpenCrew pergunta.
+
 ## [1.16.0] — 2026-10-09
 
 Fase U6, fatia 1: "Polimento do uso real" (`specs/fase-u6a-polimento-do-uso-real.md`). Chega a quem já usa

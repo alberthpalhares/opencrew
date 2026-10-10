@@ -80,6 +80,9 @@ e-mail was queued.
 
 ### Sending a batch
 
+A batch to **more than 20 recipients** is confirmed with the user before sending, with the number of
+recipients: `Vou enviar para {n} destinatários. Posso seguir?` (the confirmation above still applies).
+
 Build an array of email objects (same fields as single send). Each item in the response has its
 own `id` or error — report both; never send the failed ones again on your own.
 

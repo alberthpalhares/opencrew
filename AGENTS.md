@@ -118,7 +118,10 @@ passos, a memória e o histórico (`runs.md`) da crew, cada um com a cópia `.ba
 fica); nunca apaga.
 O `caminho.mjs` e o `execucao.mjs` gravam o registro da execução (`output/<execução>/execucao.json`),
 e o `execucao.mjs fechar` põe ou troca uma linha do `runs.md` da crew; mais nada. O pedido avulso
-(`pasta --pedido`) é uma execução: vale a mesma regra.
+(`pasta --pedido`) é uma execução: vale a mesma regra. O `limpeza.mjs` também apaga: só a pasta inteira de
+uma execução **fechada** de `crews/<crew>/output/` (nunca a aberta, nunca o `runs.md`, nunca atalho que
+leva para fora) e o `.wav` com mais de 30 dias de `_investigations/`, e só os `run_id` escritos um a um em
+`--apagar`; o `custo.mjs` grava o `custo.json` da execução; o `relato.mjs` só lê.
 **Trava:** `tests/entregar*.test.js` (U3a-14b): em cada cenário, fora da pasta da execução — e,
 desde a 1.9.0, do destino escolhido e do `crew.yaml` + `.bak` (só com `--lembrar-destino`) —, a
 árvore do projeto é igual antes e depois, e não sobra pasta `.tmp`; `tests/upgrade-u3a2.test.js`;
@@ -147,8 +150,8 @@ muda a linha da execução.
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a) | Reprova |
-| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido) | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a) | Reprova |
+| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido), `tests/limpeza*.test.js` (U6b-02 e 05a: só some o pedido), `tests/custo.test.js` (U6b-06c), `tests/relato.test.js` (U6b-08b: nada do cliente) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.

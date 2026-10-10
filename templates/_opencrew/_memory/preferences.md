@@ -9,3 +9,5 @@
 - **Date Format:** YYYY-MM-DD
 - **Default Tier:** standard
 - **Dashboard:** disabled
+- **Budget:**
+- **Retencao:** 10

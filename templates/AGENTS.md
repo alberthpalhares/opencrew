@@ -60,6 +60,8 @@ Route input to the matching action:
 | `/opencrew list` | List all crews in `crews/` (a folder without `crew.yaml` is not a crew) |
 | `/opencrew run <name>` | Load Pipeline Runner → Execute crew |
 | `/opencrew pedir <name> "<task>"`, or a request in plain words to one crew ("peça à crew X…", "pede para a equipe X…") | Load `_opencrew/core/prompts/pedido.prompt.md` → one task done by the crew outside its pipeline: checked, approved by the user, delivered and written to the crew's history |
+| `/opencrew cleanup <name>`, or a request in plain words to free space of old runs ("libera espaço da crew X", "apaga as execuções antigas") | Load `_opencrew/core/prompts/limpeza.prompt.md` → list what can go, ask, and delete only what the user approved; the history stays |
+| `/opencrew feedback`, or a request in plain words to report a problem or tell how it went ("quero reportar um problema") | Load `_opencrew/core/prompts/relato.prompt.md` → build a usage report with nothing of the client, for the user to paste in an issue |
 | `/opencrew retomar <name>` | Load Pipeline Runner → resume the run of that crew that stopped in the middle (`_opencrew/core/runner/retomar.md`) |
 | `/opencrew edit <name> <changes>` | Load the Architect → Edit Crew flow |
 | `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → show what an existing crew is missing and fix one point at a time, each with a `.bak` copy |
