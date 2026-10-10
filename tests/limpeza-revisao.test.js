@@ -97,12 +97,16 @@ test('U6b-05b: a run that could not be fully deleted is reported as partial, wit
   const trancada = path.join(raiz, SAIDA, idDoDia(1), 'v1', 'trancada');
   await gravar(raiz, { [`${SAIDA}/${idDoDia(1)}/v1/trancada/x.txt`]: 'x' });
   await fs.chmod(trancada, 0o555);
-  t.after(() => fs.chmod(trancada, 0o755).catch(() => {}));
-  const r = await rodar(raiz, '--manter', '1', '--apagar', `${idDoDia(1)},${idDoDia(2)}`);
-  assert.equal(r.code, 1, r.texto);
-  assert.match(r.linhas[0], new RegExp(`^Apaguei só parte de ${idDoDia(1)}: \\S+\\. Feche o programa que usa a pasta e rode a limpeza de novo\\.$`));
-  assert.equal(r.linhas[1], `Apaguei: ${idDoDia(2)} (1,2 KB)`);
-  assert.match(r.fim, /^LIMPEZA:PARCIAL 1 /);
+  try {
+    const r = await rodar(raiz, '--manter', '1', '--apagar', `${idDoDia(1)},${idDoDia(2)}`);
+    assert.equal(r.code, 1, r.texto);
+    assert.match(r.linhas[0], new RegExp(`^Apaguei só parte de ${idDoDia(1)}: \\S+\\. Feche o programa que usa a pasta e rode a limpeza de novo\\.$`));
+    assert.equal(r.linhas[1], `Apaguei: ${idDoDia(2)} (1,2 KB)`);
+    assert.match(r.fim, /^LIMPEZA:PARCIAL 1 /);
+  } finally {
+    // Destranca antes de o `projeto` apagar a pasta temporária (os `t.after` rodam na ordem em que foram registrados).
+    await fs.chmod(trancada, 0o755);
+  }
 });
 
 // ── custo.mjs ────────────────────────────────────────────────────────────────────────────────
