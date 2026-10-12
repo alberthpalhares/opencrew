@@ -94,13 +94,13 @@ each. Write every file in that format; what follows here only adds what is speci
 2. **`crews/{code}/crew-party.csv`** — Agent manifest
    - The header row MUST be EXACTLY these columns, in this order:
      ```
-     id,displayName,title,icon,path,execution
+     id,displayName,title,icon,path,execution,personagem
      ```
    - One row per agent. Example:
      ```
-     id,displayName,title,icon,path,execution
-     researcher,"Pedro Pesquisa","Pesquisador de Tendências",🔎,./agents/researcher.agent.md,subagent
-     copywriter,"Guilherme Gancho","Redator Copywriter",✍️,./agents/copywriter.agent.md,inline
+     id,displayName,title,icon,path,execution,personagem
+     researcher,"Pedro Pesquisa","Pesquisador de Tendências",🔎,./agents/researcher.agent.md,subagent,masculino
+     copywriter,"Guilherme Gancho","Redator Copywriter",✍️,./agents/copywriter.agent.md,inline,masculino
      ```
    - **`displayName` is REQUIRED and MUST be byte-for-byte identical to the agent's
      `name:` frontmatter field in its `.agent.md`** (the mandatory two-word "FirstName
@@ -108,8 +108,8 @@ each. Write every file in that format; what follows here only adds what is speci
      render the agent's name in "🤖 {name} is working…" announcements, and the Escritório
      (the optional live view) shows the same column. If `displayName` is missing, empty, or set
      to the role/title instead of the persona name, the crew renders with functions but no names.
-   - `id` = the agent id: the agent file name without `.agent.md`
-     (e.g. `./agents/researcher.agent.md` → `researcher`).
+   - `personagem` = the figure the agent gets in the Escritório: `feminino` or `masculino`, chosen from the first name you gave the agent ("Rita Redação" → `feminino`, "Pedro Pesquisa" → `masculino`). If the name does not tell, leave the field empty — the Escritório then picks one from the `id`.
+   - `id` = the agent id: the agent file name without `.agent.md` (e.g. `./agents/researcher.agent.md` → `researcher`).
    - `title` = the agent's `title:` frontmatter (the role/function label). This is a
      SEPARATE column from `displayName` — never merge or swap them.
    - `path` column uses `.agent.md` extension (e.g., `./agents/researcher.agent.md`).
@@ -498,8 +498,8 @@ This gate exists because the Pipeline Runner renders agent identity from the CSV
 `displayName` or fills it with the role/title. That is the exact failure this gate catches.
 
 If ANY check fails: rewrite `crew-party.csv` using the canonical header
-(`id,displayName,title,icon,path,execution`), pulling `displayName` from each agent's
-`.agent.md` `name:` field and `title` from its `title:` field. Re-validate. Max 2 fix attempts.
+(`id,displayName,title,icon,path,execution,personagem`), pulling `displayName` from each agent's
+`.agent.md` `name:` field and `title` from its `title:` field, and keeping the `personagem` each row already had. Re-validate. Max 2 fix attempts.
 
 ### Gate 0c: Shared Agent References (BLOCKING if `extends:` is used)
 

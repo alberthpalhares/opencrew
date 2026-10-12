@@ -5,12 +5,13 @@
 // Puro: sem DOM, sem relógio, sem rede.
 // Spec: fase-e1-escritorio-ao-vivo.md, regras 18 e 23 (repositório do OpenCrew).
 
+// `personagem` é a coluna opcional do `crew-party.csv`: diz o molde do boneco (E2, regra 11).
 const ELENCO = [
-  { id: 'pesquisa', name: 'Pedro Pesquisa', icon: '🔎' },
-  { id: 'redacao', name: 'Rita Redação', icon: '✍️' },
-  { id: 'design', name: 'Davi Design', icon: '🎨' },
-  { id: 'revisao', name: 'Renata Revisão', icon: '🧐' },
-  { id: 'social', name: 'Sara Social', icon: '📣' },
+  { id: 'pesquisa', name: 'Pedro Pesquisa', icon: '🔎', personagem: 'masculino' },
+  { id: 'redacao', name: 'Rita Redação', icon: '✍️', personagem: 'feminino' },
+  { id: 'design', name: 'Davi Design', icon: '🎨', personagem: 'masculino' },
+  { id: 'revisao', name: 'Renata Revisão', icon: '🧐', personagem: 'feminino' },
+  { id: 'social', name: 'Sara Social', icon: '📣', personagem: 'feminino' },
 ];
 
 const [I, W, C, D, S, F] = ['idle', 'working', 'checkpoint', 'done', 'skipped', 'failed'];

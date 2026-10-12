@@ -11,7 +11,9 @@ import {
   ALTURA, BONECO, CAMISAS, LARGURA, LARGURA_COLUNA, MEMORIA_INICIAL, MESAS, POSES, TEXTOS, TOPO,
   consultar, montarModelo, montarPagina, quadro, transicao,
 } from '../templates/_opencrew/core/escritorio/modelo.js';
-import { CORES, MOLDE, TROCAS, linhasDoBoneco } from '../templates/_opencrew/core/escritorio/sprites.js';
+import { CORES } from '../templates/_opencrew/core/escritorio/sprites.js';
+import { CORPOS, TROCAS } from '../templates/_opencrew/core/escritorio/sprites-corpo.js';
+import { linhasDoBoneco } from '../templates/_opencrew/core/escritorio/sprites-boneco.js';
 import { PAREDE } from '../templates/_opencrew/core/escritorio/sprites-sala.js';
 import { animar, pintarCena } from '../templates/_opencrew/core/escritorio/cena.js';
 import { criarPainel } from '../templates/_opencrew/core/escritorio/painel.js';
@@ -24,7 +26,7 @@ const HTML = FONTES['index.html'];
 // A multiple of every animation period: the phases of the clock start at zero.
 const AGORA = Date.parse('2026-10-05T12:00:00.000Z');
 const haMin = (min) => new Date(AGORA - min * 60000).toISOString();
-const SLOTS = ['cabelo', 'pele', 'pele-sombra', 'camisa', 'camisa-sombra'];
+const SLOTS = ['cabelo', 'cabelo-sombra', 'pele', 'pele-sombra', 'olhos', 'camisa', 'camisa-sombra'];
 const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.';
 const SEM_SERVIDOR = 'Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.';
 const DEMONSTRACAO = 'Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.';
@@ -124,19 +126,18 @@ test('E1-06b: no outside address and no embedded image; every pixel matrix is re
     for (const letra of new Set(linhas.join(''))) assert.ok(Object.hasOwn(paleta, letra), `${nome}: "${letra}" is not in its palette`);
     for (const cor of Object.values(paleta)) assert.ok(cor === null || cores.includes(cor) || SLOTS.includes(cor), `${nome}: ${cor} is not a colour of the palette`);
   }
-  // Rule 16: one 16×16 mould, and each pose is the mould with some lines swapped.
-  assert.deepEqual([MOLDE.linhas.length, MOLDE.linhas[0].length, PAREDE.linhas.length], [BONECO, BONECO, TOPO]);
-  assert.deepEqual(Object.keys(TROCAS).sort(), [...POSES.filter((pose) => pose !== 'parado'), 'festa', 'papel'].sort());
-  assert.deepEqual(linhasDoBoneco('parado'), MOLDE.linhas);
-  for (const [pose, trocas] of Object.entries(TROCAS)) {
-    for (const texto of Object.values(trocas)) assert.ok(texto.length === BONECO && [...texto].every((l) => Object.hasOwn(MOLDE.paleta, l)), `${pose}: ${texto}`);
-    const linhas = linhasDoBoneco(POSES.includes(pose) ? pose : 'parado', { papel: pose === 'papel', festa: pose === 'festa' });
-    assert.deepEqual(linhas.flatMap((l, i) => (l === MOLDE.linhas[i] ? [] : [String(i)])), Object.keys(trocas), `${pose} is the mould with swapped lines`);
+  // Rule 16, as phase E2 left it: the body of each mould takes the lines 9 to 15 and each typing or walking pose is that
+  // body with some lines swapped; the arm, the paper and the head are layers (tests/escritorio-personagens.test.js).
+  assert.equal(PAREDE.linhas.length, TOPO);
+  for (const [molde, corpo] of Object.entries(CORPOS)) {
+    const parado = linhasDoBoneco('parado', { molde });
+    assert.deepEqual([parado.length, parado[0].length, corpo.de + corpo.linhas.length], [BONECO, BONECO, BONECO], molde);
+    assert.deepEqual(Object.keys(TROCAS[molde]).sort(), POSES.filter((pose) => pose !== 'parado' && pose !== 'mao').sort(), molde);
+    for (const [pose, trocas] of Object.entries(TROCAS[molde])) {
+      const mudou = linhasDoBoneco(pose, { molde }).flatMap((l, i) => (l === parado[i] ? [] : [String(i)]));
+      assert.deepEqual(mudou, Object.keys(trocas), `${molde} ${pose} is the body with swapped lines`);
+    }
   }
-  const comPapel = linhasDoBoneco('andar-a', { papel: true });
-  assert.deepEqual(comPapel.slice(13), linhasDoBoneco('andar-a').slice(13), 'the arm with the paper adds to the legs of who walks');
-  assert.notDeepEqual(comPapel.slice(8, 13), MOLDE.linhas.slice(8, 13));
-  assert.deepEqual(linhasDoBoneco('andar-b', { espelhado: true }), linhasDoBoneco('andar-b').map((l) => [...l].reverse().join('')));
 });
 
 test('E1-06c: the page has the list of agents and the page texts of §6, in PT-BR with accents, written as text', () => {

@@ -105,6 +105,15 @@
   .agente[data-acao="sem-sinal"] .status { color: var(--texto); }
   .agente[data-acao="skipped"] { opacity: .55; }
 
+  /* A folha de conferência dos personagens (?folha=1): uma linha de bonecos por corte de cabelo. */
+  .folha { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px 16px 24px; }
+  .folha-titulo { font: 700 16px/1.3 var(--mono); color: var(--ambar); }
+  .folha .nota { max-width: 90ch; margin: 6px 0 4px; }
+  .folha-nome { margin: 18px 0 6px; font: 700 13px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--apagado); }
+  .folha-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-bottom: 8px; }
+  .folha-rotulo { flex: 0 0 11em; font: 13px/1.4 var(--mono); }
+  .folha-tela { display: block; width: auto; max-width: 100%; height: auto; border: 2px solid var(--borda); image-rendering: crisp-edges; image-rendering: pixelated; }
+
   /* Tela estreita: a lista desce para baixo do desenho e a página rola. */
   @media (max-width: 860px) {
     body { height: auto; min-height: 100vh; min-height: 100dvh; }

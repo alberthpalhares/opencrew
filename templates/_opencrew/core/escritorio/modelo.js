@@ -11,7 +11,9 @@ export * from './modelo-mesas.js';
 export * from './modelo-textos.js';
 // Leitura do `state.json`, inclusive o da 1.6.x.
 export * from './modelo-estado.js';
-// Ação, monitor, balão e aparência de cada agente.
+// Molde, corte e cores de cada boneco: `aparencia`.
+export * from './modelo-personagem.js';
+// Ação, monitor e balão de cada agente.
 export * from './modelo-agentes.js';
 // O modelo de uma leitura: `montarModelo`.
 export * from './modelo-visao.js';

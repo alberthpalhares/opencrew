@@ -452,7 +452,17 @@ O que vale saber antes de ligar:
 - **O Escritório nunca para a execução.** Se o aviso falhar, a crew segue trabalhando.
 - **Até 12 mesas.** Numa crew maior, os agentes a mais aparecem só na lista ao lado.
 
-Quem já usa o OpenCrew recebe o Escritório com um `npx @aksp/opencrew@latest update`.
+**Os personagens.** Cada agente tem o seu boneco: feminino ou masculino, com um de 5 cortes de
+cabelo, 8 tons de pele, 9 cores de cabelo e 4 cores de olhos. O mesmo agente tem sempre a mesma
+cara; só a camisa muda com a mesa. Quem diz se o boneco é feminino ou masculino é a crew: o
+`crew-party.csv` aceita uma coluna opcional, `personagem`, com `feminino` ou `masculino` (crew
+nova já vem com ela preenchida pelo nome do agente). Numa crew sem a coluna, o Escritório escolhe
+um dos dois pelo `id` do agente — se a "Renata" sair com o boneco masculino, peça à IA para
+acrescentar a coluna. Pele, cabelo e olhos não se configuram: saem do `id`.
+Para ver todos os personagens de uma vez, abra o endereço do Escritório com `?folha=1` no fim.
+
+Quem já usa o OpenCrew recebe o Escritório, e os personagens novos, com um
+`npx @aksp/opencrew@latest update` (a aparência dos agentes que já existem muda uma vez).
 
 ---
 

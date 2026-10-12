@@ -155,9 +155,11 @@ One definition: the agent `id` is the file name without `.agent.md`
 ## crew-party.csv
 
 ```
-id,displayName,title,icon,path,execution
-rita-redacao,"Rita Redação","Redatora de Atas",📝,./agents/rita-redacao.agent.md,inline
+id,displayName,title,icon,path,execution,personagem
+rita-redacao,"Rita Redação","Redatora de Atas",📝,./agents/rita-redacao.agent.md,inline,feminino
 ```
 
 `displayName` is the agent's `name:` (the two-word persona name), never the role. Quote any field
-with a space or a comma.
+with a space or a comma. `personagem` is optional: `feminino` or `masculino`, the figure the agent
+gets in the Escritório. A crew without the column, or a row with it empty, still works — the
+Escritório then picks one of the two from the agent `id`.

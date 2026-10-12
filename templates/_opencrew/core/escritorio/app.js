@@ -3,10 +3,12 @@
 // rótulos por cima e o painel em volta. Consulta que falha mantém o último estado bom e liga o
 // aviso; a página segue tentando, sem recarregar.
 // É o único módulo que toca na janela: o relógio, a rede, o endereço (`?demo`), o tamanho da tela
-// e a preferência "reduzir movimento" entram no modelo por parâmetro.
+// e a preferência "reduzir movimento" entram no modelo por parâmetro. Com `?folha` no endereço, a
+// página mostra a folha de conferência dos personagens no lugar do escritório (E2, §5).
 // Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 20 a 23 e 28 (repositório do OpenCrew).
 import { ALTURA, LARGURA, MEMORIA_INICIAL, consultar, emExibicao, escala, escolher, montarPagina, quadro, transicao } from './modelo.js';
 import { animar } from './cena.js';
+import { abrirFolha } from './folha.js';
 import { criarPainel } from './painel.js';
 import { criarRotulos } from './rotulos.js';
 
@@ -120,6 +122,7 @@ function criarPagina(janela) {
  * @param {Window} janela a janela do navegador (nos testes, uma de mentira)
  */
 export function iniciar(janela) {
+  if (new URLSearchParams(janela.location.search).has('folha')) return abrirFolha(janela);
   const p = criarPagina(janela);
   const reajustar = () => ajustar(p);
   janela.addEventListener('resize', reajustar);

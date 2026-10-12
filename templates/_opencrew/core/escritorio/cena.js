@@ -5,7 +5,8 @@
 // O laço de animação pede um quadro por vez ao navegador e só pinta de novo quando ele muda.
 // Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 18, 19 e 28 (repositório do OpenCrew).
 import { ALTURA, BONECO, COLUNAS, LARGURA, LARGURA_COLUNA, TOPO } from './modelo.js';
-import { coresDoBoneco, linhasDoBoneco, retangulos } from './sprites.js';
+import { retangulos } from './sprites.js';
+import { coresDoBoneco, linhasDoBoneco } from './sprites-boneco.js';
 import { JANELA, LADRILHO, LADRILHO_ESCURO, PAREDE, PLANTA, RELOGIO } from './sprites-sala.js';
 import {
   MESA, MESA_ACIMA, MONITOR, MONITOR_EM, SINAL_DUVIDA, SINAL_FALHA, SINAL_FEITO, SOMBRA,
@@ -72,7 +73,8 @@ function pintarMesa(ctx, { mesa, monitor, monitorFase }) {
 /** O boneco na pose do quadro, com a sombra no chão (se está em pé) e o sinal sobre a cabeça. */
 function pintarBoneco(ctx, boneco) {
   const { x, y, acao, pose, papel, espelhado } = boneco;
-  const linhas = linhasDoBoneco(pose, { papel, espelhado, festa: acao === 'comemorando' && pose === 'mao' });
+  const { molde, corte } = boneco.aparencia;
+  const linhas = linhasDoBoneco(pose, { molde, corte, papel, espelhado, festa: acao === 'comemorando' && pose === 'mao' });
   const sinal = SINAIS[acao];
   if (!boneco.sentado) pintar(ctx, SOMBRA, x + Math.floor((BONECO - largura(SOMBRA)) / 2), y + BONECO);
   ctx.globalAlpha = acao === 'skipped' ? ALFA_DO_PULADO : 1;
@@ -99,7 +101,7 @@ export function pintarCena(ctx, bonecos) {
 }
 
 /** O que muda o desenho de um boneco: se nada disto mudou, o quadro é o mesmo. */
-const resumo = (b) => [b.id, b.indice, b.acao, b.pose, b.papel, b.espelhado, b.x, b.y, b.monitor, b.monitorFase].join(':');
+const resumo = (b) => [b.id, b.indice, b.aparencia.molde, b.acao, b.pose, b.papel, b.espelhado, b.x, b.y, b.monitor, b.monitorFase].join(':');
 
 /**
  * O laço de animação. A cada quadro do navegador pede os bonecos e, se algo mudou desde a última

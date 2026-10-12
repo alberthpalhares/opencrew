@@ -3,6 +3,38 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.18.0] — 2026-10-12
+
+Fase E2: "Personagens do escritório" (`specs/fase-e2-personagens-do-escritorio.md`). Chega a quem já
+usa com um `npx @aksp/opencrew@latest update`; nenhum arquivo de crew é alterado.
+
+### Added
+- **Personagens femininos e masculinos no Escritório.** Dois moldes de boneco, com tronco e roupa
+  diferentes, e 5 cortes de cabelo em cada um — feminino: longo, chanel, cacheado, coque e curto;
+  masculino: curto, topete, crespo, raspado e calvo. O corte continua inteiro quando o boneco levanta
+  a mão, comemora ou leva o papel.
+- **Mais tons de pele, de cabelo e olhos coloridos.** 8 peles (eram 5), 9 cores de cabelo (eram 6) e
+  4 cores de olhos (era um ponto de tinta). Cabelo ou olho que ficaria parecido demais com a pele dá
+  lugar à cor seguinte da lista, para nunca sumir no rosto.
+- **Coluna opcional `personagem` no `crew-party.csv`** (`feminino` ou `masculino`; `f` e `m` valem).
+  É ela que diz o molde do boneco. Crew nova já sai com a coluna, preenchida pelo nome do agente; o
+  `estado.mjs iniciar` a leva para o `state.json`, e o conserto `manifesto` a mantém ao refazer o
+  arquivo. Crew sem a coluna segue funcionando: o Escritório escolhe um dos dois moldes pelo `id`.
+- **Folha de conferência: `?folha=1`.** O endereço do Escritório com `?folha=1` mostra todos os cortes
+  dos dois moldes nas 8 peles e as poses de um corte com volume, sem ler dado nenhum do projeto.
+- A demonstração usa os personagens novos: os cinco agentes têm o molde do nome e não há dois iguais.
+
+### Changed
+- **A aparência dos agentes que já existem muda uma vez**, ao atualizar: há mais opções e a conta que
+  as escolhe é outra. Depois disso fica estável — o mesmo `id` dá sempre o mesmo boneco, em qualquer mesa.
+- A cabeça do boneco ficou um pouco mais estreita, para o cabelo com volume caber nos 16×16.
+
+### Limites
+- A cor dos olhos é um pixel por olho: aparece com a página ampliada, pouco na menor escala.
+- Pele, cabelo e olhos não se configuram por agente; só o molde, pela coluna `personagem`.
+- Crew antiga sem a coluna pode mostrar um agente de nome feminino com o boneco masculino, até alguém
+  preencher a coluna (o `update` não escreve em `crews/`).
+
 ## [1.17.0] — 2026-10-09
 
 Fase U6, fatia 2: "Dados e custo" (`specs/fase-u6b-dados-e-custo.md`). Chega a quem já usa com um

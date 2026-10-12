@@ -23,10 +23,10 @@ import { projetoDe } from './escritorio/projeto.mjs';
  * Arquivo novo em `_opencrew/core/escritorio/` só é servido depois de entrar aqui.
  */
 export const ARQUIVOS = [
-  'index.html', 'app.js', 'painel.js', 'rotulos.js', 'cena.js',
-  'sprites.js', 'sprites-sala.js', 'sprites-mesa.js',
+  'index.html', 'app.js', 'painel.js', 'rotulos.js', 'cena.js', 'folha.js',
+  'sprites.js', 'sprites-sala.js', 'sprites-mesa.js', 'sprites-rosto.js', 'sprites-corpo.js', 'sprites-boneco.js',
   'modelo.js', 'modelo-mesas.js', 'modelo-textos.js', 'modelo-estado.js', 'modelo-agentes.js',
-  'modelo-visao.js', 'modelo-pagina.js', 'demo.js',
+  'modelo-personagem.js', 'modelo-visao.js', 'modelo-pagina.js', 'demo.js',
   'escala.js', 'rota.js', 'animacao.js', 'quadro.js',
 ];
 

@@ -1,6 +1,7 @@
 // Núcleo puro do estado da execução: (estado, evento) → estado novo. Não lê relógio nem disco:
 // a hora chega em `evento.agora` e o elenco em `evento.elenco`. O estado recebido nunca é alterado.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 1 e 2 e §4 (repositório do OpenCrew).
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 1 e 2 e §4, e fase-e2-personagens-do-escritorio.md,
+// regra 7 (repositório do OpenCrew).
 
 /** Agente que ainda não entregou. `delivering` só existe em arquivo da 1.6.x. */
 const ATIVOS = ['working', 'checkpoint', 'delivering'];
@@ -10,8 +11,13 @@ const EM_CURSO = ['working', 'checkpoint'];
 const texto = (v) => (typeof v === 'string' ? v : '');
 const aPartirDe = (minimo, v) => (Number.isInteger(v) && v >= minimo ? v : null);
 
+/** O boneco do agente no escritório, quando a crew declara (coluna `personagem` do `crew-party.csv`). */
+const PERSONAGENS = ['feminino', 'masculino'];
+
+/** `personagem` só existe em quem tem um dos dois valores: sem a coluna, o agente sai como sempre saiu. */
 function agenteNormal(a) {
-  return { id: texto(a?.id), name: texto(a?.name), icon: texto(a?.icon), status: texto(a?.status) || 'idle', label: texto(a?.label) };
+  const agente = { id: texto(a?.id), name: texto(a?.name), icon: texto(a?.icon), status: texto(a?.status) || 'idle', label: texto(a?.label) };
+  return PERSONAGENS.includes(a?.personagem) ? { ...agente, personagem: a.personagem } : agente;
 }
 
 /** O estado lido, no formato de hoje: agentes sem `desk` e com `label`, `step` completo. */
@@ -101,7 +107,7 @@ export const EVENTOS = Object.keys(TRANSICOES);
  * @param {object|null} estado o estado atual, como está no `state.json` (da 1.6.x também); o
  *   `iniciar` não o lê
  * @param {object} evento `{ tipo, agora, … }` · `tipo`: um dos `EVENTOS` · `agora`: a hora, em ISO
- *   · no `iniciar`: `crew`, `elenco` (`[{ id, name, icon }]`) e `passos` · nos outros, conforme o
+ *   · no `iniciar`: `crew`, `elenco` (`[{ id, name, icon, personagem? }]`) e `passos` · nos outros, conforme o
  *   evento: `n`, `agente`, `rotulo`, `mensagem`, `motivo`. Agente que não está no estado vale como
  *   evento sem agente.
  * @returns {object} o estado novo, no formato da §4 da spec (`step.total` vazio é `null`)

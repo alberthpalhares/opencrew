@@ -117,17 +117,21 @@ const campo = (v) => (/[\s,"]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 /**
  * O manifesto refeito a partir dos agentes: as 6 colunas, na ordem do manifesto antigo (agente novo
- * vai para o fim); `execution` vem do agente, depois do manifesto antigo, depois `inline`.
+ * vai para o fim); `execution` vem do agente, depois do manifesto antigo, depois `inline`. A coluna
+ * opcional `personagem` (o boneco do escritório) fica se o manifesto antigo a tinha, com os valores
+ * que já estavam lá; agente novo fica sem valor.
  */
 export function montarCsv(agentes, antigo) {
   const velho = lerCsv(antigo);
+  const extra = velho.colunas.find((c) => c.toLowerCase() === 'personagem');
   const ordem = (a) => { const i = velho.linhas.findIndex((l) => l.id === a.id); return i < 0 ? Infinity : i; };
   const emOrdem = [...agentes].sort((a, b) => ordem(a) - ordem(b));
   const eol = antigo ? eolDe(antigo) : '\n';
   const linha = (a) => {
     const antes = velho.linhas.find((l) => l.id === a.id) ?? {};
     const d = a.dados;
-    return [a.id, d.name ?? '', d.title ?? antes.title ?? '', d.icon ?? antes.icon ?? '', `./agents/${a.id}.agent.md`, d.execution ?? antes.execution ?? 'inline'].map((v) => campo(String(v))).join(',');
+    const seis = [a.id, d.name ?? '', d.title ?? antes.title ?? '', d.icon ?? antes.icon ?? '', `./agents/${a.id}.agent.md`, d.execution ?? antes.execution ?? 'inline'];
+    return [...seis, ...(extra ? [antes[extra] ?? ''] : [])].map((v) => campo(String(v))).join(',');
   };
-  return [COLUNAS.join(','), ...emOrdem.map(linha), ''].join(eol);
+  return [[...COLUNAS, ...(extra ? ['personagem'] : [])].join(','), ...emOrdem.map(linha), ''].join(eol);
 }

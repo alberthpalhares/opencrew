@@ -1,7 +1,9 @@
 // Leitura do estado da execução (`crews/<crew>/state.json`) como ele chega do servidor: aceita o
 // arquivo da 1.6.x e devolve sempre o mesmo formato, sem alterar o objeto recebido.
 // Puro: sem DOM, sem relógio, sem rede.
-// Spec: fase-e1-escritorio-ao-vivo.md, §4 e regra 18 (repositório do OpenCrew).
+// Spec: fase-e1-escritorio-ao-vivo.md, §4 e regra 18, e fase-e2-personagens-do-escritorio.md,
+// regra 7 (repositório do OpenCrew).
+import { moldeDe } from './modelo-personagem.js';
 
 /** Status de agente que a página conhece, na ordem da tabela da regra 18. */
 export const STATUS_DE_AGENTE = Object.freeze(['idle', 'working', 'checkpoint', 'done', 'skipped', 'failed']);
@@ -21,14 +23,17 @@ function statusDoAgente(valor) {
   return STATUS_DE_AGENTE.includes(valor) ? valor : 'idle';
 }
 
+/** `personagem` só entra quando o arquivo traz um valor que vale; o estranho é ignorado. */
 function lerAgente(bruto, indice) {
   const id = texto(bruto.id) || `agente-${indice + 1}`;
+  const personagem = moldeDe(bruto.personagem);
   return {
     id,
     name: texto(bruto.name) || id,
     icon: texto(bruto.icon),
     status: statusDoAgente(bruto.status),
     label: texto(bruto.label),
+    ...(personagem ? { personagem } : {}),
   };
 }
 
@@ -52,7 +57,7 @@ function lerData(valor) {
  * @param {unknown} bruto o conteúdo de um `state.json`
  * @returns {object|null} `null` ("sem estado") quando a entrada não é objeto ou `agents` não é
  *   lista; senão `{ crew, status, step: { current, total, label }, agents: [{ id, name, icon,
- *   status, label }], handoff, motivo, updatedAtMs }` · `status`: execução `idle` (1.6.x) ou
+ *   status, label, personagem? }], handoff, motivo, updatedAtMs }` · `status`: execução `idle` (1.6.x) ou
  *   desconhecida vale como `running` · `step.total` e `updatedAtMs`: `null` quando vazios ou
  *   inválidos · `handoff`: `{ from, to, message, completedAt }` ou `null` · item de `agents`
  *   que não é objeto fica de fora
