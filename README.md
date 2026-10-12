@@ -9,8 +9,8 @@ Descreva o que você precisa em linguagem natural e ele monta um time de agentes
 especializados — pesquisador, redator, revisor, designer, estrategista — que
 trabalham juntos em um pipeline automatizado, com checkpoints para sua aprovação.
 
-**Não é um template. Não é um prompt fixo. É uma fábrica de conteúdo que roda
-dentro da sua IDE.**
+**Não é um template. Não é um prompt fixo. É uma equipe de conteúdo que trabalha
+dentro da sua IDE, nos arquivos do seu projeto.**
 
 > 🇧🇷 OpenCrew tem como público primário o Brasil. This README is in PT-BR.
 
@@ -18,22 +18,29 @@ dentro da sua IDE.**
 
 *O [Escritório ao vivo](#escritório-ao-vivo): você acompanha a sua equipe trabalhando, passo a passo.*
 
+**Neste README:** [O que você ganha](#o-que-você-ganha) · [Como instalar](#como-instalar) ·
+[IDEs](#funciona-em-9-ides-de-ia) · [Pastas](#estrutura-de-pastas-gerada) ·
+[Entrega por canal](#entrega-por-canal) · [Pedido avulso](#pedido-avulso-à-crew) ·
+[Histórico e retomada](#histórico-e-execução-interrompida) · [Documento Word](#documento-word) ·
+[Escritório ao vivo](#escritório-ao-vivo) · [Atualização](#mantendo-o-opencrew-atualizado) ·
+[Comandos](#comandos) · [Espaço e custo](#espaço-custo-e-relato-de-uso)
+
 ---
 
 ## O que você ganha
 
-- 🔎 **Sherlock** — pesquisa em redes sociais, web, SEO e trending topics para
-  fundamentar cada conteúdo em dados reais, não achismo.
+- 🔎 **Sherlock** — pesquisa em redes sociais, na web, em SEO e nos assuntos em alta, para
+  fundamentar cada conteúdo em dados reais, não em achismo.
 - ✍️ **Redator + Revisor** — conteúdo escrito com ganchos, ângulos e CTAs
   estratégicos, revisado por um agente dedicado antes de chegar a você.
 - 🎨 **Designer integrado** — carrosséis, banners e posts visuais alinhados à
   identidade da sua marca (ou de templates prontos).
 - 🎯 **3 níveis de profundidade** — Express (rápido), Standard (diário) ou
   Full (clientes, projetos complexos). Você escolhe quanta energia quer gastar.
-- 🧠 **Aprendizado contínuo** — a crew aprende com suas correções. Se você
-  rejeita o mesmo erro 3 vezes, vira Regra de Ouro automática.
+- 🧠 **Aprendizado contínuo** — a crew aprende com as suas correções. Quando a
+  mesma correção aparece em 3 execuções, vira Regra de Ouro da crew.
 - 📦 **Templates prontos** — blog semanal, Instagram carrossel, newsletter
-  mensal, lançamento de produto. Comece em 2 minutos.
+  mensal, lançamento de produto. Você começa em poucos minutos.
 - 📤 **Tabelas em CSV** — as tabelas de um resultado saem em CSV, prontas para a planilha.
 - 📬 **Entrega por canal** — depois de aprovar, você encontra a pasta `entrega/`: uma pasta por
   canal (Instagram, LinkedIn, blog, e-mail, WhatsApp, X/Twitter, YouTube), o texto pronto para
@@ -45,37 +52,41 @@ dentro da sua IDE.**
   e as linhas de assinatura. Um comando: `/opencrew documento <arquivo>`.
 - 🎛️ **Seleção inteligente de agentes** — o sistema analisa seu pedido e
   sugere quais agentes são necessários para aquela tarefa. Você confirma ou
-  ajusta com um clique. Agentes pulados não gastam tokens naquele run.
+  ajusta numa resposta. Agentes pulados não gastam tokens naquela execução.
 - 🔎 **Revisor com dentes** — antes da revisão, um verificador automático mede o texto
   (tamanho de título, meta description, legenda, hashtags, slides), barra placeholders,
   termos que você proibiu e `[PREENCHER]` pendentes, e aponta afirmações a confirmar.
   Bloqueio não passa, seja qual for a nota do revisor. A crew não inventa casos nem números:
   quando falta um dado real, ela pergunta na aprovação final.
 - 🖥️ **Escritório ao vivo** — veja a equipe trabalhando numa sala em pixel-art, no navegador:
-  quem está digitando, quem passou o bastão, quem espera a sua resposta. Opcional, desligado por
+  quem está digitando, quem leva o trabalho ao colega (e o que diz), quem espera a sua resposta.
+  A sala tem o tamanho da equipe e segue o dia e a noite do seu relógio. Opcional, desligado por
   padrão, só neste computador. Liga com `/opencrew dashboard`.
 - 📂 **Crew que conhece o projeto** — liste em `fontes:` os arquivos e pastas do seu projeto
-  (decisões, calendário, manual de marca) e a crew os lê em todo run, tratando-os como verdade.
-  Reorganizou as pastas? No início do run ela confere os caminhos, acha para onde o arquivo foi
+  (decisões, calendário, manual de marca) e a crew os lê em toda execução, tratando-os como
+  verdade. Reorganizou as pastas? No início da execução ela confere os caminhos, acha para onde o arquivo foi
   e oferece corrigir. Correções que você faz num checkpoint ficam gravadas na hora.
 
 ---
 
-## Por que dentro da IDE e não no browser?
+## Por que dentro da IDE e não no navegador?
 
-| 🖥️ **OpenCrew (na sua IDE)** | 🌐 **ChatGPT / Claude (browser)** |
+| 🖥️ **OpenCrew (na sua IDE)** | 🌐 **ChatGPT / Claude (navegador)** |
 |---|---|
-| Lê e escreve arquivos do seu projeto | Precisa de upload/download manual |
+| Lê e escreve arquivos do seu projeto | Você sobe e baixa cada arquivo à mão |
 | Pipeline automatizado com checkpoints | Você faz o papel de orquestrador |
 | Memória entre sessões (aprende com você) | Começa do zero toda conversa |
-| Skills: publicar, gerar imagem, enviar email | Precisa de ferramentas externas |
+| Skills: publicar, gerar imagem, enviar e-mail | Precisa de ferramentas externas |
 | Agentes especializados com papéis e nomes | Um modelo genérico faz-tudo |
-| Dados ficam no seu computador | Dados trafegam pelo browser |
+| Crews, memória e resultados são arquivos no seu computador | O histórico fica no site |
 | Templates e workflows reutilizáveis | Cria do zero toda vez |
 
-> 💡 **Resumindo:** ChatGPT ou Claude no browser são como um freela que você
-> precisa briefar do zero a cada projeto. O OpenCrew é sua equipe fixa que já
-> conhece seu negócio, seu tom de voz e suas preferências — e melhora a cada run.
+> 💡 **Resumindo:** ChatGPT ou Claude no navegador são como um freelancer que você
+> precisa orientar do zero a cada projeto. O OpenCrew é a sua equipe fixa, que já
+> conhece o seu negócio, o seu tom de voz e as suas preferências — e melhora a cada execução.
+>
+> O OpenCrew não tem modelo de IA próprio: quem pensa é a IA da sua IDE, e o texto que ela lê
+> segue as regras de privacidade do serviço que você já usa.
 
 ---
 
@@ -128,18 +139,18 @@ npm start -- --all
 ### Iniciando o OpenCrew
 
 1. Abra a pasta do projeto na sua IDE de IA.
-2. Digite `/opencrew` para começar — a primeira execução configura o perfil
-   da sua empresa (nome, site, tom de voz) em 2 minutos.
+2. Digite `/opencrew` para começar — na primeira vez ele configura o perfil
+   da sua empresa (nome, site, tom de voz), em poucos minutos.
 3. Depois é só pedir: "cria uma crew para posts de Instagram em carrossel"
    ou "preciso de uma newsletter mensal sobre IA".
 
 **Nenhuma chave de API é necessária para começar.** Se uma skill opcional
-precisar de uma (ex: Instagram, Resend, Apify), o OpenCrew pede direto na
-conversa e salva tudo sozinho. Você não edita arquivo nenhum.
+precisar de uma (por exemplo: Instagram, Resend, Apify), o OpenCrew pede na
+conversa e grava sozinho. Você não edita arquivo nenhum.
 
 ---
 
-## Funciona em qualquer IDE
+## Funciona em 9 IDEs de IA
 
 O `AGENTS.md` na raiz do projeto é uma **ponte fina** que aponta para o sistema
 completo em `_opencrew/core/system.md`. Cada IDE recebe um arquivo de integração
@@ -164,9 +175,9 @@ enxuto — todos apontam para a mesma fonte.
 
 
 > ⚠️ **Importante:** `CLAUDE.md`, `GEMINI.md` e os demais arquivos de IDE são
-> pontes geradas automaticamente. Eles são finos (5-10 linhas) e usam blocos
-> marcados (`<!-- opencrew:start/end -->`) que permitem **merge não-destrutivo**
-> com instruções que você já tenha nesses arquivos. Se precisar editar o
+> pontes geradas automaticamente. Eles são curtos (5 a 10 linhas) e usam blocos
+> marcados (`<!-- opencrew:start/end -->`): o OpenCrew só mexe dentro do bloco dele, e as
+> instruções que você já tem nesses arquivos ficam como estão. Se precisar editar o
 > comportamento do OpenCrew, edite os arquivos em `_opencrew/core/`.
 
 ---
@@ -176,7 +187,7 @@ enxuto — todos apontam para a mesma fonte.
 ```
 meu-projeto/
 ├── AGENTS.md                     ← ponte fina (7 linhas)
-├── CLAUDE.md                     ← ponte fina + suas instruções (merge)
+├── CLAUDE.md                     ← ponte fina + as suas instruções, lado a lado
 ├── GEMINI.md                     ← ponte fina (Gemini CLI)
 ├── .mcp.json                     ← servidor Playwright do OpenCrew
 ├── .gitignore                    ← bloco `# opencrew` no fim; suas linhas são mantidas
@@ -222,7 +233,7 @@ meu-projeto/
 │   ├── canva/                    ← design no Canva
 │   ├── image-creator/            ← HTML/CSS → imagem
 │   ├── instagram-publisher/      ← publicação no Instagram
-│   ├── resend/                   ← envio de emails
+│   ├── resend/                   ← envio de e-mails
 │   └── ...
 ```
 
@@ -648,10 +659,11 @@ npx @aksp/opencrew update --check
 
 ## Situação do projeto
 
-O OpenCrew está **em manutenção desde a versão 1.15.0** (outubro de 2026): o que está aqui funciona
-e continua recebendo conserto de defeito, mas não há fase nova planejada. O que ficou de fora está
-no `IDEIAS.md`; quem quiser continuar o desenvolvimento começa por "Como retomar o projeto", no
-`CONTRIBUTING.md`.
+O roteiro original do OpenCrew fechou na versão 1.15.0 (outubro de 2026). Desde então saem
+melhorias pontuais e consertos de defeito, sem roteiro de longo prazo — as mais recentes foram no
+Escritório ao vivo (personagens, salas, falas, dia e noite). O que mudou em cada versão está no
+[CHANGELOG](CHANGELOG.md); o que ficou de fora, no `IDEIAS.md`; quem quiser continuar o
+desenvolvimento começa por "Como retomar o projeto", no `CONTRIBUTING.md`.
 
 ## Para quem é
 
@@ -659,8 +671,8 @@ no `IDEIAS.md`; quem quiser continuar o desenvolvimento começa por "Como retoma
   mesmo publicando todo dia.
 - **Agências e estúdios** — cada cliente tem sua crew, seu perfil, seu tom.
   O OpenCrew não mistura.
-- **Empresas com marketing interno** — automatize a produção de conteúdo sem
-  contratar mais ninguém.
+- **Empresas com marketing interno** — automatize a parte repetitiva da produção de
+  conteúdo e deixe a equipe com as decisões.
 - **Freelancers** — entregue mais rápido, com qualidade consistente, e cobre
   por resultado, não por hora.
 - **Não é para** — substituir pensamento estratégico humano. O OpenCrew
