@@ -35,7 +35,12 @@ async function workspace1170(t) {
   return { dir, core };
 }
 
-const doWorkspace = (core, ...partes) => import(`${pathToFileURL(path.join(core, ...partes)).href}?e2-upg`);
+// The page is served to a browser as ES modules; to import it here, Node 20 needs to be told so
+// (a package.json beside it, written in the temporary workspace of the test only).
+async function doWorkspace(core, ...partes) {
+  await fs.writeFile(path.join(core, partes[0], 'package.json'), '{ "type": "module" }\n');
+  return import(`${pathToFileURL(path.join(core, ...partes)).href}?e2-upg`);
+}
 
 test('E2-upg: update from 1.17.0 delivers the new characters; the 6-column crew-party.csv is untouched, iniciar works and the new page draws the figures', async (t) => {
   const { dir, core } = await workspace1170(t);
