@@ -80,12 +80,12 @@ test('E2-04a: a strange personagem in the cast or in an old state.json is droppe
 });
 
 test('E2-05a: build.prompt.md writes the 7-column header and tells the builder to fill personagem from the name of the agent', async () => {
-  const build = await fs.readFile(path.join(CORE, 'prompts', 'build.prompt.md'), 'utf8');
+  const build = (await fs.readFile(path.join(CORE, 'prompts', 'build.prompt.md'), 'utf8')).replace(/\r\n/g, '\n'); // the checkout may bring CRLF
   assert.doesNotMatch(build, /id,displayName,title,icon,path,execution(?!,personagem)/, 'no 6-column header left in the prompt');
   assert.ok(build.match(/id,displayName,title,icon,path,execution,personagem/g).length >= 3);
   assert.match(build, /`personagem`[^\n]*`feminino`[^\n]*`masculino`/);
   assert.match(build, /researcher,"Pedro Pesquisa","Pesquisador de Tendências",🔎,\.\/agents\/researcher\.agent\.md,subagent,masculino/);
-  const formato = await fs.readFile(path.join(CORE, 'formato-da-crew.md'), 'utf8');
+  const formato = (await fs.readFile(path.join(CORE, 'formato-da-crew.md'), 'utf8')).replace(/\r\n/g, '\n');
   assert.match(formato, /id,displayName,title,icon,path,execution,personagem\n[^\n]*,inline,feminino/);
   assert.match(formato, /`personagem`[^\n]*optional/i);
 });
