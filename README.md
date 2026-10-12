@@ -14,6 +14,10 @@ dentro da sua IDE.**
 
 > 🇧🇷 OpenCrew tem como público primário o Brasil. This README is in PT-BR.
 
+![Escritório ao vivo: um agente leva o trabalho pronto até a mesa da colega, os dois conversam e ele volta para a sua mesa](docs/imagens/escritorio-entrega.gif)
+
+*O [Escritório ao vivo](#escritório-ao-vivo): você acompanha a sua equipe trabalhando, passo a passo.*
+
 ---
 
 ## O que você ganha
@@ -421,6 +425,15 @@ em que cada agente tem a sua mesa: digita quando é a vez dele, leva o papel ao 
 de bastão — e os dois conversam — e levanta a mão quando espera uma resposta sua. Ao lado do
 desenho ficam o passo atual, a lista dos agentes (com o status por extenso e o que cada um fez) e
 a última passagem de bastão.
+
+| A sala acompanha o tamanho da equipe | De noite, o abajur acende |
+|---|---|
+| ![Sala pequena, para crews de até 3 agentes, de dia e de noite: três mesas, tapete, sofá ou poltronas, estante e abajur](docs/imagens/escritorio-sala-pequena.png) | ![O escritório à noite: céu escuro nas janelas, sala mais escura e o abajur aceso](docs/imagens/escritorio-noite.png) |
+
+![Os personagens femininos: cinco cortes de cabelo, cada um nos oito tons de pele, e as poses de digitar, andar, levantar a mão, comemorar e levar o papel](docs/imagens/escritorio-personagens.png)
+
+*Cada agente tem o seu personagem — feminino ou masculino, com corte de cabelo, tom de pele e cor
+dos olhos próprios —, e ele é sempre o mesmo, em qualquer execução.*
 
 **Como abrir:** no chat da sua IDE, digite `/opencrew dashboard`. O comando liga o Escritório,
 sobe a página e mostra o endereço — `http://127.0.0.1:4747`, ou a porta livre seguinte. A próxima
