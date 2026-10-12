@@ -1,11 +1,11 @@
 // Os desenhos do escritório são matrizes de pixels escritas como texto: uma string por linha, uma
 // letra por pixel e uma paleta (letra → cor). Nenhuma imagem entra no pacote.
 // Este módulo traz as cores fixas de toda a cena, a paleta do boneco e a conta que transforma uma
-// matriz nos retângulos que a cena preenche. Os irmãos trazem os desenhos: `sprites-sala.js` e
-// `sprites-mesa.js`, a sala e os móveis; `sprites-rosto.js` e `sprites-corpo.js`, as peças do
-// boneco, que `sprites-boneco.js` monta.
-// Spec: fase-e1-escritorio-ao-vivo.md, regra 16, e fase-e2-personagens-do-escritorio.md
-// (repositório do OpenCrew).
+// matriz nos retângulos que a cena preenche. Os irmãos trazem os desenhos: `sprites-sala.js`,
+// `sprites-mesa.js`, `sprites-parede.js` e `sprites-moveis.js`, a sala e os móveis;
+// `sprites-rosto.js` e `sprites-corpo.js`, as peças do boneco, que `sprites-boneco.js` monta.
+// Spec: fase-e1-escritorio-ao-vivo.md, regra 16, fase-e2-personagens-do-escritorio.md e
+// fase-e3-conversa-e-entrega.md, regra 19 (repositório do OpenCrew).
 
 /** As cores fixas da cena. A camisa, o cabelo, a pele e os olhos de cada boneco vêm do modelo. */
 export const CORES = Object.freeze({
@@ -31,6 +31,7 @@ export const CORES = Object.freeze({
   verde: '#5fd47a',
   ambar: '#f4a73b',
   vermelho: '#e0564c',
+  luz: '#ffe9a8',
 });
 
 /**
@@ -56,6 +57,20 @@ export function matriz(paleta, linhas) {
 export function sombra(cor) {
   const canal = (inicio) => Math.round(parseInt(cor.slice(inicio, inicio + 2), 16) * 0.75).toString(16).padStart(2, '0');
   return `#${canal(1)}${canal(3)}${canal(5)}`;
+}
+
+const NOITES = new Map();
+
+/**
+ * A mesma cor numa sala à noite (regra 19 da E3): mais escura e puxada para o azul. A conta é
+ * fixa — a mesma cor dá sempre a mesma — e feita uma vez por cor.
+ */
+export function noite(cor) {
+  if (!NOITES.has(cor)) {
+    const canal = (inicio, fator) => Math.round(parseInt(cor.slice(inicio, inicio + 2), 16) * fator).toString(16).padStart(2, '0');
+    NOITES.set(cor, `#${canal(1, 0.62)}${canal(3, 0.66)}${canal(5, 0.84)}`);
+  }
+  return NOITES.get(cor);
 }
 
 /** Os trechos de uma linha: `[x, largura, letra]` de cada sequência da mesma letra, sem os vazios. */

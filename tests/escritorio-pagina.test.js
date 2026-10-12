@@ -2,13 +2,17 @@
 // 25 and the visible half of 28). Contracts over the sources of `escritorio/`, plus the page
 // modules run in Node on a fake 2D context and on a fake DOM built from the ids of the real
 // index.html. No server, no browser, and every timer is a fake the test fires by hand.
+// Phase E3 (specs/fase-e3-conversa-e-entrega.md) changed what these tests assumed: the room is as
+// big as the cast (no fixed 320×180), it has furniture of its own colours, and the delivery lasts
+// 10 s with a conversation in the middle. What the agents add is told apart from the empty room.
+// E1-06a and E1-06d (contracts over the sources alone) moved to tests/escritorio-fontes.test.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  ALTURA, BONECO, CAMISAS, LARGURA, LARGURA_COLUNA, MEMORIA_INICIAL, MESAS, POSES, TEXTOS, TOPO,
+  BONECO, CAMISAS, ENTREGA_MS, IDA_MS, LARGURA_COLUNA, MEMORIA_INICIAL, POSES, SALAS, TEXTOS, TOPO,
   consultar, montarModelo, montarPagina, quadro, transicao,
 } from '../templates/_opencrew/core/escritorio/modelo.js';
 import { CORES } from '../templates/_opencrew/core/escritorio/sprites.js';
@@ -31,6 +35,7 @@ const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, abra pelo
 const SEM_SERVIDOR = 'Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.';
 const DEMONSTRACAO = 'Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.';
 const DEMO_FORCADA = 'Demonstração. Tire ?demo do endereço para ver a sua crew.';
+const MESAS = SALAS.pequena.mesas; // where a cast of three sits
 
 /** A running state, step 2 of 5 "Escrever"; `agentes` sets the statuses by position (at least 3 agents). */
 function estado({ agentes = [], n = Math.max(3, agentes.length), ...extra } = {}) {
@@ -77,20 +82,20 @@ const textoDe = (el) => [el.textContent, ...el.children.map(textoDe)].join(' ').
 /** What a reader sees in the element of that id: its text, or null while it is hidden. */
 const naTela = (doc) => (id) => (doc.getElementById(id).hidden ? null : textoDe(doc.getElementById(id)));
 
-const dentro = ({ args: [x, y, l, a] }) => [x, y, l, a].every(Number.isInteger) && x >= 0 && y >= 0 && l > 0 && a > 0 && x + l <= LARGURA && y + a <= ALTURA;
-/** Paints one frame on a fresh fake context and checks what every frame owes: only whole rectangles, inside the screen. */
-function pintar(bonecos) {
+const dentro = (sala) => ({ args: [x, y, l, a] }) => [x, y, l, a].every(Number.isInteger) && x >= 0 && y >= 0 && l > 0 && a > 0 && x + l <= sala.largura && y + a <= sala.altura;
+/** Paints one frame of a reading on a fresh fake context and checks what every frame owes: only whole rectangles, inside the room. */
+function pintar(modelo, bonecos = quadro(modelo, AGORA)) {
   const { ctx, chamadas, postos } = contexto();
-  pintarCena(ctx, bonecos);
+  pintarCena(ctx, bonecos, modelo.ambiente);
   assert.deepEqual([...new Set(chamadas.map((c) => c.nome))], ['fillRect'], 'the scene only fills rectangles');
   assert.deepEqual([...postos].filter((p) => !['fillStyle', 'globalAlpha'].includes(p)), []);
-  assert.ok(chamadas.every(dentro), 'whole pixels, inside 320×180');
+  assert.ok(chamadas.every(dentro(modelo.ambiente.sala)), 'whole pixels, inside the room');
   assert.ok(chamadas.every((c) => /^#[0-9a-f]{6}$/.test(c.cor)), 'every colour is #rrggbb');
   assert.equal(ctx.globalAlpha, 1, 'the alpha of the skipped figure does not leak');
   return chamadas;
 }
 /** One frame of a three-desk room in which the first agent has that status. */
-const sala = (status, opcoes = {}, ms = 0) => pintar(quadro(ler(estado({ agentes: [status], ...opcoes.estado }), opcoes), AGORA + ms));
+const sala = (status, opcoes = {}, ms = 0, modelo = ler(estado({ agentes: [status], ...opcoes.estado }), opcoes)) => pintar(modelo, quadro(modelo, AGORA + ms));
 const tem = (chamadas, cor) => chamadas.some((c) => c.cor === cor);
 const chave = (c) => JSON.stringify([c.args, c.cor, c.alfa]);
 /** What frame `a` paints that frame `b` does not. */
@@ -103,14 +108,6 @@ function matrizes(nome, valor) {
   if (Array.isArray(valor.linhas)) return [[nome, valor]];
   return Object.entries(valor).flatMap(([parte, dentroDela]) => matrizes(`${nome}.${parte}`, dentroDela));
 }
-
-test('E1-06a: no file of the page writes HTML or text on the canvas; every <script> has src and no tag has an on…= attribute', () => {
-  const proibido = /innerHTML|outerHTML|insertAdjacentHTML|document\.write|fillText|strokeText|createContextualFragment|DOMParser|srcdoc|\beval\(|new Function/;
-  for (const [nome, fonte] of Object.entries(FONTES)) assert.doesNotMatch(fonte, proibido, nome);
-  assert.deepEqual(HTML.match(/<script\b[^>]*>/gi), ['<script type="module" src="app.js">'], 'one script, loaded by src');
-  assert.match(HTML, /<script type="module" src="app\.js"><\/script>/, 'and nothing written inside it');
-  for (const tag of HTML.match(/<[a-z][^>]*>/gi)) assert.doesNotMatch(tag, /\son[a-z]+\s*=/i, tag);
-});
 
 test('E1-06b: no outside address and no embedded image; every pixel matrix is rectangular and uses only its own palette', async () => {
   for (const [nome, fonte] of Object.entries(FONTES)) assert.doesNotMatch(fonte, /https?:\/\/|data:image|@import|url\(/i, nome);
@@ -175,29 +172,24 @@ test('E1-06c: the page has the list of agents and the page texts of §6, in PT-B
   assert.match(t('motivo'), /Sem acesso ao banco\./);
 });
 
-test('E1-06d: the opening sentence of §6 is in the static HTML of index.html, outside <script>, and starts visible', () => {
-  assert.equal(TEXTOS.abrindo, ABRINDO);
-  const estatico = HTML.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '');
-  assert.ok(estatico.includes(`>${ABRINDO}</p>`), 'the sentence, letter by letter, as the text of a paragraph');
-  const doc = documento();
-  assert.deepEqual([doc.getElementById('abertura').hidden, doc.getElementById('pagina').hidden], [false, true], 'without JavaScript only the sentence shows');
-});
-
 test('E1-06 (rules 16, 18, 28): sprites and scene draw every status, a delivery and a celebration on a fake 2D context', () => {
+  // The room without anybody: what a frame paints beyond it is what the agents bring.
+  const vazia = pintar(ler(estado()), []);
+  const dosAgentes = (chamadas) => aMais(chamadas, vazia);
   const parada = sala('idle');
-  for (const cor of [CORES.verde, CORES.ambar, CORES.vermelho]) assert.ok(!tem(parada, cor), `an idle room has no ${cor}`);
-  assert.ok(!tem(pintar([]), CORES.madeira) && tem(parada, CORES.madeira), 'a desk only where there is an agent');
+  for (const cor of [CORES.verde, CORES.ambar, CORES.vermelho]) assert.ok(!tem(dosAgentes(parada), cor), `idle agents bring no ${cor}`);
+  assert.ok(!tem(vazia, CORES.madeira) && tem(parada, CORES.madeira), 'a desk only where there is an agent');
   assert.ok(parada.filter((c) => c.cor === CORES.madeira).every((c) => c.args[0] < 3 * LARGURA_COLUNA));
-  assert.ok(tem(sala('working'), CORES.verde) && aMais(sala('working'), sala('working', {}, 250)).some((c) => c.cor === CORES.verde), 'lit monitor, lines running');
-  assert.deepEqual([0, 500].map((ms) => tem(sala('checkpoint', { estado: { status: 'checkpoint' } }, ms), CORES.ambar)), [true, false], 'amber, blinking once a second');
-  assert.ok(tem(sala('checkpoint', { estado: { status: 'checkpoint' }, reduzirMovimento: true }, 500), CORES.ambar), 'amber stays on with reduced motion');
+  assert.ok(tem(dosAgentes(sala('working')), CORES.verde) && aMais(sala('working'), sala('working', {}, 250)).some((c) => c.cor === CORES.verde), 'lit monitor, lines running');
+  assert.deepEqual([0, 500].map((ms) => tem(dosAgentes(sala('checkpoint', { estado: { status: 'checkpoint' } }, ms)), CORES.ambar)), [true, false], 'amber, blinking once a second');
+  assert.ok(tem(dosAgentes(sala('checkpoint', { estado: { status: 'checkpoint' }, reduzirMovimento: true }, 500)), CORES.ambar), 'amber stays on with reduced motion');
   // done, failed and "no signal" are the idle drawing plus a sign over the head (and the red monitor).
   for (const [status, cor, opcoes] of [['done', CORES.verde], ['failed', CORES.vermelho], ['working', CORES.branco, { estado: { updatedAt: haMin(21) } }]]) {
     const sinal = aMais(sala(status, opcoes), parada).filter(acimaDaCabeca);
     assert.ok(sinal.length > 0 && tem(sinal, cor), `${status}: a sign of its own over the head`);
     assert.deepEqual(aMais(sala(status, opcoes), parada).filter((c) => !acimaDaCabeca(c) && c.cor !== CORES.vermelho && c.cor !== CORES.tinta), [], status);
   }
-  const pulado = pintar(quadro(ler(estado({ agentes: ['idle', 'idle', 'skipped'] })), AGORA)).filter((c) => c.alfa < 1);
+  const pulado = pintar(ler(estado({ agentes: ['idle', 'idle', 'skipped'] }))).filter((c) => c.alfa < 1);
   assert.ok(pulado.length > 0 && pulado.every((c) => c.args[0] >= MESAS[2].boneco.x && c.args[0] + c.args[2] <= MESAS[2].boneco.x + BONECO), 'only the skipped figure is half transparent');
   // Depth: who sits is painted before the own desk; who delivers stands in front of the other desk.
   const [camisa, mesa] = [(f) => f.findIndex((c) => c.cor === CAMISAS[0]), (f) => f.map((c) => c.cor).lastIndexOf(CORES.madeira)];
@@ -205,25 +197,27 @@ test('E1-06 (rules 16, 18, 28): sprites and scene draw every status, a delivery 
   const antes = transicao(null, ler(estado({ agentes: ['working'] })), AGORA);
   const entrega = transicao(antes, ler(estado({ agentes: ['done', 'idle', 'working'], handoff: passagem('a1', 'a3') })), AGORA);
   const vistos = new Set();
-  for (let ms = 0; ms <= 4200; ms += 50) {
+  for (let ms = 0; ms <= ENTREGA_MS + 200; ms += 50) {
     const bonecos = quadro(entrega, AGORA + ms);
-    pintar(bonecos);
+    pintar(entrega, bonecos);
     vistos.add(`${bonecos[0].pose}${bonecos[0].papel ? ' com papel' : ''}${bonecos[0].espelhado ? ' espelhado' : ''}`);
   }
-  for (const visto of ['andar-a com papel', 'andar-b com papel', 'andar-a espelhado', 'andar-b espelhado', 'parado']) assert.ok(vistos.has(visto), visto);
-  const naFrente = pintar(quadro(entrega, AGORA + 1990));
+  for (const visto of ['andar-a com papel', 'andar-b com papel', 'parado com papel', 'andar-a espelhado', 'andar-b espelhado', 'parado']) assert.ok(vistos.has(visto), visto);
+  const naFrente = pintar(entrega, quadro(entrega, AGORA + IDA_MS + 100));
   assert.ok(camisa(naFrente) > mesa(naFrente));
   assert.deepEqual([parada, naFrente].map((f) => f.filter((c) => c.cor === CORES.junta && c.args[2] === 8).length), [0, 1], 'a shadow on the floor only under who stands');
-  const festa = transicao(entrega, ler(estado({ status: 'completed', agentes: ['done', 'done', 'done'] })), AGORA + 5000);
-  const bracos = [5000, 5300].map((ms) => pintar(quadro(festa, AGORA + ms)).filter((c) => c.cor === CORES.tinta && c.args[0] === MESAS[0].boneco.x).length);
+  const festa = transicao(entrega, ler(estado({ status: 'completed', agentes: ['done', 'done', 'done'] })), AGORA + 12000);
+  const bracos = [12000, 12300].map((ms) => aMais(pintar(festa, quadro(festa, AGORA + ms)), vazia).filter((c) => c.cor === CORES.tinta && c.args[0] === MESAS[0].boneco.x).length);
   assert.deepEqual(bracos, [1, 0], 'who celebrates raises both arms, then lowers them');
-  pintar(quadro(ler(estado({ agentes: Array(14).fill('working') })), AGORA));
+  // Every room paints, full: 3, 6, 9 and 14 agents.
+  for (const n of [3, 6, 9, 14]) pintar(ler(estado({ agentes: Array(n).fill('working') })));
 });
 
 test('E1-06 (rule 16): the loop paints at a whole-number scale, without smoothing, and only when the frame changes', () => {
   const pedidos = [];
   const janela = { requestAnimationFrame: (fn) => pedidos.push(fn) };
-  const tela = Object.assign(elemento('tela'), { width: LARGURA * 3, height: ALTURA * 3 });
+  const LARGURA = SALAS.pequena.largura;
+  const tela = Object.assign(elemento('tela'), { width: LARGURA * 3, height: SALAS.pequena.altura * 3 });
   let [bonecos, pintados] = [null, 0];
   animar(janela, tela, () => bonecos, () => { pintados += 1; });
   const rodar = () => { assert.equal(pedidos.length, 1, 'one frame asked at a time'); pedidos.shift()(0); return pintados; };
@@ -242,7 +236,7 @@ test('E1-06 (rule 16): the loop paints at a whole-number scale, without smoothin
   assert.equal(pedidos.length, 1, 'a broken frame does not stop the loop');
 });
 
-test('E1-06 (rule 19): name and balloon are text over the canvas, placed in percent of 320×180, one column wide', () => {
+test('E1-06 (rule 19): name and balloon are text over the canvas, placed in percent of the screen of the room, one column wide', () => {
   assert.match(HTML, /<div class="rotulos" id="rotulos" aria-hidden="true">/);
   assert.match(HTML, /\.rotulos span \{[^}]*text-overflow: ellipsis/);
   assert.match(HTML, /image-rendering: pixelated/);
@@ -250,21 +244,25 @@ test('E1-06 (rule 19): name and balloon are text over the canvas, placed in perc
   const camada = doc.getElementById('rotulos');
   const rotulos = criarRotulos(camada, doc);
   const modelo = ler(estado({ agentes: Array(14).fill('working'), step: { current: 2, total: 5, label: '<i>Escrever</i>' } }));
-  rotulos.atualizar(modelo.agentes);
+  const { largura: LARGURA, altura: ALTURA, mesas } = modelo.ambiente.sala;
+  assert.equal(modelo.ambiente.sala, SALAS.completa);
+  rotulos.atualizar(modelo.agentes, modelo.ambiente.sala);
   const [nomes, baloes] = ['nome', 'balao'].map((classe) => camada.children.filter((el) => el.className.split(' ').includes(classe)));
   assert.deepEqual([nomes.length, baloes.length, camada.children.length], [12, 12, 24], 'only who has a desk');
   const logico = (porcento, total) => Math.round((parseFloat(porcento) * total) / 100 * 1000) / 1000;
-  MESAS.forEach((m, i) => {
+  mesas.forEach((m, i) => {
     assert.deepEqual([textoDe(nomes[i]), textoDe(baloes[i])], [`Agente ${i + 1}`, '<i>Escrever</i>']);
-    assert.deepEqual([logico(nomes[i].style.left, LARGURA), logico(nomes[i].style.top, ALTURA), nomes[i].style.width], [m.nome.x - LARGURA_COLUNA / 2, m.nome.y, '25%']);
-    assert.deepEqual([logico(baloes[i].style.left, LARGURA), ALTURA - logico(baloes[i].style.bottom, ALTURA), baloes[i].style.width], [m.balao.x - LARGURA_COLUNA / 2, m.balao.y, '25%']);
+    assert.deepEqual([logico(nomes[i].style.left, LARGURA), logico(nomes[i].style.top, ALTURA), nomes[i].style.width], [m.nome.x - LARGURA_COLUNA / 2, m.nome.y, '20%']);
+    assert.deepEqual([logico(baloes[i].style.left, LARGURA), ALTURA - logico(baloes[i].style.bottom, ALTURA), baloes[i].style.width], [m.balao.x - LARGURA_COLUNA / 2, m.balao.y, '20%']);
   });
-  // The name of the desk a delivery stops at gives way while the figure stands on it.
+  // The name of the desk a delivery stops at gives way while the figure stands on it; and the status
+  // balloon of who receives gives way while it says the label of the step (the first 3 s) and during
+  // the conversation (E3, rules 2 and 3).
   const antes = transicao(null, ler(estado({ agentes: ['working'] })), AGORA);
   const entrega = transicao(antes, ler(estado({ agentes: ['done', 'idle', 'working'], handoff: passagem('a1', 'a3') })), AGORA);
-  rotulos.atualizar(entrega.agentes);
+  rotulos.atualizar(entrega.agentes, entrega.ambiente.sala);
   const apagados = (ms) => { rotulos.acompanhar(quadro(entrega, AGORA + ms)); return camada.children.filter((el) => el.style.opacity).map(textoDe); };
-  assert.deepEqual([apagados(0), apagados(1990), apagados(4100)], [[], ['Agente 3'], []]);
+  assert.deepEqual([apagados(0), apagados(IDA_MS + 100), apagados(ENTREGA_MS + 100)], [['Escrever'], ['Agente 3', 'Escrever'], []]);
 });
 
 test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on without a server and hides the opening sentence only after the first drawing', async () => {
@@ -280,7 +278,7 @@ test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on with
   await new Promise((ok) => setImmediate(ok));
   assert.deepEqual([t('aviso'), t('frase'), t('abertura'), t('pagina')], [SEM_SERVIDOR, DEMONSTRACAO, ABRINDO, ''], 'no server: the page shows, with the demo, the warning and still the sentence');
   quadros.shift()(0);
-  assert.deepEqual([t('abertura'), doc.getElementById('tela').width, doc.getElementById('sala').style.width], [null, LARGURA * 3, '960px']);
+  assert.deepEqual([t('abertura'), doc.getElementById('tela').width, doc.getElementById('sala').style.width], [null, SALAS.media.largura * 3, '960px'], 'the demo has a cast of 5: the medium room');
   assert.deepEqual(intervalos.map(([, ms]) => ms), [1000]);
   await denovo();
   assert.deepEqual([t('aviso'), t('frase'), t('crew'), doc.getElementById('seletor').children.map((o) => o.value)], [null, null, 'alfa', ['alfa', 'beta']]);

@@ -1,14 +1,15 @@
 // O painel em volta do desenho: o nome da crew, o passo com a barra de progresso, os avisos, a
-// faixa do checkpoint, a última passagem de bastão, o seletor de crews e a lista dos agentes
-// (regras 22 a 24 e 29). Tudo o que vem do estado — nome, rótulo, mensagem, motivo — entra por
+// faixa do checkpoint, a última passagem de bastão com o botão "Rever entrega", o seletor de
+// crews e a lista dos agentes (regras 22 a 24 e 29 da E1; regra 7 da E3). Tudo o que vem do estado — nome, rótulo, mensagem, motivo — entra por
 // `textContent`: é texto, nunca marcação. Cada parte só é reescrita quando muda.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 18 e 20 a 24 (repositório do OpenCrew).
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 18 e 20 a 24, e fase-e3-conversa-e-entrega.md,
+// regras 1 e 7 (repositório do OpenCrew).
 import { TEXTOS } from './modelo.js';
 
 /** Os elementos de `index.html` que o painel escreve. */
 const IDS = [
   'pagina', 'crew', 'situacao', 'passo', 'barra', 'barra-feito', 'barra-atual', 'barra-resto', 'aviso', 'frase',
-  'faixa', 'etiqueta', 'parada', 'motivo', 'passagem', 'lista', 'seletor', 'seletor-caixa',
+  'faixa', 'etiqueta', 'parada', 'motivo', 'passagem', 'rever', 'lista', 'seletor', 'seletor-caixa',
 ];
 /** A situação da execução, por extenso. */
 const SITUACAO = Object.freeze({ running: 'Em andamento', checkpoint: TEXTOS.aguardando, completed: 'Concluída', failed: 'Falhou' });
@@ -63,12 +64,15 @@ const textoDaPassagem = ({ de, para, mensagem }) => `Última passagem de bastão
  * O painel da página.
  * @param {object} documento a página (`getElementById`, `createElement`, `title`)
  * @param {(crew: string) => void} aoEscolher chamada quando o usuário troca de crew no seletor
+ * @param {() => void} [aoRever] chamada quando o usuário aciona "Rever entrega" (o botão só
+ *   aparece quando há passagem de bastão; por ser um botão de verdade, Enter e espaço valem o clique)
  * @returns {{ atualizar: (modelo: object) => void }} `atualizar` recebe o que `montarPagina` devolveu
  */
-export function criarPainel(documento, aoEscolher) {
+export function criarPainel(documento, aoEscolher, aoRever = () => {}) {
   const el = Object.fromEntries(IDS.map((id) => [id, documento.getElementById(id)]));
   const escrito = { crews: '', agentes: '' };
   el.seletor.addEventListener('change', () => aoEscolher(el.seletor.value));
+  el.rever.addEventListener('click', () => aoRever());
 
   /** A barra em três partes: passos feitos, o passo atual e o que falta. */
   function progresso({ passo, execucao }) {
@@ -112,6 +116,7 @@ export function criarPainel(documento, aoEscolher) {
     escrever(el.parada, modelo.parada);
     escrever(el.motivo, modelo.motivo && `Motivo da falha: ${modelo.motivo}`);
     escrever(el.passagem, modelo.passagem && textoDaPassagem(modelo.passagem));
+    el.rever.hidden = !modelo.passagem;
     progresso(modelo);
     seletor(modelo);
     lista(modelo);

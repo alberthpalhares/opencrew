@@ -81,15 +81,17 @@ export function emExibicao(memoria, { demo = false } = {}) {
  * @param {boolean} [opcoes.reduzirMovimento] o sistema pede menos movimento
  * @param {boolean} [opcoes.demo] o endereço tem `?demo`
  * @param {number} [opcoes.decorridoDemoMs] tempo desde que a demonstração entrou na tela
+ * @param {{ horas: number, minutos?: number }} [opcoes.hora] a hora local de quem olha
+ * @param {unknown} [opcoes.periodo] o valor de `?periodo=` no endereço
  * @returns {object} o modelo de `montarModelo`, mais `modo` (`demo` ou `real`), `crews` (nomes
  *   para o seletor), `frase` (a da demonstração, ou `null`) e `aviso` (o "sem conexão" da §6,
  *   ou `null`)
  */
 export function montarPagina(memoria, opcoes = {}) {
-  const { agoraMs, reduzirMovimento = false, decorridoDemoMs = 0 } = opcoes;
+  const { agoraMs, reduzirMovimento = false, decorridoDemoMs = 0, hora, periodo } = opcoes;
   const { modo, crew, estado, crews, frase } = emExibicao(memoria, opcoes);
   const demo = modo === 'demo';
   const semConexao = memoria.falhas > 0;
-  const modelo = montarModelo(demo ? estadoDaDemo(decorridoDemoMs) : estado, { agoraMs, reduzirMovimento, demo, semConexao, crew });
+  const modelo = montarModelo(demo ? estadoDaDemo(decorridoDemoMs) : estado, { agoraMs, reduzirMovimento, demo, semConexao, crew, hora, periodo });
   return { ...modelo, modo, crews, frase, aviso: semConexao ? TEXTOS.semServidor : null };
 }

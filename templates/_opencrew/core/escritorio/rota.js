@@ -1,36 +1,44 @@
-// O caminho de uma entrega (regra 28): do assento de quem entrega até a frente da mesa de quem
-// recebe, calculado direto da grade, sem busca de caminho. O boneco sai pelo corredor de trás da
-// própria mesa até o vão ao lado, anda pelo vão até o corredor da frente da mesa de destino e
-// segue por ele. Só trechos horizontais e verticais, em pixel lógico e inteiro; nenhum encosta
-// num tampo nem passa por cima de um colega sentado.
+// O caminho de uma entrega (regra 28 da E1): do assento de quem entrega até a frente da mesa de
+// quem recebe, calculado direto da grade da sala, sem busca de caminho. O boneco sai pelo corredor
+// de trás da própria mesa até o vão ao lado e anda pelo vão; o trecho comprido na horizontal é
+// sempre pelo corredor da frente da linha de cima das duas mesas, que é a que está cheia. Assim
+// nenhum trecho passa por célula sem mesa, que é onde ficam os móveis (regra 15 da E3). Só
+// trechos horizontais e verticais, em pixel lógico e inteiro; nenhum encosta num tampo nem passa
+// por cima de um colega sentado.
 // Puro: sem DOM, sem relógio, sem rede.
-// Spec: fase-e1-escritorio-ao-vivo.md, regra 28 (repositório do OpenCrew).
-import { VAOS_X, mesaDe } from './modelo-mesas.js';
+// Spec: fase-e1-escritorio-ao-vivo.md, regra 28, e fase-e3-conversa-e-entrega.md, regras 14 e 15
+// (repositório do OpenCrew).
 
 /**
- * Índice (em `VAOS_X`) do vão por onde a entrega passa: o vizinho da coluna de origem, do lado
- * do destino. Na mesma coluna, o da direita; na última coluna, o da esquerda.
+ * O x do vão vizinho da coluna `coluna`, do lado da coluna `outra`. Na mesma coluna, o da
+ * direita; na última coluna, o da esquerda.
  */
-function vaoDe(origem, destino) {
-  if (destino > origem) return origem;
-  if (destino < origem) return origem - 1;
-  return origem < VAOS_X.length ? origem : origem - 1;
+function vaoDe({ vaosX }, coluna, outra) {
+  if (outra > coluna) return vaosX[coluna];
+  if (outra < coluna) return vaosX[coluna - 1];
+  return vaosX[coluna < vaosX.length ? coluna : coluna - 1];
 }
 
 /**
- * A rota entre duas mesas, pelo canto superior esquerdo do boneco.
- * @param {number} de índice da mesa de quem entrega (0 a 11)
- * @param {number} para índice da mesa de quem recebe (0 a 11)
- * @returns {{ x: number, y: number }[] | null} quatro pontos: o assento de quem entrega, a
- *   entrada do vão, a saída do vão e a frente da mesa de quem recebe; `null` se uma das mesas
- *   não existe
+ * A rota entre duas mesas de uma sala, pelo canto superior esquerdo do boneco.
+ * @param {object} sala uma de `SALAS`
+ * @param {number} de índice da mesa de quem entrega
+ * @param {number} para índice da mesa de quem recebe
+ * @returns {{ x: number, y: number }[] | null} os pontos da rota: o assento de quem entrega, a
+ *   entrada do vão, a saída do vão e a frente da mesa de quem recebe; quando quem recebe está
+ *   numa linha abaixo e em outro vão, mais dois pontos, pelo corredor da frente da linha de quem
+ *   entrega · `null` se a sala ou uma das mesas não existe
  */
-export function rota(de, para) {
-  const origem = mesaDe(de);
-  const destino = mesaDe(para);
+export function rota(sala, de, para) {
+  const origem = sala?.mesas?.[de];
+  const destino = sala?.mesas?.[para];
   if (!origem || !destino) return null;
-  const x = VAOS_X[vaoDe(origem.coluna, destino.coluna)];
-  return [{ ...origem.boneco }, { x, y: origem.boneco.y }, { x, y: destino.frente.y }, { ...destino.frente }];
+  const saida = vaoDe(sala, origem.coluna, destino.coluna);
+  const chegada = destino.linha > origem.linha ? vaoDe(sala, destino.coluna, origem.coluna) : saida;
+  const inicio = [{ ...origem.boneco }, { x: saida, y: origem.boneco.y }];
+  const fim = [{ x: chegada, y: destino.frente.y }, { ...destino.frente }];
+  if (chegada === saida) return [...inicio, ...fim];
+  return [...inicio, { x: saida, y: origem.frente.y }, { x: chegada, y: origem.frente.y }, ...fim];
 }
 
 const trechos = (pontos) => pontos.slice(1).map((fim, i) => [pontos[i], fim]);

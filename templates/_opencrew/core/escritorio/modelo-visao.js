@@ -1,9 +1,11 @@
 // O modelo de uma leitura: do estado bruto de uma crew ao que a página desenha e escreve.
 // A hora atual e o "reduzir movimento" entram por parâmetro; nada aqui lê relógio.
 // Puro: sem DOM, sem relógio, sem rede.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 18, 21, 24 e 29 (repositório do OpenCrew).
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 18, 21, 24 e 29, e fase-e3-conversa-e-entrega.md,
+// regras 13 e 19 (repositório do OpenCrew).
 import { normalizar } from './modelo-estado.js';
 import { verAgente } from './modelo-agentes.js';
+import { montarAmbiente } from './modelo-ambiente.js';
 import { textoFaixa, textoParada, textoPasso, textoSemSinal, titulo } from './modelo-textos.js';
 
 const MINUTO = 60000;
@@ -42,10 +44,10 @@ function verPassagem({ handoff, agents }) {
 
 const SEM_ESTADO = Object.freeze({ semEstado: true, crew: '', execucao: null, passo: null, faixa: null, parada: null, passagem: null, motivo: null });
 
-function verEstado(estado, { parada, semSinal }, reduzirMovimento) {
+function verEstado(estado, { parada, semSinal }, reduzirMovimento, { sala }) {
   const { current, total, label } = estado.step;
   const contagem = textoPasso(current, total);
-  const contexto = { execucao: estado.status, semSinal, reduzirMovimento, balaoDoPasso: label || contagem };
+  const contexto = { execucao: estado.status, semSinal, reduzirMovimento, sala, balaoDoPasso: label || contagem };
   return {
     semEstado: false,
     crew: estado.crew,
@@ -68,24 +70,29 @@ function verEstado(estado, { parada, semSinal }, reduzirMovimento) {
  * @param {boolean} [opcoes.demo] o estado é o da demonstração
  * @param {boolean} [opcoes.semConexao] a última consulta ao servidor falhou
  * @param {string} [opcoes.crew] o nome com que o servidor lista a crew; vale mais que o do estado
+ * @param {{ horas: number, minutos?: number }} [opcoes.hora] a hora local de quem olha; sem ela é dia
+ * @param {unknown} [opcoes.periodo] o valor de `?periodo=`, que vale no lugar da hora
  * @returns {object} `{ semEstado, demo, semConexao, reduzirMovimento, titulo, crew, execucao,
- *   passo, faixa, parada, agentes, passagem, motivo }` · `semEstado`: a entrada não era um
+ *   passo, faixa, parada, agentes, passagem, motivo, ambiente }` · `semEstado`: a entrada não era um
  *   estado (aí `agentes` é vazio e o resto, `null`) · `execucao`: `running`, `checkpoint`,
  *   `completed` ou `failed` · `passo`: `{ atual, total, rotulo, contagem }` · `faixa`: o texto do
  *   checkpoint ou `null` · `parada`: "Última atualização há …" ou `null` · `agentes`: todos, na
  *   ordem do elenco (ver `verAgente`); é a lista ao lado do desenho, e quem tem `mesa` é
  *   desenhado · `passagem`: `{ de, para, mensagem, deId, paraId, completedAt }` ou `null` ·
- *   `motivo`: só em execução `failed`
+ *   `motivo`: só em execução `failed` · `ambiente`: a sala do elenco, o cenário dela, o período do
+ *   dia e o relógio (ver `montarAmbiente`); sem estado, a sala Pequena, vazia
  */
 export function montarModelo(bruto, opcoes = {}) {
-  const { reduzirMovimento = false, demo = false, semConexao = false } = opcoes;
+  const { reduzirMovimento = false, demo = false, semConexao = false, hora = null, periodo = null } = opcoes;
   const base = { demo, semConexao, reduzirMovimento };
   const lido = normalizar(bruto);
-  if (!lido) return { ...SEM_ESTADO, ...base, agentes: [], titulo: titulo(null) };
+  if (!lido) return { ...SEM_ESTADO, ...base, agentes: [], titulo: titulo(null), ambiente: montarAmbiente({ hora, periodo }) };
   const estado = { ...lido, crew: opcoes.crew || lido.crew };
+  const ambiente = montarAmbiente({ total: estado.agents.length, crew: estado.crew, hora, periodo });
   return {
-    ...verEstado(estado, sinais(estado, opcoes), reduzirMovimento),
+    ...verEstado(estado, sinais(estado, opcoes), reduzirMovimento, ambiente),
     ...base,
+    ambiente,
     titulo: titulo(estado, { demo, semConexao }),
   };
 }

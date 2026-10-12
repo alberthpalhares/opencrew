@@ -87,6 +87,14 @@ function misturar(h) {
 const trecho = (h, de, bits) => (h >>> de) & ((1 << bits) - 1);
 
 /**
+ * A semente de um texto, já espalhada: é dela que sai a aparência de cada agente (pelo `id`) e o
+ * arranjo dos móveis da sala (pelo nome da crew). O mesmo texto dá sempre o mesmo número.
+ */
+export function sementeDe(texto) {
+  return misturar(semente(String(texto)));
+}
+
+/**
  * A aparência do boneco. Cada escolha sai de um trecho diferente da semente do `id`, já
  * espalhada: molde, bit 4 · pele, bits 5 a 7 · corte, 8 a 11 · olhos, 12 e 13 · cabelo, 14 a 21.
  * @param {string} id

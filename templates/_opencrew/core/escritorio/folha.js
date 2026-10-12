@@ -1,13 +1,17 @@
-// A folha de conferência dos personagens (`?folha=1` no endereço do escritório): todos os cortes
-// dos dois moldes, nas 8 peles, com as cores de cabelo e de olhos variando, e uma fileira com as
-// poses de um corte com volume de cada molde. Serve para conferir os desenhos de uma vez, com o
-// olho — nenhum teste vê desenho. Não lê o estado nem dado nenhum do projeto, e não usa a rede.
+// A folha de conferência (`?folha=1` no endereço do escritório): as quatro salas, de dia e de
+// noite (a parte delas está em `folha-salas.js`), e os personagens — todos os cortes dos dois
+// moldes, nas 8 peles, com as cores de cabelo e de olhos variando, e uma fileira com as poses de um
+// corte com volume de cada molde. `?folha=salas` mostra só as salas; `?folha=personagens`, só os
+// personagens. Serve para conferir os desenhos de uma vez, com o olho — nenhum teste vê desenho.
+// Não lê o estado nem dado nenhum do projeto, e não usa a rede.
 // `planoDaFolha` é puro; só `abrirFolha` toca no documento, e escreve os rótulos como texto.
-// Spec: fase-e2-personagens-do-escritorio.md, §5 (repositório do OpenCrew).
+// Spec: fase-e2-personagens-do-escritorio.md, §5, e fase-e3-conversa-e-entrega.md, regra 18
+// (repositório do OpenCrew).
 import { CABELOS, CAMISAS, MOLDES, OLHOS, PELES, corDistinta } from './modelo-personagem.js';
 import { CORES, retangulos } from './sprites.js';
 import { NOMES_DOS_CORTES } from './sprites-rosto.js';
 import { coresDoBoneco, linhasDoBoneco } from './sprites-boneco.js';
+import { secaoDasSalas } from './folha-salas.js';
 
 /** O boneco tem 16 pixels de lado; entre um e outro, e em volta, ficam 4. */
 const LADO = 16;
@@ -18,8 +22,10 @@ const ESCALA = 4;
 const VOLUMOSO = 2;
 const TITULOS = Object.freeze({ feminino: 'Feminino', masculino: 'Masculino' });
 const TEXTOS = Object.freeze({
-  titulo: 'Folha de conferência dos personagens',
-  nota: 'Cada linha é um corte de cabelo, nas 8 peles, da mais clara à mais escura; a última linha de cada molde mostra as poses. Para voltar ao escritório, tire ?folha do endereço.',
+  titulo: 'Folha de conferência do escritório',
+  nota: 'As salas e os personagens, para conferir os desenhos de uma vez. Com ?folha=salas aparecem só as salas; com ?folha=personagens, só os personagens. Para voltar ao escritório, tire ?folha do endereço.',
+  personagens: 'Personagens',
+  notaDosPersonagens: 'Cada linha é um corte de cabelo, nas 8 peles, da mais clara à mais escura; a última linha de cada molde mostra as poses.',
   poses: (corte) => `Poses (${corte.toLowerCase()})`,
   desenho: (molde, rotulo) => `Bonecos em pixel-art: ${molde}, ${rotulo}.`,
 });
@@ -93,11 +99,32 @@ function tela(documento, titulo, { rotulo, bonecos }) {
   return el;
 }
 
+/** A seção de um molde: uma linha de bonecos por corte e a linha das poses. */
+function secaoDoMolde(documento, { titulo, linhas }) {
+  const secao = criar(documento, 'section', 'folha-molde');
+  secao.append(criar(documento, 'h4', 'folha-sala', titulo));
+  for (const linha of linhas) {
+    const fila = criar(documento, 'div', 'folha-linha');
+    fila.append(criar(documento, 'span', 'folha-rotulo', linha.rotulo), tela(documento, titulo, linha));
+    secao.append(fila);
+  }
+  return secao;
+}
+
+function secaoDosPersonagens(documento) {
+  const secao = criar(documento, 'section', 'folha-personagens');
+  secao.append(criar(documento, 'h3', 'folha-nome', TEXTOS.personagens), criar(documento, 'p', 'nota', TEXTOS.notaDosPersonagens));
+  secao.append(...planoDaFolha().map((molde) => secaoDoMolde(documento, molde)));
+  return secao;
+}
+
 /**
  * Põe a folha na página, no lugar do escritório (que fica escondido).
  * @param {Window} janela a janela do navegador (nos testes, uma de mentira)
+ * @param {string|null} [parte] o valor de `?folha=`: `salas` ou `personagens` mostra só essa
+ *   parte; qualquer outro valor (`1`, vazio), as duas, as salas primeiro
  */
-export function abrirFolha(janela) {
+export function abrirFolha(janela, parte = null) {
   const documento = janela.document;
   for (const id of ['abertura', 'pagina']) {
     const el = documento.getElementById(id);
@@ -105,15 +132,7 @@ export function abrirFolha(janela) {
   }
   const folha = criar(documento, 'main', 'folha');
   folha.append(criar(documento, 'h2', 'folha-titulo', TEXTOS.titulo), criar(documento, 'p', 'nota', TEXTOS.nota));
-  for (const { titulo, linhas } of planoDaFolha()) {
-    const secao = criar(documento, 'section', 'folha-molde');
-    secao.append(criar(documento, 'h3', 'folha-nome', titulo));
-    for (const linha of linhas) {
-      const fila = criar(documento, 'div', 'folha-linha');
-      fila.append(criar(documento, 'span', 'folha-rotulo', linha.rotulo), tela(documento, titulo, linha));
-      secao.append(fila);
-    }
-    folha.append(secao);
-  }
+  if (parte !== 'personagens') folha.append(secaoDasSalas(documento, criar));
+  if (parte !== 'salas') folha.append(secaoDosPersonagens(documento));
   documento.body.append(folha);
 }

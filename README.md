@@ -418,8 +418,9 @@ Quem já usa o OpenCrew recebe o documento Word com um `npx @aksp/opencrew@lates
 
 Quer ver a equipe trabalhando? O **Escritório** é uma página em pixel-art, aberta no navegador,
 em que cada agente tem a sua mesa: digita quando é a vez dele, leva o papel ao colega na passagem
-de bastão e levanta a mão quando espera uma resposta sua. Ao lado do desenho ficam o passo atual,
-a lista dos agentes (com o status por extenso e o que cada um fez) e a última passagem de bastão.
+de bastão — e os dois conversam — e levanta a mão quando espera uma resposta sua. Ao lado do
+desenho ficam o passo atual, a lista dos agentes (com o status por extenso e o que cada um fez) e
+a última passagem de bastão.
 
 **Como abrir:** no chat da sua IDE, digite `/opencrew dashboard`. O comando liga o Escritório,
 sobe a página e mostra o endereço — `http://127.0.0.1:4747`, ou a porta livre seguinte. A próxima
@@ -452,6 +453,31 @@ O que vale saber antes de ligar:
 - **O Escritório nunca para a execução.** Se o aviso falhar, a crew segue trabalhando.
 - **Até 12 mesas.** Numa crew maior, os agentes a mais aparecem só na lista ao lado.
 
+**A entrega e as falas.** Quando um agente termina e passa o trabalho ao seguinte, o boneco dele
+levanta, anda até a mesa do colega com o papel, fala e volta: são cerca de 10 segundos (3 de ida,
+4 de conversa, 3 de volta). O que ele fala, num balão de fala, é a mensagem que a IA gravou
+naquele passo — nada é inventado pela página; sem mensagem, ele diz "Pronto, é com você.". Quem
+recebe responde "Deixa comigo.". No balão cabem 60 caracteres (o resto vira "…"); a mensagem
+inteira fica na linha "Última passagem de bastão", abaixo do desenho. Os bonecos também falam
+quando começam um passo (o nome do passo), quando a execução termina ("Pronto!") e quando algo
+falha ("Deu problema."). Como uma entrega acontece uma vez a cada vários minutos, o botão
+**Rever entrega**, ao lado daquela linha, roda a última de novo (vale Enter e espaço). Com a
+preferência "reduzir movimento" do sistema ninguém anda, mas as falas aparecem.
+
+**A sala tem o tamanho da crew.** São quatro salas, escolhidas pelo número de agentes do elenco:
+Pequena (1 a 3), Média (4 a 6), Grande (7 a 9) e Completa (10 a 12). Sala menor aparece maior na
+tela: numa crew de 3, os bonecos ficam bem mais visíveis. Cada sala tem os seus móveis — tapete,
+estante de livros, abajur, sofá ou poltronas, bebedouro, máquina de café, quadro branco, plantas —,
+e o arranjo sai do nome da crew: cada crew tem o "seu" escritório, sempre o mesmo. Numa janela
+com menos de 1.100 px de largura, a lista da equipe desce para baixo do desenho, para a sala usar
+a largura inteira.
+
+**Dia e noite.** O escritório segue o relógio do seu computador: manhã (6h às 9h59), dia (10h às
+16h59), entardecer (17h às 18h59) e noite (19h às 5h59). Muda o céu das janelas e, à noite, a
+sala escurece um pouco, os abajures acendem e os monitores ligados continuam com a cor cheia; o
+relógio da parede mostra a hora de verdade. Para ver um período fora de hora, ponha
+`?periodo=manha`, `?periodo=dia`, `?periodo=entardecer` ou `?periodo=noite` no fim do endereço.
+
 **Os personagens.** Cada agente tem o seu boneco: feminino ou masculino, com um de 5 cortes de
 cabelo, 8 tons de pele, 9 cores de cabelo e 4 cores de olhos. O mesmo agente tem sempre a mesma
 cara; só a camisa muda com a mesa. Quem diz se o boneco é feminino ou masculino é a crew: o
@@ -459,10 +485,13 @@ cara; só a camisa muda com a mesa. Quem diz se o boneco é feminino ou masculin
 nova já vem com ela preenchida pelo nome do agente). Numa crew sem a coluna, o Escritório escolhe
 um dos dois pelo `id` do agente — se a "Renata" sair com o boneco masculino, peça à IA para
 acrescentar a coluna. Pele, cabelo e olhos não se configuram: saem do `id`.
-Para ver todos os personagens de uma vez, abra o endereço do Escritório com `?folha=1` no fim.
 
-Quem já usa o OpenCrew recebe o Escritório, e os personagens novos, com um
-`npx @aksp/opencrew@latest update` (a aparência dos agentes que já existem muda uma vez).
+**Folha de conferência.** Para ver todos os desenhos de uma vez, abra o endereço do Escritório
+com `?folha=1` no fim: aparecem as quatro salas, vazias, de dia e de noite, e todos os
+personagens. `?folha=salas` mostra só as salas; `?folha=personagens`, só os personagens.
+
+Quem já usa o OpenCrew recebe o Escritório — com as salas, as falas e os personagens — com um
+`npx @aksp/opencrew@latest update` (a aparência dos agentes mudou uma vez, na 1.18.0).
 
 ---
 

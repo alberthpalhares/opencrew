@@ -3,6 +3,57 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.0] — 2026-10-12
+
+Fase E3: "Conversa e entrega visíveis, e escritório do tamanho da crew"
+(`specs/fase-e3-conversa-e-entrega.md`). Só a página do Escritório muda: o `state.json`, o runner e
+os comandos são os mesmos. Chega a quem já usa com um `npx @aksp/opencrew@latest update`; nenhum
+arquivo de crew é alterado.
+
+### Added
+- **Os bonecos falam.** Na passagem de bastão, quem entrega diz, num balão de fala, a mensagem que a
+  IA gravou naquele passo (sem mensagem: "Pronto, é com você."), e quem recebe responde "Deixa
+  comigo.". Quem começa um passo diz o nome dele; execução concluída, "Pronto!"; falha, "Deu
+  problema.". Nada é inventado pela página. O balão de fala tem rabicho, corta a mensagem em 60
+  caracteres (com "…"; a mensagem inteira continua na linha abaixo do desenho) e nunca sai da cena.
+- **Botão "Rever entrega".** Ao lado da linha "Última passagem de bastão": roda de novo, do início,
+  a entrega daquela passagem. Vale clique, Enter e espaço.
+- **Quatro salas, do tamanho da crew.** Pequena (1 a 3 agentes), Média (4 a 6), Grande (7 a 9) e
+  Completa (10 a 12). Sala menor aparece maior na tela: numa janela de 1024 px, o desenho de uma
+  crew de 3 passa da escala 1 para a 4.
+- **Móveis.** Tapete (dois padrões), estante de livros, abajur de chão, sofá, poltrona, mesa baixa,
+  bebedouro, máquina de café, quadro branco, quadro de parede e mais uma planta. O arranjo de cada
+  sala sai do nome da crew: a mesma crew tem sempre o mesmo escritório. Móvel de chão só fica onde
+  não há mesa, e ninguém passa por cima dele.
+- **Dia e noite.** O período sai da hora do computador de quem olha: manhã, dia, entardecer e noite.
+  Muda o céu das janelas; à noite a sala escurece um pouco, os abajures acendem e há lua e
+  estrelas. O relógio da parede mostra a hora de verdade, de 5 em 5 minutos. `?periodo=manha`,
+  `dia`, `entardecer` ou `noite` no endereço força um período.
+- **Folha de conferência das salas.** `?folha=1` agora mostra também as quatro salas vazias, com os
+  móveis, de dia e de noite; `?folha=salas` mostra só as salas e `?folha=personagens`, só os
+  personagens.
+
+### Changed
+- **A entrega dura cerca de 10 segundos** (eram 4): 3 de ida, 4 de conversa diante da mesa de quem
+  recebe e 3 de volta. O papel muda de mão quando quem recebe responde.
+- **Em janela com menos de 1.100 px de largura, a lista da equipe fica abaixo do desenho** (o limite
+  era 860 px), e a cena usa a largura inteira: numa janela de 1024 px a sala Grande passa da escala
+  1 para a 3.
+- **O caminho da entrega mudou** quando quem recebe está numa linha abaixo: o trecho comprido vai
+  pelo corredor da frente da linha de quem entrega, para não cruzar a área dos móveis.
+- Uma crew de até 6 agentes não aparece mais na sala de 12 mesas: aparece na sala do tamanho dela.
+- A demonstração ficou mais longa (66 s por volta): cada cena de entrega dura 11 s, para a conversa
+  caber inteira.
+- Com "reduzir movimento" ninguém anda, como antes; as duas falas da entrega aparecem assim mesmo.
+
+### Limites
+- A fala só existe se a IA gravou a mensagem do passo; e só a última entrega pode ser revista.
+- Na sala Completa (10 a 12 agentes) a tela é mais larga: em janela estreita ela fica numa escala
+  menor que a das outras salas.
+- Os móveis não se configuram: saem do nome da crew. Quando o elenco muda de faixa (de 3 para 4
+  agentes, por exemplo), a sala é outra e os móveis também.
+- O balão de quem entrega fica sobre a mesa de quem recebe enquanto ele fala.
+
 ## [1.18.0] — 2026-10-12
 
 Fase E2: "Personagens do escritório" (`specs/fase-e2-personagens-do-escritorio.md`). Chega a quem já

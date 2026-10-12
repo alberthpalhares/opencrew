@@ -1,8 +1,8 @@
 // O que cada agente mostra: a ação do boneco e o monitor (tabela da regra 18), o balão, a
 // aparência (que `modelo-personagem.js` calcula) e a linha dele na lista ao lado do desenho.
 // Puro: sem DOM, sem relógio, sem rede.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 18, 21 e 24 (repositório do OpenCrew).
-import { mesaDe } from './modelo-mesas.js';
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 18, 21 e 24, e fase-e3-conversa-e-entrega.md,
+// regra 14 (repositório do OpenCrew).
 import { aparencia } from './modelo-personagem.js';
 import { STATUS_TEXTO, TEXTOS } from './modelo-textos.js';
 
@@ -34,13 +34,13 @@ function balaoDe(acao, contexto) {
  * Um agente como a página o mostra.
  * @param {object} agente item de `agents` do estado normalizado (`personagem`, se a crew declarou)
  * @param {number} indice posição no elenco
- * @param {object} contexto `{ execucao, balaoDoPasso, semSinal, reduzirMovimento }`, em que
- *   `semSinal` é o texto "Sem sinal há …" ou `null`
+ * @param {object} contexto `{ execucao, balaoDoPasso, semSinal, reduzirMovimento, sala }`, em que
+ *   `semSinal` é o texto "Sem sinal há …" ou `null` e `sala` é a sala do elenco (uma de `SALAS`)
  * @returns {object} `{ id, indice, nome, icone, status, statusTexto, label, acao, monitor,
  *   monitorAnimado, balao, mesa, aparencia }` · `status`: o do arquivo · `acao`: o que o boneco
  *   faz (`idle`, `working`, `checkpoint`, `done`, `skipped`, `failed` ou `sem-sinal`) ·
  *   `monitor`: `apagado`, `aceso`, `ambar` ou `vermelho` · `balao`: texto ou `null` · `mesa`:
- *   a de `MESAS`, ou `null` do 13º em diante
+ *   a da sala, na posição do agente no elenco, ou `null` do 13º em diante
  */
 export function verAgente(agente, indice, contexto) {
   const acao = acaoDe(agente.status, contexto);
@@ -57,7 +57,7 @@ export function verAgente(agente, indice, contexto) {
     monitor: cor,
     monitorAnimado: animado && !contexto.reduzirMovimento,
     balao: balaoDe(acao, contexto),
-    mesa: mesaDe(indice),
+    mesa: contexto.sala.mesas[indice] ?? null,
     aparencia: aparencia(agente.id, indice, agente.personagem),
   };
 }

@@ -1,13 +1,15 @@
 // specs/fase-e1-escritorio-ao-vivo.md — E1-05 (a to e, k to m): the pure model of the office
 // page (rules 17 to 24 and 29), imported straight into Node — desks, what each status shows,
 // the list, "no signal", the tab title, which crew is on screen and the scripted demo.
+// Since phase E3 (specs/fase-e3-conversa-e-entrega.md, §2B) desks and gaps are those of the room of
+// the cast, and the 320×180 grid is the large room; the four rooms: tests/escritorio-salas.test.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  LARGURA, ALTURA, BONECO, LARGURA_COLUNA, MESAS, VAOS_X, mesas, CAMISAS, aparencia, TEXTOS, normalizar,
+  BONECO, LARGURA_COLUNA, MAX_MESAS, SALAS, salaDe, CAMISAS, aparencia, TEXTOS, normalizar,
   montarModelo, MEMORIA_INICIAL, consultar, escolher, emExibicao, montarPagina, ROTEIRO,
   DURACAO_DEMO_MS, estadoDaDemo,
 } from '../templates/_opencrew/core/escritorio/modelo.js';
@@ -31,45 +33,44 @@ const congelar = (v) => {
 };
 /** A valid `/estado` answer; each crew is [name, minutes since its update, extra fields]. */
 const resposta = (...crews) => ({ projeto: 'abc123abc123', crews: crews.map(([crew, min, extra]) => ({ crew, estado: estado({ crew, updatedAt: haMin(min), ...extra }) })) });
-const naTelaAgora = (m, opcoes) => {
-  const { modo, crew } = emExibicao(m, opcoes);
-  return [modo, crew];
-};
+const naTelaAgora = (m, opcoes) => [emExibicao(m, opcoes).modo, emExibicao(m, opcoes).crew];
 
 const caixa = (p) => ({ ...p, largura: BONECO, altura: BONECO });
 const cruzam = (a, b) => a.x < b.x + b.largura && b.x < a.x + a.largura && a.y < b.y + b.altura && b.y < a.y + a.altura;
-const naTela = (r) => r.x >= 0 && r.y >= 0 && r.x + (r.largura ?? 1) <= LARGURA && r.y + (r.altura ?? 1) <= ALTURA;
+const naTela = (sala) => (r) => r.x >= 0 && r.y >= 0 && r.x + (r.largura ?? 1) <= sala.largura && r.y + (r.altura ?? 1) <= sala.altura;
 /** The rectangle one pixel bigger on every side: not crossing it means a gap of at least 1 px. */
 const comFolga = (r) => ({ x: r.x - 1, y: r.y - 1, largura: r.largura + 2, altura: r.altura + 2 });
-const livre = (faixa) => MESAS.every((m) => !cruzam(comFolga(m.retangulo), faixa));
+const livre = (sala, faixa) => sala.mesas.every((m) => !cruzam(comFolga(m.retangulo), faixa));
 const pecas = (m) => [m.retangulo, caixa(m.boneco), caixa(m.frente)];
 const inteiros = (m) => [m.retangulo, m.boneco, m.frente, m.nome, m.balao].flatMap(Object.values).every(Number.isInteger);
 
-test('E1-05a: 1, 4, 5 and 12 agents — a 4-column grid inside 320×180, nothing overlapping, anchors in the own column', () => {
-  assert.deepEqual([LARGURA, ALTURA, BONECO, MESAS.length, mesas(14).length], [320, 180, 16, 12, 12]);
-  for (const n of [1, 4, 5, 12]) {
+test('E1-05a: 1, 4, 5, 9 and 12 agents — the grid of the room of that cast, nothing overlapping, anchors in the own column', () => {
+  assert.deepEqual([SALAS.grande.largura, SALAS.grande.altura, SALAS.grande.colunasDeMesa, BONECO, MAX_MESAS, SALAS.completa.mesas.length], [320, 180, 4, 16, 12, 12]);
+  for (const n of [1, 4, 5, 9, 12]) {
+    const sala = salaDe(n);
     const lista = ver(estado({ agents: elenco(n) })).agentes.map((a) => a.mesa);
-    assert.deepEqual(lista, mesas(n));
+    assert.deepEqual(lista, sala.mesas.slice(0, n));
     lista.forEach((m, i) => {
       const onde = `desk ${i + 1} of ${n}`;
-      assert.deepEqual([m.indice, m.coluna, m.linha], [i, i % 4, Math.floor(i / 4)], onde);
-      assert.ok([...pecas(m), m.nome, m.balao].every(naTela) && inteiros(m), `${onde}: inside the screen, whole pixels`);
+      assert.deepEqual([m.indice, m.coluna, m.linha], [i, i % sala.colunasDeMesa, Math.floor(i / sala.colunasDeMesa)], onde);
+      assert.ok([...pecas(m), m.nome, m.balao].every(naTela(sala)) && inteiros(m), `${onde}: inside the screen, whole pixels`);
       for (const p of [m.nome, m.balao, m.boneco, m.frente]) assert.equal(Math.floor(p.x / LARGURA_COLUNA), m.coluna, `${onde}: own column`);
       const [tampo, sentado, emPe] = pecas(m);
       assert.ok(!cruzam(comFolga(tampo), sentado) && !cruzam(comFolga(tampo), emPe) && !cruzam(sentado, emPe), `${onde}: seat, desk and front apart`);
-      for (const outra of lista.slice(i + 1)) {
-        assert.ok(!pecas(m).some((a) => pecas(outra).some((b) => cruzam(comFolga(a), b))), `${onde} overlaps desk ${outra.indice + 1}`);
-      }
+      for (const outra of lista.slice(i + 1)) assert.ok(!pecas(m).some((a) => pecas(outra).some((b) => cruzam(comFolga(a), b))), `${onde} overlaps desk ${outra.indice + 1}`);
     });
   }
 });
 
 test('E1-05a: the gaps between the desks fit a walking figure — behind and in front of every row, and between the columns', () => {
-  assert.deepEqual(VAOS_X.map((x) => (x + BONECO / 2) / LARGURA_COLUNA), [1, 2, 3], 'one gap in the middle of each pair of columns');
-  for (const x of VAOS_X) assert.ok(livre({ x, y: 0, largura: BONECO, altura: ALTURA }), `column gap at x ${x}`);
-  for (const m of MESAS.filter((mesa) => mesa.coluna === 0)) {
-    for (const y of [m.boneco.y, m.frente.y]) assert.ok(livre({ x: 0, y, largura: LARGURA, altura: BONECO }), `row ${m.linha + 1}, y ${y}`);
+  for (const sala of Object.values(SALAS)) {
+    const entreColunas = Array.from({ length: sala.colunasDeMesa - 1 }, (_, i) => i + 1);
+    assert.deepEqual(sala.vaosX.map((x) => (x + BONECO / 2) / LARGURA_COLUNA), entreColunas, `${sala.nome}: one gap in the middle of each pair of desk columns`);
+    for (const x of sala.vaosX) assert.ok(livre(sala, { x, y: 0, largura: BONECO, altura: sala.altura }), `${sala.nome}: column gap at x ${x}`);
+    const corredores = sala.mesas.filter((mesa) => mesa.coluna === 0).flatMap((m) => [m.boneco.y, m.frente.y]);
+    for (const y of corredores) assert.ok(livre(sala, { x: 0, y, largura: sala.largura, altura: BONECO }), `${sala.nome}: row corridor at y ${y}`);
   }
+  assert.deepEqual(SALAS.grande.vaosX.map((x) => (x + BONECO / 2) / LARGURA_COLUNA), [1, 2, 3]);
 });
 
 test('E1-05a: with 14 agents the last two have no desk and are still in the list', () => {

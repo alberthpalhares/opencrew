@@ -2,8 +2,11 @@
 // cada mesa, calculados pelo tempo decorrido. Nada aqui conta quadros: o mesmo modelo no mesmo
 // instante dá sempre o mesmo quadro, e o percurso cujo tempo já passou aparece terminado.
 // Puro: sem DOM, sem relógio, sem rede. A hora entra por parâmetro.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 18, 24 e 28 (repositório do OpenCrew).
-import { ANDAR_MS, COMEMORACAO_MS, DIGITAR_MS, IDA_MS, VOLTA_MS } from './animacao.js';
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 16, 18, 24 e 28, e fase-e3-conversa-e-entrega.md, §2
+// e regras 1 a 3, 6 e 8 (repositório do OpenCrew).
+import { ANDAR_MS, COMEMORACAO_MS, CONVERSA_MS, DIGITAR_MS, ENTREGA_MS, FALA_MS, IDA_MS, VOLTA_MS } from './animacao.js';
+import { falaFixa } from './modelo-falas.js';
+import { FALAS, cortarFala } from './modelo-textos.js';
 import { pontoDaRota, rota } from './rota.js';
 
 /**
@@ -59,16 +62,39 @@ function naMesa(agente, agoraMs, semMovimento) {
   };
 }
 
-/** Quem está no meio de uma entrega e o que muda no boneco dele; `null` se ninguém anda. */
-function caminhada(entrega, agentes, agoraMs) {
-  const ms = decorrido(entrega, IDA_MS + VOLTA_MS, agoraMs);
+/** A entrega em curso: quem entrega, quem recebe, há quanto tempo e o que é dito; `null` se não há. */
+function entregaEmCurso(modelo, agentes, agoraMs) {
+  const entrega = modelo?.animacao?.entrega ?? null;
+  const ms = decorrido(entrega, ENTREGA_MS, agoraMs);
   if (ms === null) return null;
   const [de, para] = [entrega.deId, entrega.paraId].map((id) => agentes.find((a) => a?.id === id));
-  if (!de?.mesa || !para?.mesa) return null;
-  const ida = rota(de.mesa.indice, para.mesa.indice);
-  const onde = ms <= IDA_MS ? pontoDaRota(ida, ms / IDA_MS) : pontoDaRota([...ida].reverse(), (ms - IDA_MS) / VOLTA_MS);
+  const ida = de?.mesa && para?.mesa ? rota(modelo.ambiente?.sala, de.mesa.indice, para.mesa.indice) : null;
+  if (!ida) return null;
+  const { passagem } = modelo;
+  const daPassagem = passagem?.deId === de.id && passagem.paraId === para.id ? cortarFala(passagem.mensagem) : '';
+  return { de, para, ms, ida, conversando: ms >= IDA_MS && ms < IDA_MS + CONVERSA_MS, mensagem: daPassagem || FALAS.entrega };
+}
+
+/** Quem entrega: anda até a frente da mesa de quem recebe, para ali durante a conversa, e volta. */
+function andar({ para, ms, ida, conversando }) {
+  const volta = ms - IDA_MS - CONVERSA_MS;
+  const parado = { ...ida.at(-1), espelhado: false, pose: 'parado' };
   const pose = fase(ms, ANDAR_MS) === 0 ? 'andar-a' : 'andar-b';
-  return { indice: de.indice, boneco: { ...onde, acao: 'entregando', pose, papel: ms < IDA_MS, sentado: false, destino: para.mesa.indice } };
+  const onde = conversando ? parado : { ...(volta < 0 ? pontoDaRota(ida, ms / IDA_MS) : pontoDaRota([...ida].reverse(), volta / VOLTA_MS)), pose };
+  return { ...onde, acao: 'entregando', papel: ms < IDA_MS + FALA_MS, sentado: false, destino: para.mesa.indice };
+}
+
+/**
+ * O que um agente fala agora e se o balão de status dele some. Na conversa da entrega fala
+ * primeiro quem entrega, depois quem recebe, e os dois ficam sem balão de status; fora dela vale a
+ * fala fixa do agente. Quem está andando não fala.
+ */
+function falar(agente, emCurso, modelo, agoraMs) {
+  const papel = emCurso?.de === agente ? 'de' : emCurso?.para === agente ? 'para' : null;
+  if (!papel || (!emCurso.conversando && papel === 'para')) return { fala: falaFixa(modelo.falas, agente.id, agoraMs), semBalao: false };
+  if (!emCurso.conversando) return { fala: modelo.reduzirMovimento ? falaFixa(modelo.falas, agente.id, agoraMs) : null, semBalao: false };
+  const vez = emCurso.ms < IDA_MS + FALA_MS ? 'de' : 'para';
+  return { fala: vez !== papel ? null : papel === 'de' ? emCurso.mensagem : FALAS.resposta, semBalao: true };
 }
 
 /** Comemora na própria mesa: braço levantado e um pulo, depois o molde, a cada 0,3 s. */
@@ -79,28 +105,29 @@ function comemorar(boneco, ms) {
 
 /**
  * O que a cena pinta num instante: um boneco por agente com mesa, na ordem do elenco.
- * @param {object} modelo o modelo de uma leitura; para haver entrega e comemoração, o que
+ * @param {object} modelo o modelo de uma leitura; para haver entrega, comemoração e falas, o que
  *   `transicao` devolveu
  * @param {number} agoraMs a hora, em milissegundos, no mesmo relógio passado a `transicao`
  * @returns {object[]} cada boneco: `{ id, indice, mesa, aparencia, acao, pose, papel, espelhado,
- *   sentado, x, y, destino, monitor, monitorFase }` · `acao`: a do modelo, ou `entregando`
- *   (durante os 4 s da entrega) ou `comemorando` (durante os 4 s da comemoração; quem foi pulado
- *   não comemora) · `pose`: uma de `POSES` · `papel`: leva o papel (só na ida) · `espelhado`:
- *   desenhar o molde virado para a esquerda · `sentado`: está na própria mesa · `x`, `y`: canto
- *   superior esquerdo do boneco, em pixel lógico inteiro · `destino`: índice da mesa de quem
- *   recebe, ou `null` · `monitor`: a cor a pintar agora (`apagado`, `aceso`, `ambar` ou
- *   `vermelho`) · `monitorFase`: 0 a 3, o passo das linhas do monitor aceso (0 se ele não anima)
- *   · com `modelo.reduzirMovimento`: pose fixa e todos sentados, sem entrega nem comemoração
+ *   sentado, x, y, destino, monitor, monitorFase, fala, semBalao }` · `acao`: a do modelo, ou
+ *   `entregando` (durante os 10 s da entrega) ou `comemorando` (durante os 4 s da comemoração; quem
+ *   foi pulado não comemora) · `pose`: uma de `POSES` · `papel`: leva o papel (na ida e enquanto
+ *   fala) · `espelhado`: desenhar o molde virado para a esquerda · `sentado`: está na própria mesa
+ *   · `x`, `y`: canto superior esquerdo do boneco, em pixel lógico inteiro · `destino`: índice da
+ *   mesa de quem recebe, ou `null` · `monitor`: a cor a pintar agora (`apagado`, `aceso`, `ambar`
+ *   ou `vermelho`) · `monitorFase`: 0 a 3, o passo das linhas do monitor aceso (0 se ele não
+ *   anima) · `fala`: o texto do balão de fala dele agora, ou `null` · `semBalao`: o balão de
+ *   status dele some (está na conversa de uma entrega) · com `modelo.reduzirMovimento`: pose fixa
+ *   e todos sentados, sem caminhada nem comemoração; as falas aparecem nos mesmos tempos
  */
 export function quadro(modelo, agoraMs) {
   const todos = Array.isArray(modelo?.agentes) ? modelo.agentes : [];
-  const { entrega = null, comemoracao = null } = modelo?.animacao ?? {};
   const semMovimento = Boolean(modelo?.reduzirMovimento);
-  const andando = semMovimento ? null : caminhada(entrega, todos, agoraMs);
-  const festa = semMovimento ? null : decorrido(comemoracao, COMEMORACAO_MS, agoraMs);
+  const emCurso = entregaEmCurso(modelo, todos, agoraMs);
+  const festa = semMovimento ? null : decorrido(modelo?.animacao?.comemoracao, COMEMORACAO_MS, agoraMs);
   return todos.filter((agente) => agente?.mesa).map((agente) => {
-    const boneco = naMesa(agente, agoraMs, semMovimento);
-    if (andando?.indice === agente.indice) return { ...boneco, ...andando.boneco };
+    const boneco = { ...naMesa(agente, agoraMs, semMovimento), ...falar(agente, emCurso, modelo, agoraMs) };
+    if (!semMovimento && emCurso?.de === agente) return { ...boneco, ...andar(emCurso) };
     return festa !== null && agente.acao !== 'skipped' ? comemorar(boneco, festa) : boneco;
   });
 }

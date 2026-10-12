@@ -2,17 +2,21 @@
 // and 28), imported straight into Node — the transition between two readings, the route between
 // two desks, the frame of each instant and the whole-number scale of the canvas. The clock is
 // always a parameter: nothing here waits, and no timer is left open.
+// Phase E3 (specs/fase-e3-conversa-e-entrega.md) changed two things these tests assumed: the
+// delivery lasts 10 s (3 there, 4 talking, 3 back) instead of 4, and the room is as big as the
+// cast — desks, gaps and the route come from the room in use, not from a fixed 320×180 grid.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LARGURA, ALTURA, BONECO, MESAS, VAOS_X, montarModelo, montarPagina, MEMORIA_INICIAL, consultar, ROTEIRO,
-  escala, rota, comprimentoDaRota, pontoDaRota, transicao, quadro, SEM_ANIMACAO, POSES, PULO,
-  IDA_MS, VOLTA_MS, COMEMORACAO_MS, DIGITAR_MS, ANDAR_MS,
+  BONECO, SALAS, montarModelo, montarPagina, MEMORIA_INICIAL, consultar, ROTEIRO,
+  escala as escalaDaSala, rota, comprimentoDaRota, pontoDaRota, transicao, quadro, SEM_ANIMACAO, POSES, PULO,
+  IDA_MS, CONVERSA_MS, VOLTA_MS, FALA_MS, ENTREGA_MS, COMEMORACAO_MS, DIGITAR_MS, ANDAR_MS,
 } from '../templates/_opencrew/core/escritorio/modelo.js';
 
 // A multiple of every animation period: the phases of the clock start at zero.
 const T0 = Date.parse('2026-10-05T12:00:00.000Z');
-const ENTREGA_MS = IDA_MS + VOLTA_MS;
+/** The desks of the small room: where a cast of three sits. */
+const MESAS = SALAS.pequena.mesas;
 const iso = (ms) => new Date(T0 + ms).toISOString();
 const elenco = (n) => Array.from({ length: n }, (_, i) => ({ id: `a${i + 1}`, name: `Agente ${i + 1}`, icon: '🙂', status: 'idle', label: '' }));
 /** `n` statuses, idle but for the given positions (1-based): quem(12, { 6: 'working' }). */
@@ -40,33 +44,34 @@ const cruzam = (a, b) => a.x < b.x + b.largura && b.x < a.x + a.largura && a.y <
 const trechos = (pontos) => pontos.slice(1).map((fim, i) => [pontos[i], fim]);
 /** Everything a figure covers while it walks one stretch. */
 const varrido = ([a, b]) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), largura: Math.abs(a.x - b.x) + BONECO, altura: Math.abs(a.y - b.y) + BONECO });
-const naTela = (r) => r.x >= 0 && r.y >= 0 && r.x + r.largura <= LARGURA && r.y + r.altura <= ALTURA;
+const naTela = (sala, r) => r.x >= 0 && r.y >= 0 && r.x + r.largura <= sala.largura && r.y + r.altura <= sala.altura;
 const entre = (v, a, b) => v >= Math.min(a, b) && v <= Math.max(a, b);
 const naRota = (pontos, p) => trechos(pontos).some(([a, b]) => entre(p.x, a.x, b.x) && entre(p.y, a.y, b.y));
 const passos = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
-test('E1-05f: a different handoff.completedAt sends who delivered to the desk of who receives for 4 s, whatever is read meanwhile; then done', () => {
+test('E1-05f: a different handoff.completedAt sends who delivered to the desk of who receives for 10 s, whatever is read meanwhile; then done', () => {
   const antes = [estado({ agentes: ['working'] })];
   const entregue = estado({ agentes: ['done', 'working'], handoff: passagem(1, 2) });
   const m = seguir(antes, [entregue, 500]);
   assert.deepEqual(m.animacao, { entrega: { deId: 'a1', paraId: 'a2', inicioMs: T0 + 500 }, comemoracao: null });
   assert.deepEqual([m.crew, m.agentes.map((a) => a.acao)], ['minha-crew', ['done', 'working', 'idle']], 'the reading itself comes back whole');
-  for (const ms of [500, 1500, 2500, 4499]) {
+  assert.equal(ENTREGA_MS, 10000);
+  for (const ms of [500, 2500, 6000, 10499]) {
     assert.deepEqual(em(m, ms).map((b) => [b.acao, b.destino]), [['entregando', 1], ['working', null], ['idle', null]], `${ms} ms`);
   }
-  assert.deepEqual(acoes(m, 4500), ['done', 'working', 'idle']);
+  assert.deepEqual(acoes(m, 10500), ['done', 'working', 'idle']);
   // A third reading with another step, in the middle: the walk goes on from where it was.
   const outroPasso = { ...entregue, step: { current: 3, total: 5, label: 'Revisar' }, updatedAt: iso(1500) };
   const terceira = seguir(antes, [entregue, 500], [outroPasso, 1500]);
   assert.deepEqual(terceira.animacao, m.animacao);
-  assert.deepEqual([em(terceira, 2000)[0], acoes(terceira, 4499), acoes(terceira, 4500)], [em(m, 2000)[0], ['entregando', 'working', 'idle'], ['done', 'working', 'idle']]);
+  assert.deepEqual([em(terceira, 2000)[0], acoes(terceira, 10499), acoes(terceira, 10500)], [em(m, 2000)[0], ['entregando', 'working', 'idle'], ['done', 'working', 'idle']]);
   // Not even a status written meanwhile interrupts it: the walk comes from the transition.
   const deNovo = seguir(antes, [entregue, 500], [estado({ agentes: ['working', 'done'], handoff: entregue.handoff }), 1500]);
-  assert.deepEqual([acoes(deNovo, 4499), acoes(deNovo, 4500)], [['entregando', 'done', 'idle'], ['working', 'done', 'idle']]);
+  assert.deepEqual([acoes(deNovo, 10499), acoes(deNovo, 10500)], [['entregando', 'done', 'idle'], ['working', 'done', 'idle']]);
   assert.deepEqual(seguir([entregue], [entregue, 1000]).animacao, SEM_ANIMACAO, 'the same completedAt in both readings: nothing');
   // The date is what tells one handoff from the other: the same pair again walks again.
-  const repetida = seguir(antes, [entregue, 500], [{ ...entregue, handoff: passagem(1, 2, 6000) }, 6000]);
-  assert.deepEqual(repetida.animacao.entrega, { deId: 'a1', paraId: 'a2', inicioMs: T0 + 6000 });
+  const repetida = seguir(antes, [entregue, 500], [{ ...entregue, handoff: passagem(1, 2, 12000) }, 12000]);
+  assert.deepEqual(repetida.animacao.entrega, { deId: 'a1', paraId: 'a2', inicioMs: T0 + 12000 });
   assert.deepEqual(seguir(antes, [{ ...entregue, handoff: { from: 'a1', to: 'a2' } }, 500]).animacao, SEM_ANIMACAO, 'a handoff without a date cannot be told as new');
 });
 
@@ -115,7 +120,7 @@ test('E1-05g: the first reading of a crew — opening, switching crews, leaving 
   const andando = seguir([estado({ crew: '', agentes: ['working'] })], [pronta({ crew: '' })]);
   const semEstado = transicao(andando, ler(null), T0 + 1000);
   assert.deepEqual([acoes(andando, 100), semEstado.animacao, quadro(semEstado, T0)], [['entregando', 'comemorando', 'skipped'], SEM_ANIMACAO, []]);
-  assert.deepEqual([quadro(null, T0), quadro(ler(pronta()), T0).length, transicao(null, null, T0)], [[], 3, { animacao: SEM_ANIMACAO }]);
+  assert.deepEqual([quadro(null, T0), quadro(ler(pronta()), T0).length, transicao(null, null, T0)], [[], 3, { animacao: SEM_ANIMACAO, falas: [] }]);
   quieto(transicao(semEstado, ler(pronta({ crew: '', handoff: passagem(2, 1, 900) })), T0 + 2000), 'after a reading without state');
 });
 
@@ -136,9 +141,12 @@ test('E1-05g: an execution that becomes completed is celebrated for 4 s; complet
   assert.deepEqual(seguir([antes], [pronta(), 1000], [estado(), 2000]).animacao, SEM_ANIMACAO);
   assert.deepEqual(seguir([pronta()], [pronta(), 1000]).animacao, SEM_ANIMACAO, 'completed in both readings');
   for (const status of ['checkpoint', 'failed']) assert.deepEqual(seguir([{ ...antes, status }], [pronta(), 1000]).animacao.comemoracao, { inicioMs: T0 + 1000 }, status);
-  // The last delivery, still under way, ends first; then who delivered joins the others.
+  // The last delivery, still under way, goes on to its end while the others celebrate; a delivery
+  // that ends before the celebration does lets who delivered join the others.
   const juntos = seguir([estado({ agentes: ['working'] })], [antes], [pronta(), 1000]);
-  assert.deepEqual([acoes(juntos, 2000), acoes(juntos, ENTREGA_MS)], [['entregando', 'comemorando', 'skipped'], ['comemorando', 'comemorando', 'skipped']]);
+  assert.deepEqual([acoes(juntos, 2000), acoes(juntos, 4999), acoes(juntos, ENTREGA_MS)], [['entregando', 'comemorando', 'skipped'], ['entregando', 'comemorando', 'skipped'], ['done', 'done', 'skipped']]);
+  const noFim = seguir([estado({ agentes: ['working'] })], [antes], [pronta(), ENTREGA_MS - 1000]);
+  assert.deepEqual([acoes(noFim, ENTREGA_MS - 1), acoes(noFim, ENTREGA_MS)], [['entregando', 'comemorando', 'skipped'], ['comemorando', 'comemorando', 'skipped']]);
 });
 
 test('E1-05g: the demo goes the same way — its handoff walks and its end is celebrated', () => {
@@ -166,25 +174,28 @@ test('E1-05h: who is working changes pose every 0.3 s; the same instant gives th
   // Everyone in the own seat, in whole pixels, with what the scene needs to paint.
   for (const b of primeiro) {
     const agente = m.agentes[b.indice];
-    assert.deepEqual([b.id, b.mesa, b.aparencia, onde(b)], [agente.id, MESAS[b.indice], agente.aparencia, MESAS[b.indice].boneco]);
+    const mesa = SALAS.media.mesas[b.indice];
+    assert.deepEqual([b.id, b.mesa, b.aparencia, onde(b)], [agente.id, mesa, agente.aparencia, mesa.boneco]);
     assert.deepEqual([b.sentado, b.papel, b.espelhado, b.destino], [true, false, false, null]);
     assert.ok(POSES.includes(b.pose));
   }
 });
 
-test("E1-05h: a delivery from a to b — a's seat at the start, the front of b's desk at 2 s, seated again at 4 s and 10 minutes later", () => {
-  const [de, para] = [MESAS[5], MESAS[11]];
+test("E1-05h: a delivery from a to b — a's seat at the start, the front of b's desk from 3 to 7 s, seated again at 10 s and 10 minutes later", () => {
+  const sala = SALAS.completa;
+  const [de, para] = [sala.mesas[5], sala.mesas[11]];
   const m = congelar(seguir([estado({ agentes: quem(12, { 6: 'working' }) })], [estado({ agentes: quem(12, { 6: 'done', 12: 'working' }), handoff: passagem(6, 12) })]));
   const a = (ms) => em(m, ms)[de.indice];
-  assert.deepEqual([onde(a(0)), onde(a(IDA_MS)), IDA_MS, VOLTA_MS], [de.boneco, para.frente, 2000, 2000]);
+  assert.deepEqual([onde(a(0)), onde(a(IDA_MS)), onde(a(IDA_MS + CONVERSA_MS)), IDA_MS, CONVERSA_MS, VOLTA_MS], [de.boneco, para.frente, para.frente, 3000, 4000, 3000]);
   const resumo = (b) => [b.acao, b.papel, b.sentado, b.destino];
-  assert.deepEqual([a(0), a(IDA_MS - 1)].map(resumo), Array(2).fill(['entregando', true, false, 11]), 'with the paper on the way there');
-  assert.deepEqual([a(IDA_MS), a(ENTREGA_MS - 1)].map(resumo), Array(2).fill(['entregando', false, false, 11]), 'without it on the way back');
+  assert.deepEqual([a(0), a(IDA_MS - 1), a(IDA_MS), a(IDA_MS + FALA_MS - 1)].map(resumo), Array(4).fill(['entregando', true, false, 11]), 'with the paper on the way there and while it speaks');
+  assert.deepEqual([a(IDA_MS + FALA_MS), a(IDA_MS + CONVERSA_MS), a(ENTREGA_MS - 1)].map(resumo), Array(3).fill(['entregando', false, false, 11]), 'without it from the answer on, and on the way back');
+  assert.deepEqual([a(IDA_MS).pose, a(IDA_MS + CONVERSA_MS - 1).pose], ['parado', 'parado'], 'standing still during the conversation');
   // The legs change every 0.15 s.
-  for (const ms of [0, 500, 1700, 2600]) assert.notEqual(a(ms).pose, a(ms + ANDAR_MS).pose, `${ms} ms`);
+  for (const ms of [0, 500, 1700, 2600, 7300, 9500]) assert.notEqual(a(ms).pose, a(ms + ANDAR_MS).pose, `${ms} ms`);
   assert.deepEqual([0, 149, 150, 299, 300].map((ms) => a(ms).pose), ['andar-a', 'andar-a', 'andar-b', 'andar-b', 'andar-a']);
   // Whole pixels, always on the route, never jumping; mirrored by the side it walks to.
-  const caminho = rota(de.indice, para.indice);
+  const caminho = rota(sala, de.indice, para.indice);
   let anterior = onde(a(0));
   for (let ms = 0; ms < ENTREGA_MS; ms += 10) {
     const p = onde(a(ms));
@@ -204,7 +215,7 @@ test('E1-05h: with reduce motion the pose is fixed and the position is the final
   const leituras = (opcoes) => [[estado({ agentes: ['working', 'checkpoint'] }), 0, opcoes], [estado({ agentes: ['done', 'working', 'checkpoint'], handoff: passagem(1, 2) }), 0, opcoes]];
   const parado = seguir(...leituras({ reduzirMovimento: true }));
   const fixo = [['done', 'parado', MESAS[0].boneco, true, 'apagado'], ['working', 'digitar-a', MESAS[1].boneco, true, 'aceso'], ['checkpoint', 'mao', MESAS[2].boneco, true, 'ambar']];
-  for (const ms of [0, 150, 300, 500, 1000, 2000, 3999, 4000]) {
+  for (const ms of [0, 150, 300, 500, 1000, 3000, 5500, 9999, 10000]) {
     assert.deepEqual(em(parado, ms).map((b) => [b.acao, b.pose, onde(b), b.sentado, b.monitor]), fixo, `${ms} ms`);
     assert.ok(em(parado, ms).every((b) => b.monitorFase === 0 && !b.papel));
   }
@@ -225,19 +236,34 @@ test('E1-05h: the monitors go by the clock too — amber blinks once a second, t
   assert.deepEqual(monitores(1000), monitores(0));
 });
 
-test('E1-05i: for every pair of desks the route has only horizontal and vertical stretches, through the gaps, inside 320×180, across no desk, and ends in front of who receives', () => {
+test('E1-05i: for every pair of desks the route has only horizontal and vertical stretches, through the gaps, inside the room, across no desk, and ends in front of who receives', () => {
+  for (const sala of Object.values(SALAS)) rotasDa(sala);
+  const MESAS = SALAS.grande.mesas;
+  const sala = SALAS.grande;
+  assert.deepEqual([sala.largura, sala.altura, MESAS.length], [320, 180, 9], 'the large room is the grid of phase E1, up to nine desks');
+  assert.deepEqual([rota(sala, 0, 12), rota(sala, 12, 0), rota(sala, -1, 0), rota(sala, 0, 'x'), rota(sala, 1.5, 0)], Array(5).fill(null), 'no desk, no route');
+  // Mirrored when the last sideways stretch went left; beyond the ends, the ends.
+  const [ida, volta] = [rota(sala, 0, 1), [...rota(sala, 0, 1)].reverse()];
+  assert.deepEqual([0.1, 0.5, 0.9].map((f) => [pontoDaRota(ida, f).espelhado, pontoDaRota(volta, f).espelhado]), Array(3).fill([false, true]));
+  assert.deepEqual([pontoDaRota(ida, -1), pontoDaRota(ida, 7)].map(onde), [MESAS[0].boneco, MESAS[1].frente]);
+});
+
+/** Every pair of desks of one room. */
+function rotasDa(sala) {
+  const MESAS = sala.mesas;
+  const VAOS_X = sala.vaosX;
   const corredores = MESAS.flatMap((m) => [m.boneco.y, m.frente.y]);
   for (const de of MESAS) {
     for (const para of MESAS) {
-      const par = `${de.indice + 1} → ${para.indice + 1}`;
-      const pontos = rota(de.indice, para.indice);
+      const par = `${sala.nome} ${de.indice + 1} → ${para.indice + 1}`;
+      const pontos = rota(sala, de.indice, para.indice);
       assert.deepEqual([pontos[0], pontos.at(-1)], [de.boneco, para.frente], par);
       assert.ok(pontos.flatMap(Object.values).every(Number.isInteger), `${par}: whole pixels`);
       for (const trecho of trechos(pontos)) {
         const [a, b] = trecho;
         assert.ok((a.x === b.x) !== (a.y === b.y), `${par}: one direction at a time`);
         assert.ok(a.x === b.x ? VAOS_X.includes(a.x) : corredores.includes(a.y), `${par}: through the gaps`);
-        assert.ok(naTela(varrido(trecho)), `${par}: inside the screen`);
+        assert.ok(naTela(sala, varrido(trecho)), `${par}: inside the screen`);
         assert.ok(MESAS.every((m) => !cruzam(m.retangulo, varrido(trecho))), `${par}: across no desk`);
         assert.ok(MESAS.every((m) => m === de || !cruzam({ ...m.boneco, largura: BONECO, altura: BONECO }, varrido(trecho))), `${par}: across no seated colleague`);
       }
@@ -248,14 +274,11 @@ test('E1-05i: for every pair of desks the route has only horizontal and vertical
       assert.ok(andados.every((p, k) => naRota(pontos, p) && (k === 0 || passos(p, andados[k - 1]) === 1)), `${par}: no jump`);
     }
   }
-  assert.deepEqual([rota(0, 12), rota(12, 0), rota(-1, 0), rota(0, 'x'), rota(1.5, 0)], Array(5).fill(null), 'no desk, no route');
-  // Mirrored when the last sideways stretch went left; beyond the ends, the ends.
-  const [ida, volta] = [rota(0, 1), [...rota(0, 1)].reverse()];
-  assert.deepEqual([0.1, 0.5, 0.9].map((f) => [pontoDaRota(ida, f).espelhado, pontoDaRota(volta, f).espelhado]), Array(3).fill([false, true]));
-  assert.deepEqual([pontoDaRota(ida, -1), pontoDaRota(ida, 7)].map(onde), [MESAS[0].boneco, MESAS[1].frente]);
-});
+}
 
 test('E1-05j: the scale is the largest whole number that fits in device pixels, and the canvas size in CSS follows it', () => {
+  // The 320×180 screen of phase E1 is the large room; the other rooms are in tests/escritorio-salas.test.js.
+  const escala = (largura, altura, dpr) => escalaDaSala(largura, altura, dpr, SALAS.grande);
   for (const [dpr, n] of [[1, 3], [1.25, 3], [1.5, 4], [2, 6]]) {
     assert.deepEqual(escala(1000, 600, dpr), { n, largura: (320 * n) / dpr, altura: (180 * n) / dpr }, `dpr ${dpr}`);
   }

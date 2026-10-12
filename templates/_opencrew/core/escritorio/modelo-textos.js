@@ -12,6 +12,36 @@ export const TEXTOS = Object.freeze({
   demoForcada: 'Demonstração. Tire ?demo do endereço para ver a sua crew.',
 });
 
+/**
+ * O que os bonecos falam, em balão de fala (regras 1 e 3 da E3): a entrega sem mensagem, a
+ * resposta de quem recebe, a execução concluída e a falha. A fala da entrega com mensagem e a de
+ * quem começa a trabalhar vêm do estado (a mensagem e o rótulo do passo).
+ */
+export const FALAS = Object.freeze({
+  entrega: 'Pronto, é com você.',
+  resposta: 'Deixa comigo.',
+  pronto: 'Pronto!',
+  problema: 'Deu problema.',
+});
+
+/** Quantos caracteres cabem num balão de fala; o texto inteiro continua no painel. */
+export const LIMITE_DA_FALA = 60;
+
+/**
+ * O texto como cabe no balão de fala: até `LIMITE_DA_FALA` caracteres visíveis; o que passa
+ * disso é cortado, com "…" no fim, sem partir palavra ao meio quando dá.
+ * @param {unknown} texto
+ * @returns {string} sem espaços nas pontas; vazio se a entrada não é texto
+ */
+export function cortarFala(texto) {
+  const letras = [...(typeof texto === 'string' ? texto.trim() : '')];
+  if (letras.length <= LIMITE_DA_FALA) return letras.join('');
+  const corte = letras.slice(0, LIMITE_DA_FALA - 1);
+  const fimDaPalavra = letras[LIMITE_DA_FALA - 1] === ' ' ? corte.length : corte.lastIndexOf(' ');
+  const inteiro = fimDaPalavra > 0 ? corte.slice(0, fimDaPalavra) : corte;
+  return `${inteiro.join('').trimEnd()}…`;
+}
+
 /** Status do agente por extenso, para a lista ao lado do desenho (regra 24). */
 export const STATUS_TEXTO = Object.freeze({
   idle: 'Em espera',
