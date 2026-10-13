@@ -122,7 +122,9 @@ step with one short command (see `_opencrew/core/runner.pipeline.md`).
 
 If your IDE cannot keep a process running in the background, do step 1 and show the user the
 command of step 2 to run in another terminal. Running `/opencrew dashboard` again is safe: the
-script answers with the same address instead of opening a second page.
+script answers with the same address instead of opening a second page. If its line says the open
+office `é de uma versão anterior` (it stayed open across an `update`): stop the background process
+you started and run the command again. If you did not start it, show the line to the user.
 
 **`/opencrew dashboard off`** — write `- **Dashboard:** disabled` the same way (only that line)
 and touch nothing else: stop no process, delete no file.

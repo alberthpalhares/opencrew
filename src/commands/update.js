@@ -9,6 +9,7 @@ import { detectInstalledIdes } from '../lib/deteccao.js';
 import { withoutLegacy } from '../lib/legado.js';
 import { updateMcp } from '../lib/mcp.js';
 import { compareVersions, installedVersion, findLeftovers } from '../lib/migrations.js';
+import { officeLine } from '../lib/escritorio.js';
 import { say, recreatedLines, updateSummary, UNTOUCHED, INTERRUPTED } from '../lib/resumo.js';
 import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
 
@@ -48,7 +49,7 @@ export async function update(opts = {}) {
   }
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
-  if (canApply(opts, current, version)) await apply(target, version);
+  if (canApply(opts, current, version)) await apply(target, version, opts);
 }
 
 /** `--check` only reports, and a package older than the workspace stops: false = write nothing. */
@@ -72,7 +73,7 @@ function canApply(opts, current, version) {
   return !newer;
 }
 
-async function apply(target, version) {
+async function apply(target, version, opts) {
   // A manifest that exists but cannot be used is said so, then treated as none (R2 rule 12).
   const manifest = await readManifest(target);
   const unreadable = !manifest && (await manifestUnreadable(target));
@@ -89,6 +90,7 @@ async function apply(target, version) {
   done.mcp = await updateMcp(ctx, await readFile(tpl('.mcp.json')));
   done.leftovers = await findLeftovers(target);
   done.hasCrew = await hasCrew(target);
+  done.office = await officeLine(target, version, opts.officePorts);
   say(updateSummary(ctx, done));
 
   await writeManifest(target, version, ctx.files);

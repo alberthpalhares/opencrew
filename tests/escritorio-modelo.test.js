@@ -277,7 +277,7 @@ test('E1-05 (§6 and purity): the page texts letter by letter; no model module t
   assert.deepEqual({ ...TEXTOS }, {
     nome: 'Escritório',
     aguardando: 'Aguardando você',
-    abrindo: 'Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.',
+    abrindo: 'Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.',
     semServidor: 'Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.',
     demonstracao: 'Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.',
     demoForcada: 'Demonstração. Tire ?demo do endereço para ver a sua crew.',

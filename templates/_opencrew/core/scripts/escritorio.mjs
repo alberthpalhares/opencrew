@@ -6,17 +6,21 @@
 // Serve a página (`_opencrew/core/escritorio/`) e `GET /estado`, que lê `crews/*/state.json` a
 // cada pedido.
 // Porta ocupada: se quem responde nela é o escritório deste mesmo projeto, avisa e sai com 0, sem
-// subir outro; senão tenta a seguinte, até 10 portas ao todo.
+// subir outro; senão tenta a seguinte, até 10 portas ao todo. Se o escritório que responde foi
+// aberto por outra versão do OpenCrew (ficou de antes de um `update`), avisa e sai com 1: ele não
+// conhece os arquivos novos da página, e é preciso fechá-lo.
 // Código de saída: 0 = escritório aberto (o processo segue rodando até Ctrl+C) ou já aberto ·
-// 1 = erro de uso (porta inválida, pasta sem `_opencrew/`) ou nenhuma das 10 portas livre.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 13 a 15 (repositório do OpenCrew).
+// 1 = erro de uso (porta inválida, pasta sem `_opencrew/`), nenhuma das 10 portas livre ou
+// escritório de versão anterior no ar.
+// Spec: fase-e1-escritorio-ao-vivo.md, regras 13 a 15, e fase-e4-robustez-do-escritorio.md,
+// regras 1 e 2 (repositório do OpenCrew).
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ehPrincipal } from './comum.mjs';
 import { criarServidor } from './escritorio/servidor.mjs';
-import { abrir, sondar, procurar } from './escritorio/porta.mjs';
-import { projetoDe } from './escritorio/projeto.mjs';
+import { abrir, sondarEstado, procurar } from './escritorio/porta.mjs';
+import { projetoDe, versaoDe } from './escritorio/projeto.mjs';
 
 /**
  * Os arquivos da página, um a um: é a lista inteira do que o servidor entrega além de `/estado`.
@@ -30,6 +34,7 @@ export const ARQUIVOS = [
   'modelo-personagem.js', 'modelo-visao.js', 'modelo-pagina.js', 'demo.js',
   'modelo-periodo.js', 'modelo-moveis.js', 'modelo-ambiente.js', 'modelo-falas.js',
   'escala.js', 'rota.js', 'animacao.js', 'quadro.js',
+  'aviso.js',
 ];
 
 const PORTA_PADRAO = 4747;
@@ -45,6 +50,7 @@ const USO = `Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <${PORTA_M
 const MSG = {
   aberto: (porta) => `Escritório aberto em ${endereco(porta)} — Ctrl+C para fechar`,
   jaAberto: (porta) => `O escritório já está aberto em ${endereco(porta)}`,
+  desatualizado: (porta) => `O escritório aberto em ${endereco(porta)} é de uma versão anterior. Feche esse processo e rode o comando de novo.`,
   semPorta: (a, b) => `Não foi possível abrir o escritório: as portas ${a} a ${b} estão ocupadas. Use --porta.`,
   foraDaRaiz: 'Rode este comando na pasta do projeto (a que contém _opencrew/).',
   portaInvalida: `Porta inválida: use --porta com um número de ${PORTA_MINIMA} a ${PORTA_MAXIMA}.`,
@@ -89,10 +95,11 @@ function erroDeUso(porta, cwd) {
  * @param {string[]} [o.arquivos] nomes servidos da pasta da página
  * @param {(servidor: object, porta: number) => Promise<boolean>} [o.abrir] SÓ PARA TESTE: tenta
  *   abrir a porta (serve para simular portas ocupadas sem ocupá-las)
- * @param {(porta: number) => Promise<string|null>} [o.sondar] SÓ PARA TESTE: o `projeto` de quem
- *   responde na porta
+ * @param {(porta: number) => Promise<{ projeto: string, versao: string|null }|null>} [o.sondar] SÓ
+ *   PARA TESTE: quem responde na porta
  * @returns {Promise<{ code: number, porta?: number, servidor?: import('node:http').Server }>}
- *   `code` 0 com `porta` (escritório aberto ou já aberto) ou 1; `servidor` só quando este
+ *   `code` 0 com `porta` (escritório aberto ou já aberto) ou 1 (com `porta` quando o escritório
+ *   que está nela é de versão anterior); `servidor` só quando este
  *   comando abriu um — é ele que mantém o processo vivo
  */
 export async function main(argv, o = {}) {
@@ -105,12 +112,13 @@ export async function main(argv, o = {}) {
   }
   const servidor = criarServidor({ raiz: cwd, pasta, arquivos });
   const tentar = (porta) => (o.abrir ?? abrir)(servidor, porta);
-  const r = await procurar({ inicial, projeto: projetoDe(cwd), abrir: tentar, sondar: o.sondar ?? sondar });
+  const r = await procurar({ inicial, projeto: projetoDe(cwd), versao: versaoDe(cwd), abrir: tentar, sondar: o.sondar ?? sondarEstado });
   if (r.tipo === 'sem-porta') {
     escrever(MSG.semPorta(inicial, r.ultima));
     return { code: 1 };
   }
-  escrever(r.tipo === 'aberto' ? MSG.aberto(r.porta) : MSG.jaAberto(r.porta));
+  escrever({ aberto: MSG.aberto, 'ja-aberto': MSG.jaAberto, desatualizado: MSG.desatualizado }[r.tipo](r.porta));
+  if (r.tipo === 'desatualizado') return { code: 1, porta: r.porta };
   return r.tipo === 'aberto' ? { code: 0, porta: r.porta, servidor } : { code: 0, porta: r.porta };
 }
 

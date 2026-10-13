@@ -115,7 +115,8 @@ function copyLines(ctx, unreadable) {
  * @param {object} done what each step returned: `agents` and `gitignore` (deliverBlock; `agents`
  *   is null when a pre-1.3 AGENTS.md was migrated), `ides` (detected), `bridges` (deliverBridges),
  *   `leak` (the STATUS.md section left CLAUDE.md's block), `mcp` (updateMcp), `leftovers`
- *   (findLeftovers), `unreadable` (manifest) and `hasCrew` (a folder of `crews/` with `crew.yaml`)
+ *   (findLeftovers), `unreadable` (manifest), `hasCrew` (a folder of `crews/` with `crew.yaml`)
+ *   and `office` (the line of src/lib/escritorio.js when the office is open, else null)
  * @returns {Array<[Function, string]>} lines for `say`
  */
 export function updateSummary(ctx, done) {
@@ -128,5 +129,6 @@ export function updateSummary(ctx, done) {
     ...leftoverLines(done.leftovers, done.mcp),
     ...copyLines(ctx, done.unreadable),
     ...(done.hasCrew ? [[info, REPAIR_HINT]] : []),
+    ...(done.office ? [[warn, done.office]] : []),
   ];
 }

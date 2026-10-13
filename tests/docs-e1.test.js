@@ -48,7 +48,7 @@ test('E1-07b: the README no longer says the dashboard is not installed, nor cite
 });
 
 test('E1 §9: CHANGELOG has the Escritório entry, whatever its title and place, and it tells what changes for the user', () => {
-  const entrada = ler('CHANGELOG.md').split(/^(?=## \[)/m).find((p) => p.includes('/opencrew dashboard')) ?? '';
+  const entrada = ler('CHANGELOG.md').split(/^(?=## \[)/m).find((p) => p.includes('/opencrew dashboard') && p.includes('state.json')) ?? ''; // later entries cite the command too (E4)
   assert.notEqual(entrada, '', 'CHANGELOG lacks the Escritório entry');
   const texto = flat(entrada);
   assert.match(texto, /`\/opencrew dashboard`/);

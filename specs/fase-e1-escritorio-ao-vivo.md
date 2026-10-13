@@ -298,7 +298,7 @@ errado. Depois desta fase ele chega a quem já usa com um `update` e funciona na
 | Servidor, `Host` recusado | `Abra por http://127.0.0.1:<porta>` |
 | Runner, início | `Escritório ligado. Se a página não estiver aberta, rode em outro terminal: node _opencrew/core/scripts/escritorio.mjs` |
 | Runner, aviso único | `O escritório não foi atualizado nesta execução; o trabalho segue normalmente.` |
-| Página, abrindo (HTML estático) | `Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.` |
+| Página, abrindo (HTML estático) | `Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.` (texto da E4, 1.19.1; até a 1.19.0 a frase só falava do endereço) |
 | Página, sem servidor | `Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.` |
 | Página, demonstração | `Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.` |
 | Página, `?demo` | `Demonstração. Tire ?demo do endereço para ver a sua crew.` |
@@ -574,7 +574,8 @@ No `sandbox/`, com o navegador aberto no escritório:
 - O aviso "Escritório ligado. Se a página não estiver aberta…" sai também quando o servidor
   acabou de ser aberto.
 - Um escritório já aberto guarda a lista de arquivos da página; depois de um `update` é preciso
-  fechar e abrir.
+  fechar e abrir. Desde a E4 (1.19.1) isso é avisado pelo `update`, pelo comando e pela página
+  (`fase-e4-robustez-do-escritorio.md`).
 
 ## 12. Travas que esta spec deixa
 `tests/estado.test.js` (E1-01) · `tests/estado-casca.test.js` (E1-02) ·

@@ -267,7 +267,7 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 
 | Moment | Command |
 |---|---|
-| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --tema "{tema}" --passos {N}` (no `--run`: the script creates the `run_id`) |
+| Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --tema "{tema}" --passos {N}` (no `--run`: the script creates the `run_id`). Last line `CAMINHO:ABERTA {run_id}` instead: nothing was created — show the user the lines above it, ask, and do what they say |
 | Before a step, for its `inputFile` | `node _opencrew/core/scripts/caminho.mjs "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"` |
 | Before a step writes, for the first `outputFile` of each group | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` |
 | After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}" --passo {step}` |

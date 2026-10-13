@@ -17,7 +17,7 @@ const MSG = {
 };
 
 /** Os registros legíveis das execuções da crew: `{ run, ...registro }`. */
-async function registrosDe(raiz, crew) {
+export async function registrosDe(raiz, crew) {
   const saida = path.resolve(raiz, 'crews', crew, 'output');
   const lidos = await Promise.all(pastasDe(saida).map(async (run) => ({ run, registro: await lerRegistro(path.join(saida, run)) })));
   return lidos.filter((l) => l.registro).map((l) => ({ ...l.registro, run: l.run }));

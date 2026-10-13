@@ -96,7 +96,7 @@ test('E1-04a: /estado brings the project id and every crew, the latest update fi
   const r = await pedir(porta, '/estado');
   assert.deepEqual([r.status, r.headers['content-type']], [200, 'application/json; charset=utf-8']);
   const { projeto: id, crews, ...resto } = JSON.parse(r.corpo);
-  assert.deepEqual(resto, {});
+  assert.deepEqual(resto, { versao: '' }, 'the version came with phase E4; this fake project has no stamp');
   assert.match(id, /^[0-9a-f]{12}$/);
   assert.equal(id, projetoDe(raiz));
   assert.ok(!r.corpo.includes(path.basename(raiz)), 'the path of the project is not exposed');
@@ -123,7 +123,7 @@ test('E1-04b: no crew with a state, or no crews/ folder at all — "crews": []',
   for (const crews of [{ 'sem-arquivo': null }, {}]) {
     const { raiz, porta } = await subir(t, crews);
     const r = await pedir(porta, '/estado');
-    assert.deepEqual([r.status, JSON.parse(r.corpo)], [200, { projeto: projetoDe(raiz), crews: [] }]);
+    assert.deepEqual([r.status, JSON.parse(r.corpo)], [200, { projeto: projetoDe(raiz), versao: '', crews: [] }]);
   }
 });
 

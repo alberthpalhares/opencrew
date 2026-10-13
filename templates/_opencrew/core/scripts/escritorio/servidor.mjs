@@ -4,7 +4,7 @@ import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { lerCrews } from './leitura.mjs';
-import { projetoDe } from './projeto.mjs';
+import { projetoDe, versaoDe } from './projeto.mjs';
 
 // Vão em TODA resposta. Nenhuma resposta leva `Access-Control-*`: outra origem não lê o estado.
 const CABECALHOS = {
@@ -47,7 +47,7 @@ async function atender(req, res, ctx) {
   if (req.method !== 'GET') return responder(res, 405, { corpo: 'Método não permitido', extras: { Allow: 'GET' } });
   const caminho = req.url.split('?')[0];
   if (caminho === '/estado') {
-    const corpo = JSON.stringify({ projeto: ctx.projeto, crews: await lerCrews(ctx.raiz) });
+    const corpo = JSON.stringify({ projeto: ctx.projeto, versao: ctx.versao, crews: await lerCrews(ctx.raiz) });
     return responder(res, 200, { corpo, tipo: JSON_UTF8 });
   }
   const arquivo = await lerArquivo(ctx, caminho);
@@ -70,7 +70,7 @@ function falhar(res) {
  */
 export function criarServidor({ raiz, pasta, arquivos }) {
   const rotas = new Map([['/', 'index.html'], ...arquivos.map((nome) => [`/${nome}`, nome])]);
-  const ctx = { raiz, pasta, rotas, projeto: projetoDe(raiz) };
+  const ctx = { raiz, pasta, rotas, projeto: projetoDe(raiz), versao: versaoDe(raiz) };
   // Sem `Host` o pedido também chega aqui e leva o 421 com os cabeçalhos, e não o 400 do Node.
   return http.createServer({ requireHostHeader: false }, (req, res) => {
     atender(req, res, ctx).catch(() => falhar(res));

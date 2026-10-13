@@ -19,8 +19,8 @@ run, from the project root, the one-line command of each moment:
 - **One at a time** — Run these commands one at a time, waiting for the `ESTADO:` line of each
   before the next — never in parallel or in the background (each one reads and rewrites the same file).
 - **Values** — `{name}`: the crew code. `{N}`: how many steps will run, checkpoints included (a
-  deselected agent's steps do not count). `{K}`: the step's position among them, from 1. `{id}`: the agent's `id` column in
-  `crew-party.csv`; a step or checkpoint with no `agent:` goes without `--agente`
+  deselected agent's steps do not count). `{K}`: the step's position among them, from 1. `{id}`: the step's `agent:` value (the same text as the agent's `id` column in
+  `crew-party.csv`); a step or checkpoint with no `agent:` goes without `--agente`
   (the table shows the full form). `{rótulo}`: the step's name, in
   a few words. `--mensagem` goes only when the agent changed since the last `passo` (so never on the first
   one): one sentence on what the previous agent delivered — never look at the next step. `{motivo}`: why the run stopped.

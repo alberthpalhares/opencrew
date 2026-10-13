@@ -318,3 +318,14 @@
 - **Alocação:** → sem fase — projeto pausado (segunda revisão da U6b); nenhum caso apaga fora de `output/<execução fechada>`.
 - **Custo de adiar:** mensagem menos clara em caso raro; nenhum risco de perda de dado conhecido.
 - **Aprovação:** não.
+
+## Apelido `--execucao` para o `--run` dos scripts
+- **O que já existe:** `caminho.mjs`, `execucao.mjs`, `custo.mjs` e `entregar.mjs` recebem a execução em `--run`, e os
+  prompts do runner dizem `--run` em uns 15 lugares. O hook lean-ctx do mantenedor bloqueia `node … --run` como
+  "execução inline" (falso positivo com o nome da opção); pelo PowerShell o comando passa.
+- **Ideia:** os scripts aceitarem `--execucao` e os prompts passarem a usar esse nome. Só o apelido não resolve: a IA
+  segue o prompt.
+- **Alocação:** → sem fase — falso positivo de ferramenta de fora do produto; o conserto certo é na configuração do
+  lean-ctx (decisão do dono na E4, 2026-10-12).
+- **Custo de adiar:** nenhum para quem não usa esse hook.
+- **Aprovação:** não.

@@ -451,6 +451,11 @@ sobe a página e mostra o endereço — `http://127.0.0.1:4747`, ou a porta livr
 execução de crew aparece ali; enquanto não há nenhuma, a página roda uma demonstração. Repetir o
 comando é seguro: ele devolve o mesmo endereço.
 
+**Depois de atualizar o OpenCrew com o Escritório aberto, feche-o e abra de novo.** O processo que
+ficou aberto não conhece os arquivos novos da página. Você é avisado três vezes: o `update` diz que
+achou o Escritório aberto, o `/opencrew dashboard` responde que ele "é de uma versão anterior", e a
+própria página diz qual arquivo faltou.
+
 Se a sua IDE não roda comando em segundo plano, ela mostra o comando para você rodar em outro
 terminal, na pasta do projeto:
 

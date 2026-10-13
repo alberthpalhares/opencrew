@@ -31,7 +31,7 @@ const HTML = FONTES['index.html'];
 const AGORA = Date.parse('2026-10-05T12:00:00.000Z');
 const haMin = (min) => new Date(AGORA - min * 60000).toISOString();
 const SLOTS = ['cabelo', 'cabelo-sombra', 'pele', 'pele-sombra', 'olhos', 'camisa', 'camisa-sombra'];
-const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.';
+const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.';
 const SEM_SERVIDOR = 'Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.';
 const DEMONSTRACAO = 'Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.';
 const DEMO_FORCADA = 'Demonstração. Tire ?demo do endereço para ver a sua crew.';

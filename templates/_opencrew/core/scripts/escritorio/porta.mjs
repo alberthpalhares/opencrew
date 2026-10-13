@@ -37,11 +37,14 @@ export async function abrir(servidor, porta) {
   });
 }
 
-/** O `projeto` de uma resposta do `/estado`, ou null quando a resposta não é a de um escritório. */
-function projetoDaResposta(corpo) {
+/**
+ * Quem respondeu no `/estado`: o `projeto` e a `versao` (null no escritório até a 1.19.0, que
+ * não a informa); null quando a resposta não é a de um escritório.
+ */
+function quemRespondeu(corpo) {
   try {
-    const { projeto } = JSON.parse(corpo) ?? {};
-    return typeof projeto === 'string' ? projeto : null;
+    const { projeto, versao } = JSON.parse(corpo) ?? {};
+    return typeof projeto === 'string' ? { projeto, versao: typeof versao === 'string' ? versao : null } : null;
   } catch {
     return null;
   }
@@ -61,10 +64,11 @@ function juntar(res, entregar) {
 
 /**
  * Pergunta quem está na porta: `GET /estado`, com espera de até 1 s.
- * @returns {Promise<string|null>} o `projeto` do escritório que respondeu; null para qualquer
- *   outra resposta (outro serviço, erro, resposta grande demais) ou nenhuma dentro da espera
+ * @returns {Promise<{ projeto: string, versao: string|null }|null>} o escritório que respondeu;
+ *   null para qualquer outra resposta (outro serviço, erro, resposta grande demais) ou nenhuma
+ *   dentro da espera
  */
-export function sondar(porta, esperaMs = 1000) {
+export function sondarEstado(porta, esperaMs = 1000) {
   return new Promise((resolve) => {
     const pedido = http.get({ host: LOCAL, port: porta, path: '/estado', agent: false }, (res) => juntar(res, fim));
     const relogio = setTimeout(() => fim(null), esperaMs);
@@ -72,27 +76,33 @@ export function sondar(porta, esperaMs = 1000) {
     function fim(corpo) {
       clearTimeout(relogio);
       pedido.destroy();
-      resolve(corpo === null ? null : projetoDaResposta(corpo));
+      resolve(corpo === null ? null : quemRespondeu(corpo));
     }
   });
 }
 
+/** Só o `projeto` de quem está na porta, ou null. */
+export const sondar = (porta, esperaMs) => sondarEstado(porta, esperaMs).then((quem) => quem?.projeto ?? null);
+
 /**
  * Procura a porta do escritório, de `inicial` em diante, em até `tentativas` portas. Porta que
- * não abre é sondada: se quem responde é o escritório deste projeto, não sobe outro.
+ * não abre é sondada: se quem responde é o escritório deste projeto, não sobe outro — e, se ele
+ * é de outra versão do OpenCrew, a procura para nele (`desatualizado`).
  * @param {object} o
  * @param {number} o.inicial primeira porta
  * @param {string} o.projeto id deste projeto
+ * @param {string} o.versao versão do OpenCrew instalada neste projeto
  * @param {(porta: number) => Promise<boolean>} o.abrir tenta abrir o servidor na porta
- * @param {(porta: number) => Promise<string|null>} o.sondar o `projeto` de quem está na porta
- * @returns {Promise<{ tipo: 'aberto'|'ja-aberto'|'sem-porta', porta?: number, ultima: number }>}
+ * @param {(porta: number) => Promise<{ projeto: string, versao: string|null }|null>} o.sondar quem está na porta
+ * @returns {Promise<{ tipo: 'aberto'|'ja-aberto'|'desatualizado'|'sem-porta', porta?: number, ultima: number }>}
  *   `ultima` é a última porta do intervalo (a que entra na mensagem "sem porta")
  */
-export async function procurar({ inicial, projeto, abrir: tentar, sondar: perguntar, tentativas = 10 }) {
+export async function procurar({ inicial, projeto, versao, abrir: tentar, sondar: perguntar, tentativas = 10 }) {
   const ultima = Math.min(inicial + tentativas - 1, ULTIMA_PORTA);
   for (let porta = inicial; porta <= ultima; porta++) {
     if (await tentar(porta)) return { tipo: 'aberto', porta, ultima };
-    if ((await perguntar(porta)) === projeto) return { tipo: 'ja-aberto', porta, ultima };
+    const quem = await perguntar(porta);
+    if (quem?.projeto === projeto) return { tipo: quem.versao === versao ? 'ja-aberto' : 'desatualizado', porta, ultima };
   }
   return { tipo: 'sem-porta', ultima };
 }

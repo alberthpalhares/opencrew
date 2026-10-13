@@ -96,7 +96,7 @@ test('E1-03a: there is no handoff event', () => {
 });
 
 test('E1-03a: --agente is the id column of crew-party.csv and --passos counts the steps that will run', () => {
-  tem(texto, "`{id}`: the agent's `id` column in `crew-party.csv`");
+  tem(texto, "`{id}`: the step's `agent:` value (the same text as the agent's `id` column in `crew-party.csv`)"); // E4, rule 11
   tem(texto, 'with no `agent:` goes without `--agente`');
   tem(texto, '`{N}`: how many steps will run');
   tem(texto, "`{K}`: the step's position among them, from 1");

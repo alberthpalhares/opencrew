@@ -2,11 +2,14 @@
 // Caminho da execução de uma crew: diz onde cada passo grava, de onde lê e se o arquivo gravado
 // está lá. Quem calcula é este script, igual em qualquer sistema — a IA não monta o caminho.
 // Uso (na pasta do projeto): node _opencrew/core/scripts/caminho.mjs <crew> <ação> --run <id> [opções]
-//   pasta    [--run <id>] [--tema "<texto>"] [--passos N | --pedido [--agente <id>] [--formato <id>]]
+//   pasta    [--run <id> | --nova] [--tema "<texto>"] [--passos N | --pedido [--agente <id>] [--formato <id>]]
 //                                             cria crews/<crew>/output/<id>/ e o registro da
 //                                             execução; sem --run, o id é a data e a hora do
 //                                             computador (AAAA-MM-DD-HHmmss); --pedido: a execução
-//                                             é um pedido avulso à crew, sem pipeline
+//                                             é um pedido avulso à crew, sem pipeline. Sem --run:
+//                                             se a crew tem execução aberta com atividade nas
+//                                             últimas 2 horas, não cria nada e responde
+//                                             CAMINHO:ABERTA <id>; --nova cria assim mesmo
 //   saida    --run <id> --arquivo <declarado> onde o passo grava (abre a pasta de versão seguinte)
 //   entrada  --run <id> --arquivo <declarado> a saída mais nova desse arquivo
 //   conferir --arquivo <caminho já resolvido> [--passo N] [--secoes N] [--tldr]
@@ -15,17 +18,19 @@
 // Só cria pastas, e só dentro de crews/<crew>/output/<id>/. O único arquivo que grava é o registro
 // da execução (`crews/<crew>/output/<id>/execucao.json`); nunca altera nem apaga outro arquivo.
 // Registro que não pôde ser gravado não muda a linha CAMINHO: — o aviso sai antes dela.
-// Última linha da saída (o runner lê esta linha): CAMINHO:OK <caminho>, CAMINHO:FALTA <caminho>
-// ou CAMINHO:REPROVADO <motivo>; o caminho sai relativo à pasta do projeto, com `/`.
+// Última linha da saída (o runner lê esta linha): CAMINHO:OK <caminho>, CAMINHO:FALTA <caminho>,
+// CAMINHO:REPROVADO <motivo> ou CAMINHO:ABERTA <id> (as linhas antes dela dizem o que perguntar ao
+// usuário); o caminho sai relativo à pasta do projeto, com `/`.
 // Código de saída: 0 sempre que a linha CAMINHO: sai · 1 = erro de uso (ação ou opção faltando,
 // pasta sem `_opencrew/`, crew inexistente ou fora do projeto); com código 1 não há linha
 // CAMINHO: e nada é criado.
-// Specs: fase-r3-runner-em-uso-real.md e fase-u5c-execucao-registrada.md, regras 1 a 5
-// (repositório do OpenCrew).
+// Specs: fase-r3-runner-em-uso-real.md, fase-u5c-execucao-registrada.md, regras 1 a 5, e
+// fase-e4-robustez-do-escritorio.md, regras 8 e 9 (repositório do OpenCrew).
 import path from 'node:path';
 import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
 import { RUN, USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
 import { acharCrew } from './caminho/crew.mjs';
+import { abertaRecente, linhasDaAberta } from './caminho/aberta.mjs';
 import { ARQUIVO, PEDIDO, anotar, comPasso, limparTema } from './execucao/registro.mjs';
 import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, novoRun, proximaVersao } from './caminho/nucleo.mjs';
 import { criarPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
@@ -120,6 +125,9 @@ async function conferirERegistrar(raiz, crew, args, em) {
 
 /** A pasta da execução; a que nasce agora ganha o registro (regras 1 e 3 da U5c: a que já existia fica como está). */
 async function pasta(raiz, crew, args, agora) {
+  // Regra 8 da E4: sem --run, sem --pedido e sem --nova, a execução aberta e recente é perguntada antes.
+  const aberta = args.run || args.pedido || args.nova ? null : await abertaRecente(raiz, crew, agora);
+  if (aberta) return linhasDaAberta(crew, aberta);
   const run = args.run || novoRun(agora, pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
   const rel = `crews/${crew}/output/${run}`;
   const nova = criarPasta(path.resolve(raiz, rel));

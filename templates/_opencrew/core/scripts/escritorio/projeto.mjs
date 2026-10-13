@@ -1,7 +1,7 @@
 // Identidade do projeto para o escritório: diz se o servidor que responde numa porta é o deste
 // projeto, sem expor o caminho da pasta.
 import { createHash } from 'node:crypto';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -27,3 +27,16 @@ function caminhoReal(raiz) {
 
 /** O id do projeto que mora em `raiz`. */
 export const projetoDe = (raiz) => idDoProjeto(caminhoReal(raiz));
+
+/**
+ * A versão do OpenCrew instalada em `raiz`: o texto de `_opencrew/.opencrew-version`. Sem o
+ * arquivo, `""`. O servidor a lê uma vez, ao subir: é por ela que se reconhece o escritório que
+ * ficou aberto de antes de um `update` (spec fase-e4-robustez-do-escritorio.md, regras 1 e 2).
+ */
+export function versaoDe(raiz) {
+  try {
+    return readFileSync(path.join(raiz, '_opencrew', '.opencrew-version'), 'utf8').trim();
+  } catch {
+    return '';
+  }
+}

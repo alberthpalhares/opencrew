@@ -3,6 +3,43 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.1] — 2026-10-12
+
+Fase E4: "Robustez do escritório ao vivo" (`specs/fase-e4-robustez-do-escritorio.md`), a partir de
+uma execução real em que o painel travou depois de um `update`. Chega a quem já usa com um
+`npx @aksp/opencrew@latest update`; nenhum arquivo de crew é alterado. **Se o Escritório estiver
+aberto na hora do `update`, feche-o e rode `/opencrew dashboard` de novo.**
+
+### Added
+- **O Escritório que ficou aberto de antes do `update` é reconhecido.** O `/estado` passa a trazer
+  a versão do OpenCrew que subiu o servidor. O `escritorio.mjs` (o `/opencrew dashboard`) compara
+  com a versão instalada e, se for outra — ou se o servidor for de até a 1.19.0, que não a informa —,
+  responde "O escritório aberto em … é de uma versão anterior. Feche esse processo e rode o comando
+  de novo.", com código 1, sem abrir um segundo servidor. Antes ele respondia "já está aberto", e a
+  página nunca terminava de carregar.
+- **O `update` avisa.** Quando acha o Escritório deste projeto aberto nas portas 4747 a 4756, o
+  resumo ganha "O escritório está aberto em …. Feche e rode /opencrew dashboard de novo para ver a
+  versão nova.". Só pergunta ao `/estado`; não encerra processo.
+- **A página diz qual arquivo faltou.** Um arquivo novo, `aviso.js`, que não depende de nenhum
+  outro: se depois de 4 segundos a página ainda não abriu, ele confere os módulos e escreve "O
+  escritório não carregou: faltou …. Feche o escritório e rode /opencrew dashboard de novo.".
+- **Duas execuções da mesma crew: a segunda é perguntada.** `caminho.mjs pasta`, quando a crew tem
+  execução aberta com atividade nas últimas 2 horas, não cria nada e responde `CAMINHO:ABERTA
+  <execução>`, com a instrução para a IA perguntar: continuar aquela (`/opencrew retomar`) ou abrir
+  outra (`--nova`). O painel do Escritório é um só por crew, e antes a segunda execução escrevia
+  por cima da primeira sem aviso. O pedido avulso (`/opencrew pedir`) não entra nessa regra.
+- **O boneco que trabalha é o do agente do passo.** Em `passo` e `checkpoint`, o `estado.mjs` lê o
+  `agent:` do arquivo do passo e, se o `--agente` veio diferente, usa o do passo e responde
+  `ESTADO:OK — agente do passo <K>: <id>`. Só corrige quando a contagem de passos da execução bate
+  com a crew; na dúvida, vale o que veio.
+
+### Changed
+- A frase de abertura da página agora manda primeiro fechar o Escritório e rodar
+  `/opencrew dashboard` de novo; abrir pelo endereço, e não pelo arquivo, vem depois.
+- `runner/escritorio.md` diz que o `{id}` do `--agente` é o valor de `agent:` do passo (o mesmo
+  texto da coluna `id` do `crew-party.csv`).
+- Um teste novo trava que todo `import` da página aponta para um arquivo que o servidor entrega.
+
 ## [1.19.0] — 2026-10-12
 
 Fase E3: "Conversa e entrega visíveis, e escritório do tamanho da crew"

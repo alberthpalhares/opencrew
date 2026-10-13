@@ -184,7 +184,8 @@ async function rodarCaminho(raiz, argv, agora = new Date(2026, 2, 3, 14, 30, 22)
 test('U5a-10a: pasta with no --run names the run by the clock of the computer; the same second gets -2', async (t) => {
   const raiz = await projetoDeCaminho(t);
   assert.deepEqual(await rodarCaminho(raiz, ['pasta']), { code: 0, linhas: ['CAMINHO:OK crews/x/output/2026-03-03-143022'] });
-  assert.deepEqual(await rodarCaminho(raiz, ['pasta']), { code: 0, linhas: ['CAMINHO:OK crews/x/output/2026-03-03-143022-2'] });
+  // Since E4 a second run of the same crew, while the first is open and recent, is only opened with --nova.
+  assert.deepEqual(await rodarCaminho(raiz, ['pasta', '--nova']), { code: 0, linhas: ['CAMINHO:OK crews/x/output/2026-03-03-143022-2'] });
   assert.deepEqual(await rodarCaminho(raiz, ['pasta', '--arquivo', 'crews/x/output/a.md'], new Date(2026, 11, 9, 5, 7, 8)), { code: 0, linhas: ['CAMINHO:OK crews/x/output/2026-12-09-050708'] });
   // Since U5-3 each new run folder is born with its record, the only file the script writes (specs/fase-u5c-execucao-registrada.md).
   assert.deepEqual((await snapshot(raiz)).map((l) => path.basename(l.slice(0, l.lastIndexOf(':')))), ['execucao.json', 'execucao.json', 'execucao.json']);

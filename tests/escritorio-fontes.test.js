@@ -13,13 +13,13 @@ const PASTA = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../tem
 // A Windows checkout hands the payload over with CRLF: the contracts read it with LF.
 const FONTES = Object.fromEntries(readdirSync(PASTA).sort().map((nome) => [nome, readFileSync(path.join(PASTA, nome), 'utf8').replace(/\r\n/g, '\n')]));
 const HTML = FONTES['index.html'];
-const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, abra pelo endereço que o comando /opencrew dashboard mostrou, e não pelo arquivo.';
+const ABRINDO = 'Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.';
 
 test('E1-06a: no file of the page writes HTML or text on the canvas; every <script> has src and no tag has an on…= attribute', () => {
   const proibido = /innerHTML|outerHTML|insertAdjacentHTML|document\.write|fillText|strokeText|createContextualFragment|DOMParser|srcdoc|\beval\(|new Function/;
   for (const [nome, fonte] of Object.entries(FONTES)) assert.doesNotMatch(fonte, proibido, nome);
-  assert.deepEqual(HTML.match(/<script\b[^>]*>/gi), ['<script type="module" src="app.js">'], 'one script, loaded by src');
-  assert.match(HTML, /<script type="module" src="app\.js"><\/script>/, 'and nothing written inside it');
+  assert.deepEqual(HTML.match(/<script\b[^>]*>/gi), ['<script type="module" src="aviso.js">', '<script type="module" src="app.js">'], 'two scripts (aviso.js came with phase E4), loaded by src');
+  assert.match(HTML, /<script type="module" src="aviso\.js"><\/script>\n<script type="module" src="app\.js"><\/script>/, 'and nothing written inside them');
   for (const tag of HTML.match(/<[a-z][^>]*>/gi)) assert.doesNotMatch(tag, /\son[a-z]+\s*=/i, tag);
 });
 
