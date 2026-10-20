@@ -126,27 +126,17 @@ test('U1-04b: build and copywriting carry the no-invention rule', () => {
   }
 });
 
-test('U1-05a: canonical constraint names; Instagram feed is 4:5, max 10 slides', () => {
+// Since R4 (1.19.2) the Instagram feed is 3:4 at 1080x1440, max 20 slides (the official limits of
+// 2026); U1-05b, which forbade 1440 in the presets, is retired: R4-04a checks the presets now.
+test('U1-05a: canonical constraint names; Instagram feed is 3:4, max 20 slides', () => {
   const dir = new URL('../templates/_opencrew/core/best-practices/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.md'))) {
     assert.doesNotMatch(readFileSync(new URL(f, dir), 'utf8'), /^\s+max_hashtags:/m, `${f} uses max_hashtags (use hashtags_max)`);
   }
   const ig = read('_opencrew/core/best-practices/instagram-feed.md');
-  assert.match(ig, /^\s+carousel_max_slides: 10$/m);
-  assert.match(ig, /1080x1350/);
-  assert.doesNotMatch(ig, /1080x1440|3:4/);
-});
-
-test('U1-05b: no Instagram feed/carousel preset or base template at 1440 high', () => {
-  for (const rel of [
-    'skills/image-creator/SKILL.md',
-    'skills/template-designer/SKILL.md',
-    'skills/template-designer/base-templates/model-a.html',
-    'skills/template-designer/base-templates/model-b.html',
-    'skills/template-designer/base-templates/model-c.html',
-  ]) {
-    assert.doesNotMatch(read(rel), /1080\s*x\s*1440|1080x1440|height:\s*1440px/i, `${rel} still uses 1080x1440`);
-  }
+  assert.match(ig, /^\s+carousel_max_slides: 20$/m);
+  assert.match(ig, /1080x1440/);
+  assert.match(ig, /3:4/);
 });
 
 // ── U2 Crew que conhece o projeto (specs/fase-u2-crew-que-conhece-o-projeto.md) ──────

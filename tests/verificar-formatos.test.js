@@ -1,6 +1,8 @@
 // specs/fase-r1-reparos-1-6-1.md — R1-01n to R1-01z and R1-10a to R1-10g: which row of the
 // format table applies to each file, and what the report says when nothing was measured.
 // Synthetic, neutral text; the numbers are the ones in the scenarios.
+// Since R4 (1.19.2) the Instagram limits are 20 slides and 5 hashtags: the scenarios that cross
+// them use 22 slides and 6 hashtags (they were 12 and 31 with the limits of 10 and 30).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatarRelatorio } from '../templates/_opencrew/core/scripts/verificar.mjs';
@@ -61,10 +63,10 @@ test('R1-01r: three "## Legenda N" under "# Legendas para Instagram" are three m
   assert.deepEqual(bloqueios(r), []);
 });
 
-test('R1-01s: a note "- Slide 3: …" does not count as an eleventh slide', async () => {
-  const slides = Array.from({ length: 10 }, (_, i) => `Slide ${i + 1} (Cena):\n  Headline: frase do slide`).join('\n\n');
+test('R1-01s: a note "- Slide 3: …" does not count as a twenty-first slide', async () => {
+  const slides = Array.from({ length: 20 }, (_, i) => `Slide ${i + 1} (Cena):\n  Headline: frase do slide`).join('\n\n');
   const r = await um(`# Carrossel\n\n${slides}\n\nNotas:\n- Slide 3: trocar a foto\n`, 'instagram-feed');
-  assert.deepEqual(itens(r).filter((i) => /slides/.test(i.item)).map(par), [[10, 10]]);
+  assert.deepEqual(itens(r).filter((i) => /slides/.test(i.item)).map(par), [[20, 20]]);
   assert.deepEqual(bloqueios(r), []);
 });
 
@@ -82,10 +84,10 @@ test('R1-01u: two posts written with HOOK … CTA are two measurements, "post 1"
   assert.deepEqual(bloqueios(r), []);
 });
 
-test('R1-01v: twelve "## Slide N" block the carousel; the "## Legenda" inside is measured apart', async () => {
-  const slides = Array.from({ length: 12 }, (_, i) => `## Slide ${i + 1}\n\nFrase do slide.\n`).join('\n');
+test('R1-01v: twenty-two "## Slide N" block the carousel; the "## Legenda" inside is measured apart', async () => {
+  const slides = Array.from({ length: 22 }, (_, i) => `## Slide ${i + 1}\n\nFrase do slide.\n`).join('\n');
   const r = await um(`# Carrossel\n\n${slides}\n## Legenda\n\n${texto(500)}\n`, 'instagram-feed');
-  assert.deepEqual(bloqueios(r).map(par), [[12, 10]]);
+  assert.deepEqual(bloqueios(r).map(par), [[22, 20]]);
   assert.match(bloqueios(r)[0].item, /slides/);
   assert.deepEqual(caracteres(r).map(par), [[500, 2200]]);
 });
@@ -95,16 +97,16 @@ test('R1-01v: a heading that is both carousel and caption opens one piece — sl
   const slides = Array.from({ length: 10 }, (_, i) => `## Slide ${i + 1}\n\n${texto(300)}\n`).join('\n');
   const r = await um(`# Carrossel e legenda - tema\n\n${slides}\n## Legenda\n\n${texto(500)}\n`, 'instagram-feed');
   assert.deepEqual(bloqueios(r), []);
-  const medidos = [['Carrossel Instagram — slides', 10, 10], ['Legenda Instagram — caracteres', 500, 2200], ['Legenda Instagram — hashtags', 0, 30]];
+  const medidos = [['Carrossel Instagram — slides', 10, 20], ['Legenda Instagram — caracteres', 500, 2200], ['Legenda Instagram — hashtags', 0, 5]];
   assert.deepEqual(itens(r).map((i) => [i.item, ...par(i)]), medidos);
   const semSlide = await um(`# Carrossel e legenda\n\n${texto(2300)}\n`, 'instagram-feed');
   assert.deepEqual(bloqueios(semSlide).map((i) => [i.item, ...par(i)]), [['Legenda Instagram — caracteres', 2300, 2200]]);
 });
 
 test('R1-01v: with no carousel piece, the "Slide N" headings of the file are the carousel — from two numbers on', async () => {
-  const slides = Array.from({ length: 12 }, (_, i) => `## Slide ${i + 1}\n\nFrase do slide.\n`).join('\n');
+  const slides = Array.from({ length: 22 }, (_, i) => `## Slide ${i + 1}\n\nFrase do slide.\n`).join('\n');
   const r = await um(`${slides}\n## Legenda\n\n${texto(500)}\n`, 'instagram-feed');
-  assert.deepEqual(bloqueios(r).map((i) => [i.item, ...par(i)]), [['Carrossel Instagram (arquivo inteiro) — slides', 12, 10]]);
+  assert.deepEqual(bloqueios(r).map((i) => [i.item, ...par(i)]), [['Carrossel Instagram (arquivo inteiro) — slides', 22, 20]]);
   assert.deepEqual(caracteres(r).map(par), [[500, 2200]]);
   // One loose "## Slide 1" is not a carousel; and only a declared instagram-feed is read this way.
   const solto = await um('## Slide 1\n\nFrase do slide.\n', 'instagram-feed');
@@ -192,21 +194,21 @@ test('R1-10a: the label is compared whole — "=== HOOK (0-30s) ===" is not a Li
 });
 
 test('R1-10b: a "## Hashtags" section adds to the caption before it', async () => {
-  const r = await um(`## Legenda\n\n${texto(500)}\n\n## Hashtags\n\n${tags(31)}\n`, 'instagram-feed');
-  assert.deepEqual(bloqueios(r).map(par), [[31, 30]]);
+  const r = await um(`## Legenda\n\n${texto(500)}\n\n## Hashtags\n\n${tags(6)}\n`, 'instagram-feed');
+  assert.deepEqual(bloqueios(r).map(par), [[6, 5]]);
   assert.deepEqual(caracteres(r).map(par), [[500, 2200]]);
 });
 
 test('R1-10b: a "## Hashtags Instagram" section adds to the Instagram caption, not to the post opened last', async () => {
-  const md = `## Legenda Instagram\n\n${texto(900)}\n\n## Post LinkedIn\n\n${texto(1200)}\n\n## Hashtags Instagram\n\n${tags(12)}\n`;
+  const md = `## Legenda Instagram\n\n${texto(900)}\n\n## Post LinkedIn\n\n${texto(1200)}\n\n## Hashtags Instagram\n\n${tags(4)}\n`;
   const r = await um(md);
   const hashtags = itens(r).filter((i) => /hashtags/.test(i.item)).map((i) => [i.item, ...par(i)]);
-  assert.deepEqual(hashtags, [['Legenda Instagram — hashtags', 12, 30], ['Post LinkedIn — hashtags', 0, 5]]);
+  assert.deepEqual(hashtags, [['Legenda Instagram — hashtags', 4, 5], ['Post LinkedIn — hashtags', 0, 5]]);
   assert.deepEqual(bloqueios(r), []);
   // No caption to add to: with a declared format they are a piece of their own; without one, ignored.
-  const semLegenda = `## Post LinkedIn\n\n${texto(1200)}\n\n## Hashtags Instagram\n\n${tags(12)}\n`;
+  const semLegenda = `## Post LinkedIn\n\n${texto(1200)}\n\n## Hashtags Instagram\n\n${tags(4)}\n`;
   const contadas = async (formato) => itens(await um(semLegenda, formato)).filter((i) => /hashtags/.test(i.item)).map((i) => [i.item, ...par(i)]);
-  assert.deepEqual(await contadas('linkedin-post'), [['Post LinkedIn — hashtags', 0, 5], ['Instagram — hashtags', 12, 30]]);
+  assert.deepEqual(await contadas('linkedin-post'), [['Post LinkedIn — hashtags', 0, 5], ['Instagram — hashtags', 4, 5]]);
   assert.deepEqual(await contadas(), [['Post LinkedIn — hashtags', 0, 5]]);
 });
 
@@ -214,7 +216,7 @@ test('R1-10b: a heading that starts with "hashtags" is only hashtags — they ad
   const hashtags = (r) => itens(r).filter((i) => /hashtags/.test(i.item)).map((i) => [i.item, ...par(i), i.nivel]);
   for (const titulo of ['Hashtags da legenda', 'Hashtags do carrossel']) {
     const r = await um(`## Legenda\n\n${texto(300)}\n\n${tags(20)}\n\n## ${titulo}\n\n${tags(15)}\n`, 'instagram-feed');
-    assert.deepEqual(hashtags(r), [['Legenda Instagram — hashtags', 35, 30, 'bloqueio']], titulo);
+    assert.deepEqual(hashtags(r), [['Legenda Instagram — hashtags', 35, 5, 'bloqueio']], titulo);
   }
   const post = await um(`## Post\n\n${texto(300)}\n\n${tags(4)}\n\n## Hashtags do post\n\n${tags(3)}\n`, 'linkedin-post');
   assert.deepEqual(hashtags(post), [['Post LinkedIn — hashtags', 7, 5, 'bloqueio']]);
@@ -223,14 +225,14 @@ test('R1-10b: a heading that starts with "hashtags" is only hashtags — they ad
   assert.deepEqual(bloqueios(legenda).map(par), [[2300, 2200]]);
   // With a channel word, they add to the piece of that channel — never to another channel's.
   const canais = `## Legenda Instagram\n\n${texto(300)}\n\n## Post LinkedIn\n\n${texto(300)}\n\n${tags(4)}\n\n## Tweet\n\n${texto(100)}\n\n`;
-  assert.deepEqual(hashtags(await um(`${canais}## Hashtags do tweet\n\n${tags(3)}\n`)), [['Legenda Instagram — hashtags', 0, 30, 'ok'], ['Post LinkedIn — hashtags', 4, 5, 'ok']]);
-  assert.deepEqual(hashtags(await um(`${canais}## Hashtags LinkedIn\n\n${tags(3)}\n`)), [['Legenda Instagram — hashtags', 0, 30, 'ok'], ['Post LinkedIn — hashtags', 7, 5, 'bloqueio']]);
+  assert.deepEqual(hashtags(await um(`${canais}## Hashtags do tweet\n\n${tags(3)}\n`)), [['Legenda Instagram — hashtags', 0, 5, 'ok'], ['Post LinkedIn — hashtags', 4, 5, 'ok']]);
+  assert.deepEqual(hashtags(await um(`${canais}## Hashtags LinkedIn\n\n${tags(3)}\n`)), [['Legenda Instagram — hashtags', 0, 5, 'ok'], ['Post LinkedIn — hashtags', 7, 5, 'bloqueio']]);
 });
 
 test('R1-10c: a label line ends the heading section — the caption measures 500', async () => {
-  const r = await um(`## Legenda\n\n${texto(500)}\n\n=== HASHTAGS ===\n${tags(31)}\n`, 'instagram-feed');
+  const r = await um(`## Legenda\n\n${texto(500)}\n\n=== HASHTAGS ===\n${tags(6)}\n`, 'instagram-feed');
   assert.deepEqual(caracteres(r).map(par), [[500, 2200]]);
-  assert.deepEqual(bloqueios(r).map(par), [[31, 30]]);
+  assert.deepEqual(bloqueios(r).map(par), [[6, 5]]);
 });
 
 test('R1-10d: in a blog only the first "=== TITLE ===" counts', async () => {

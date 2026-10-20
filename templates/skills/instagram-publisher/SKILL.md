@@ -4,19 +4,19 @@ description: >
   Publishes Instagram carousel posts from local images.
   Uploads images to imgBB (requires API key) for public hosting, creates Instagram
   media containers via the Graph API, and publishes the carousel.
-  Supports 2-10 images per post and retrieves the real post permalink.
+  Supports 2-20 images per post and retrieves the real post permalink.
 description_pt-BR: >
   Publica carrosséis do Instagram a partir de imagens locais.
   Faz upload das imagens para o imgBB (requer chave de API) como hospedagem pública,
   cria containers de mídia via Graph API e publica o carrossel.
-  Suporta de 2 a 10 imagens por post e obtém o permalink real.
+  Suporta de 2 a 20 imagens por post e obtém o permalink real.
 description_es: >
   Publica carruseles de Instagram a partir de imágenes locales.
   Sube las imágenes a imgBB (requiere clave de API) como hosting público, crea
   contenedores de medios vía Graph API y publica el carrusel.
-  Soporta de 2 a 10 imágenes por post y obtiene el permalink real.
+  Soporta de 2 a 20 imágenes por post y obtiene el permalink real.
 type: script
-version: "1.0.0"
+version: "1.1.0"
 script:
   path: scripts/publish.js
   runtime: node
@@ -33,7 +33,7 @@ categories: [social-media, publishing, instagram]
 
 ## When to use
 
-Use the Instagram Publisher when you need to publish carousel posts directly to an Instagram Business account. This skill handles the full workflow: uploading images to imgBB (requires your own API key from https://api.imgbb.com/), creating Instagram media containers via the Graph API, and publishing the carousel. It supports 2-10 JPEG images per post.
+Use the Instagram Publisher when you need to publish carousel posts directly to an Instagram Business account. This skill handles the full workflow: uploading images to imgBB (requires your own API key from https://api.imgbb.com/), creating Instagram media containers via the Graph API, and publishing the carousel. It supports 2-20 JPEG images per post.
 
 
 ## Instructions
@@ -72,8 +72,13 @@ and is **never** retried automatically.
 
 ### Constraints
 
-- Images: JPEG only (`.jpg`/`.jpeg`), 2-10 per carousel, inside `crews/*/output/` — the
+- Images: JPEG only (`.jpg`/`.jpeg`), 2-20 per carousel, inside `crews/*/output/` — the
   script refuses anything else before uploading
+- Aspect ratio: the Graph API documents 4:5 to 1.91:1, so carousels published here must be
+  4:5 (1080x1350). The Instagram app takes up to 3:4 (1080x1440), but a 3:4 slide may be refused
+  by the API: if the slides are 1080x1440, warn the user before the dry run and offer to
+  re-render them at 1080x1350
+- Hashtags: at most 5 in the caption (Instagram's limit)
 - File names: the image paths and the caption file follow the safe-name rule (nome seguro) of
   `_opencrew/core/runner.pipeline.md` — letters, digits, space and `. _ - / \ : ( )`. With any
   other character (a comma included: it splits the `--images` list) do not run the command: ask

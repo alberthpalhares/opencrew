@@ -3,6 +3,30 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.2] — 2026-10-20
+
+Fase R4: "Limites do Instagram de 2026" (`specs/fase-r4-instagram-limites-2026.md`). Os limites
+vêm da Central de Ajuda do Instagram e da documentação da API da Meta, consultadas em 2026-10-20.
+Chega a quem já usa com um `npx @aksp/opencrew@latest update`. Crews já criadas não mudam (as que
+geram slides em 1080×1350 continuam valendo no app e na API).
+
+### Changed
+- **Carrossel de até 20 slides** (antes, 10): `carousel_max_slides: 20` no `instagram-feed`. O
+  revisor bloqueia a partir do 21º. O `instagram-publisher` aceita de 2 a 20 imagens.
+- **Até 5 hashtags** (antes, 30) no `instagram-feed` e no `instagram-reels`, como pede o
+  Instagram. O revisor bloqueia a partir da 6ª. As diretrizes recomendam de 3 a 5 hashtags
+  específicas, nada de genéricas como #reels ou #explore.
+- **Slides em 3:4, 1080×1440** (antes, 4:5, 1080×1350). É a proporção mais alta que o app aceita
+  (de 1,91:1 a 3:4, com 1080 de largura). Os tamanhos prontos do `template-designer` (e dos três
+  modelos base), do `image-creator`, do `image-fetcher` e do `image-design` acompanham a mudança.
+- **Publicar pela API continua pedindo 4:5.** A referência da API da Meta ainda documenta a faixa
+  de 4:5 a 1,91:1. O `instagram-feed`, o `social-networks-publishing` e o `instagram-publisher`
+  avisam: para publicar por ele, exporte em 1080×1350.
+
+### Removed
+- As travas U1-05b e R1-09c, que proibiam 1080×1440 no payload, saem porque contrariam a regra
+  nova. A R4-04a passa a conferir os tamanhos prontos.
+
 ## [1.19.1] — 2026-10-12
 
 Fase E4: "Robustez do escritório ao vivo" (`specs/fase-e4-robustez-do-escritorio.md`), a partir de

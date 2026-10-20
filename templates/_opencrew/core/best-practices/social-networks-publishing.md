@@ -35,7 +35,7 @@ version: "1.0.0"
 
 3. **Validate platform requirements before attempting to publish.** Every platform has specific constraints. Validate all of them before making any API call. If validation fails, report the specific issue and suggest a fix before proceeding.
 
-4. **Format content natively for each platform.** The same content may need reformatting for different platforms. Instagram captions use line breaks and 5-8 hashtags at the end. LinkedIn uses professional tone with 1-3 hashtags. X/Twitter needs concise messaging within character limits. Never publish the exact same raw text across all platforms without adaptation.
+4. **Format content natively for each platform.** The same content may need reformatting for different platforms. Instagram captions use line breaks and at most 5 hashtags at the end. LinkedIn uses professional tone with 1-3 hashtags. X/Twitter needs concise messaging within character limits. Never publish the exact same raw text across all platforms without adaptation.
 
 5. **Report publishing results immediately.** After every publish attempt, report the outcome clearly:
    - **Success**: Platform, post URL/permalink, post ID, timestamp
@@ -56,8 +56,10 @@ Every platform has specific constraints that must be validated before making any
 
 ### Instagram
 - **Image format**: JPEG only
-- **Image count**: 2-10 images for carousel
+- **Image count**: 2-20 images for carousel
+- **Aspect ratio (API)**: 4:5 to 1.91:1 — export carousels at 1080x1350. The app takes up to 3:4 (1080x1440), but the Graph API still documents the 4:5 range, so a 3:4 slide may be refused when published through `instagram-publisher`.
 - **Caption length**: Max 2,200 characters
+- **Hashtags**: Max 5 per post
 - **Rate limit**: 25 posts per 24 hours
 - **Image hosting**: Use imgBB for public URLs (requires `IMGBB_API_KEY` in `.env`). Get a free key at https://api.imgbb.com/
 
@@ -172,10 +174,10 @@ Caption (1,847 / 2,200 chars):
 
 VALIDATION
   Image format: JPEG (required: JPEG)
-  Image count: 7 (required: 2-10)
-  Image dimensions: 1080x1350 (valid carousel)
+  Image count: 7 (required: 2-20)
+  Image dimensions: 1080x1350 (4:5, inside the API range 4:5 to 1.91:1)
   Caption length: 1,847 chars (max: 2,200)
-  Hashtags: 5 (recommended: 5-8)
+  Hashtags: 5 (max: 5)
   Rate limit: 3/25 posts used in last 24h
 
 Status: All validations passed. Ready for dry-run.

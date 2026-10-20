@@ -135,8 +135,8 @@ export async function main(argv = process.argv, { env = process.env, cwd = proce
   const { images, dryRun } = args;
 
   if (!images.length) throw new Error('--images is required (e.g. --images "slide1.jpg,slide2.jpg")');
-  if (images.length < 2 || images.length > 10) {
-    throw new Error(`Instagram carousels require 2–10 images (got ${images.length})`);
+  if (images.length < 2 || images.length > 20) {
+    throw new Error(`Instagram carousels require 2–20 images (got ${images.length})`);
   }
   validateImagePaths(images, cwd);
 

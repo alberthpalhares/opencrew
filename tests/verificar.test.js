@@ -86,7 +86,7 @@ test('U1-01c: missing SEO links are ALERTS, not blocks', async () => {
 
 test('U1-01d: Instagram caption over 2200 chars and over the hashtag limit are blocked', async () => {
   const raiz = await projeto();
-  const tags = Array.from({ length: 31 }, (_, i) => `#tag${i}`).join(' ');
+  const tags = Array.from({ length: 6 }, (_, i) => `#tag${i}`).join(' ');
   const legenda = `${texto(2300)}\n\n${tags}`;
   const md = await arquivo(raiz, 'legendas.md', `# Legendas\n\n## LEGENDA INSTAGRAM\n\n${legenda}\n\n---\n`);
   const r = await verificar({ raiz, crew: 'crews/teste', arquivos: [md] });
@@ -94,7 +94,7 @@ test('U1-01d: Instagram caption over 2200 chars and over the hashtag limit are b
   const chars = bloqueios(r).find((i) => /instagram/i.test(i.item) && /caracteres/i.test(i.item));
   assert.ok(chars.medido > 2200 && chars.limite === 2200);
   const hashtags = bloqueios(r).find((i) => /instagram/i.test(i.item) && /hashtags/i.test(i.item));
-  assert.deepEqual([hashtags.medido, hashtags.limite], [31, 30]);
+  assert.deepEqual([hashtags.medido, hashtags.limite], [6, 5]); // R4: the limit is 5 since 1.19.2
 });
 
 test('U1-01e: a LinkedIn post over 3000 chars is blocked', async () => {

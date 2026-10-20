@@ -1,13 +1,12 @@
-// Contracts the runner prompt keeps after R1 (specs/fase-r1-reparos-1-6-1.md: R1-07, R1-09c),
+// Contracts the runner prompt keeps after R1 (specs/fase-r1-reparos-1-6-1.md: R1-07),
 // plus the step format of the build prompt (max_review_cycles, R1-07b).
 // Like runtime-contracts.test.js, these guard the TEXT of the rules; whether a model obeys
 // them is checked in sandbox/.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkTmp } from './_helpers.js';
 import { runnerCompleto } from './_runner.js';
 
 const tpl = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates');
@@ -179,44 +178,5 @@ test('R1 revisão: a source check still pending after --corrigir asks again, wit
   assert.match(sourceCheck, /from the corrected paths\. If the new result still ends in `FONTES:PENDENTE`, ask again with options 2 and 3 only\./);
 });
 
-// ── R1-09c The whole payload, not only the five files U1-05b lists ──────────────────
-
-const RX_1440 = /1080\s*[x×]\s*1440/i;
-const SKIPPED = path.join('skills', 'opencrew-skill-creator') + path.sep;
-
-function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]
-  );
-}
-
-// Files under `root` (outside opencrew-skill-creator) that still mention 1080 x 1440.
-function mentions1440(root) {
-  return walk(root)
-    .map((file) => path.relative(root, file))
-    .filter((rel) => !rel.startsWith(SKIPPED) && RX_1440.test(readFileSync(path.join(root, rel), 'utf8')))
-    .map((rel) => rel.split(path.sep).join('/'))
-    .sort();
-}
-
-test('R1-09c: no file in templates/ (outside opencrew-skill-creator) mentions 1080 x 1440', () => {
-  assert.deepEqual(mentions1440(tpl), []);
-});
-
-test('R1-09c: the scan catches each spelling in any folder and skips opencrew-skill-creator', async () => {
-  const dir = await mkTmp('r1-09c');
-  const plant = (rel, text) => {
-    mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
-    writeFileSync(path.join(dir, rel), text);
-  };
-  try {
-    plant('skills/a/SKILL.md', 'viewport: 1080x1440');
-    plant('skills/b/base.html', '<p>1080 × 1440</p>');
-    plant('_opencrew/core/c.yaml', 'size: 1080 X 1440');
-    plant('skills/d/ok.md', 'viewport: 1080x1350');
-    plant('skills/opencrew-skill-creator/e.md', '1080x1440');
-    assert.deepEqual(mentions1440(dir), ['_opencrew/core/c.yaml', 'skills/a/SKILL.md', 'skills/b/base.html']);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
+// R1-09c (no "1080 x 1440" anywhere in the payload) was retired in R4 (1.19.2): the Instagram
+// feed is 3:4 at 1080x1440 since 2025 (specs/fase-r4-instagram-limites-2026.md, R4-04a).

@@ -329,3 +329,14 @@
   lean-ctx (decisão do dono na E4, 2026-10-12).
 - **Custo de adiar:** nenhum para quem não usa esse hook.
 - **Aprovação:** não.
+
+## Publicação no Instagram: conferir a proporção antes de enviar
+- **O que já existe:** desde a R4 (1.19.2), o padrão do carrossel é 3:4 (1080×1440), mas a API da Meta ainda documenta
+  a faixa de 4:5 a 1,91:1. O `instagram-publisher` só avisa no `SKILL.md`: a IA confere e oferece renderizar de novo
+  em 1080×1350. O `publish.js` não lê as dimensões do JPEG.
+- **Ideia:** o `publish.js` ler largura e altura de cada JPEG (marcador SOF) e recusar, antes do upload no imgBB, a imagem
+  fora da faixa da API, com a mensagem de como corrigir. Quando a referência oficial da API passar a aceitar 3:4, o aviso
+  sai e a faixa muda.
+- **Alocação:** → sem fase — projeto pausado; hoje o erro aparece no dry run (a API recusa o container), sem post publicado.
+- **Custo de adiar:** a imagem sobe para o imgBB à toa antes do erro, e a mensagem que aparece é a da API, em inglês.
+- **Aprovação:** não.

@@ -9,11 +9,11 @@ import { texto } from './_helpers.js';
 import { BLOG, CREW, EXEC, LEGENDA, arvore, entregar, leiame, ler, projeto, secao } from './_entrega.js';
 
 const legendaDe = (n, hashtags = '') => `=== CAPTION ===\n${texto(n)}\n${hashtags ? `\n=== HASHTAGS ===\n${hashtags}\n` : ''}`;
-/** Hashtags, separated by spaces, adding up to exactly n characters (n ≥ 14, at most 30 tags). */
+/** Five hashtags, separated by spaces, adding up to exactly n characters (n ≥ 14) — Instagram's limit since R4. */
 function hashtagsDe(n) {
-  const cheias = Math.floor((n - 2) / 11);
-  const resto = n - cheias * 11 - 1;
-  return [...Array.from({ length: cheias }, (_, i) => `#tag${String(i).padStart(6, '0')}`), `#${'z'.repeat(resto)}`].join(' ');
+  const base = Math.floor((n - 4) / 5);
+  const ultima = n - 4 - base * 4;
+  return [...'abcd'].map((l) => `#${l.repeat(base - 1)}`).concat(`#${'e'.repeat(ultima - 1)}`).join(' ');
 }
 
 test('U3a-07a: a 2300-character caption and a clean blog — instagram is not ready, blog is, ENTREGA:INCOMPLETA', async (t) => {

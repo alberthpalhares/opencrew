@@ -35,7 +35,7 @@ async function workspace141() {
   return dir;
 }
 
-test('U1-upg: update from a pre-1.5 workspace delivers the checker, the review lock and 4:5', async () => {
+test('U1-upg: update from a pre-1.5 workspace delivers the checker, the review lock and the current Instagram limits', async () => {
   const dir = await workspace141();
   await withCwd(dir, () => update());
 
@@ -46,8 +46,11 @@ test('U1-upg: update from a pre-1.5 workspace delivers the checker, the review l
   assert.equal(await exists(path.join(core, 'scripts', 'verificar', 'regras.mjs')), true);
   assert.match(await fs.readFile(path.join(core, 'runner.pipeline.md'), 'utf8'), /VERIFICACAO:BLOQUEADA/);
   const ig = await fs.readFile(path.join(core, 'best-practices', 'instagram-feed.md'), 'utf8');
-  assert.match(ig, /hashtags_max: 30/);
-  assert.match(ig, /1080x1350/);
+  // R4 (1.19.2): the limits of 2026 — 5 hashtags, 20 slides, 3:4 at 1080x1440.
+  assert.match(ig, /hashtags_max: 5$/m);
+  assert.match(ig, /carousel_max_slides: 20$/m);
+  assert.match(ig, /image_resolution: "1080x1440px"/);
+  assert.doesNotMatch(ig, /max_hashtags/);
   assert.doesNotMatch(await fs.readFile(path.join(dir, 'CLAUDE.md'), 'utf8'), /STATUS\.md/);
 });
 

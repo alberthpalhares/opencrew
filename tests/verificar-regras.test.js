@@ -230,7 +230,7 @@ test('R1-03i: in a line written with "em vez de" both terms stay forbidden', asy
 test('R1-04a: a local overlay without constraints keeps the core limits and adds a note', async () => {
   const local = { 'instagram-feed.md': '# Instagram — minhas notas\n\nPrefira tom direto.\n' };
   const r = await um(`## Legenda\n\n${texto(300)}\n\n${tags(45)}\n`, 'instagram-feed', { local });
-  assert.deepEqual(bloqueios(r).map(par), [[45, 30]]);
+  assert.deepEqual(bloqueios(r).map(par), [[45, 5]]);
   assert.ok(r.notas.includes('O arquivo `_opencrew/best-practices.local/instagram-feed.md` não declara limites (`constraints:`); usei os do core.'), r.notas.join(' | '));
 });
 

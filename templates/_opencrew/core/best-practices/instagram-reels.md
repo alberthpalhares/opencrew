@@ -11,8 +11,8 @@ constraints:
   aspect_ratio: "9:16 vertical"
   caption_max_chars: 2200
   caption_visible_chars: 125
-  hashtags_max: 30
-version: "1.0.0"
+  hashtags_max: 5
+version: "1.1.0"
 ---
 
 ## Compact Rules
@@ -25,7 +25,7 @@ version: "1.0.0"
 6. Design the ending to loop seamlessly back to the beginning to boost replay metrics.
 7. End with a specific, actionable CTA in the last 3-5 seconds (not a generic "follow me").
 8. Front-load the caption's value into the first 125 characters.
-9. Use 5-15 relevant hashtags and incorporate trending audio contextually.
+9. Use at most 5 hashtags (Instagram's limit), specific to the topic — never generic ones like #reels or #explore — and incorporate trending audio contextually.
 10. Post consistently 3-5 times a week to maintain algorithmic momentum.
 11. Avoid slow intros, logo reveals, or generic greetings like "hey guys".
 
@@ -96,8 +96,8 @@ CTA (last 3-5s):
 [CTA — question or action prompt]
 
 === HASHTAGS ===
-#hashtag1 #hashtag2 #hashtag3 #hashtag4 #hashtag5
-[5-15 hashtags, relevant to the content topic]
+#hashtag1 #hashtag2 #hashtag3
+[3-5 hashtags, never more than 5 — relevant to the content topic, no generic tags]
 
 === AUDIO NOTE ===
 [Trending sound suggestion or original audio direction]
@@ -124,5 +124,5 @@ CTA (last 3-5s):
 - **No CTA** — Reels without a clear ask generate significantly fewer follows, saves, and shares. Always direct the viewer's next action.
 - **Posting and ghosting** — Not engaging with comments in the first hour reduces the Reel's algorithmic momentum.
 - **Generic stock aesthetics** — Overly polished, impersonal content signals "ad" and reduces organic reach.
-- **Hashtag spam** — Using 30 irrelevant hashtags triggers suppression. Stick to 5-15 relevant tags.
+- **Hashtag spam** — More than 5 hashtags is over Instagram's limit. Stick to 3-5 tags specific to the topic; generic ones (#reels, #explore) do not help reach.
 - **Forced trending audio** — Using a trending sound that has no connection to the content feels inauthentic and does not boost performance the way contextually relevant audio does.

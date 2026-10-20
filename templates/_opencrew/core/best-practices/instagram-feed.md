@@ -8,15 +8,15 @@ whenToUse: |
 constraints:
   caption_max_chars: 2200
   caption_visible_chars: 125
-  hashtags_max: 30
-  recommended_hashtags: "5-15"
-  carousel_max_slides: 10
+  hashtags_max: 5
+  recommended_hashtags: "3-5"
+  carousel_max_slides: 20
   recommended_slides: "8-10"
   min_words_per_slide: 40
   max_words_per_slide: 80
-  image_ratio: "4:5 portrait"
-  image_resolution: "1080x1350px"
-version: "1.0.0"
+  image_ratio: "3:4 portrait (max); 1.91:1 to 3:4 accepted"
+  image_resolution: "1080x1440px"
+version: "1.1.0"
 ---
 
 ## Compact Rules
@@ -29,10 +29,11 @@ version: "1.0.0"
 6. Design the cover slide to be a scroll-stopping hook with bold type and high contrast.
 7. End every slide with an implicit or explicit reason to swipe.
 8. Conclude captions and carousels with a specific, actionable CTA or open-ended question.
-9. Use 5-15 relevant hashtags mixed between niche, mid-range, and broad categories.
+9. Use at most 5 hashtags (Instagram's limit) — specific to the topic, never generic ones like #reels or #explore.
 10. Post consistently (4-7x/week) at optimal times (9-11 AM or 7-9 PM).
-11. Place hashtags at the end of the caption or in the first comment; avoid banned tags.
+11. Place hashtags at the end of the caption; avoid banned tags.
 12. Never place clickable URLs in Instagram captions.
+13. Design slides at 1080x1440 (3:4), up to 20 per carousel; to publish through the Graph API (`instagram-publisher`), export at 1080x1350 (4:5) instead.
 
 <!-- End Compact Rules. Full reference below. -->
 
@@ -55,9 +56,21 @@ version: "1.0.0"
 - Use a consistent visual template across slides for brand recognition.
 - The first slide is everything — it must stop the scroll with high contrast, bold type, and a clear promise or curiosity gap.
 
+## Image Specs
+
+Source: Instagram Help Center (checked 2026-10-20).
+
+- **Width:** 1080 px. Instagram keeps the original resolution for widths from 320 to 1080 px; wider images are scaled down to 1080.
+- **Aspect ratio:** from 1.91:1 (landscape, 1080x566) to 3:4 (portrait, 1080x1440). Anything outside that range is cropped.
+- **Default for carousels and single images:** 3:4, 1080x1440 — the tallest accepted, and it shows uncropped in the profile grid.
+- **One ratio per carousel:** every slide uses the ratio of the first one.
+- **Up to 20 slides** (photos, videos, or a mix) per carousel.
+- **Publishing through the API** (`instagram-publisher`): the Graph API still documents a 4:5 to 1.91:1 range, so export at 4:5, 1080x1350, for posts published that way. Posting from the app takes 3:4.
+- **Format for the API:** JPEG only.
+
 ## Carousel Formats
 
-Choose the format that best fits the content goal. Each format has a specific slide structure and narrative arc.
+Choose the format that best fits the content goal. Each format has a specific slide structure and narrative arc. The slide ranges below are what each arc needs; the platform ceiling is 20 slides, which only long Tutorials or Listicles should approach — never add slides just to fill.
 
 ---
 
@@ -169,9 +182,9 @@ Choose the format that best fits the content goal. Each format has a specific sl
 - Use line breaks aggressively for readability. Add periods or dashes as spacing characters between paragraphs.
 - Write the hook as a standalone statement that creates urgency, curiosity, or personal relevance.
 - End every caption with a question or clear CTA to drive comments.
-- Use 5-15 hashtags per post. Mix: 3-5 niche/specific + 3-5 mid-range (10K-500K posts) + 2-3 broad/popular.
-- Place hashtags at the end of the caption or in the first comment.
-- Rotate hashtag sets between posts. Never copy-paste the same block repeatedly.
+- Use 3-5 hashtags per post — Instagram accepts at most 5. Choose tags specific to the topic and the audience (niche or mid-range); skip generic ones like #reels, #explore, or #instagood, which Instagram itself advises against.
+- Place hashtags at the end of the caption.
+- Rotate hashtags between posts. Never copy-paste the same block repeatedly.
 - Avoid banned or flagged hashtags — Instagram silently suppresses posts using them.
 
 ## Output Format
@@ -217,8 +230,8 @@ Slide N (CTA):
 [AI disclosure if applicable.]
 
 === HASHTAGS ===
-#hashtag1 #hashtag2 #hashtag3 #hashtag4 #hashtag5
-[5-15 hashtags, mix of niche, mid-range, and broad]
+#hashtag1 #hashtag2 #hashtag3
+[3-5 hashtags, never more than 5 — specific to the topic, no generic tags]
 ```
 
 ## Quality Criteria
@@ -234,7 +247,8 @@ Slide N (CTA):
 - [ ] Swipe-through rate is optimized: every slide ends with implicit or explicit reason to swipe
 - [ ] Caption first 125 characters work as a standalone hook
 - [ ] Caption ends with a provocative open-ended question or clear CTA
-- [ ] Hashtags are between 5-15, with a mix of niche and broad tags
+- [ ] At most 5 hashtags, all specific to the topic (no generic tags)
+- [ ] Carousel has at most 20 slides, all in the same ratio (3:4 at 1080x1440; 4:5 at 1080x1350 when published through the API)
 - [ ] No hashtag is banned or flagged by Instagram
 - [ ] Final slide includes a specific, actionable CTA (not generic "follow me")
 - [ ] Content is designed to be save-worthy or share-worthy, not just likeable
@@ -246,7 +260,7 @@ Slide N (CTA):
 - **Too much text per carousel slide** — Exceeding 80 words per slide destroys readability. Use the two-layer hierarchy (headline + supporting text) to keep density manageable. Never put all text at the same size.
 - **No CTA** — Posts without a clear ask get saved and shared significantly less. Always tell the audience what to do next.
 - **Generic stock aesthetics** — Overly polished stock photos signal "advertisement" to users and reduce organic engagement.
-- **Hashtag spam** — Using all 30 hashtags or including irrelevant trending tags triggers algorithmic suppression.
+- **Hashtag spam** — More than 5 hashtags is over Instagram's limit; irrelevant trending or generic tags (#reels, #explore) hurt reach instead of helping it.
 - **Editing captions after posting** — May reset the algorithmic distribution cycle, killing early momentum.
 - **Posting and ghosting** — Not responding to comments in the first hour signals low engagement to the algorithm and reduces reach.
 - **Inconsistent posting** — Gaps of 7+ days signal an inactive account to the algorithm, reducing baseline reach.
