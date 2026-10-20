@@ -1,6 +1,6 @@
 # Spec — Fase R4: Limites do Instagram de 2026
 
-- **Fase:** R4 · **Módulos:** Payload (`templates/_opencrew/core/best-practices/`: `instagram-feed.md`, `instagram-reels.md`, `social-networks-publishing.md`, `image-design.md`; `templates/skills/`: `instagram-publisher` (SKILL.md + `scripts/publish.js`), `template-designer` (SKILL.md + `base-templates/model-a|b|c.html`), `image-creator`, `image-fetcher`) + CHANGELOG + AGENTS.md + IDEIAS.md + testes · **Status:** aprovada pelo dono em 2026-10-20 ("aprovado"); implementada (1.19.2)
+- **Fase:** R4 · **Módulos:** Payload (`templates/_opencrew/core/best-practices/`: `instagram-feed.md`, `instagram-reels.md`, `social-networks-publishing.md`, `image-design.md`; `templates/_opencrew/core/prompts/design.prompt.md` (regra 8); `templates/skills/`: `instagram-publisher` (SKILL.md + `scripts/publish.js`), `template-designer` (SKILL.md + `base-templates/model-a|b|c.html`), `image-creator`, `image-fetcher`) + CHANGELOG + AGENTS.md + IDEIAS.md + testes · **Status:** aprovada pelo dono em 2026-10-20 ("aprovado"); implementada (1.19.2)
 - **Versão:** 1.19.2 (a U6 fatia 3, `fase-u6c-medicao.md`, segue como 1.20.0).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Sonnet 5.5 · alto
@@ -56,6 +56,19 @@ imagem precisa ser 4:5.
    novos. U1-upg passa a esperar 1080x1440.
 7. **O medidor não muda:** o `verificar.mjs` já lê `hashtags_max` e `carousel_max_slides` do
    frontmatter; só os valores mudam.
+8. **Crew que publica pela API desenha em 4:5** (acréscimo de 2026-10-20, aprovado pelo dono: "sigo
+   as recomendações"). Nenhuma crew padrão publica — o modelo `instagram-carrossel` não tem
+   publicador —, mas a Discovery sugere o `instagram-publisher` (o `init` o instala) e o Design pode
+   criar o Publicitário. Antes da R4 tudo era 4:5 e isso funcionava sem regra; com o 3:4 como
+   padrão, o designer não sabe que a crew publica pela API. Por isso:
+   - `design.prompt.md`: quando o desenho tem um agente com `instagram-publisher` e um que produz
+     imagens, o `design.yaml` grava `carousel_size: "1080x1350"` (senão, `"1080x1440"`), e os
+     `quality_criteria` do designer dizem que os slides são 1080×1350 porque a crew publica pela
+     API. É assim que o tamanho chega aos arquivos do agente no Build.
+   - `template-designer/SKILL.md`: lê o `carousel_size` do `design.yaml` (Step 1) e gera os modelos
+     nesse tamanho; sem o campo, 1080×1440 — ou 1080×1350 se o `design.yaml` listar o
+     `instagram-publisher` (crew criada antes do campo).
+   - Crews existentes não mudam: o tamanho delas está no `template-reference.html` de cada uma.
 
 ## 3. Cenários (BDD)
 - **R4-01a** (contrato) DADO o `instagram-feed.md` ENTÃO tem `hashtags_max: 5`,
@@ -70,6 +83,11 @@ imagem precisa ser 4:5.
   com 20, esse erro não aparece. O `SKILL.md` diz 2–20 e cita a faixa 4:5 a 1,91:1 da API.
 - **R4-04a** (contrato) DADOS os presets de carrossel do Instagram (regra 5) ENTÃO estão em
   1080×1440 e nenhum ainda dá 1080×1350 como tamanho de carrossel do feed.
+- **R4-05a** (contrato) DADO o `design.prompt.md` ENTÃO ele manda gravar `carousel_size` no
+  `design.yaml` — `"1080x1350"` quando há `instagram-publisher`, senão `"1080x1440"` — e pôr o
+  tamanho nos `quality_criteria` do designer; DADO o `template-designer/SKILL.md` ENTÃO ele lê o
+  `carousel_size` do `design.yaml` e cai em 1080×1350 quando o `instagram-publisher` está listado.
+  Em todos os presets da R4-04a, a única linha que ainda cita 1080×1350 é a da exceção da API.
 - **R4-upg** DADO um workspace com `instagram-feed.md` e `instagram-reels.md` antigos (30
   hashtags, 10 slides, 1080x1350) QUANDO `update` ENTÃO os dois trazem os valores novos. Não há
   migração nova: os arquivos moram em `_opencrew/core/` e no catálogo de skills, que o `update`

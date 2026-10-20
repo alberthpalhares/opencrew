@@ -61,7 +61,8 @@ You should also apply general web design best practices: proper white space, vis
 These rules are NON-NEGOTIABLE. Every template must comply:
 
 **Fixed Dimensions (never use height: auto or flexible height):**
-- Instagram Carousel: `width: 1080px; height: 1440px` (3:4 portrait, the tallest Instagram accepts). Exception: a crew that publishes through the Graph API (`instagram-publisher`) uses 4:5 — see "Image Specs" in `_opencrew/core/best-practices/instagram-feed.md`
+- Instagram Carousel: the `carousel_size` of `design.yaml`. Without the field: `width: 1080px; height: 1440px` (3:4 portrait, the tallest Instagram accepts)
+- Instagram Carousel of a crew that publishes through the Graph API (`instagram-publisher` in `design.yaml`): `width: 1080px; height: 1350px` (4:5 — the API still documents 4:5 to 1.91:1; see "Image Specs" in `_opencrew/core/best-practices/instagram-feed.md`)
 - Instagram Story/Reel: `width: 1080px; height: 1920px` (9:16 portrait)
 - Instagram Post: `width: 1080px; height: 1080px` (1:1 square)
 - LinkedIn Post: `width: 1200px; height: 627px` (1.91:1 horizontal)
@@ -83,7 +84,7 @@ Templates that violate these rules are rejected — no exceptions.
 
 Read these files to understand the crew:
 - `crews/{code}/_build/discovery.yaml` — platform, domain, tone, language
-- `crews/{code}/_build/design.yaml` — agents, purpose, skills
+- `crews/{code}/_build/design.yaml` — agents, purpose, skills, and `carousel_size` (the slide size: `1080x1350` when the crew publishes through `instagram-publisher`, else `1080x1440`)
 - `crews/{code}/_investigations/consolidated-analysis.md` (if exists) — visual patterns from reference profiles
 - `_opencrew/_memory/company.md` — company name, brand, industry, target audience
 - `_opencrew/_memory/preferences.md` — user preferences (language, style, tone)

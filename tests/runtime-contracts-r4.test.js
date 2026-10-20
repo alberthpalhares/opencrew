@@ -61,7 +61,7 @@ test('R4-03a: the publisher takes 2 to 20 images and warns that the API needs 4:
 
 test('R4-04a: Instagram carousel presets are 1080x1440, none still 1080x1350', () => {
   const presets = {
-    'skills/template-designer/SKILL.md': /Instagram Carousel: `width: 1080px; height: 1440px`/,
+    'skills/template-designer/SKILL.md': /Without the field: `width: 1080px; height: 1440px`/,
     'skills/template-designer/base-templates/model-a.html': /height:1440px/,
     'skills/template-designer/base-templates/model-b.html': /height:1440px/,
     'skills/template-designer/base-templates/model-c.html': /height:1440px/,
@@ -72,6 +72,20 @@ test('R4-04a: Instagram carousel presets are 1080x1440, none still 1080x1350', (
   for (const [rel, esperado] of Object.entries(presets)) {
     const md = read(rel);
     assert.match(md, esperado, `${rel} has no 1080x1440 carousel preset`);
-    assert.doesNotMatch(md, /1080\s*x\s*1350|height:\s*1350px/i, `${rel} still uses 1080x1350`);
+    // 1080x1350 only where the line is the Graph API exception (R4-05a).
+    const restantes = md.split('\n').filter((l) => /1080\s*x\s*1350|height:\s*1350px/i.test(l) && !/instagram-publisher/.test(l));
+    assert.deepEqual(restantes, [], `${rel} still uses 1080x1350 outside the API exception`);
   }
+});
+
+test('R4-05a: a crew that publishes through the API designs at 4:5; the template designer follows it', () => {
+  const flat = (s) => s.replace(/\s+/g, ' ');
+  const design = flat(read('_opencrew/core/prompts/design.prompt.md'));
+  assert.match(design, /`instagram-publisher`[^.]*`carousel_size: "1080x1350"`/);
+  assert.match(design, /otherwise `carousel_size: "1080x1440"`/i);
+  assert.match(design, /quality_criteria`?[^.]*1080x1350/);
+  assert.match(design, /carousel_size: "1080x1440" \| "1080x1350"/); // the field in the design.yaml schema
+  const designer = flat(read('skills/template-designer/SKILL.md'));
+  assert.match(designer, /`carousel_size`[^.]*`design\.yaml`|`design\.yaml`[^.]*`carousel_size`/);
+  assert.match(designer, /`instagram-publisher`[^.]*1080x1350|1080x1350[^.]*`instagram-publisher`/);
 });

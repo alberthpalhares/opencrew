@@ -263,6 +263,7 @@ For each approved role, consult this mapping to determine which skills and best-
 3. **Installed skills**: check `skills/` directory — is the skill already installed?
 4. **Catalog skills**: check the skills catalog — is there a matching skill available to install?
 5. **Unmapped gaps**: if a role has no matching skill in the catalog, note it. Don't suggest creating a skill here — that's handled by Operation 3/3a in the Skills Engine on demand.
+6. **Carousel size**: when an agent produces Instagram images, add the top-level field `carousel_size: "1080x1440" | "1080x1350"` to design.yaml. If the crew also has an agent with `instagram-publisher`, write `carousel_size: "1080x1350"` — the Graph API still documents 4:5 to 1.91:1 — and add to the designer's `quality_criteria`: "Every slide is 1080x1350 (4:5): this crew publishes through the Instagram API." Otherwise `carousel_size: "1080x1440"` (3:4, the tallest the Instagram app accepts).
 
 ### Skill Installation Offer
 
@@ -274,9 +275,7 @@ After mapping, present only the skills that need installation:
 >
 > Posso instalar agora? (São ~2 minutos, você só precisa colar as chaves de API quando eu pedir.)"
 
-If no installations needed → proceed silently to Phase F.
-
-If user declines a skill → mark it as `declined` in design.yaml. The crew can still be created but that agent's capabilities will be limited.
+If no installations needed → proceed silently to Phase F. If user declines a skill → mark it as `declined` in design.yaml. The crew can still be created but that agent's capabilities will be limited.
 
 ### Dynamic Skill Generation (Operation 3a)
 

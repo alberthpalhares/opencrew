@@ -22,6 +22,11 @@ geram slides em 1080×1350 continuam valendo no app e na API).
 - **Publicar pela API continua pedindo 4:5.** A referência da API da Meta ainda documenta a faixa
   de 4:5 a 1,91:1. O `instagram-feed`, o `social-networks-publishing` e o `instagram-publisher`
   avisam: para publicar por ele, exporte em 1080×1350.
+- **Crew nova que publica pela API já nasce em 4:5.** Nenhuma crew padrão publica, mas a criação
+  de crew sugere o `instagram-publisher`. Quando a crew tem esse publicador e um designer, o
+  `design.yaml` grava `carousel_size: "1080x1350"` (senão, `"1080x1440"`), o critério de qualidade
+  do designer diz o tamanho, e o `template-designer` gera os modelos nesse tamanho. As crews que já
+  existem continuam no tamanho do `template-reference.html` delas.
 
 ### Removed
 - As travas U1-05b e R1-09c, que proibiam 1080×1440 no payload, saem porque contrariam a regra
