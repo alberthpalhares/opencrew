@@ -357,3 +357,18 @@
 - **Alocação:** → sem fase — mudança de ordem das fases; precisa de spec própria.
 - **Custo de adiar:** a extração pode produzir material para um agente que a Fase D depois não cria (trabalho perdido).
 - **Aprovação:** não.
+
+## Criação de crew: ambiguidades dos tiers achadas na simulação da R5
+- **O que já existe:** a simulação da R5 (2026-10-30: dois agentes lendo o `design.prompt.md`, Express com 3 formatos e Full
+  de lançamento; não foi execução real numa IDE) passou nos cenários da R5 e apontou quatro ambiguidades anteriores a ela:
+  (1) a tabela de tiers diz que o Express tem só a aprovação final, mas a Fase G manda um checkpoint antes de todo
+  pesquisador e outro antes de passo de renderização, e a IA fica com três; (2) no Full, o "second reviewer cross-check"
+  não diz se é uma pessoa (ocupa uma das 5-7 vagas) ou só outro passo do revisor; (3) quem define os ângulos: o Estrategista
+  (Fase D) ou o criador (Fase G, "NEVER the researcher's job"); (4) com `Output Language` vazio no `preferences.md`, o prompt
+  não diz o idioma de reserva dos nomes.
+- **Ideia:** uma fase de revisão da tabela de tiers e das Fases D e G: um único quadro de checkpoints por tier, o
+  cross-review dito como pessoa ou passo, um dono para os ângulos e o idioma de reserva.
+- **Alocação:** → sem fase — cada ponto mexe em regra de tier ou de pipeline; precisa de spec própria.
+- **Custo de adiar:** o Express sai menos enxuto do que promete e o Full pode perder um criador por formato; nenhum risco de
+  perda de dado.
+- **Aprovação:** não.
