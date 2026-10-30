@@ -89,7 +89,7 @@ If the tier came from a template, skip the tier selection question — the templ
 
 If no template was used, ask the user what depth they want:
 
-Present the three tiers with concrete trade-offs:
+Present the three tiers with concrete trade-offs. Mark the option that matches the `Default Tier` of the preferences with "(padrão das suas preferências)" — a hint only; the user still chooses:
 
 > "Qual a profundidade ideal para essa crew?"
 > 1. ⚡ **Express** — Rápido e enxuto (2-3 pessoas, ~5K tokens)
@@ -215,10 +215,9 @@ Para {crew purpose}, sugiro este time:
 - **Use alliterative two-word names** — follow the naming convention (Phase F). Each role gets a name that makes the user smile and instantly communicates what the person does.
 - **Describe what they DO, not how** — "Encontra tendências e rankeia por relevância" not "Usa web_search para coletar dados"
 - **One sentence per role** — concise, human, focused on outcomes
-- **Suggest based on crew complexity**:
-  - Simple crews (1 format, 1 platform): 2-3 roles
-  - Medium crews (content + review): 3-4 roles
-  - Complex crews (multi-platform, multi-format): 4-6 roles
+- **Size follows the tier the user chose.** The number of people comes from the **Agent count** row of the Tier Impact table (Express 2-3, Standard 3-5, Full 5-7); complexity only picks a number inside that range. Open the list with one line: "Você escolheu {tier} → {min} a {max} pessoas."
+- **List only people:** icon, name, one sentence of function — no steps, no tasks, no skills.
+- **Stay in the range.** If the team ends up outside the range of the tier (after the user's edits, or the template's own team), say so in one line and ask whether to keep the tier or change it: "Com {N} pessoas o time sai da faixa do tier {tier} ({min} a {max}). Mantém o tier ou muda?" The user's choice wins and is the tier written to `design.yaml`.
 - **Every crew needs a review step** — mandatory quality gate (Express: done by the writer; Standard and Full: by a reviewer role)
 - **Allow editing** — after presenting roles, ask:
   > "Quer adicionar, remover ou modificar algum papel? Ou o time está bom?"
@@ -368,7 +367,9 @@ The Build phase copies the base agent from `_opencrew/agents/copywriter.agent.md
 
 ### Design Philosophy
 
-Recruit all agents necessary for the job. If the crew needs a designer, create a designer. If it needs a researcher and a copywriter, create both with distinct responsibilities. Each agent must have a clear responsibility and the tasks needed to fulfill it.
+The number of agents was closed in Phase D; Phase F adds no agent. If the tier's range does not fit one creator per format, one creator can serve several formats — the `format:` belongs to the step, not to the agent.
+
+Within that number, recruit all agents necessary for the job. If the crew needs a designer, create a designer. If it needs a researcher and a copywriter, create both with distinct responsibilities. Each agent must have a clear responsibility and the tasks needed to fulfill it.
 
 What you should NOT do is create redundant agents or unnecessary optimization passes. Avoid cascading reviews or separate optimization tasks that don't add clear value. But never consolidate distinct roles into a single agent just to reduce count — that produces worse results.
 
@@ -400,26 +401,9 @@ Rules:
 Self-check before finalizing: go through every agent name and verify it has EXACTLY two words. If any name is missing the last name, fix it before presenting the design.
 
 Examples by language (DO NOT reuse these — generate original names every time):
-
-**Portugues (Brasil):**
-- Researcher: "Pedro Pesquisa", "Rita Referencia"
-- Copywriter: "Guilherme Gancho", "Carlos Carrossel"
-- Reviewer: "Renata Revisao", "Vera Veredito"
-- Ideator: "Ivan Ideia", "Angela Angulo"
-- Analyst: "Dante Dados", "Beatriz BI", "Romulo ROI"
-- Marketing: "Italo Inbound", "Lucas Leads", "Cadu Conversao"
-
-**English:**
-- Researcher: "Rita Research", "Sam Sources"
-- Copywriter: "Clara Copy", "Harry Hook"
-- Reviewer: "Roger Review", "Victor Verdict"
-- Ideator: "Ivy Idea", "Adam Angle"
-- Analyst: "Dean Data", "Mia Metrics"
-
-**Espanol:**
-- Researcher: "Rodrigo Referencia", "Paula Pesquisa"
-- Copywriter: "Carmen Copy", "Gonzalo Gancho"
-- Reviewer: "Rosa Revision", "Vera Veredicto"
+- **Portugues (Brasil):** "Pedro Pesquisa" (researcher), "Guilherme Gancho" (copywriter), "Renata Revisao" (reviewer), "Dante Dados" (analyst), "Lucas Leads" (marketing)
+- **English:** "Rita Research", "Clara Copy", "Roger Review", "Dean Data"
+- **Espanol:** "Rodrigo Referencia", "Carmen Copy", "Rosa Revision"
 
 The name should make someone smile — it's a pun tying a common name to the profession. The first name must feel natural in the user's language. The last name can use domain jargon, professional terms, or industry slang.
 
@@ -511,7 +495,7 @@ ERRADO: 5 noticias diferentes = NAO sao angulos, sao pautas distintas
   - Pipeline: `generate-angles.md` [step A, after news selection] → Angle Selection checkpoint → `create-{format}.md` [step B, optimization embedded in creation]
 - Design from scratch, using knowledge from best-practices `copywriting.md` and the relevant platform best-practice file (e.g., `instagram-feed.md`)
 - Use the format system: assign `format: {format-id}` to each creator step (e.g., `format: instagram-feed`). The Pipeline Runner injects the format file from `_opencrew/core/best-practices/` automatically — do NOT manually embed platform knowledge in task files or agent definitions.
-- Create ONE dedicated creator agent per target format (e.g., instagram-feed-creator, twitter-thread-creator)
+- Create ONE dedicated creator agent per target format when the tier's range allows (e.g., instagram-feed-creator, twitter-thread-creator)
 - Each creator gets an alliterative name matching the platform (e.g., "Tiago Twitter", "Luna LinkedIn", "Iago Instagram")
 - Tasks: `create-{format}.md` with optimization embedded (single focused task per format)
 - Platform creators CAN run in parallel (`execution: subagent`) when multiple formats are targeted
@@ -545,31 +529,29 @@ For non-content crews (data analysis, automation, etc.), the traditional pattern
 
 ## Phase H: Design Presentation
 
-Present the design to the user:
+Present the design in two separate blocks, in the user's Output Language (the example is in Portuguese). People and steps are different lists: a crew of 7 people can have a pipeline of 12 steps.
 
 ```
-I'll create a crew with N agents:
+👥 **Time — {N} pessoas**
+1. {icon} {Name} — {function, one sentence}
+2. ...
 
-1. [Icon] [Name] — [Role description]
-   Tasks: [task 1] → [task 2] → [task 3]
-   Format: [format name, if applicable to this agent's steps]
-2. [Icon] [Name] — [Role description]
-   Tasks: [task 1] → [task 2] → [task 3]
-   Format: [format name, if applicable]
-...
+🔀 **Pipeline — {M} passos**
+1. {action} — {name of the person who does it} · formato: {format-id}
+2. {the decision, e.g. "Escolher o ângulo"} — você decide
+3. ...
 
-Pipeline (fixed source): [Research] → checkpoint Select Angle → [Creator] → checkpoint Approve Content → [Render] → [Review] → checkpoint Final Approval → [Publish/Send]
-Pipeline (news-based): [Research] → checkpoint Select News → [Creator: generate angles] → checkpoint Select Angle → [Creator: create content] → checkpoint Approve Content → [Render] → [Review] → checkpoint Final Approval → [Publish/Send]
-Formats: [list of selected formats, e.g., instagram-feed, twitter-thread]
+Materiais de referência: {data files, with their paths}
 
-Reference materials: [list of data files]
-
-Does this look good?
+Posso criar?
 ```
 
-Wait for user approval. If they want changes, adjust and re-present.
+- **Time block:** one line per person (icon, name, function) — no steps, no tasks, no skills.
+- **Pipeline block:** one numbered line per step of `pipeline:`. Label every step with an action, never with a person's name or a role (use a verb); the same person can appear in several steps. A checkpoint says "você decide" plus the decision (informa o foco, escolhe a notícia, escolhe o ângulo, aprova). Show `formato` only when the step has a `format`.
+- Never list an agent's tasks here: the runner runs all of an agent's tasks in every step where it appears.
+- The order of the steps follows the patterns of Phase G; they are not repeated here.
 
-**File references:** When presenting the design for approval, if any reference documents have been generated (research-brief, design.yaml, etc.), include their file paths so the user can open and review them.
+Wait for user approval. If they want changes, adjust and re-present. When reference documents were generated (research-brief, design.yaml, etc.), include their file paths so the user can open and review them.
 
 ---
 
@@ -592,6 +574,8 @@ After template selection completes (or is skipped), proceed to output design.yam
 ## Output: `_build/design.yaml`
 
 After user approval, write `crews/{code}/_build/design.yaml` with the following schema:
+
+Before writing, check that `agents:` has N entries and `pipeline:` has M — the numbers shown to the user in Phase H. If they differ, fix the file, not the presentation the user approved.
 
 ```yaml
 # Design output — generated by Design phase

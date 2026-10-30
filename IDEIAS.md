@@ -340,3 +340,20 @@
 - **Alocação:** → sem fase — projeto pausado; hoje o erro aparece no dry run (a API recusa o container), sem post publicado.
 - **Custo de adiar:** a imagem sobe para o imgBB à toa antes do erro, e a mensagem que aparece é a da API, em inglês.
 - **Aprovação:** não.
+
+## Modelos de crew: `newsletter-mensal` é Express mas traz revisor dedicado
+- **O que já existe:** `templates/crews/newsletter-mensal/discovery.template.yaml` tem `tier: express` e
+  três agentes (curador, redator, revisor), mas no Express quem revisa é o redator (tabela de tiers do
+  `design.prompt.md`). Desde a R5 (1.19.3) a Fase D confere o time contra a faixa do tier.
+- **Ideia:** ajustar o modelo (tier ou time) e dar migração ao `update`, que entrega `crews/` sem sobrescrever.
+- **Alocação:** → sem fase — mudar `crews/` exige migração (regra 14); a R5 ficou só nos prompts.
+- **Custo de adiar:** quem parte desse modelo recebe a pergunta "manter o tier ou mudar" na Fase D.
+- **Aprovação:** não.
+
+## Criação de crew: a Fase C extrai artefatos "para CADA agente" antes de a Fase D fechar o time
+- **O que já existe:** na `design.prompt.md`, a extração (Fase C) acontece antes da proposta de time (Fase D), então a
+  IA já chega à Fase D com um time implícito. A R5 (1.19.3) prende o número de pessoas ao tier, mas não muda a ordem.
+- **Ideia:** fechar o time (D) antes de extrair os artefatos por agente (C), ou extrair por papel e só depois nomear.
+- **Alocação:** → sem fase — mudança de ordem das fases; precisa de spec própria.
+- **Custo de adiar:** a extração pode produzir material para um agente que a Fase D depois não cria (trabalho perdido).
+- **Aprovação:** não.

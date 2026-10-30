@@ -54,7 +54,7 @@ If the user selects a template:
    > - **Domínios:** {domains}
    > - **Público:** {audience}
    > - **Formato:** {format}
-   > - **Time sugerido:** {N} agentes
+   > - Tier: {tier} · Time: {N} pessoas
    >
    > Quer ajustar algo ou seguir com essas configurações?"
 4. If the user wants to adjust → let them modify any field (add/remove domains, change audience, add agents)
