@@ -2,7 +2,8 @@ name: Publish to npm
 
 # Publishes @aksp/opencrew to npm whenever a `v*` tag is pushed (the actual
 # release flow used here: `npm version <bump>` + `git push --tags`).
-# Requires an NPM_TOKEN repo secret.
+# Authenticates by OIDC (npm "trusted publisher"): no token is stored. The package's settings on
+# npmjs.com name this repository and this file (publish.yml); see CONTRIBUTING.md.
 #
 # Only `push: tags` is wired up on purpose. If you ever create a GitHub Release
 # through the UI by typing a brand-new tag name, GitHub pushes that tag AND
@@ -42,9 +43,10 @@ jobs:
       contents: read
       id-token: write   # enables npm provenance
     steps:
-      - uses: actions/checkout@v4
+      # Pinned by commit SHA; .github/dependabot.yml proposes the updates.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -61,7 +63,27 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      # The npm trusted publisher needs npm >= 11.5.1 and Node >= 22.14.0; the npm that ships with
+      # Node 22 is 10.x. The check fails here, with a clear line, and not halfway through the publish.
+      - name: Install npm 11
+        run: npm install -g npm@11
+
+      - name: Publication environment (npm and Node versions)
+        run: node scripts/check-publish-env.js
+
+      # Every run (tag or manual rehearsal): this version must not be on npm yet. Only a 404 counts
+      # as "not published"; a network error does not pass in silence.
+      - name: Version is not yet on npm
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if OUT=$(npm view "@aksp/opencrew@$PKG_VERSION" version 2>&1); then
+            echo "Esta versão já foi publicada: $PKG_VERSION"
+            exit 1
+          fi
+          echo "$OUT" | grep -q E404 || { echo "Não consegui consultar o npm: $OUT"; exit 1; }
+          echo "A versão $PKG_VERSION ainda não está no npm."
 
       # Same gate as CI and local development (AGENTS.md rule 7).
       - name: Verify
@@ -70,7 +92,8 @@ jobs:
       - name: Sanity check (pack)
         run: npm pack --dry-run
 
-      # Manual run with dry_run on (the default): rehearsal, no token, nothing published.
+      # Manual run with dry_run on (the default): rehearsal, nothing published. It still runs the
+# checks above (tag x version only on a tag; version not on npm; Node and npm versions).
       - name: Publish (dry run)
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
         run: npm publish --dry-run --access public
@@ -80,5 +103,3 @@ jobs:
       - name: Publish
         if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

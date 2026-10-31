@@ -1,6 +1,6 @@
 # Spec — Fase U7-F2: Publicação e CI seguros
 
-- **Fase:** F2 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** infraestrutura (`.github/workflows/ci.yml`, `.github/workflows/publish.yml`) + testes (`tests/release-gate.test.js`) + docs (`CONTRIBUTING.md`, `AGENTS.md`) + CHANGELOG · **Status:** rascunho — aguardando aprovação do dono (regra 1: SPEC ⏸ → BDD ⏸)
+- **Fase:** F2 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** infraestrutura (`.github/workflows/ci.yml`, `.github/workflows/publish.yml`) + testes (`tests/release-gate.test.js`) + docs (`CONTRIBUTING.md`, `AGENTS.md`) + CHANGELOG · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §7, todas como recomendadas); implementada (1.19.5), aguardando revisão independente, merge e Release
 - **Versão:** 1.19.5 (patch: infraestrutura, nenhuma linha de `src/` nem de `templates/` muda).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Opus 5.5 · alto (publica no npm; erro aqui trava o release).
@@ -24,9 +24,9 @@ Tirar o release da dependência de um token que expira e endurecer o CI: a publi
 ## 3. Regras
 1. **Publicação por OIDC.** O passo `Publish` não recebe mais `NODE_AUTH_TOKEN`; o `--provenance` e o `--access public` ficam. O comentário do cabeçalho deixa de dizer "Requires an NPM_TOKEN repo secret" e passa a dizer que a publicação usa o publicador de confiança do npm.
 2. **Versões mínimas, verificadas.** Antes de publicar, o job instala `npm@11` (`npm install -g npm@11`) e um passo falha com mensagem clara se o Node for menor que 22.14.0 ou o `npm` menor que 11.5.1 (comparando as três partes da versão, não só a maior).
-3. **Ensaio que pega o erro de verdade.** Em todo disparo do `publish.yml` (tag ou manual), um passo confere que a versão do `package.json` **ainda não existe no npm** (`npm view @aksp/opencrew@<versão> version` deve falhar com 404); se existir, para com a mensagem "Esta versão já foi publicada". No disparo manual, o passo "tag × versão" roda comparando o `package.json` com o `.opencrew-version` (já garantido pelo `verify`, mas dito no ensaio). O ensaio continua sem segredo e sem publicar.
+3. **Ensaio que pega o erro de verdade.** Em todo disparo do `publish.yml` (tag ou manual), um passo confere que a versão do `package.json` **ainda não existe no npm** (`npm view @aksp/opencrew@<versão> version` deve falhar com 404); se existir, para com a mensagem "Esta versão já foi publicada". O passo "tag × versão" continua só em tag; no disparo manual, o `package.json` × `.opencrew-version` já é conferido pelo `npm run verify` (passo `version-sync`), que o ensaio roda. O ensaio continua sem segredo e sem publicar.
 4. **`ci.yml` com o mínimo.** `permissions: contents: read` no topo; `npm ci --ignore-scripts` (nenhuma dependência precisa de script de instalação: o único script do projeto é o `version`).
-5. **Actions fora do Node 20.** `actions/checkout` e `actions/setup-node` na versão maior mais recente que roda em Node 24 — a versão exata e, se o dono aprovar (§7), o SHA do commit são conferidos na hora da implementação, na página de releases de cada Action (os resultados de busca de 2026-10-31 apontam v6 para as duas, de fontes de terceiros: não aceito como prova).
+5. **Actions fora do Node 20, fixadas por SHA.** `actions/checkout` e `actions/setup-node` na versão maior mais recente que roda em Node 24, **pelo SHA do commit** da tag com o comentário da versão (decisão do dono, §7); a versão exata e o SHA são conferidos na hora da implementação, na página de releases de cada Action (os resultados de busca de 2026-10-31 apontam v6 para as duas, de fontes de terceiros: não aceito como prova). O `dependabot.yml` mantém os SHAs em dia.
 6. **Node 24 na matriz.** `node-version: ['20.17.0', '22', '24']`. Se a célula do 24 reprovar por causa do código do pacote, a F2 corrige o que for nosso; se for de uma dependência, registra no `IDEIAS.md` e a célula fica como está até haver decisão do dono.
 7. **A matriz continua escrita em um lugar só de verdade.** O teste R2-06d passa a esperar `[piso, '22', '24']`; `CONTRIBUTING.md` (linhas 34 e 84) e `AGENTS.md` (Stack) passam a dizer "Node 20.17, 22 e 24".
 8. **Depois da primeira publicação por OIDC bem-sucedida**, o segredo `NPM_TOKEN` é apagado do repositório e o token é revogado no npm (ação do dono); o `CONTRIBUTING.md:125` (passo 3 do "npm publish") passa a descrever o cadastro do publicador de confiança em vez do segredo.
@@ -38,6 +38,7 @@ Tirar o release da dependência de um token que expira e endurecer o CI: a publi
 - **U7F2-03a** (contrato) DADO `publish.yml` ENTÃO um passo confere "versão ainda não publicada" com `npm view` antes de qualquer `npm publish`, nos dois gatilhos, e o passo "tag × versão" continua só em tag.
 - **U7F2-04a** (contrato) DADO `ci.yml` ENTÃO tem `permissions:` com só `contents: read` e a instalação é `npm ci --ignore-scripts`; `publish.yml` instala igual.
 - **U7F2-05a** (contrato) DADOS `ci.yml` e `publish.yml` ENTÃO nenhuma Action usa `@v4`, e as duas citam a versão escolhida.
+- **U7F2-05b** (contrato) DADO o repositório ENTÃO `.github/dependabot.yml` existe, com o ecossistema `github-actions` e agenda semanal; e cada `uses:` de `ci.yml` e `publish.yml` aponta para um SHA de 40 caracteres, seguido do comentário da versão.
 - **U7F2-06a** (contrato) DADO `ci.yml` ENTÃO `node-version` é `['20.17.0', '22', '24']` (o piso lido do `package.json`); `CONTRIBUTING.md` e `AGENTS.md` dizem 20.17, 22 e 24.
 - **U7F2-07a** (contrato) DADO `CONTRIBUTING.md` ENTÃO não manda criar o segredo `NPM_TOKEN`.
 - **U7F2-upg** Não se aplica: nada em `templates/` nem em `src/` muda, então não há o que o `update` entregar (regra 14: a mudança mora fora do que o `update` renova e **não precisa de migração**, porque não chega ao projeto do usuário).
@@ -51,11 +52,11 @@ Tirar o release da dependência de um token que expira e endurecer o CI: a publi
 1. **Antes do Release da 1.19.5:** em npmjs.com → Packages → `@aksp/opencrew` → Settings → *Trusted Publisher* → GitHub Actions: dono `alberthpalhares`, repositório `opencrew`, workflow `publish.yml`, ambiente em branco, ação permitida: publicar. **O npm não confere ao salvar**: um erro de digitação só aparece na publicação (com `E404`), e a publicação falha sem publicar nada; é só corrigir o cadastro e usar "Re-run failed jobs". O cadastro expira se não houver publicação em 2 dias.
 2. **Depois da primeira publicação por OIDC bem-sucedida:** apagar o segredo `NPM_TOKEN` (Settings → Secrets → Actions) e revogar o token no npm. Opcional e recomendado: no npm, exigir 2FA e proibir tokens para o pacote (a documentação sugere).
 
-## 7. Decisões pedidas ao dono
-1. **Aprovar esta spec e os cenários** (⏸).
-2. **Sem token de reserva (recomendado) ou token junto na 1.19.5?** Sem token, se o cadastro estiver errado a publicação falha de forma visível e segura (nada é publicado). Com o token de reserva, o npm cairia para ele em silêncio e você não saberia se o OIDC funcionou. Recomendo sem token.
-3. **Actions fixadas por SHA?** (a) só pela versão maior (`@v6`): simples, mas a tag pode ser movida; (b) pelo SHA do commit, com comentário da versão: mais seguro, e pede um arquivo `.github/dependabot.yml` para as atualizações chegarem sozinhas. Recomendo (b).
-4. **Confirmar a mudança de semântica do ensaio:** o `workflow_dispatch` passa a **falhar** se a versão do `package.json` já estiver publicada (hoje passa).
+## 7. Decisões do dono (2026-10-31, todas como recomendadas)
+1. **Spec e cenários aprovados** (⏸).
+2. **Sem token de reserva na 1.19.5.** Se o cadastro estiver errado, a publicação falha de forma visível e segura (nada é publicado).
+3. **Actions fixadas pelo SHA do commit**, com o comentário da versão, e um `.github/dependabot.yml` (ecossistema `github-actions`, semanal) para as atualizações chegarem como PRs.
+4. **O ensaio manual passa a falhar** se a versão do `package.json` já estiver publicada (hoje passa).
 
 ## 8. Fora do escopo
 - `npm audit` moderado do ESLint (só devDependencies); subir o ESLint.

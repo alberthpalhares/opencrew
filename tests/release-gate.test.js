@@ -40,11 +40,11 @@ function lista(yaml, chave) {
   return itens.split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, ''));
 }
 
-test('R2-06d: a matriz do CI roda em Ubuntu e Windows, no piso do engines.node e no Node 22', async () => {
+test('R2-06d (U7F2-06a): a matriz do CI roda em Ubuntu e Windows, no piso do engines.node, no Node 22 e no Node 24', async () => {
   const piso = JSON.parse(await ler('package.json')).engines.node.replace(/^>=/, '');
   const ci = await workflow('ci.yml');
   assert.deepEqual(lista(ci, 'os').sort(), ['ubuntu-latest', 'windows-latest']);
-  assert.deepEqual(lista(ci, 'node-version').sort(), [piso, '22'].sort());
+  assert.deepEqual(lista(ci, 'node-version').sort(), [piso, '22', '24'].sort());
   assert.match(ci, /^ {4}runs-on: \$\{\{ matrix\.os \}\}$/m, 'o job usa o sistema da matriz');
   assert.match(ci, /^ {10}node-version: \$\{\{ matrix\.node-version \}\}$/m, 'o job usa o Node da matriz');
 });
@@ -95,6 +95,7 @@ test('R2-06e: o disparo manual tem dry_run ligado por padrão, que leva a npm pu
   assert.equal(condicao(ensaio[0]), "github.event_name == 'workflow_dispatch' && inputs.dry_run");
   assert.equal(condicao(real[0]), "github.event_name != 'workflow_dispatch' || !inputs.dry_run");
   assert.doesNotMatch(ensaio[0], /NPM_TOKEN|--provenance/, 'o ensaio não recebe o segredo nem gera proveniência');
-  assert.match(real[0], /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
+  // U7F2-01a: the publish authenticates by OIDC (npm trusted publisher): no stored token reaches it.
+  assert.doesNotMatch(real[0], /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.equal(comPublish.at(-1), real[0], 'o passo de verdade é o último');
 });

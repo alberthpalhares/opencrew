@@ -3,6 +3,27 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.5] — 2026-10-31
+
+Fase U7-F2: "Publicação e CI seguros", F2 do roteiro U7 (`specs/fase-u7-f2-publicacao-e-ci-seguros.md`).
+Só infraestrutura de desenvolvimento (`.github/`, `scripts/`, testes e documentos): nada em `src/` nem em
+`templates/` muda, então não há nada para o `npx @aksp/opencrew@latest update` entregar aos projetos.
+**Antes do Release desta versão, o mantenedor cadastra o publicador de confiança no npmjs.com** (ver
+"Forking" no `CONTRIBUTING.md`); o `NPM_TOKEN` deixa de ser usado.
+
+### Changed
+- **A publicação no npm autentica por OIDC** (publicador de confiança do npm), sem token guardado: o
+  `NPM_TOKEN`, que expira, sai do `publish.yml`. O passo de publicar só roda depois de instalar o npm 11
+  e de conferir que o Node tem 22.14.0 ou mais e o npm 11.5.1 ou mais (`scripts/check-publish-env.js`).
+- **O ensaio do `publish.yml` pega "versão já publicada".** Em toda execução (tag ou disparo manual) um
+  passo consulta o npm e para se a versão do `package.json` já existe; só o 404 conta como "ainda não
+  publicada", falha de rede não passa em silêncio. **Mudança de comportamento:** o disparo manual com
+  `dry_run` passa a falhar quando a versão já está publicada (antes passava).
+- **O CI ficou mais enxuto e mais seguro:** `permissions: contents: read`, `npm ci --ignore-scripts`,
+  `actions/checkout` v7.0.1 e `actions/setup-node` v7.1.0 (fora do runtime Node 20) fixadas pelo SHA do
+  commit, e `.github/dependabot.yml` semanal para as atualizações chegarem como pull requests.
+- **O CI testa também no Node 24** (matriz: 20.17, 22 e 24, em Ubuntu e Windows).
+
 ## [1.19.4] — 2026-10-31
 
 Fase U7-F1: "Higiene técnica e segurança", F1 do roteiro U7 (`specs/fase-u7-f1-higiene-e-seguranca.md`), a partir de uma auditoria técnica

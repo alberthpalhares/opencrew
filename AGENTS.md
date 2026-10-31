@@ -24,8 +24,8 @@ Duas camadas com regras diferentes:
 
 ## Stack
 Node.js ≥ 20.17 (ESM; os scripts do payload usam só APIs do Node 20.0) · deps: `@inquirer/checkbox` · testes: `node:test` · lint: ESLint 9 ·
-CI: GitHub Actions (Ubuntu + Windows, Node 20.17/22) · publish: tag `v*` → npm, só depois da
-matriz do CI verde (o `publish.yml` chama o `ci.yml`).
+CI: GitHub Actions (Ubuntu + Windows, Node 20.17/22/24, Actions fixadas por SHA) · publish: tag `v*` → npm por OIDC
+(publicador de confiança, sem token guardado), só depois da matriz do CI verde (o `publish.yml` chama o `ci.yml`).
 
 ## Regras inegociáveis
 (IDs estáveis: regra nova entra no fim; nunca renumerar.)
