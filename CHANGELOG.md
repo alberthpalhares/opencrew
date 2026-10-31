@@ -3,7 +3,7 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.19.3] — 2026-10-30
+## [1.19.3] — 2026-10-31
 
 Fase R5: "Criação de crew: tamanho coerente e time separado do pipeline"
 (`specs/fase-r5-criacao-de-crew.md`). Chega a quem já usa com um `npx @aksp/opencrew@latest update`;

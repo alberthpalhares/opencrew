@@ -1,6 +1,6 @@
 # Spec — Fase R5: Criação de crew — tamanho coerente e time separado do pipeline
 
-- **Fase:** R5 · **Módulos:** Payload (`templates/_opencrew/core/prompts/`: `design.prompt.md` (Fases B.5, D, F, G, H e Output), `discovery.prompt.md` (resumo do template), `build.prompt.md` (Step D)) + CHANGELOG + AGENTS.md + IDEIAS.md + testes · **Status:** aprovada pelo dono em 2026-10-30 ("está aprovada"); implementada (1.19.3, aguardando `npm version` e tag)
+- **Fase:** R5 · **Módulos:** Payload (`templates/_opencrew/core/prompts/`: `design.prompt.md` (Fases B.5, D, F, G, H e Output), `discovery.prompt.md` (resumo do template), `build.prompt.md` (Step D)) + CHANGELOG + AGENTS.md + IDEIAS.md + testes · **Status:** aprovada pelo dono em 2026-10-30 ("está aprovada"); implementada (1.19.3)
 - **Versão:** 1.19.3 (patch; a U6 fatia 3, `fase-u6c-medicao.md`, segue como 1.20.0).
 - **Termos novos no GLOSSARIO.md:** não. Usa "Passo" (já no glossário), nunca "etapa".
 - **Modelo sugerido:** execução Sonnet 5.5 · Default
