@@ -1,0 +1,9 @@
+# Keeps the GitHub Actions of .github/workflows/ up to date. They are pinned by commit SHA (with the
+# version in a comment); Dependabot opens a pull request when a new version comes out, and the CI
+# of that pull request tests it. Nothing else is updated here (spec U7-F2, rule 5).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

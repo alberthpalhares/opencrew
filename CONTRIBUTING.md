@@ -31,7 +31,7 @@ docs/auditoria/        audit reports (finding → phase → guard)
 scripts/               verify.js (the gate), check-size.js, version stamping
 tests/                 test suite (node:test, zero deps)
 sandbox/               your local dogfood workspace (gitignored, create it yourself)
-.github/workflows/     CI (Ubuntu + Windows, Node 20.17/22) + npm publish
+.github/workflows/     CI (Ubuntu + Windows, Node 20.17/22/24) + npm publish
 ```
 
 ## Golden rules
@@ -73,6 +73,8 @@ development rules.
 
 ## Releasing
 
+0. Once: the package's *Trusted Publisher* on npmjs.com points to this repository and `publish.yml`
+   (see "Forking" below). Register it the day of the release: it expires in 2 days without a publish.
 1. Update `CHANGELOG.md`.
 2. `npm version <patch|minor|major>` — always use this, never hand-edit the `version`
    field in `package.json`. The `version` lifecycle script stamps
@@ -81,9 +83,12 @@ development rules.
 3. `git push --tags` — this is what actually triggers `publish.yml` (it fires on
    `push: tags: v'*'`; `npm version` above already created the tag locally). Push `main`
    first and wait for CI to be green: the publish workflow runs the same CI matrix (Ubuntu and
-   Windows, Node 20.17 and 22, plus `npm audit`) before publishing, and nothing is published if
-   one cell fails. It then checks the tag against `package.json` and runs `npm publish`. A manual
-   run (`workflow_dispatch`) is a rehearsal by default (`dry_run`): it does not publish.
+   Windows, Node 20.17, 22 and 24, plus `npm audit`) before publishing, and nothing is published if
+   one cell fails. It then checks the tag against `package.json`, checks that this version is not
+   on npm yet, checks the Node and npm versions, and runs `npm publish`, which authenticates by
+   OIDC (see "Forking" below: the package's *Trusted Publisher* on npmjs.com). A manual run
+   (`workflow_dispatch`) is a rehearsal by default (`dry_run`): it does not publish, and it fails if
+   the version in `package.json` is already published.
 
 ## Como retomar o projeto
 
@@ -122,5 +127,12 @@ If you publish your own fork of opencrew under a different name:
 2. **Package name** — Update `name` in `package.json` and the `npx` commands in help text
    (`src/cli.js`), init messages (`src/commands/init.js`), and update messages
    (`src/commands/update.js`).
-3. **npm publish** — Set the `NPM_TOKEN` secret in your repo's GitHub Actions and update
-   `publish.yml` if you publish under a different scope or registry.
+3. **npm publish** — The publish authenticates by OIDC; no token is stored. On npmjs.com, open
+   your package → Settings → *Trusted Publisher* → GitHub Actions, and give your user or
+   organization, the repository and the workflow file name (`publish.yml`). npm does not check
+   this when you save: a typo shows up only when publishing, which then fails without publishing
+   anything (an authentication error — `ENEEDAUTH` or a 404 on the PUT — fix it and re-run the
+   failed job). A new trusted publisher expires if its first successful publish does not happen
+   within 2 days. The package must already exist on npm to have the setting (publish the first
+   version by hand, with 2FA, before registering the trusted publisher). Update `publish.yml` if
+   you publish under a different scope or registry.

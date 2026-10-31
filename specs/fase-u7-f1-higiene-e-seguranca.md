@@ -1,6 +1,6 @@
 # Spec — Fase U7-F1: Higiene técnica e segurança do CLI e dos scripts
 
-- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §8, todas como recomendadas); implementada (1.19.4); revisão independente do código (Fable 5.1, high) feita, achados tratados
+- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §8, todas como recomendadas); publicada no npm em 2026-10-31 (1.19.4); revisão independente do código (Fable 5.1, high) feita, achados tratados
 - **Versão:** 1.19.4 (patch: reparos, sem recurso novo).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Opus 5.5 · alto (segurança e escrita no projeto do usuário).
