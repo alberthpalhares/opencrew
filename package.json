@@ -53,8 +53,7 @@
     "node": ">=20.17.0"
   },
   "dependencies": {
-    "@inquirer/checkbox": "^5.1.0",
-    "@inquirer/confirm": "^5.1.0"
+    "@inquirer/checkbox": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

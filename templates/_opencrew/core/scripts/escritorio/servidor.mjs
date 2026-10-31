@@ -6,11 +6,13 @@ import path from 'node:path';
 import { lerCrews } from './leitura.mjs';
 import { projetoDe, versaoDe } from './projeto.mjs';
 
-// Vão em TODA resposta. Nenhuma resposta leva `Access-Control-*`: outra origem não lê o estado.
+// Vão em TODA resposta. Nenhuma resposta leva `Access-Control-*`: outra origem não lê o estado, e
+// `frame-ancestors 'none'` impede que outra página embuta o escritório num iframe.
 const CABECALHOS = {
   'Cache-Control': 'no-store',
   'X-Content-Type-Options': 'nosniff',
-  'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'",
+  'Referrer-Policy': 'no-referrer',
+  'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
 };
 const TEXTO = 'text/plain; charset=utf-8';
 const JSON_UTF8 = 'application/json; charset=utf-8';

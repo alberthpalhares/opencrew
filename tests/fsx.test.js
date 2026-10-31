@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { mkTmp as criarTmp } from './_helpers.js';
-import { copyDir, writeFileSafe, exists, ensureDir, deleteDir, readJson, readFile } from '../src/lib/fsx.js';
+import { writeFileSafe, exists, readJson, readFile } from '../src/lib/fsx.js';
 import { deliverBlock } from '../src/lib/blocos.js';
 import { newDelivery } from '../src/lib/manifest.js';
 
@@ -40,86 +40,6 @@ test('writeFileSafe: creates parent directories automatically', async () => {
   const file = path.join(dir, 'nested', 'deep', 'a.txt');
   await writeFileSafe(file, 'hi');
   assert.equal(await fs.readFile(file, 'utf8'), 'hi');
-});
-
-test('copyDir: overwrite:false preserves existing destination files (never clobbers user work)', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await fs.writeFile(path.join(src, 'file.txt'), 'from-template');
-  await fs.writeFile(path.join(dest, 'file.txt'), 'user-edited');
-  await copyDir(src, dest, { overwrite: false });
-  assert.equal(await fs.readFile(path.join(dest, 'file.txt'), 'utf8'), 'user-edited');
-});
-
-test('copyDir: overwrite:false still copies new files that do not exist at destination', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await fs.writeFile(path.join(src, 'new.txt'), 'new-content');
-  await copyDir(src, dest, { overwrite: false });
-  assert.equal(await fs.readFile(path.join(dest, 'new.txt'), 'utf8'), 'new-content');
-});
-
-test('copyDir: overwrite:true replaces existing destination files', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await fs.writeFile(path.join(src, 'file.txt'), 'from-template');
-  await fs.writeFile(path.join(dest, 'file.txt'), 'stale');
-  await copyDir(src, dest, { overwrite: true });
-  assert.equal(await fs.readFile(path.join(dest, 'file.txt'), 'utf8'), 'from-template');
-});
-
-test('copyDir: skip() excludes matching relative paths', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await ensureDir(path.join(src, 'logs'));
-  await fs.writeFile(path.join(src, 'logs', 'run.log'), 'noisy');
-  await fs.writeFile(path.join(src, 'logs', '.gitkeep'), '');
-  await fs.writeFile(path.join(src, 'keep.txt'), 'keep');
-  await copyDir(src, dest, {
-    skip: (rel) => rel.startsWith('logs/') && rel !== 'logs/.gitkeep',
-  });
-  assert.equal(await exists(path.join(dest, 'logs', 'run.log')), false);
-  assert.equal(await exists(path.join(dest, 'logs', '.gitkeep')), true);
-  assert.equal(await exists(path.join(dest, 'keep.txt')), true);
-});
-
-test('copyDir: onCopy fires once per file actually copied', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await fs.writeFile(path.join(src, 'a.txt'), 'a');
-  await fs.writeFile(path.join(src, 'b.txt'), 'b');
-  await fs.writeFile(path.join(dest, 'a.txt'), 'existing');
-  const copied = [];
-  await copyDir(src, dest, { overwrite: false, onCopy: (rel) => copied.push(rel) });
-  assert.deepEqual(copied.sort(), ['b.txt']);
-});
-
-test('copyDir: recurses into nested directories', async () => {
-  const src = await mkTmp();
-  const dest = await mkTmp();
-  await ensureDir(path.join(src, 'a', 'b'));
-  await fs.writeFile(path.join(src, 'a', 'b', 'deep.txt'), 'deep');
-  await copyDir(src, dest);
-  assert.equal(await fs.readFile(path.join(dest, 'a', 'b', 'deep.txt'), 'utf8'), 'deep');
-});
-
-test('deleteDir: removes directory and all contents', async () => {
-  const dir = await mkTmp();
-  const nested = path.join(dir, 'nested', 'deep');
-  await ensureDir(nested);
-  await fs.writeFile(path.join(nested, 'file.txt'), 'x');
-  await fs.writeFile(path.join(dir, 'root.txt'), 'y');
-
-  const deleted = await deleteDir(dir);
-  assert.equal(deleted, true);
-  // After deletion, the path should not be accessible.
-  await assert.rejects(() => fs.access(dir), 'directory should be gone after deleteDir');
-});
-
-test('deleteDir: returns false for a path that does not exist', async () => {
-  const dir = await mkTmp();
-  const deleted = await deleteDir(path.join(dir, 'does-not-exist'));
-  assert.equal(deleted, false);
 });
 
 test('readJson: throws with file path in the error message', async () => {

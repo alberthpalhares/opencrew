@@ -109,6 +109,12 @@ function copyLines(ctx, unreadable) {
   return lines;
 }
 
+// A symbolic link where a file of the package goes is left alone (spec U7-F1, rule 5).
+function linkLines(ctx) {
+  if (!ctx.links.length) return [];
+  return [[warn, `link simbólico: não gravei ${ctx.links.join(', ')}. O arquivo do outro lado do link ficou como estava.`]];
+}
+
 /**
  * The summary of an `update`, in the order the steps ran.
  * @param {object} ctx delivery context (src/lib/manifest.js)
@@ -128,6 +134,7 @@ export function updateSummary(ctx, done) {
     ...mcpLines(ctx, done.mcp),
     ...leftoverLines(done.leftovers, done.mcp),
     ...copyLines(ctx, done.unreadable),
+    ...linkLines(ctx),
     ...(done.hasCrew ? [[info, REPAIR_HINT]] : []),
     ...(done.office ? [[warn, done.office]] : []),
   ];

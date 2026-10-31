@@ -112,8 +112,8 @@ módulos críticos; C-23 (duplicações); acoplamento de `src/lib/escritorio.js`
 **com migração**: só troca o `discovery.template.yaml` se for idêntico ao original (manifesto) ou com `.bak` e confirmação (regra 3).
 
 ## 3. Decisões do dono pedidas
-- **U0, a jornada de referência** (`docs/jornada/medicoes.md`, sem linha desde a 1.6.0): declarar encerrada, ou exigir uma linha dele a
-  cada Release. **Pendente: a decisão chega na spec da F1.**
+- **U0, a jornada de referência** (`docs/jornada/medicoes.md`, sem linha desde a 1.6.0): **declarada encerrada pelo dono em 2026-10-31**
+  (spec da F1, §8). A conferência real de cada fase fica na spec dela.
 - **Aprovação explícita na spec de cada um:** overlay como acréscimo (F9) e `.gitignore` antigo no `update` (F8).
 
 ## 4. Fica de fora (continua `sem fase` no `IDEIAS.md`, cada um com o motivo)

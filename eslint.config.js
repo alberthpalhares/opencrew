@@ -6,7 +6,7 @@ import globals from "globals";
 const OFFICE_PAGE = "templates/_opencrew/core/escritorio/**/*.js";
 
 const rules = {
-  "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+  "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
   "no-undef": "error",
   "no-constant-binary-expression": "error",
   "no-duplicate-imports": "error",

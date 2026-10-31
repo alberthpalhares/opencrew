@@ -23,14 +23,16 @@ test('unknown command sets exitCode and does not crash', async () => {
   process.exitCode = 0;
 });
 
-test('update --check reports dry-run without modifying files', async () => {
+test('update --check without a workspace warns cleanly, writes nothing and exits 1 (U7F1-07a)', async () => {
   const dir = await mkTmp('cli');
   process.exitCode = 0;
   await withCwd(dir, () => run(['update', '--check']));
   // No workspace: should warn cleanly, not crash.
   assert.equal(await exists(path.join(dir, '_opencrew')), false);
-  // exitCode should remain 0 (check is informational, not an error for missing workspace).
-  assert.equal(process.exitCode, 0);
+  // Spec U7-F1, rule 7: there is nothing to check, and that is not a success for the shell (it used
+  // to be 0, which made a script read "no workspace" as "up to date").
+  assert.equal(process.exitCode, 1);
+  process.exitCode = 0;
 });
 
 test('upgrade is an alias for update', async () => {

@@ -1,6 +1,6 @@
 # Spec — Fase U7-F1: Higiene técnica e segurança do CLI e dos scripts
 
-- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** rascunho — aguardando aprovação do dono (regra 1: SPEC ⏸ → BDD ⏸)
+- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §8, todas como recomendadas); em implementação
 - **Versão:** 1.19.4 (patch: reparos, sem recurso novo).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Opus 5.5 · alto (segurança e escrita no projeto do usuário).
@@ -56,8 +56,10 @@ Fechar defeitos pequenos e riscos que podem atingir quem já usa o OpenCrew: um 
 
 ## 5. Travas que mudam
 - `tests/conserto-bordas.test.js` (U4a-02b): ganha o `skip` por root.
+- `tests/update.test.js` **F1-04a e F1-04b** (hoje esperam `AGENTS.md.bak` na raiz): passam a esperar a cópia em `.opencrew-backup/<data>/AGENTS.md`; o F1-04b passa a provar que um `AGENTS.md.bak` que o usuário já tinha na raiz não é tocado.
+- `tests/escritorio.test.js` **E1-04i** (trava a CSP exata e "três cabeçalhos"): passa a esperar a CSP com `frame-ancestors 'none'` e o `Referrer-Policy`.
 - Testes de `fsx` que cobrem `copyDir`/`deleteDir`/`ensureDir` saem junto com as funções.
-- Testes que travam "sai com 0" no `update` sem workspace, se houver, passam a esperar 1 (conferir na execução e registrar aqui).
+- `tests/cli.test.js` **"update --check reports dry-run…"** (travava "sai com 0" no `update --check` sem workspace): passa a esperar 1. Consequência para quem usa `--check` em script: o código 1 já significava "há atualização"; agora também significa "não há workspace aqui" (a mensagem é outra). Quem precisa distinguir lê a mensagem.
 - `AGENTS.md`: a linha do `@inquirer/confirm` na seção Stack e a tabela de travas da regra 14 ganham `upgrade-u7f1`.
 - Tetos de linhas: `skills.engine.md` (494) não pode passar de 500; `templates/AGENTS.md` só diminui.
 
@@ -71,8 +73,8 @@ Fechar defeitos pequenos e riscos que podem atingir quem já usa o OpenCrew: um 
 - Uma geração de imagem real com a `image-creator` no Windows (PowerShell) e no macOS/Linux (bash): o servidor sobe só em `127.0.0.1`, o Playwright abre `http://127.0.0.1:8765/…` e o servidor é encerrado no fim. **Conferência do dono** (o ambiente de testes não tem navegador de produção).
 - Um `update` real num projeto do dono (cópia dele, nunca o original) e o `init` numa pasta temporária.
 
-## 8. Decisões pedidas ao dono
-1. **Aprovar esta spec e os cenários** (⏸).
-2. **U0, a jornada de referência** (`docs/jornada/medicoes.md`, sem linha desde a 1.6.0): declarar encerrada, ou exigir uma linha dele a cada Release?
-3. **Regra 6(b):** `init` dentro de um workspace só **avisa** (recomendado) — ou prefere recusar?
-4. **Regra 11:** remover `/opencrew reset` (recomendado) — ou definir o comando agora?
+## 8. Decisões do dono (2026-10-31, todas como recomendadas)
+1. **Spec e cenários aprovados** (⏸).
+2. **U0, a jornada de referência** (`docs/jornada/medicoes.md`, sem linha desde a 1.6.0): **declarada encerrada**. A conferência de cada fase passa a ser a simulação ou a execução real descrita na spec dela.
+3. **Regra 6(b):** `init` dentro de um workspace só **avisa**.
+4. **Regra 11:** `/opencrew reset` **sai** da lista.

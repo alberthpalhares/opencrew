@@ -13,17 +13,22 @@ You are the Skills Engine. Your job is to manage skill integrations for opencrew
 
 - **Installed skills**: `skills/` — each skill in its own subdirectory with SKILL.md
 - **Skill catalog index**: `skills/catalog.json` (local) — structured skill metadata.
-  If missing, fall back to the catalog README:
-  `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/README.md`
+  If missing, fall back to the catalog README of the installed version (read it from
+  `_opencrew/.opencrew-version`):
+  `https://raw.githubusercontent.com/alberthpalhares/opencrew/v{installed version}/templates/skills/README.md`
 - **Skill format reference**: `skills/opencrew-skill-creator/references/skill-format.md`
 
 ### Catalog URL Resolution
 
-When fetching skill files from the catalog, resolve the base URL in this order:
+Use the installed catalog in `skills/` first: `init` and `update` copy it, so a skill whose
+`skills/<name>/SKILL.md` exists needs no download. Only when it is not there, fetch its files from
+the tag of the installed version, never from the moving `main` branch. Resolve the base URL in
+this order:
 1. Check the `OPENCREW_CATALOG_URL` environment variable — if set, use it directly as the base URL. This allows forks to point to their own catalog without editing catalog.json.
-2. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field
+2. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field, with
+   the branch segment (`main`) replaced by `v{installed version}`
 3. If not available, default to:
-   `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills`
+   `https://raw.githubusercontent.com/alberthpalhares/opencrew/v{installed version}/templates/skills`
 4. Append `/<name>/SKILL.md` (or other file paths) to the base URL
 
 ## How Skills Are Detected
@@ -211,7 +216,7 @@ For the full SKILL.md specification, see `skills/opencrew-skill-creator/referenc
 
    1. Verify the script file exists at `skills/<name>/{script.path}`
       - If missing and wasn't fetched in step 7 → **ERROR**: "Script file not found. Installation may be incomplete."
-   2. If the skill lists dependencies in `script.dependencies`:
+   2. If the skill lists dependencies in `script.dependencies`: show the exact list of packages and ask for confirmation before running `npm install` or `pip install`. Without a yes, skip the installation and say which packages are missing.
       - For `runtime: node` → run: `npm install {packages}`
       - For `runtime: python` → run: `pip install {packages}`
       - For `runtime: bash` → no dependency installation needed
@@ -434,9 +439,9 @@ When the Architect reaches the Design phase (specifically Phase D/E — Role Pro
       - Parse the JSON and extract the `skills` map and `baseUrl`
       - Use this for discovery (skip the network fetch below)
    b. If `skills/catalog.json` does NOT exist (pre-v1.1 install), fall back to fetching
-      the catalog README from GitHub:
+      the catalog README from GitHub (the tag of the installed version, never `main`):
       ```
-      https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/README.md
+      https://raw.githubusercontent.com/alberthpalhares/opencrew/v{installed version}/templates/skills/README.md
       ```
       Parse the markdown table to extract skill names, types, and descriptions.
    c. If both fail → proceed with only installed skills (do not block crew creation).

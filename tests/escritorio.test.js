@@ -18,7 +18,7 @@ import { mkTmp, snapshot } from './_helpers.js';
 const CORE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../templates/_opencrew/core');
 const PAGINA = { 'index.html': '<!doctype html><title>Escritório</title>\n', 'modelo.js': 'export const x = 1;\n', 'estilo.css': 'body { margin: 0 }\n' };
 const SEGREDO = 'conteúdo-que-não-pode-sair';
-const CABECALHOS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'" };
+const CABECALHOS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'" };
 const ABERTO = (porta) => `Escritório aberto em http://127.0.0.1:${porta} — Ctrl+C para fechar`;
 const SEM_PORTA = (a, b) => `Não foi possível abrir o escritório: as portas ${a} a ${b} estão ocupadas. Use --porta.`;
 const FORA_DA_RAIZ = 'Rode este comando na pasta do projeto (a que contém _opencrew/).';
@@ -254,7 +254,7 @@ test('E1-04h: run again with the office of this project on the port — exit 0, 
   }
 });
 
-test('E1-04i: every answer carries the three security headers and none carries Access-Control-*', async (t) => {
+test('E1-04i (U7F1-03a): every answer carries the four security headers and none carries Access-Control-*', async (t) => {
   const { porta } = await subir(t, { x: estado(HORA(10)) });
   const pedidos = [
     ['/', {}, 200], ['/estado', {}, 200], ['/modelo.js', {}, 200], ['/nao-existe', {}, 404],

@@ -4,7 +4,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { exists } from './fsx.js';
+import { exists, isLink } from './fsx.js';
 
 export const MANIFEST = path.join('_opencrew', 'manifest.json');
 
@@ -59,14 +59,15 @@ export async function writeManifest(target, version, files) {
  * Delivery context shared by one init/update/repair run. `files` = what goes into the next
  * manifest; `copied` = files copied to `backupDir`; `blocks` = one result per marked block
  * written by `deliverBlock` (src/lib/blocos.js); `legacy` = one entry per bridge file where
- * the old text of ≤ 1.2.2 was removed or found edited (src/lib/legado.js).
+ * the old text of ≤ 1.2.2 was removed or found edited (src/lib/legado.js); `links` = files that
+ * were symbolic links and so were not written.
  * @param {string} target project root
  * @param {{files:Record<string,string>}|null} manifest previous manifest (null = none, or unreadable)
  */
 export function newDelivery(target, manifest) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = path.join(target, '.opencrew-backup', stamp);
-  return { target, manifest, backupDir, files: {}, copied: [], blocks: [], legacy: [], written: 0 };
+  return { target, manifest, backupDir, files: {}, copied: [], blocks: [], legacy: [], links: [], written: 0 };
 }
 
 /**
@@ -91,6 +92,11 @@ export async function backupFile(ctx, key) {
 export async function deliverFile(ctx, dest, content, { overwrite }) {
   const file = rel(ctx.target, dest);
   const fresh = hashOf(content);
+  if (await isLink(dest)) {
+    // Never written through (spec U7-F1, rule 5): the file on the other side stays as it is.
+    ctx.links.push(file);
+    return { file, action: 'kept', copied: false };
+  }
   if (!(await exists(dest))) {
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.writeFile(dest, content);
