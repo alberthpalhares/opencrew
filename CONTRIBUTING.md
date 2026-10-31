@@ -87,15 +87,16 @@ development rules.
 
 ## Como retomar o projeto
 
-O OpenCrew está **em pausa desde a 1.15.0** (2026-10-08): funciona como está e recebe só conserto
-de defeito. Para voltar a desenvolver:
+O OpenCrew está em desenvolvimento ativo, fase por fase. O roteiro vigente é `specs/fase-u7-roteiro.md`
+(defeitos e riscos primeiro, recursos depois); o anterior, `specs/fase-u5-roteiro.md`, mostra o que a
+fase de fechamento entregou e o que ficou de fora. Para desenvolver:
 
 1. **Leia, nesta ordem:** `AGENTS.md` (as 15 regras e a tabela Regra → Trava), `GLOSSARIO.md` (os
-   nomes do domínio) e `specs/fase-u5-roteiro.md` (o que a última fase entregou e o que ficou de
-   fora). Cada versão publicada tem a spec dela em `specs/` e a entrada no `CHANGELOG.md`.
-2. **O que ficou por fazer** está no `IDEIAS.md`: toda entrada diz `sem fase — projeto pausado` e de
-   onde veio. Nada ali está prometido; escolha uma, escreva a spec e peça a aprovação do dono antes
-   do código (ciclo da regra 1).
+   nomes do domínio) e `specs/fase-u7-roteiro.md` (o roteiro vigente) e `specs/fase-u5-roteiro.md`
+   (o que a fase de fechamento entregou e o que ficou de fora). Cada versão publicada tem a spec dela em `specs/` e a entrada no `CHANGELOG.md`.
+2. **O que ficou por fazer** está no `IDEIAS.md`: cada entrada diz a fase do roteiro que a recebe
+   (`→ Fase Fx`) ou `sem fase`, com o motivo. Escolha a próxima fase do roteiro, escreva a spec e peça a
+   aprovação do dono antes do código (ciclo da regra 1).
 3. **A porta é uma só:** `npm run verify` (lint, testes, versão, tamanho, conteúdo do pacote). O CI
    e a publicação chamam o mesmo comando. Ela não cobre a IA seguindo os prompts: isso se confere
    com uma execução real numa pasta de teste (`sandbox/` ou uma pasta temporária), como as specs
