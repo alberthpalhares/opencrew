@@ -3,9 +3,9 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Não lançada] — Fase U7-F1: higiene técnica e segurança
+## [1.19.4] — 2026-10-31
 
-Fase F1 do roteiro U7 (`specs/fase-u7-f1-higiene-e-seguranca.md`), a partir de uma auditoria técnica
+Fase U7-F1: "Higiene técnica e segurança", F1 do roteiro U7 (`specs/fase-u7-f1-higiene-e-seguranca.md`), a partir de uma auditoria técnica
 independente. Chega a quem já usa com um `npx @aksp/opencrew@latest update`: os prompts, a skill e o
 servidor do Escritório moram em `_opencrew/core/` e em `skills/`, e o que mora no CLI vem com o pacote
 novo. Nenhum arquivo de crew é alterado.
@@ -14,8 +14,8 @@ novo. Nenhum arquivo de crew é alterado.
 - **`image-creator` não expõe mais a pasta de saída na rede.** O servidor local que serve os slides
   para o Playwright escutava em todas as interfaces; agora só em `127.0.0.1`, e a skill traz também os
   comandos de PowerShell (iniciar e encerrar o servidor), além dos de bash.
-- **O Escritório não pode ser embutido em outra página** (`frame-ancestors 'none'`) e não manda
-  `Referrer-Policy`.
+- **O Escritório não pode ser embutido em outra página** (`frame-ancestors 'none'`) e não manda o
+  endereço de origem a outros sites (`Referrer-Policy: no-referrer`).
 - **A cópia do `AGENTS.md` antigo vai para `.opencrew-backup/<data>/`**, e não mais para `AGENTS.md.bak`
   na raiz do projeto, onde entrava no seu commit.
 - **O `update` não grava através de link simbólico**: o arquivo do outro lado fica como estava e o

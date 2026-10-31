@@ -1,6 +1,6 @@
 # Spec — Fase U7-F1: Higiene técnica e segurança do CLI e dos scripts
 
-- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §8, todas como recomendadas); em implementação
+- **Fase:** F1 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/init.js`, `src/commands/update.js`, `src/lib/manifest.js`, `src/lib/fsx.js`, `package.json`, `eslint.config.js`) + Payload (`templates/skills/image-creator/SKILL.md`, `templates/_opencrew/core/scripts/escritorio/servidor.mjs`, `templates/_opencrew/core/skills.engine.md`, `templates/AGENTS.md`) + CHANGELOG + AGENTS.md + testes · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §8, todas como recomendadas); implementada (1.19.4); revisão independente do código (Fable 5.1, high) feita, achados tratados
 - **Versão:** 1.19.4 (patch: reparos, sem recurso novo).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Opus 5.5 · alto (segurança e escrita no projeto do usuário).
@@ -68,6 +68,7 @@ Fechar defeitos pequenos e riscos que podem atingir quem já usa o OpenCrew: um 
 - **T-M1 e T-A1** (segredos digitados no chat gravados em texto puro em `.claude/settings.local.json`; MCP verificado num arquivo que o Playwright do `.mcp.json` não usa): pedem pesquisa do que cada IDE lê e mudam o desenho das skills de MCP; o `.gitignore` já cobre o arquivo desde a 1.4.2. **Passam para a F8** (roteiro atualizado no mesmo commit desta spec).
 - O servidor do Escritório além do cabeçalho; `HEAD` recebendo 405; a sonda de portas; mudar o formato de `/estado`.
 - `update` remover arquivo que saiu do payload e `init` sobre workspace sem carimbo: F3.
+- Escrita através de link simbólico nos outros caminhos (`deliverBlock`, MCP, manifesto, carimbo, pasta que é link): registrada no `IDEIAS.md` → F3. A revisão independente da F1 achou e confirmou (2026-10-31).
 
 ## 7. Conferência que o `npm run verify` não cobre (regra 7)
 - Uma geração de imagem real com a `image-creator` no Windows (PowerShell) e no macOS/Linux (bash): o servidor sobe só em `127.0.0.1`, o Playwright abre `http://127.0.0.1:8765/…` e o servidor é encerrado no fim. **Conferência do dono** (o ambiente de testes não tem navegador de produção).

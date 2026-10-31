@@ -63,12 +63,13 @@ Use the Visual Renderer when you need to generate production-ready images from H
 6. **Stop server** -- After all slides are rendered, stop the HTTP server:
    ```bash
    # macOS / Linux
-   pkill -f "http.server 8765" 2>/dev/null || true
+   # the [p] keeps pkill from matching its own command line
+   pkill -f "[p]ython.* -m http.server 8765" 2>/dev/null || true
    ```
 
    ```powershell
    # Windows (PowerShell)
-   Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*http.server 8765*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+   Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $PID -and $_.Name -like 'python*' -and $_.CommandLine -like '*http.server 8765*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
    ```
 
 ### Viewport Presets (width x height)

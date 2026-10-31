@@ -591,7 +591,7 @@ antes para `.opencrew-backup/<data>/`, e o resumo do `init --repair-bridges` lis
 
 Se você está migrando de uma versão anterior a v1.3, o `update` detecta
 AGENTS.md legados (sistema completo de 150 linhas) e os substitui pela ponte
-fina. Desde a v1.4.2 o arquivo original é copiado antes para `AGENTS.md.bak` (até a v1.4.1,
+fina. Desde a v1.4.2 o arquivo original é copiado antes (desde a 1.19.4, para `.opencrew-backup/<data>/AGENTS.md`; antes, para `AGENTS.md.bak` na raiz) (até a v1.4.1,
 instruções suas adicionadas a esse `AGENTS.md` legado eram perdidas).
 
 Para verificar se há atualização disponível sem aplicar:

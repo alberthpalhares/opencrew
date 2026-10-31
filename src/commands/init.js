@@ -11,7 +11,7 @@ import { UsageError } from '../lib/errors.js';
 import { isProtectedTarget, workspaceAbove, TARGET_PROTECTED, workspaceAboveLine } from '../lib/alvo.js';
 import { withoutLegacy, legacyLines } from '../lib/legado.js';
 import { repairIdeIds, repairVersionGuard, backupSummary, recordRepair, NO_BRIDGES_FOUND, NO_WORKSPACE } from '../lib/migrations.js';
-import { ALREADY_INSTALLED } from '../lib/resumo.js';
+import { ALREADY_INSTALLED, linkLine } from '../lib/resumo.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 const STAMP = path.join('_opencrew', '.opencrew-version');
@@ -121,6 +121,7 @@ async function repairBridges(target, version, opts) {
 
 /** Say where the backup copies of this run are (nothing when none was made). */
 function reportBackups(ctx) {
+  if (ctx.links.length) warn(linkLine(ctx));
   const [copied, ...copies] = backupSummary(ctx);
   if (copied) warn(copied);
   for (const copy of copies) log(copy);

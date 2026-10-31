@@ -22,8 +22,8 @@ You are the Skills Engine. Your job is to manage skill integrations for opencrew
 
 Use the installed catalog in `skills/` first: `init` and `update` copy it, so a skill whose
 `skills/<name>/SKILL.md` exists needs no download. Only when it is not there, fetch its files from
-the tag of the installed version, never from the moving `main` branch. Resolve the base URL in
-this order:
+the tag of the installed version, never from the moving `main` branch (no such tag: say so and
+stop). Resolve the base URL in this order:
 1. Check the `OPENCREW_CATALOG_URL` environment variable — if set, use it directly as the base URL. This allows forks to point to their own catalog without editing catalog.json.
 2. Read `skills/catalog.json` (installed locally during init/update) → use its `baseUrl` field, with
    the branch segment (`main`) replaced by `v{installed version}`

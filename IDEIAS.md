@@ -355,3 +355,14 @@
 - **Custo de adiar:** o Express sai menos enxuto do que promete e o Full pode perder um criador por formato; nenhum risco de
   perda de dado.
 - **Aprovação:** não.
+
+## Escrita através de link simbólico nos outros caminhos de gravação do CLI
+- **O que já existe:** desde a F1 (1.19.4), `deliverFile` e `writeFileSafe` não gravam através de link simbólico.
+  Continuam seguindo o link: `deliverBlock` (`AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.env.example` e as pontes das
+  IDEs, `src/lib/blocos.js`), `createMcp`/`updateMcp` (`src/lib/mcp.js`), `writeManifest`, o carimbo `.opencrew-version`
+  e uma **pasta** que é link (`_opencrew/core` apontando para fora). Só o próprio usuário cria esses links.
+- **Ideia:** um único guarda de escrita no CLI (arquivo e pasta), com o mesmo aviso "link simbólico: não gravei".
+- **Alocação:** → Fase F3 (roteiro U7): a F3 já mexe na escrita do `update`.
+- **Custo de adiar:** baixo: exige um link que o próprio usuário pôs no lugar de um arquivo do OpenCrew.
+- **Aprovação:** não.
+

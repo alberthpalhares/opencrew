@@ -143,7 +143,10 @@ async function refreshAgentsBridge(ctx) {
   const existing = (await exists(agentsPath)) ? await readFile(agentsPath) : '';
   if (existing.includes('# opencrew Instructions') && !existing.includes('<!-- opencrew:start -->')) {
     await backupFile(ctx, 'AGENTS.md'); // .opencrew-backup/<date>/: the root stays free of copies (spec U7-F1, rule 4)
-    await writeFileSafe(agentsPath, AGENTS_BRIDGE);
+    if (!(await writeFileSafe(agentsPath, AGENTS_BRIDGE))) { // a link at AGENTS.md: not written through
+      ctx.links.push('AGENTS.md');
+      return null;
+    }
     const copy = path.relative(ctx.target, path.join(ctx.backupDir, 'AGENTS.md')).split(path.sep).join('/');
     ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${copy})`);
     return null;

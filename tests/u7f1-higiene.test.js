@@ -3,7 +3,7 @@
 // the old tests that had locked the behaviour being fixed (F1-04a/b, E1-04i, U4a-02b).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, promises as fs } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
@@ -58,6 +58,9 @@ test('U7F1-02a: image-creator serves only on 127.0.0.1 and has a PowerShell vari
   assert.doesNotMatch(skill, /localhost:8765/);
   assert.match(skill, /Start-Process/);
   assert.match(skill, /Stop-Process/);
+  // The stop commands must not kill the shell that runs them (its own command line holds the pattern).
+  assert.match(skill, /\$_\.ProcessId -ne \$PID/);
+  assert.match(skill, /pkill -f "\[p\]ython/);
 });
 
 test('U7F1-04a: a legacy AGENTS.md is copied to .opencrew-backup/, never to AGENTS.md.bak in the root', () => {
@@ -113,6 +116,7 @@ test('U7F1-06b: the filesystem root is a protected target; an ordinary folder an
   assert.equal(isProtectedTarget(dir, dir), true);
   assert.equal(isProtectedTarget(path.join(dir, 'projeto'), dir), false);
   assert.equal(isProtectedTarget(dir, path.join(dir, 'outra')), false);
+  assert.equal(isProtectedTarget(dir, ''), false, 'HOME= set but empty is no home folder');
 });
 
 test('U7F1-06c: init inside a folder under a workspace warns where it is and carries on', async () => {
@@ -164,6 +168,11 @@ test('U7F1-10a: skill install uses the installed catalog first, pins the tag, ne
 });
 
 test('U7F1-11a: /opencrew reset is not listed, and nothing in the payload cites it', () => {
-  assert.doesNotMatch(ler('templates/AGENTS.md'), /\/opencrew reset/);
   assert.doesNotMatch(ler('README.md'), /\/opencrew reset/);
+  const base = new URL('templates/', raiz);
+  const citam = readdirSync(base, { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && !/\.(png|jpe?g|gif|ico|woff2?)$/i.test(e.name))
+    .map((e) => path.join(e.parentPath ?? e.path, e.name))
+    .filter((f) => readFileSync(f, 'utf8').includes('/opencrew reset'));
+  assert.deepEqual(citam, []);
 });

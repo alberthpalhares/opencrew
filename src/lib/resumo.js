@@ -110,10 +110,10 @@ function copyLines(ctx, unreadable) {
 }
 
 // A symbolic link where a file of the package goes is left alone (spec U7-F1, rule 5).
-function linkLines(ctx) {
-  if (!ctx.links.length) return [];
-  return [[warn, `link simbólico: não gravei ${ctx.links.join(', ')}. O arquivo do outro lado do link ficou como estava.`]];
-}
+export const linkLine = (ctx) => (ctx.links.length
+  ? `link simbólico: não gravei ${ctx.links.join(', ')}. O arquivo do outro lado do link ficou como estava.`
+  : null);
+const linkLines = (ctx) => (ctx.links.length ? [[warn, linkLine(ctx)]] : []);
 
 /**
  * The summary of an `update`, in the order the steps ran.
