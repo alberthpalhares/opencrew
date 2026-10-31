@@ -619,7 +619,7 @@ Additional programmatic checks — read the filesystem to verify:
 After all validation gates pass, present the summary:
 
 ```
-Crew "{name}" created with {N} agents!
+Crew "{name}" criada: {N} pessoas, {M} passos no pipeline!
 
 Quality Report:
 - Agents: {N}/{N} passed completeness gate

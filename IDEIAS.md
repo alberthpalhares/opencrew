@@ -340,3 +340,35 @@
 - **Alocação:** → sem fase — projeto pausado; hoje o erro aparece no dry run (a API recusa o container), sem post publicado.
 - **Custo de adiar:** a imagem sobe para o imgBB à toa antes do erro, e a mensagem que aparece é a da API, em inglês.
 - **Aprovação:** não.
+
+## Modelos de crew: `newsletter-mensal` é Express mas traz revisor dedicado
+- **O que já existe:** `templates/crews/newsletter-mensal/discovery.template.yaml` tem `tier: express` e
+  três agentes (curador, redator, revisor), mas no Express quem revisa é o redator (tabela de tiers do
+  `design.prompt.md`). Desde a R5 (1.19.3) a Fase D confere o time contra a faixa do tier.
+- **Ideia:** ajustar o modelo (tier ou time) e dar migração ao `update`, que entrega `crews/` sem sobrescrever.
+- **Alocação:** → sem fase — mudar `crews/` exige migração (regra 14); a R5 ficou só nos prompts.
+- **Custo de adiar:** quem parte desse modelo recebe a pergunta "manter o tier ou mudar" na Fase D.
+- **Aprovação:** não.
+
+## Criação de crew: a Fase C extrai artefatos "para CADA agente" antes de a Fase D fechar o time
+- **O que já existe:** na `design.prompt.md`, a extração (Fase C) acontece antes da proposta de time (Fase D), então a
+  IA já chega à Fase D com um time implícito. A R5 (1.19.3) prende o número de pessoas ao tier, mas não muda a ordem.
+- **Ideia:** fechar o time (D) antes de extrair os artefatos por agente (C), ou extrair por papel e só depois nomear.
+- **Alocação:** → sem fase — mudança de ordem das fases; precisa de spec própria.
+- **Custo de adiar:** a extração pode produzir material para um agente que a Fase D depois não cria (trabalho perdido).
+- **Aprovação:** não.
+
+## Criação de crew: ambiguidades dos tiers achadas na simulação da R5
+- **O que já existe:** a simulação da R5 (2026-10-30: dois agentes lendo o `design.prompt.md`, Express com 3 formatos e Full
+  de lançamento; não foi execução real numa IDE) passou nos cenários da R5 e apontou quatro ambiguidades anteriores a ela:
+  (1) a tabela de tiers diz que o Express tem só a aprovação final, mas a Fase G manda um checkpoint antes de todo
+  pesquisador e outro antes de passo de renderização, e a IA fica com três; (2) no Full, o "second reviewer cross-check"
+  não diz se é uma pessoa (ocupa uma das 5-7 vagas) ou só outro passo do revisor; (3) quem define os ângulos: o Estrategista
+  (Fase D) ou o criador (Fase G, "NEVER the researcher's job"); (4) com `Output Language` vazio no `preferences.md`, o prompt
+  não diz o idioma de reserva dos nomes.
+- **Ideia:** uma fase de revisão da tabela de tiers e das Fases D e G: um único quadro de checkpoints por tier, o
+  cross-review dito como pessoa ou passo, um dono para os ângulos e o idioma de reserva.
+- **Alocação:** → sem fase — cada ponto mexe em regra de tier ou de pipeline; precisa de spec própria.
+- **Custo de adiar:** o Express sai menos enxuto do que promete e o Full pode perder um criador por formato; nenhum risco de
+  perda de dado.
+- **Aprovação:** não.

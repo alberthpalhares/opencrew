@@ -3,6 +3,28 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.3] — 2026-10-31
+
+Fase R5: "Criação de crew: tamanho coerente e time separado do pipeline"
+(`specs/fase-r5-criacao-de-crew.md`). Chega a quem já usa com um `npx @aksp/opencrew@latest update`;
+os prompts moram em `_opencrew/core/` e nenhum arquivo de crew é alterado.
+
+### Fixed
+- **O time proposto respeita o tamanho escolhido.** A criação perguntava a profundidade (Express 2-3,
+  Standard 3-5, Full 5-7 pessoas) e logo depois sugeria o time pela "complexidade", de outro tamanho.
+  Agora o número de pessoas vem da faixa do tier, a IA diz "Você escolheu Standard → 3 a 5 pessoas"
+  antes de listar, e se uma edição leva o time para fora da faixa ela pergunta se mantém o tier ou
+  muda. O desenho dos agentes não acrescenta ninguém depois (um criador pode atender vários formatos).
+- O resumo do template na Discovery mostra o tier e o time juntos; a opção do `Default Tier` vem
+  marcada "(padrão das suas preferências)".
+
+### Changed
+- **A apresentação do desenho tem dois blocos separados, em português:** "👥 Time — N pessoas" (nome
+  e função de cada membro) e "🔀 Pipeline — M passos" (a ação, quem faz, e "você decide" nos
+  checkpoints). Uma crew de 7 pessoas pode ter 12 passos sem misturar as listas. As tarefas dos
+  agentes deixam de aparecer ali. Antes de gravar o `design.yaml`, a IA confere que N e M batem.
+- O resumo final da criação diz "{N} pessoas, {M} passos no pipeline".
+
 ## [1.19.2] — 2026-10-20
 
 Fase R4: "Limites do Instagram de 2026" (`specs/fase-r4-instagram-limites-2026.md`). Os limites

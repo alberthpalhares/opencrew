@@ -17,7 +17,8 @@ function sections(md) {
 
 test('F1-08a: every pipeline pattern publishes/sends only after Review and Final Approval', () => {
   const patterns = design.split('\n').filter((l) => l.includes('→') && /Review/.test(l) && /checkpoint/i.test(l));
-  assert.ok(patterns.length >= 4, `expected the pattern + presentation lines, got ${patterns.length}`);
+  // 2 since R5 (specs/fase-r5-criacao-de-crew.md): Phase H no longer repeats the patterns of Phase G.
+  assert.ok(patterns.length >= 2, `expected the pipeline pattern lines, got ${patterns.length}`);
   for (const line of patterns) {
     assert.doesNotMatch(line, /\[Execution( Steps)?\]/, `ambiguous [Execution] step: ${line}`);
     const pub = line.indexOf('[Publish/Send');
