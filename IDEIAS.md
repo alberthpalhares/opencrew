@@ -54,9 +54,10 @@
 > Saíram em 2026-10-09, entregues na v1.17.0 (CHANGELOG; `specs/fase-u6b-dados-e-custo.md`): `/opencrew cleanup`,
 > o orçamento de custo por execução e `/opencrew feedback`.
 >
-> **Projeto pausado desde a 1.15.0 (2026-10-08); a U6 (`specs/fase-u6-roteiro.md`) retomou o que era seguro.** Nenhuma entrada abaixo tem fase: cada uma diz
-> `sem fase — projeto pausado` e, entre parênteses, de onde veio. Para retomar, comece por
-> "Como retomar o projeto", no `CONTRIBUTING.md`.
+> **O projeto saiu da pausa.** A U6 (`specs/fase-u6-roteiro.md`) retomou o que era seguro e o roteiro U7
+> (`specs/fase-u7-roteiro.md`, 2026-10-31) distribui o resto em fases F0 a F10: defeitos e riscos primeiro, recursos depois.
+> Cada entrada abaixo diz `→ Fase Fx` (a fase do roteiro que a recebe) ou `sem fase`, com o motivo. Para retomar o
+> desenvolvimento, comece por "Como retomar o projeto", no `CONTRIBUTING.md`.
 
 ---
 
@@ -76,7 +77,7 @@
   guardar a primeira; (10) no conserto, responder "nenhum" à pergunta das fontes deixa a crew
   `CONSERTO:PENDENTE` para sempre; (11) o resumo da entrega de `texto-livre` não diz "Pronto";
   (12) modelos de texto em inglês (cabeçalho, menu final, "Run it:") para usuário em PT-BR.
-- **Alocação:** itens 1 e 10: entregues na v1.15.0 (decisão do dono em 2026-10-08); entregues na v1.16.0 (U6 fatia 1): 2 (numeração do Agent Loading), 3 (escala do revisor), 11 (Pronto para texto sem canal), 12 (textos em PT-BR) e o cabeçalho da execução retomada; os demais (4 a 9, seleção de agentes guardada) → sem fase — projeto pausado.
+- **Alocação:** itens 1 e 10: entregues na v1.15.0 (decisão do dono em 2026-10-08); entregues na v1.16.0 (U6 fatia 1): 2 (numeração do Agent Loading), 3 (escala do revisor), 11 (Pronto para texto sem canal), 12 (textos em PT-BR) e o cabeçalho da execução retomada; restam: 4, 5, 6 e 9 → Fase F6 (roteiro U7); 7 e 8 (`[PREENCHER]` na aprovação final) → Fase F7; seleção de agentes guardada → Fase F6.
 - **Custo de adiar:** item 1: um modelo literal pode mandar ao revisor o texto sem a correção pedida.
 - **Aprovação:** itens 1 e 10, sim (2026-10-08).
 
@@ -91,8 +92,7 @@
   agente); (7) num pedido, as versões do texto e as revisões se intercalam (`v1` texto, `v2` revisão,
   `v3` texto…); (8) "Run it: /opencrew run" no fim do conserto, em inglês e nem sempre o próximo
   passo certo.
-- **Alocação:** itens 2, 3, 4, 5, 7 e 8: entregues na v1.16.0 (U6 fatia 1); itens 1 e 6 → sem fase — projeto
-  pausado (o 1 muda o que a entrega e os testes travam; o 6 é refatorar o runner de novo).
+- **Alocação:** itens 2, 3, 4, 5, 7 e 8: entregues na v1.16.0 (U6 fatia 1); item 1 (nome do arquivo entregue) → Fase F6 (roteiro U7); item 6 (o pedido lê quase o runner inteiro) → Fase F10.
 - **Custo de adiar:** o 1 é o que o usuário mais nota.
 - **Aprovação:** não.
 ## Achados da execução real de aceite da 1.16.0 (fora do que a fatia entregou)
@@ -104,7 +104,7 @@
   (4) `texto-livre` sempre cai em `outros/`, com o nome do passo (`rascunho.md`); (5) "limite de cinco
   linhas" pedido pelo usuário não é medido por nada, e o revisor conta à mão (que o guia de revisão
   proíbe); (6) rótulos do `review.md` e o cabeçalho do runner seguem em inglês.
-- **Alocação:** → sem fase — projeto pausado. O 1 é o que mais mexe: muda o laço de revisão do pipeline.
+- **Alocação:** → Fase F7 (roteiro U7): itens 1 e 2 (muda o laço de revisão do pipeline); → Fase F6: itens 3, 4 e 6; → Fase F9: item 5 (limite pedido pelo usuário, não medido).
 - **Custo de adiar:** o 1 deixa o texto final sem revisão quando o usuário corrige na aprovação final.
 - **Aprovação:** não.
 ## Prompts de criação acima do alvo de tamanho
@@ -114,8 +114,7 @@
   `skills.engine.md` (495); o próprio runner ficou em 543, porque o resto dele é lido em quase
   toda execução (`specs/fase-u5b-runner-dividido.md`, decisão 1). T-M11 (carregar os agentes uma
   vez só) também não foi feito.
-- **Alocação:** → sem fase — projeto pausado; esses prompts são lidos só na criação da crew, não
-  a cada execução.
+- **Alocação:** → Fase F4 (roteiro U7): `design`, `build` e `sherlock-shared` em partes sob demanda; → Fase F10: `skills.engine.md` e o carregamento dos agentes uma vez só (T-M11).
 - **Custo de adiar:** criar uma crew continua custando a leitura de três prompts longos.
 - **Aprovação:** não.
 
@@ -143,10 +142,7 @@
   9. documento em outro idioma ("Página X de Y" e avisos só em PT-BR); a linha "Não medido" do
      verificador para `documento-oficial` (o formato não tem limite a medir; hoje a linha aparece
      e não bloqueia).
-- **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em
-  2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou
-  precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação
-  lado a lado pedir. Item 8: entregue na v1.15.0 (Word por pedido em texto; pedido à crew no histórico). Item 9: a linha "Não medido" saiu na 1.12.0; documento em outro idioma → sem fase — projeto pausado.
+- **Alocação:** itens 1 a 7 → sem fase — o perfil cobre o caso real (a ata comparada pelo dono em 2026-10-07); cada um abre partes e relações novas no arquivo, muda o texto oficial (3) ou precisa de motor de renderização (6); voltam só com pedido real, e o 4 só se uma comparação lado a lado pedir. Item 8: entregue na v1.15.0 (Word por pedido em texto; pedido à crew no histórico). Item 9 (documento em outro idioma) → Fase F8 (roteiro U7); a linha "Não medido" saiu na 1.12.0.
 - **Custo de adiar:** quem tem um modelo `.dotx` ou logotipo que não é PNG ajusta à mão (converte
   o logotipo, aplica o modelo no Word); documento em outro idioma sai com "Página X de Y" em português.
 - **Aprovação:** não.
@@ -155,9 +151,7 @@
 - **O que já existe:** U2 confere os caminhos citados pela crew; no Projeto A o manual de marca
   (uma fonte) lista nomes de logo que não existem na pasta — a crew usou texto no lugar do logo,
   sem aviso.
-- **Alocação:** → sem fase — projeto pausado (era U3a fatia 3): é conferência de fontes, não entrega,
-  e não cabia na 1.9.0 (`specs/fase-u3a2-entrega-no-projeto.md`, §8). Como aviso que não para a
-  execução: não muda `FONTES:` e o `--corrigir` nunca reescreve a fonte.
+- **Alocação:** → Fase F8 (roteiro U7): conferência de fontes, não entrega; como aviso que não para a execução: não muda `FONTES:` e o `--corrigir` nunca reescreve a fonte. Dividir `conferir-fontes.mjs` (199 de 200 linhas) antes.
 - **Custo de adiar:** peças visuais sem logo, falha silenciosa.
 - **Aprovação:** não.
 
@@ -165,9 +159,7 @@
 - **O que já existe:** a R2 (1.6.3) fez o `update` renovar o bloco do `.gitignore`; a 1.9.0
   tratou o marcador órfão e pôs o comentário no bloco. Falta transformar em bloco as 8 linhas
   soltas das versões 1.0.0 a 1.4.1, sem repetir nenhuma.
-- **Alocação:** → sem fase — cosmético (linha repetida não muda o que o git ignora) e exige
-  reescrever linha do usuário; quem atualizou desde a 1.6.3 já tem o bloco
-  (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
+- **Alocação:** → Fase F8 (roteiro U7): cosmético (linha repetida não muda o que o git ignora) e reescreve linha do usuário — só com backup e confirmação (regra 3), com aprovação explícita do dono na spec.
 - **Custo de adiar:** `.gitignore` antigo fica com linhas repetidas depois do `update`; nada se perde.
 - **Aprovação:** não.
 
@@ -178,8 +170,7 @@
   publicado"; a confirmação de publicar não repete as ressalvas; canal com `[PREENCHER]` aceito
   pode ser publicado pela crew (regras 23 a 25 e cenários U3a-08e-f2 a 08p, upg-c e upg-d da spec
   grande, `specs/fase-u3a-entrega-por-canal.md`).
-- **Alocação:** → sem fase — corte do dono em 2026-10-07: nenhuma crew real publica em rede
-  social sozinha; volta com pedido real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
+- **Alocação:** → sem fase — corte do dono em 2026-10-07: nenhuma crew real publica em rede social sozinha. **Defeito conhecido (H1-08):** o publicador publica a legenda remontada dos slides, não a aprovada; volta ao primeiro usuário que publique pela crew (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
 - **Custo de adiar:** quem publica pela crew publica o texto do passo, não o da entrega, e pode
   publicar um canal entregue com ressalva sem novo aviso.
 - **Aprovação:** não.
@@ -191,9 +182,7 @@
   de mais de um canal vai inteiro para um canal só; HTML editável com caminho `file://` não é
   avisado, e a skill `image-creator` manda embutir imagem por caminho absoluto (regras 5, 9, 10,
   11 e 26 da spec grande; U3a-09a a 09f, 04c a 04p, 03m a 03u, 07k a 07p).
-- **Alocação:** → sem fase — projeto pausado (era U3a fatia 3): muda o que bloqueia: texto que hoje
-  passa pode parar, e pede a conferência do dono em cada rede; mudar a skill pede teste de
-  renderização real (`specs/fase-u3a2-entrega-no-projeto.md`, §8).
+- **Alocação:** → Fase F9 (roteiro U7): muda o que bloqueia: texto que hoje passa pode parar, e o dono confere cada rede; mudar a skill pede teste de renderização real.
 - **Custo de adiar:** texto que passa no verificador pode estourar o limite ao ser colado com as
   hashtags; imagem fora do tamanho da rede só é vista na hora de postar.
 - **Aprovação:** não.
@@ -202,9 +191,7 @@
 - **O que já existe:** desde a 1.11.0, `/opencrew repair` aponta a crew que publica antes da revisão
   ou da aprovação final (`publica-antes`), a que não tem revisão (`sem-revisao`) e a que não tem
   aprovação final, e manda para `/opencrew edit`; não reordena nem cria passos (T-B15, H1-01).
-- **Alocação:** → sem fase — nenhuma crew real está assim (as do Projeto A foram recriadas na
-  1.6.0; a do B não publica), e mover passos mexe nos números que `on_reject` usa
-  (`specs/fase-u4a-conserto-de-crews.md`, decisão 5). Volta com um caso real.
+- **Alocação:** → sem fase — nenhuma crew real está assim (as do Projeto A foram recriadas na 1.6.0; a do B não publica), e mover passos mexe nos números que `on_reject` usa (`specs/fase-u4a-conserto-de-crews.md`, decisão 5). Volta com um caso real.
 - **Custo de adiar:** quem tem uma crew anterior à 1.4.2 que publica reordena pela edição da crew.
 - **Aprovação:** não.
 
@@ -213,8 +200,7 @@
   do core para `_opencrew/best-practices.local/`; daí em diante, correção de limite feita no core
   não chega mais àquele formato, e ninguém avisa (H3-01). A parte urgente (mesclar os
   `constraints:` com os do core e avisar quando o arquivo local não os declara) vai na R1.
-- **Alocação:** → sem fase — projeto pausado (era U5): muda o desenho do overlay; as cópias inteiras que já existem continuam
-  valendo.
+- **Alocação:** → Fase F9 (roteiro U7): muda o desenho do overlay; as cópias inteiras que já existem continuam valendo; aprovação explícita do dono na spec.
 - **Custo de adiar:** cada cópia local congela os limites daquele formato no projeto.
 - **Aprovação:** sim — muda como o usuário guarda os próprios best-practices.
 
@@ -222,14 +208,14 @@
 - **O que já existe:** exemplos de caminho tirados dos casos reais (cenários da spec U2) estão em
   `build.prompt.md`, em `discovery.prompt.md` e em `tests/conferir-fontes.test.js`; a trava de
   conteúdo do mantenedor (`tests/template-refs.test.js`) não os procura (G-29).
-- **Alocação:** → sem fase — projeto pausado (era U5): higiene, sem urgência: são nomes genéricos de pasta, sem texto de cliente.
+- **Alocação:** → Fase F8 (roteiro U7): higiene, sem urgência: são nomes genéricos de pasta, sem texto de cliente.
 - **Custo de adiar:** esses nomes seguem no prompt instalado em todo usuário.
 - **Aprovação:** não.
 
 ## Contagem de caracteres por canal (X/Twitter)
 - **O que já existe:** o verificador conta todo emoji como 1 e a URL inteira, em qualquer canal
   (`verificar/regras.mjs`); no X, emoji vale 2 e todo link vale 23 (H2-17).
-- **Alocação:** → sem fase — projeto pausado (era U5): polimento: o limite do tweet já é medido, só o peso muda.
+- **Alocação:** → Fase F9 (roteiro U7): o limite do tweet já é medido, só o peso muda (emoji vale 2, link vale 23).
 - **Custo de adiar:** tweet com emojis passa acima do limite real; tweet com link longo é
   bloqueado sem motivo.
 - **Aprovação:** não.
@@ -238,7 +224,7 @@
 - **O que já existe:** o runner lê cada fonte inteira até ~300 linhas; acima disso, só os títulos
   e os trechos que julgar relevantes (`runner.pipeline.md`, passo 1c). A spec U2 (§11) adiou a
   busca semântica (H3-12).
-- **Alocação:** → sem fase — projeto pausado (era U5): custo (tokens por execução).
+- **Alocação:** → sem fase — custo (tokens por execução); volta com pedido real.
 - **Custo de adiar:** em fonte longa, um trecho importante pode ficar fora da leitura.
 - **Aprovação:** não.
 
@@ -254,8 +240,7 @@
   fora: os cinco agentes-base não têm as seções que o Gate 1 do Build exige (T-M20), então
   `extends:` não poupa trabalho (T-B8); o `design.yaml` usa `input_file`/`output_file` e o passo,
   `inputFile`/`outputFile`.
-- **Alocação:** → sem fase — projeto pausado (era U5): pede reescrever os cinco agentes-base (`specs/fase-u4a-conserto-de-crews.md`,
-  decisão 9); o `design.yaml` é arquivo interno da criação e não chega ao runner.
+- **Alocação:** → Fase F10 (roteiro U7): pede reescrever os cinco agentes-base e só chega a quem já usa depois da F3 (H3-11); o `design.yaml` é arquivo interno da criação e não chega ao runner.
 - **Custo de adiar:** o Build completa à mão o que falta no agente-base, a cada crew criada.
 - **Aprovação:** não.
 
@@ -264,7 +249,7 @@
   `post_visible_chars: 210` (`linkedin-post`) estão no frontmatter `constraints:`; na execução
   real o verificador mediu caracteres e hashtags da legenda, mas não o gancho de 125. Fere a
   regra 12 do AGENTS.md. Os outros máximos sem medição já têm destino (spec U1 §12, H2-13).
-- **Alocação:** → sem fase — projeto pausado (era U5): junto do resto do H2-13.
+- **Alocação:** → Fase F9 (roteiro U7): começa pelo inventário da regra 12 (toda chave `*_max_*` sem medidor).
 - **Custo de adiar:** o gancho passa do corte do "ver mais" sem aviso.
 - **Aprovação:** não.
 
@@ -294,8 +279,7 @@
   novo; a seção `## Regras de Ouro` tem dois nomes e não existe no modelo de memória; o contrato
   de saída não tem campo para "exige TL;DR"; textos mostrados ao usuário em inglês na seleção de
   agentes, no contrato e no menu final; nota de mantenedor dentro do payload (`memoria.md`).
-- **Alocação:** → sem fase — projeto pausado (`specs/fase-u5-roteiro.md`); nenhum impediu criar a
-  crew nem consertar a antiga.
+- **Alocação:** → Fase F5 (roteiro U7): checkpoint Standard × renderização, "6 tons padrão", pesquisa atribuída ao discovery, descrição do `/opencrew run`, `IDEs:` morto; → Fase F6: textos em inglês, `Regras de Ouro`, contrato sem "exige TL;DR", `tasks:` em passo `subagent`, "Research Focus", hora em UTC; → Fase F7: `[PREENCHER]` na aprovação final e o que roda depois de um REJECT.
 - **Custo de adiar:** a IA improvisa nesses pontos, cada uma de um jeito.
 - **Aprovação:** não.
 
@@ -303,8 +287,7 @@
 - **O que já existe:** a 1.12.0 levou os avisos de documento ao verificador, acusa a chave do
   perfil escrita quase certa, avisa da tabela com célula a mais e fixou as perguntas do prompt.
   Ficou: perfil criado e ainda vazio aparece no relatório como se houvesse papel timbrado.
-- **Alocação:** → sem fase — projeto pausado; o documento sai certo (sem timbre), só a frase do
-  relatório engana.
+- **Alocação:** → Fase F8 (roteiro U7): o documento sai certo (sem timbre), só a frase do relatório engana.
 - **Custo de adiar:** quem criou o perfil e não preencheu lê "perfil usado" e não vê timbre.
 - **Aprovação:** não.
 
@@ -315,7 +298,7 @@
   (`EBUSY`, `EPERM`) dentro da frase em PT-BR; (3) `preferencias.mjs` ainda lê um exemplo em bloco recuado com 4 espaços,
   e a primeira linha `Budget:` viva vence mesmo vazia; (4) `crews/` que é junção não é conferida (o dano fica na crew
   escolhida, e o arquivo foi montado pelo dono).
-- **Alocação:** → sem fase — projeto pausado (segunda revisão da U6b); nenhum caso apaga fora de `output/<execução fechada>`.
+- **Alocação:** → Fase F8 (roteiro U7); nenhum caso apaga fora de `output/<execução fechada>`.
 - **Custo de adiar:** mensagem menos clara em caso raro; nenhum risco de perda de dado conhecido.
 - **Aprovação:** não.
 
@@ -337,7 +320,7 @@
 - **Ideia:** o `publish.js` ler largura e altura de cada JPEG (marcador SOF) e recusar, antes do upload no imgBB, a imagem
   fora da faixa da API, com a mensagem de como corrigir. Quando a referência oficial da API passar a aceitar 3:4, o aviso
   sai e a faixa muda.
-- **Alocação:** → sem fase — projeto pausado; hoje o erro aparece no dry run (a API recusa o container), sem post publicado.
+- **Alocação:** → Fase F8 (roteiro U7); hoje o erro aparece no dry run (a API recusa o container), sem post publicado.
 - **Custo de adiar:** a imagem sobe para o imgBB à toa antes do erro, e a mensagem que aparece é a da API, em inglês.
 - **Aprovação:** não.
 
@@ -346,7 +329,7 @@
   três agentes (curador, redator, revisor), mas no Express quem revisa é o redator (tabela de tiers do
   `design.prompt.md`). Desde a R5 (1.19.3) a Fase D confere o time contra a faixa do tier.
 - **Ideia:** ajustar o modelo (tier ou time) e dar migração ao `update`, que entrega `crews/` sem sobrescrever.
-- **Alocação:** → sem fase — mudar `crews/` exige migração (regra 14); a R5 ficou só nos prompts.
+- **Alocação:** → Fase F10 (roteiro U7): mudar `crews/` exige migração com a regra 3 (só se o arquivo for idêntico ao original, ou com `.bak` e confirmação) e a regra 14.
 - **Custo de adiar:** quem parte desse modelo recebe a pergunta "manter o tier ou mudar" na Fase D.
 - **Aprovação:** não.
 
@@ -354,7 +337,7 @@
 - **O que já existe:** na `design.prompt.md`, a extração (Fase C) acontece antes da proposta de time (Fase D), então a
   IA já chega à Fase D com um time implícito. A R5 (1.19.3) prende o número de pessoas ao tier, mas não muda a ordem.
 - **Ideia:** fechar o time (D) antes de extrair os artefatos por agente (C), ou extrair por papel e só depois nomear.
-- **Alocação:** → sem fase — mudança de ordem das fases; precisa de spec própria.
+- **Alocação:** → Fase F5 (roteiro U7): mudança de ordem das fases; spec própria.
 - **Custo de adiar:** a extração pode produzir material para um agente que a Fase D depois não cria (trabalho perdido).
 - **Aprovação:** não.
 
@@ -368,7 +351,7 @@
   não diz o idioma de reserva dos nomes.
 - **Ideia:** uma fase de revisão da tabela de tiers e das Fases D e G: um único quadro de checkpoints por tier, o
   cross-review dito como pessoa ou passo, um dono para os ângulos e o idioma de reserva.
-- **Alocação:** → sem fase — cada ponto mexe em regra de tier ou de pipeline; precisa de spec própria.
+- **Alocação:** → Fase F5 (roteiro U7): cada ponto mexe em regra de tier ou de pipeline; spec própria.
 - **Custo de adiar:** o Express sai menos enxuto do que promete e o Full pode perder um criador por formato; nenhum risco de
   perda de dado.
 - **Aprovação:** não.

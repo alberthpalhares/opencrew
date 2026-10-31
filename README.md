@@ -664,10 +664,11 @@ npx @aksp/opencrew update --check
 
 ## Situação do projeto
 
-O roteiro original do OpenCrew fechou na versão 1.15.0 (outubro de 2026). Desde então saem
-melhorias pontuais e consertos de defeito, sem roteiro de longo prazo — as mais recentes foram no
-Escritório ao vivo (personagens, salas, falas, dia e noite). O que mudou em cada versão está no
-[CHANGELOG](CHANGELOG.md); o que ficou de fora, no `IDEIAS.md`; quem quiser continuar o
+O roteiro original do OpenCrew fechou na versão 1.15.0 (outubro de 2026). Desde então saíram
+melhorias pontuais, o Escritório ao vivo (personagens, salas, falas, dia e noite) e consertos de
+defeito. O roteiro vigente, `specs/fase-u7-roteiro.md`, trata primeiro dos defeitos e riscos
+(segurança, publicação, `update`) e depois dos recursos. O que mudou em cada versão está no
+[CHANGELOG](CHANGELOG.md); o que ainda espera, no `IDEIAS.md`; quem quiser continuar o
 desenvolvimento começa por "Como retomar o projeto", no `CONTRIBUTING.md`.
 
 ## Para quem é

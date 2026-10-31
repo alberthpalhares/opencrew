@@ -24,7 +24,7 @@ Duas camadas com regras diferentes:
 
 ## Stack
 Node.js ≥ 20.17 (ESM; os scripts do payload usam só APIs do Node 20.0) · deps: `@inquirer/checkbox` (+ `@inquirer/confirm`, sem uso em `src/`;
-remoção: C-22 da auditoria de 2026-10-02 → U5) · testes: `node:test` · lint: ESLint 9 ·
+remoção: C-22 da auditoria de 2026-10-02 → F1 do roteiro U7) · testes: `node:test` · lint: ESLint 9 ·
 CI: GitHub Actions (Ubuntu + Windows, Node 20.17/22) · publish: tag `v*` → npm, só depois da
 matriz do CI verde (o `publish.yml` chama o `ci.yml`).
 
@@ -97,7 +97,7 @@ frontmatter `constraints:` do best-practice — com nome canônico — e é medi
 
 ### 13. Texto que o usuário vê: PT-BR correto
 Mensagens, perguntas e relatórios mostrados ao usuário final são em português do Brasil, com
-acentos. Outros idiomas: tradução pelo modelo. **Trava:** sem trava — revisão humana (→ U5).
+acentos. Outros idiomas: tradução pelo modelo. **Trava:** sem trava — revisão humana (→ F4 do roteiro U7: separar contrato de redação).
 
 ### 14. Toda mudança chega a quem já usa
 Toda melhoria do runtime tem que chegar a um projeto que já tem uma versão antiga com um único
@@ -152,7 +152,7 @@ muda a linha da execução.
 | 10 Quando travar | sem trava — revisão humana | — |
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/runtime-contracts-r4.test.js` (R4-01: os limites do Instagram de 2026), `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
-| 13 PT-BR para o usuário | sem trava — revisão humana (→ U5) | — |
+| 13 PT-BR para o usuário | sem trava — revisão humana (→ F4 e F6 do roteiro U7) | — |
 | 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a), `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg), `tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg) | Reprova |
 | 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido), `tests/limpeza*.test.js` (U6b-02 e 05a: só some o pedido), `tests/custo.test.js` (U6b-06c), `tests/relato.test.js` (U6b-08b: nada do cliente), `tests/caminho-aberta.test.js` (E4-03a: a execução aberta é perguntada sem gravar nada) | Reprova |
 
