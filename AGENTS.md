@@ -73,7 +73,7 @@ aviso de reparo e como fica na página é conferência do dono.
 Nunca editar `version` à mão: `npm version <bump>` (carimba `.opencrew-version`). O release
 só existe com tag `v*` no GitHub — é ela que dispara o publish. Push e tag só com
 confirmação do dono. **Trava:** `scripts/check-version-sync.js` + checagem tag × versão
-no `publish.yml`.
+no `publish.yml`, e (U7-F2) `tests/publicacao-f2.test.js`: publicação por OIDC, versão ainda não publicada, CI mínimo, Actions por SHA, Node 24.
 
 ### 9. Documento que mente é corrigido no mesmo commit
 README, CHANGELOG, CONTRIBUTING, specs e este arquivo. Divergência: o código manda.
@@ -146,7 +146,7 @@ muda a linha da execução.
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
 | 6 Tamanho | `scripts/check-size.js`; o núcleo do runner em até 560 linhas: `tests/runtime-contracts-u5b.test.js` (U5b-01b), `tests/runtime-contracts-u5c.test.js` (U5c-10a) e `tests/runtime-contracts-u5d.test.js` (U5d-05a; U6a-06a: núcleo ≤ 560, total ≤ 1.030) | Alerta; o teto do runner reprova |
 | 7 Porta única | `scripts/verify.js` + proveta `tests/verify.test.js` | Reprova |
-| 8 Versão | `scripts/check-version-sync.js`, passo tag × versão no `publish.yml`, `tests/release-gate.test.js`, `tests/node-piso.test.js` | Reprova |
+| 8 Versão | `scripts/check-version-sync.js`, passo tag × versão no `publish.yml`, `tests/release-gate.test.js`, `tests/node-piso.test.js`, `tests/publicacao-f2.test.js` (U7F2) | Reprova |
 | 9 Doc que mente | sem trava — revisão humana | — |
 | 10 Quando travar | sem trava — revisão humana | — |
 | 11 Continuidade | sem trava — revisão humana | — |

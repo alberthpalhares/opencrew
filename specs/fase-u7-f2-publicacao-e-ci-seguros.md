@@ -45,11 +45,11 @@ Tirar o release da dependência de um token que expira e endurecer o CI: a publi
 
 ## 5. Travas que mudam
 - `tests/release-gate.test.js`: **R2-06d** passa a esperar a matriz com o Node 24; **o teste do `NODE_AUTH_TOKEN`** (linha 98: `assert.match(real[0], /NODE_AUTH_TOKEN…/)`) passa a exigir a **ausência** do token no passo real; o resto (ordem tag × versão antes de publicar, `dry_run` ligado por padrão, um só job publica) fica.
-- Testes novos em `tests/release-gate.test.js` (mesmo estilo: o YAML lido como texto, sem rede) para os cenários U7F2-01a a 06a.
+- Testes novos em `tests/publicacao-f2.test.js` (mesmo estilo: o YAML lido como texto, sem rede) para os cenários U7F2-01a a 07a; o script `scripts/check-publish-env.js` guarda a comparação de versão (U7F2-02b).
 - `AGENTS.md`: Stack e regra 8 (a trava do `publish.yml`).
 
 ## 6. Ação do dono fora do repositório (npmjs.com e GitHub)
-1. **Antes do Release da 1.19.5:** em npmjs.com → Packages → `@aksp/opencrew` → Settings → *Trusted Publisher* → GitHub Actions: dono `alberthpalhares`, repositório `opencrew`, workflow `publish.yml`, ambiente em branco, ação permitida: publicar. **O npm não confere ao salvar**: um erro de digitação só aparece na publicação (com `E404`), e a publicação falha sem publicar nada; é só corrigir o cadastro e usar "Re-run failed jobs". O cadastro expira se não houver publicação em 2 dias.
+1. **Antes do Release da 1.19.5:** em npmjs.com → Packages → `@aksp/opencrew` → Settings → *Trusted Publisher* → GitHub Actions: dono `alberthpalhares`, repositório `opencrew`, workflow `publish.yml`, ambiente em branco, ação permitida: publicar. **O npm não confere ao salvar**: um erro de digitação só aparece na publicação (`ENEEDAUTH` ou um 404 no envio), e a publicação falha sem publicar nada; é só corrigir o cadastro e usar "Re-run failed jobs". O cadastro expira se a primeira publicação bem-sucedida não vier em 2 dias: cadastre **no dia do Release**. O pacote precisa já existir no npm para ter essa tela (inferência: a configuração fica nas *Settings* do pacote).
 2. **Depois da primeira publicação por OIDC bem-sucedida:** apagar o segredo `NPM_TOKEN` (Settings → Secrets → Actions) e revogar o token no npm. Opcional e recomendado: no npm, exigir 2FA e proibir tokens para o pacote (a documentação sugere).
 
 ## 7. Decisões do dono (2026-10-31, todas como recomendadas)

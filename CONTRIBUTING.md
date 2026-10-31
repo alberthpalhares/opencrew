@@ -73,6 +73,8 @@ development rules.
 
 ## Releasing
 
+0. Once: the package's *Trusted Publisher* on npmjs.com points to this repository and `publish.yml`
+   (see "Forking" below). Register it the day of the release: it expires in 2 days without a publish.
 1. Update `CHANGELOG.md`.
 2. `npm version <patch|minor|major>` — always use this, never hand-edit the `version`
    field in `package.json`. The `version` lifecycle script stamps
@@ -129,5 +131,8 @@ If you publish your own fork of opencrew under a different name:
    your package → Settings → *Trusted Publisher* → GitHub Actions, and give your user or
    organization, the repository and the workflow file name (`publish.yml`). npm does not check
    this when you save: a typo shows up only when publishing, which then fails without publishing
-   anything (fix it and re-run the failed job). A new trusted publisher expires if no publish
-   uses it within 2 days. Update `publish.yml` if you publish under a different scope or registry.
+   anything (an authentication error — `ENEEDAUTH` or a 404 on the PUT — fix it and re-run the
+   failed job). A new trusted publisher expires if its first successful publish does not happen
+   within 2 days. The package must already exist on npm to have the setting (publish the first
+   version by hand, with 2FA, before registering the trusted publisher). Update `publish.yml` if
+   you publish under a different scope or registry.

@@ -14,7 +14,7 @@ name: Publish to npm
 # entry gets made — create one manually from the tag if you want one).
 #
 # Nothing is published before the CI matrix (ci.yml: Ubuntu and Windows, the Node
-# floor and Node 22, plus the security audit) is green for the same commit.
+# floor, Node 22 and Node 24, plus the security audit) is green for the same commit.
 #
 # Running this workflow by hand is a rehearsal by default: `dry_run` is on, and
 # the last step becomes `npm publish --dry-run`. Do not rehearse with a
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # enables npm provenance
+      id-token: write   # OIDC: authenticates to npm (trusted publisher) and signs the provenance
     steps:
       # Pinned by commit SHA; .github/dependabot.yml proposes the updates.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-          cache: 'npm'
+          package-manager-cache: false   # never cache in a release build (the CI job already does)
           registry-url: 'https://registry.npmjs.org'
 
       # Tag v1.2.3 must match package.json "version" 1.2.3 (AGENTS.md rule 8).
@@ -93,7 +93,7 @@ jobs:
         run: npm pack --dry-run
 
       # Manual run with dry_run on (the default): rehearsal, nothing published. It still runs the
-# checks above (tag x version only on a tag; version not on npm; Node and npm versions).
+      # checks above (tag x version only on a tag; version not on npm; Node and npm versions).
       - name: Publish (dry run)
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
         run: npm publish --dry-run --access public
