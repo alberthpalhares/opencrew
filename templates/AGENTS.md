@@ -76,7 +76,6 @@ Route input to the matching action:
 | `/opencrew dashboard off` | Turn the Escritório off — see "Dashboard (Optional)" |
 | `/opencrew documento <arquivo>` | Load `_opencrew/core/prompts/documento.prompt.md` → turn that text file (`.md` or `.txt`) into a Word document (`.docx`) |
 | Request in plain words to turn a file into Word ("transforma {arquivo} em Word", "gera o .docx de {arquivo}") | Load `_opencrew/core/prompts/documento.prompt.md` → the same as `/opencrew documento <arquivo>` |
-| `/opencrew reset` | Confirm and reset all configuration |
 | Request to deliver a run that already ended ("monte a entrega da execução …") | Load `_opencrew/core/prompts/entrega.prompt.md` → build the `entrega/` folder of that run |
 | Request to change where the delivery is copied ("muda a pasta de entrega", "não quero mais cópia", "volta a copiar") | Load `_opencrew/core/prompts/entrega.prompt.md` → "Changing the folder later" |
 | Natural language about crews | Infer intent and route accordingly |

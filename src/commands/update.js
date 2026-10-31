@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
 import { exists, writeFileSafe, readJson, readFile } from '../lib/fsx.js';
 import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION } from '../lib/ides.js';
-import { readManifest, manifestUnreadable, UNREADABLE, writeManifest, newDelivery, deliverTree, deliverFile } from '../lib/manifest.js';
+import { readManifest, manifestUnreadable, UNREADABLE, writeManifest, newDelivery, deliverTree, deliverFile, backupFile } from '../lib/manifest.js';
 import { deliverBlock, deliverBridges, blockHas } from '../lib/blocos.js';
 import { detectInstalledIdes } from '../lib/deteccao.js';
 import { withoutLegacy } from '../lib/legado.js';
@@ -37,6 +37,7 @@ export async function update(opts = {}) {
   if (!(await exists(path.join(target, '_opencrew', 'core')))) {
     warn('No opencrew workspace found here.');
     info(`Run ${c.cyan('npx @aksp/opencrew init')} first.`);
+    process.exitCode = 1;
     return;
   }
 
@@ -141,17 +142,15 @@ async function refreshAgentsBridge(ctx) {
   const agentsPath = path.join(ctx.target, 'AGENTS.md');
   const existing = (await exists(agentsPath)) ? await readFile(agentsPath) : '';
   if (existing.includes('# opencrew Instructions') && !existing.includes('<!-- opencrew:start -->')) {
-    const backup = await freeBackupPath(agentsPath);
-    await fs.copyFile(agentsPath, backup);
-    await writeFileSafe(agentsPath, AGENTS_BRIDGE);
-    ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${path.basename(backup)})`);
+    await backupFile(ctx, 'AGENTS.md'); // .opencrew-backup/<date>/: the root stays free of copies (spec U7-F1, rule 4)
+    if (!(await writeFileSafe(agentsPath, AGENTS_BRIDGE))) { // a link at AGENTS.md: not written through
+      ctx.links.push('AGENTS.md');
+      return null;
+    }
+    const copy = path.relative(ctx.target, path.join(ctx.backupDir, 'AGENTS.md')).split(path.sep).join('/');
+    ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${copy})`);
     return null;
   }
   return deliverBlock(ctx, 'AGENTS.md', AGENTS_BRIDGE);
 }
 
-async function freeBackupPath(file) {
-  const bak = `${file}.bak`;
-  if (!(await exists(bak))) return bak;
-  return `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-}

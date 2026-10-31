@@ -162,18 +162,21 @@ test('F1-03a: update without AGENTS.md creates the bridge and stamps the version
 
 const LEGACY_AGENTS = '# opencrew Instructions\n\nYou are opencrew (pre-1.3 full system).\n\nMY OWN RULE: never use emojis.\n';
 
-test('F1-04a: legacy AGENTS.md is backed up byte for byte before being replaced', async () => {
+test('F1-04a (U7F1-04a): legacy AGENTS.md is backed up byte for byte, into .opencrew-backup/, before being replaced', async () => {
   const dir = await mkTmp('update');
   await withCwd(dir, () => init({ ide: ['claude-code'] }));
   await fs.writeFile(path.join(dir, 'AGENTS.md'), LEGACY_AGENTS);
 
   await withCwd(dir, () => update());
 
-  assert.equal(await fs.readFile(path.join(dir, 'AGENTS.md.bak'), 'utf8'), LEGACY_AGENTS);
+  // U7F1-04a: the copy goes to .opencrew-backup/<date>/ (kept out of the user's git), not the project root.
+  const [stamp] = await fs.readdir(path.join(dir, '.opencrew-backup'));
+  assert.equal(await fs.readFile(path.join(dir, '.opencrew-backup', stamp, 'AGENTS.md'), 'utf8'), LEGACY_AGENTS);
+  assert.equal(await exists(path.join(dir, 'AGENTS.md.bak')), false);
   assert.match(await fs.readFile(path.join(dir, 'AGENTS.md'), 'utf8'), /_opencrew\/core\/system\.md/);
 });
 
-test('F1-04b: an existing AGENTS.md.bak is never overwritten — a timestamped backup is made', async () => {
+test('F1-04b: an AGENTS.md.bak the user already had is never touched; the new copy goes to .opencrew-backup/', async () => {
   const dir = await mkTmp('update');
   await withCwd(dir, () => init({ ide: ['claude-code'] }));
   await fs.writeFile(path.join(dir, 'AGENTS.md'), LEGACY_AGENTS);
@@ -182,7 +185,7 @@ test('F1-04b: an existing AGENTS.md.bak is never overwritten — a timestamped b
   await withCwd(dir, () => update());
 
   assert.equal(await fs.readFile(path.join(dir, 'AGENTS.md.bak'), 'utf8'), 'older backup\n');
-  const extra = (await fs.readdir(dir)).filter((f) => f.startsWith('AGENTS.md.bak-'));
-  assert.equal(extra.length, 1, 'exactly one timestamped backup');
-  assert.equal(await fs.readFile(path.join(dir, extra[0]), 'utf8'), LEGACY_AGENTS);
+  assert.deepEqual((await fs.readdir(dir)).filter((f) => f.startsWith('AGENTS.md.bak-')), []);
+  const [stamp] = await fs.readdir(path.join(dir, '.opencrew-backup'));
+  assert.equal(await fs.readFile(path.join(dir, '.opencrew-backup', stamp, 'AGENTS.md'), 'utf8'), LEGACY_AGENTS);
 });

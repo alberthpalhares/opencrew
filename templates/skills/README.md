@@ -2,7 +2,7 @@
 
 Este é o índice de skills disponíveis no catálogo oficial do opencrew. O Skills Engine
 (`_opencrew/core/skills.engine.md`) lê este arquivo durante a descoberta de skills (Operação 7)
-e busca `SKILL.md` de cada uma via `https://raw.githubusercontent.com/alberthpalhares/opencrew/main/templates/skills/<name>/SKILL.md`
+e busca `SKILL.md` de cada uma via `https://raw.githubusercontent.com/alberthpalhares/opencrew/v<versão instalada>/templates/skills/<name>/SKILL.md` (a tag da versão instalada, nunca a `main`)
 para instalação (Operação 2).
 
 | Skill | Tipo | Descrição |

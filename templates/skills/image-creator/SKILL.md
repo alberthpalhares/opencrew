@@ -37,14 +37,23 @@ Use the Visual Renderer when you need to generate production-ready images from H
 2. **Save HTML** -- Write the HTML file to the crew's output folder (e.g., `output/slides/slide-01.html`)
 
 3. **Start HTTP server** -- Before rendering, start a local HTTP server in the crew's output folder:
+   The server listens only on `127.0.0.1` (never on the network). Pick the commands by the system:
+
    ```bash
-   python -m http.server 8765 --directory "OUTPUT_DIR" &
-   for i in $(seq 1 30); do curl -s http://localhost:8765 > /dev/null 2>&1 && break || sleep 0.1; done
+   # macOS / Linux
+   python3 -m http.server 8765 --bind 127.0.0.1 --directory "OUTPUT_DIR" &
+   for i in $(seq 1 30); do curl -s http://127.0.0.1:8765 > /dev/null 2>&1 && break || sleep 0.1; done
+   ```
+
+   ```powershell
+   # Windows (PowerShell)
+   Start-Process python -ArgumentList '-m','http.server','8765','--bind','127.0.0.1','--directory','"OUTPUT_DIR"' -WindowStyle Hidden
+   for ($i = 0; $i -lt 30; $i++) { try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765 | Out-Null; break } catch { Start-Sleep -Milliseconds 100 } }
    ```
    Replace OUTPUT_DIR with the actual absolute path to the output folder (quote paths that contain spaces).
 
 4. **Render** -- Use Playwright to:
-   - `browser_navigate` to `http://localhost:8765/slide-01.html` (filename only, not full path)
+   - `browser_navigate` to `http://127.0.0.1:8765/slide-01.html` (filename only, not full path)
    - `browser_resize` to target viewport dimensions
    - `browser_take_screenshot` to save as PNG — **except when the images will be published to
      Instagram**: Instagram accepts JPEG only, so save with `type: "jpeg"` (`slide-01.jpg`)
@@ -53,7 +62,14 @@ Use the Visual Renderer when you need to generate production-ready images from H
 
 6. **Stop server** -- After all slides are rendered, stop the HTTP server:
    ```bash
-   pkill -f "http.server 8765" 2>/dev/null || true
+   # macOS / Linux
+   # the [p] keeps pkill from matching its own command line
+   pkill -f "[p]ython.* -m http.server 8765" 2>/dev/null || true
+   ```
+
+   ```powershell
+   # Windows (PowerShell)
+   Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $PID -and $_.Name -like 'python*' -and $_.CommandLine -like '*http.server 8765*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
    ```
 
 ### Viewport Presets (width x height)

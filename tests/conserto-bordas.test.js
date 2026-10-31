@@ -50,7 +50,9 @@ test('U4a-01j: when a name and the manifest are both missing, the name comes fir
   assert.deepEqual((await rodar(raiz)).codigos, ['nome-de-agente', 'manifesto']);
 });
 
-test('U4a-02b: a protected file is seen before anything is written (rule 1)', async (t) => {
+// A read-only file only stops a process that is not root (and is only reliable on POSIX): U7F1-01a.
+const naoRoot = process.platform !== 'win32' && process.getuid?.() !== 0;
+test('U4a-02b (U7F1-01a): a protected file is seen before anything is written (rule 1)', { skip: !naoRoot && 'needs POSIX and a user that is not root' }, async (t) => {
   const raiz = await projeto(t, ANTIGA);
   const passo = path.join(raiz, PASSO('step-01-minuta.md'));
   await fs.chmod(passo, 0o444);

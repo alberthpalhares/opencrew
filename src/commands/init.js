@@ -8,9 +8,10 @@ import { createMcp } from '../lib/mcp.js';
 import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
 import { pickIdes as promptIdes } from '../lib/prompts.js';
 import { UsageError } from '../lib/errors.js';
+import { isProtectedTarget, workspaceAbove, TARGET_PROTECTED, workspaceAboveLine } from '../lib/alvo.js';
 import { withoutLegacy, legacyLines } from '../lib/legado.js';
 import { repairIdeIds, repairVersionGuard, backupSummary, recordRepair, NO_BRIDGES_FOUND, NO_WORKSPACE } from '../lib/migrations.js';
-import { ALREADY_INSTALLED } from '../lib/resumo.js';
+import { ALREADY_INSTALLED, linkLine } from '../lib/resumo.js';
 import { c, log, info, ok, warn, step } from '../lib/ui.js';
 
 const STAMP = path.join('_opencrew', '.opencrew-version');
@@ -37,11 +38,14 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // Every choice is resolved BEFORE the first write: a bad --ide or Ctrl+C on the
   // prompt leaves the folder exactly as it was.
+  if (isProtectedTarget(target)) throw new UsageError(TARGET_PROTECTED); // spec U7-F1, rule 6a
   const ids = await resolveIdes(opts, pickIdes);
 
   log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — scaffolding a crew workspace`);
   log(c.dim(`Target: ${target}\n`));
   if (state === 'partial') info('A previous install was interrupted — resuming (existing files are kept).');
+  const above = state === 'none' ? await workspaceAbove(target) : null;
+  if (above) warn(workspaceAboveLine(above)); // said, not forbidden (spec U7-F1, rule 6b)
 
   // 1. Copy the framework payload (never clobber user work).
   step('Installing framework files');
@@ -117,6 +121,7 @@ async function repairBridges(target, version, opts) {
 
 /** Say where the backup copies of this run are (nothing when none was made). */
 function reportBackups(ctx) {
+  if (ctx.links.length) warn(linkLine(ctx));
   const [copied, ...copies] = backupSummary(ctx);
   if (copied) warn(copied);
   for (const copy of copies) log(copy);

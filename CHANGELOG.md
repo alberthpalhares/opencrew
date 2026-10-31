@@ -3,6 +3,42 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.19.4] — 2026-10-31
+
+Fase U7-F1: "Higiene técnica e segurança", F1 do roteiro U7 (`specs/fase-u7-f1-higiene-e-seguranca.md`), a partir de uma auditoria técnica
+independente. Chega a quem já usa com um `npx @aksp/opencrew@latest update`: os prompts, a skill e o
+servidor do Escritório moram em `_opencrew/core/` e em `skills/`, e o que mora no CLI vem com o pacote
+novo. Nenhum arquivo de crew é alterado.
+
+### Fixed
+- **`image-creator` não expõe mais a pasta de saída na rede.** O servidor local que serve os slides
+  para o Playwright escutava em todas as interfaces; agora só em `127.0.0.1`, e a skill traz também os
+  comandos de PowerShell (iniciar e encerrar o servidor), além dos de bash.
+- **O Escritório não pode ser embutido em outra página** (`frame-ancestors 'none'`) e não manda o
+  endereço de origem a outros sites (`Referrer-Policy: no-referrer`).
+- **A cópia do `AGENTS.md` antigo vai para `.opencrew-backup/<data>/`**, e não mais para `AGENTS.md.bak`
+  na raiz do projeto, onde entrava no seu commit.
+- **O `update` não grava através de link simbólico**: o arquivo do outro lado fica como estava e o
+  resumo diz "link simbólico: não gravei …".
+- **`init` recusa a pasta pessoal e a raiz do disco** ("Entre na pasta do projeto e rode de novo") e
+  avisa, sem recusar, quando já existe um workspace numa pasta acima.
+- **`update` sem workspace sai com código 1** (também com `--check`); antes saía com 0, e um script lia
+  "sem workspace" como "em dia". O código 1 de `--check` já significava "há atualização": agora também
+  significa "não há workspace aqui" (a mensagem é outra).
+- **Instalar uma skill não baixa mais da `main`.** O `skills.engine.md` usa primeiro o catálogo já
+  instalado em `skills/`, busca o que falta pela tag da versão instalada e mostra a lista exata de
+  pacotes, perguntando antes de rodar `npm install` ou `pip install`.
+
+### Removed
+- O comando `/opencrew reset` saiu da lista do `system.md`: nunca teve definição e seria destrutivo.
+- Código morto (`copyDir`, `deleteDir`, `ensureDir` de `src/lib/fsx.js`) e a dependência
+  `@inquirer/confirm`, que nada importava.
+
+### Changed
+- `no-unused-vars` do ESLint passou de aviso a erro (a base já estava sem avisos).
+- O teste `U4a-02b` (arquivo protegido) é pulado, com o motivo, quando roda como root: o root ignora
+  `chmod 444`, e o teste reprovava `npm run verify` em contêiner.
+
 ## [1.19.3] — 2026-10-31
 
 Fase R5: "Criação de crew: tamanho coerente e time separado do pipeline"
