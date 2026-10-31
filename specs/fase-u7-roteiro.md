@@ -40,14 +40,14 @@ impedem a F5 e a F6. A F7 mexe no núcleo cheio do runner (559 de 560 linhas; to
 tirar os textos soltos. A F9 muda o que o verificador bloqueia e pede a conferência do dono em cada rede, por isso fica perto
 do fim. A F10 é refatoração grande e depende da F3 (agentes-base só chegam a quem já usa com a H3-11).
 
-### F1 — Higiene técnica e segurança
+### F1 — Higiene técnica e segurança (spec: `fase-u7-f1-higiene-e-seguranca.md`)
 Teste `U4a-02b` sem o guarda de root (o de `limpeza-revisao.test.js` já tem); `image-creator` sobe `python -m http.server`
 em todas as interfaces (`--bind 127.0.0.1`, e equivalente em PowerShell); Escritório com `frame-ancestors 'none'` e
 `Referrer-Policy`; o `AGENTS.md.bak` do `update` antigo fora de `.opencrew-backup/`; `deliverFile` seguindo link simbólico;
-`init` sem proteção de `~` e da raiz do disco (C-20) e dentro de um workspace; `-y` atropelando `--ide` (C-11); falha parcial
-com pilha de erro (C-21); mensagens e códigos de saída enganosos (C-25); lint sem `bin/`; T-M8 (skill remota busca scripts no
-`main`), T-B4 (`/opencrew reset` sem definição), T-M1 e T-A1 (segredos e MCP em arquivo compartilhado entre IDEs): a spec decide;
-código morto (`copyDir`/`deleteDir`/`ensureDir`) e `@inquirer/confirm` (C-22).
+`init` sem proteção de `~` e da raiz do disco (C-20) e aviso dentro de um workspace; `update` sem workspace saindo com 0 (C-25);
+`no-unused-vars` como erro; T-M8 (skill remota busca scripts no `main`), T-B4 (`/opencrew reset` sem definição); código morto
+(`copyDir`/`deleteDir`/`ensureDir`) e `@inquirer/confirm` (C-22). **Conferido em 2026-10-31 e já corrigido no código:** C-11, C-21
+e o lint sem `bin/` (C-27, parte do lint).
 
 ### F2 — Publicação e CI seguros
 Trusted Publishing (OIDC) no lugar do `NPM_TOKEN`, que expira (ação do dono no npmjs.com; `npm` ≥ 11.5.1 no runner);
@@ -92,7 +92,7 @@ confere de novo; `aprovado` × `corrigido`); score de pedido `1/1`. A spec decla
 ### F8 — Dados e arestas
 Limpeza, custo e preferências (trava velha concorrente, erro de disco cru, `Budget:` vazio, `crews/` que é junção); `publish.js`
 (proporção do JPEG antes do upload, emoji como 2, post de 1 imagem, `--dry-run` que já envia ao imgBB, H1-15); `generate.py`
-(T-B11, teto de lote, T-A12); skills (T-M7, T-B10); Word (perfil vazio aparece como "perfil usado"; documento em outro idioma);
+(T-B11, teto de lote, T-A12); skills (T-M7, T-B10); T-M1 e T-A1 (segredos digitados no chat em texto puro em `.claude/settings.local.json`, e o MCP verificado num arquivo que o Playwright do `.mcp.json` não usa: pedem pesquisa do que cada IDE lê; o `.gitignore` cobre o arquivo desde a 1.4.2); Word (perfil vazio aparece como "perfil usado"; documento em outro idioma);
 conferir arquivos citados DENTRO das fontes (dividir `conferir-fontes.mjs`, 199 de 200 linhas, antes); `.gitignore` antigo no
 `update` (reescreve linha do usuário: backup e confirmação, regra 3); exemplos neutros no payload e nos testes.
 
@@ -129,15 +129,16 @@ contagens do README; `CHANGELOG.md` no tarball.
 ## 5. Triagem dos achados abertos das auditorias
 | ID | Achado | Fase |
 |---|---|---|
-| T-M1, T-A1 | segredos e MCP em `.claude/settings.local.json`, arquivo "para todas as IDEs" | F1 |
+| T-M1, T-A1 | segredos e MCP em `.claude/settings.local.json`, arquivo "para todas as IDEs" (decidido na spec da F1: pede pesquisa por IDE) | F8 |
 | T-M8 | instalação remota de skill busca scripts no `main` mutável | F1 |
 | T-B4 | `/opencrew reset` e `help` sem definição | F1 |
-| C-11, C-20, C-21, C-22, C-25 | `init`/`update`: `-y` × `--ide`, alvo sem proteção, falha parcial, código morto, saídas enganosas | F1 |
+| C-20, C-22, C-25 | `init`/`update`: alvo sem proteção, código morto, saída 0 sem workspace | F1 |
+| C-11, C-21 | `-y` × `--ide`; pilha de erro em falha parcial | já corrigidos no código (conferido em 2026-10-31); sem ação |
 | C-18, C-19, T-B14 | Node 24 na matriz, OIDC e SHA no publish | F2 |
 | C-26, C-27, H3-11, T-M9 | `update`: bloco duplicado, arquivo órfão, melhoria em arquivo não editado, desinstalação | F3 |
 | T-A8, T-A9, T-B7, T-B9, T-M15, H3-07, H3-16 | criação e investigação | F5 |
 | C-15, T-M12, T-M13, T-B5, T-B13, G-28 | textos e arestas do runner e do CLI | F6 |
-| T-A12, T-B10, T-B11, T-M7 | custo do `generate.py` e skills | F8 |
+| T-A12, T-B10, T-B11, T-M7, T-M1, T-A1 | custo do `generate.py`, skills e segredos de MCP | F8 |
 | T-M11, T-M20, T-B8, C-23 | agentes e duplicações | F10 |
 | D-08 | contagens e promessas no README | conferido em 2026-10-31: as contagens estão certas; sem ação |
 
