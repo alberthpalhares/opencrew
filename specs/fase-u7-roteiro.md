@@ -23,7 +23,7 @@ comportamento ou polimento = minor; o número final é decidido na spec de cada 
 | Fase | Natureza | Entrega |
 |---|---|---|
 | **F0** | documentação | este roteiro, a triagem dos achados abertos e os documentos que mentem |
-| **F1** | defeito/segurança | higiene técnica e segurança do CLI e dos scripts — **implementada (1.19.4)** |
+| **F1** | defeito/segurança | higiene técnica e segurança do CLI e dos scripts — **publicada (1.19.4, 2026-10-31)** |
 | **F2** | infraestrutura | publicação e CI seguros (Trusted Publishing, Node 24, Actions) |
 | **F3** | defeito (alto risco) | `update` que reconcilia: remove o que saiu do payload, `init` sem mistura de versões, melhoria em arquivo não editado (H3-11) |
 | **F4** | estrutura | divisão dos prompts de criação (só movimento de texto) e reforma das travas de prompt |
