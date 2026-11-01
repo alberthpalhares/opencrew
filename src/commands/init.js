@@ -1,12 +1,13 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { exists, readJson } from '../lib/fsx.js';
+import { exists, readJson, writeFileSafe } from '../lib/fsx.js';
 import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest, manifestUnreadable, UNREADABLE } from '../lib/manifest.js';
 import { deliverBlock, deliverBridges } from '../lib/blocos.js';
 import { createMcp } from '../lib/mcp.js';
-import { ideById, allIdeIds, AGENTS_BRIDGE } from '../lib/ides.js';
-import { pickIdes as promptIdes } from '../lib/prompts.js';
+import { ideById, AGENTS_BRIDGE } from '../lib/ides.js';
+import { pickIdes as promptIdes, resolveIdes } from '../lib/prompts.js';
+import { update } from './update.js';
 import { UsageError } from '../lib/errors.js';
 import { isProtectedTarget, workspaceAbove, TARGET_PROTECTED, workspaceAboveLine } from '../lib/alvo.js';
 import { withoutLegacy, legacyLines } from '../lib/legado.js';
@@ -39,6 +40,10 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   // Every choice is resolved BEFORE the first write: a bad --ide or Ctrl+C on the
   // prompt leaves the folder exactly as it was.
   if (isProtectedTarget(target)) throw new UsageError(TARGET_PROTECTED); // spec U7-F1, rule 6a
+  if (state === 'partial' && (await readManifest(target))) { // the stamp is lost, the record is not (spec U7-F3, rule 4)
+    info('O carimbo da versão sumiu; refazendo como atualização. Para a ponte de uma IDE nova: `init --repair-bridges --ide=<id>`.');
+    return update({});
+  }
   const ids = await resolveIdes(opts, pickIdes);
 
   log(`\n${c.bold(c.cyan('opencrew'))} ${c.dim('v' + version)} — scaffolding a crew workspace`);
@@ -85,8 +90,8 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // 4. Manifest (what OpenCrew delivered — lets `update` spot the user's edits), then the
   // version stamp LAST: it is what marks the install as complete.
-  await writeManifest(target, version, ctx.files);
-  await fs.writeFile(path.join(target, STAMP), version + '\n');
+  if (!(await writeManifest(target, version, ctx.files))) ctx.links.push('_opencrew/manifest.json');
+  if (!(await writeFileSafe(path.join(target, STAMP), version + '\n'))) ctx.links.push('_opencrew/.opencrew-version');
   reportBackups(ctx); // a reinstall over blocks the user edited copies those files first
 
   // 5. Done.
@@ -153,23 +158,6 @@ async function workspaceState(target) {
 }
 
 /**
- * Decide which IDEs to configure. --ide → validated list, whatever comes with it; without it,
- * --all / --yes → every IDE; nothing → `fallback()` (the interactive prompt; in repair mode, the
- * detection). Throws UsageError if --ide names no valid IDE.
- */
-async function resolveIdes(opts, fallback) {
-  const ids = normalizeIdes(opts.ide);
-  if (!ids) return opts.all || opts.yes ? allIdeIds() : fallback();
-  const invalid = ids.filter((id) => !ideById(id));
-  const valid = ids.filter((id) => ideById(id));
-  if (!valid.length) {
-    throw new UsageError(`Unknown IDE "${invalid.join('", "')}". Valid: ${allIdeIds().join(', ')}`);
-  }
-  for (const id of invalid) warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
-  return valid;
-}
-
-/**
  * Write the bridge files of the IDEs `ids` (validated) and say what happened to each.
  * `overwrite`: replace a whole-file bridge that differs (repair) or keep it (init).
  */
@@ -188,11 +176,4 @@ async function writeBridges(ctx, ids, overwrite) {
 
 async function tpl(name) {
   return fs.readFile(path.join(templatesDir, name), 'utf8');
-}
-
-function normalizeIdes(val) {
-  if (!val || val === true) return null;
-  const list = Array.isArray(val) ? val : String(val).split(',');
-  const ids = list.map((s) => s.trim()).filter(Boolean);
-  return ids.length ? ids : null;
 }

@@ -8,6 +8,7 @@
 | Crew | `crew` | Runtime | Equipe de agentes que produz um tipo de conteúdo; vive em `crews/{code}/` com `crew.yaml` e `pipeline.yaml` |
 | Agente | `agent` | Runtime | Persona com papel definido (`*.agent.md`); pode estender um agente base de `_opencrew/agents/` via `extends:` |
 | Passo | `step` | Runtime | Unidade do pipeline executada por um agente, inline ou como checkpoint |
+| Arquivo órfão | — | CLI | Arquivo que o OpenCrew entregou numa versão (consta no `manifest.json`) e que o pacote novo não traz mais; o `update` o remove com cópia se o usuário não o editou, e o deixa se editou |
 | Time | `agents:` do `design.yaml` | Runtime | As pessoas da crew (os agentes), mostradas ao usuário com nome e função, em número dentro da faixa do tier; não são os passos do pipeline |
 | Pipeline | `pipeline:` | Runtime | A sequência de passos da crew, mostrada ao usuário numerada e por ação; uma pessoa do time pode aparecer em vários passos e o checkpoint é do usuário |
 | Passo irreversível | `side_effects: irreversible` | Runtime | Passo cujo efeito sai do projeto e não se desfaz (publicar, enviar e-mail, postar); sempre no fim do pipeline, depois do Review e da aprovação final, e nunca repetido automaticamente |

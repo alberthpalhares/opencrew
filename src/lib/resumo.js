@@ -7,6 +7,7 @@ import { copyLine } from './blocos.js';
 import { legacyLines } from './legado.js';
 import { mcpMessage } from './mcp.js';
 import { UNREADABLE } from './manifest.js';
+import { reconcileLines } from './reconciliar.js';
 import { log, info, ok, warn } from './ui.js';
 
 /** Last line of `update`: only what the code guarantees (a deleted crew template comes back). */
@@ -46,6 +47,10 @@ const LEFTOVER = {
 };
 const MCP_REWRITTEN = new Set(['added', 'output-dir']); // actions of `updateMcp` that change the file
 const MAX_COPIES = 15;
+
+const MARKS = { ok, info, warn };
+/** `[mark, text]` lines (src/lib/reconciliar.js) as the `[printer, text]` of `say`. */
+export const marked = (lines) => lines.map(([mark, text]) => [MARKS[mark], text]);
 
 /** Print the lines a function of this module returned: `[printer, text]` each. */
 export function say(lines) {
@@ -134,6 +139,7 @@ export function updateSummary(ctx, done) {
     ...mcpLines(ctx, done.mcp),
     ...leftoverLines(done.leftovers, done.mcp),
     ...copyLines(ctx, done.unreadable),
+    ...marked(reconcileLines(ctx, done.reconcile ?? {})),
     ...linkLines(ctx),
     ...(done.hasCrew ? [[info, REPAIR_HINT]] : []),
     ...(done.office ? [[warn, done.office]] : []),

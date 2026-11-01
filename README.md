@@ -536,7 +536,8 @@ o que você fez:
 | O que é atualizado | O que NUNCA é tocado |
 |---|---|
 | `_opencrew/core/` (framework) e skills do catálogo | As crews que você criou em `crews/` |
-| Pastas novas do framework (agentes-base, config) e modelos de crew — só o que falta | `_opencrew/_memory/` (perfil, preferências) |
+| Pastas novas do framework (agentes-base, config) e modelos de crew — o que falta chega; agente-base e config que você não editou recebem a melhoria | `_opencrew/_memory/` (perfil, preferências) |
+| Arquivo que o pacote novo não traz mais **sai do projeto**, com cópia, se você não o editou (o que você editou fica) | Skill que você desinstalou (ela não volta) |
 | Pontes das IDEs **que você já tem instaladas** (nunca cria de IDE nova) | `_opencrew/best-practices.local/` (suas best-practices) |
 | Bloco do OpenCrew em `AGENTS.md`, `CLAUDE.md` e `.gitignore` (o resto do arquivo fica intacto) | `.env` (suas chaves) |
 | Servidor Playwright no `.mcp.json`, entregue uma vez (outros servidores intactos) | |
@@ -561,10 +562,17 @@ o que você fez:
 - **Texto que não é post nem documento para assinar?** Proposta, minuta que outro passo diagrama,
   plano: o passo recebe o formato `texto-livre`. Não há limite de tamanho, nada vira Word, e a
   entrega guarda o arquivo como está, em `outros/`.
-- **A instalação anterior parou no meio?** O `update` não altera nada e pede para você rodar
-  `npx @aksp/opencrew init`, que conclui a instalação sem apagar o que já existe.
-- **Apagou um modelo de crew ou um skill do catálogo?** Ele volta no `update`, e a saída diz o
-  que foi entregue de novo.
+- **A instalação anterior parou no meio?** Sem o registro de arquivos (`_opencrew/manifest.json`),
+  o `update` não altera nada e pede para você rodar `npx @aksp/opencrew init`, que conclui a
+  instalação sem apagar o que já existe. Com o registro (só o carimbo da versão sumiu), o `update`
+  e o `init` seguem como atualização.
+- **Quer ver antes o que um `update` faria?** `npx @aksp/opencrew update --check` lista o que
+  seria removido (arquivos que saíram do pacote), o que ficaria por você ter editado e as skills
+  desinstaladas, sem gravar nada. A remoção sempre deixa cópia em `.opencrew-backup/<data>/`.
+- **Apagou um modelo de crew?** Ele volta no `update`, e a saída diz o que foi entregue de novo.
+  **Desinstalou um skill do catálogo** (apagou a pasta `skills/<nome>/`)? Ele **não** volta: a
+  saída diz "Skill desinstalada, não recriei". Se a pasta existe mas falta o `SKILL.md`, o
+  arquivo é refeito.
 - **Removeu o servidor Playwright do `.mcp.json`?** O `update` o entrega uma única vez; se você
   remover de novo, não volta. A versão fixada no arquivo não é trocada.
 - **Uma IDE só conta como instalada pelo arquivo de ponte dela**, não por um arquivo seu que cite

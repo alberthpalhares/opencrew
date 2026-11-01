@@ -1,6 +1,6 @@
 # Spec — Fase U7-F2: Publicação e CI seguros
 
-- **Fase:** F2 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** infraestrutura (`.github/workflows/ci.yml`, `.github/workflows/publish.yml`) + testes (`tests/release-gate.test.js`) + docs (`CONTRIBUTING.md`, `AGENTS.md`) + CHANGELOG · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §7, todas como recomendadas); implementada (1.19.5), aguardando revisão independente, merge e Release
+- **Fase:** F2 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** infraestrutura (`.github/workflows/ci.yml`, `.github/workflows/publish.yml`) + testes (`tests/release-gate.test.js`) + docs (`CONTRIBUTING.md`, `AGENTS.md`) + CHANGELOG · **Status:** aprovada pelo dono em 2026-10-31 (spec, cenários e as quatro decisões da §7, todas como recomendadas); publicada no npm em 2026-11-01 (1.19.5), a primeira publicação por OIDC; revisão independente (Fable 5.1, high) feita, achados tratados
 - **Versão:** 1.19.5 (patch: infraestrutura, nenhuma linha de `src/` nem de `templates/` muda).
 - **Termos novos no GLOSSARIO.md:** não.
 - **Modelo sugerido:** execução Opus 5.5 · alto (publica no npm; erro aqui trava o release).

@@ -3,6 +3,41 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.20.0] — 2026-11-01
+
+Fase U7-F3: "`update` que reconcilia", F3 do roteiro U7 (`specs/fase-u7-f3-update-que-reconcilia.md`).
+Chega com `npx @aksp/opencrew@latest update`. **Nenhum arquivo do pacote foi removido ou renomeado em
+toda a história do OpenCrew, então o primeiro `update` desta versão não remove nada de ninguém**: a
+mudança prepara o terreno para as versões que vão renomear arquivos. Antes de usar num projeto real,
+`npx @aksp/opencrew@latest update --check` mostra o que um `update` faria, sem gravar nada.
+
+### Added
+- **O `update` remove o arquivo que o pacote novo não traz mais**, só quando o OpenCrew o entregou e
+  você não o editou, e sempre com cópia em `.opencrew-backup/<data>/`. Se você editou, o arquivo fica
+  onde está, deixa de ser rastreado e o resumo avisa. Só olha `_opencrew/core/`, `_opencrew/agents/`,
+  `_opencrew/config/` e `skills/` (nunca `skills/.custom/`); `crews/`, `_opencrew/_memory/`, `.env*` e o
+  resto são seus. Nunca segue link simbólico, nem apaga se a pasta do arquivo é um link. A pasta que ficar
+  vazia sai junto.
+- **`update --check` lista** o que seria removido, o que ficaria por ter sido editado e as skills
+  desinstaladas, sem apagar, copiar nem gravar nada.
+
+### Fixed
+- **Agente-base e configuração que você não editou agora recebem a melhoria** (`_opencrew/agents/`,
+  `_opencrew/config/`). Antes ficavam na versão velha para sempre e o arquivo deixava de ser rastreado
+  no primeiro `update`. Se você editou, fica como está e continua rastreado. Os modelos de `crews/`
+  continuam intocados.
+- **Skill que você desinstalou não volta mais no `update`** (a pasta de `skills/<nome>/` apagada). Pasta
+  que existe sem o `SKILL.md` é recriada. O resumo diz "Skill desinstalada, não recriei: …".
+- **`init` e `update` sobre um workspace sem o carimbo de versão** (mas com `_opencrew/manifest.json`)
+  seguem como atualização, usando a versão do registro, em vez de manter arquivos velhos com carimbo
+  novo. Sem carimbo e sem registro, continua como antes.
+- **Nenhum escritor grava através de link simbólico**: blocos de `AGENTS.md`/`CLAUDE.md`/`.gitignore`/
+  `.env.example`, `.mcp.json`, o registro de arquivos, o carimbo da versão e a limpeza do texto antigo
+  das pontes. O resumo diz "link simbólico: não gravei …".
+
+### Changed
+- `init.js` ficou menor: a escolha das IDEs (`resolveIdes`) foi para `src/lib/prompts.js`.
+
 ## [1.19.5] — 2026-10-31
 
 Fase U7-F2: "Publicação e CI seguros", F2 do roteiro U7 (`specs/fase-u7-f2-publicacao-e-ci-seguros.md`).

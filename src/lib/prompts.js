@@ -1,6 +1,7 @@
 // Interactive prompts with a non-interactive fallback.
 // Uses @inquirer/checkbox when a TTY is available; otherwise returns defaults.
-import { IDES, allIdeIds } from './ides.js';
+import { IDES, allIdeIds, ideById } from './ides.js';
+import { UsageError } from './errors.js';
 import { warn } from './ui.js';
 
 const loadCheckbox = () => import('@inquirer/checkbox');
@@ -61,4 +62,28 @@ export async function pickIdes({ preselected } = {}, { load = loadCheckbox } = {
     validate: (a) => (a.length ? true : 'Select at least one IDE.'),
   });
   return answer;
+}
+
+/**
+ * Decide which IDEs to configure. --ide → validated list, whatever comes with it; without it,
+ * --all / --yes → every IDE; nothing → `fallback()` (the interactive prompt; in repair mode, the
+ * detection). Throws UsageError if --ide names no valid IDE.
+ */
+export async function resolveIdes(opts, fallback) {
+  const ids = normalizeIdes(opts.ide);
+  if (!ids) return opts.all || opts.yes ? allIdeIds() : fallback();
+  const invalid = ids.filter((id) => !ideById(id));
+  const valid = ids.filter((id) => ideById(id));
+  if (!valid.length) {
+    throw new UsageError(`Unknown IDE "${invalid.join('", "')}". Valid: ${allIdeIds().join(', ')}`);
+  }
+  for (const id of invalid) warn(`Unknown IDE "${id}" — skipped. Valid: ${allIdeIds().join(', ')}`);
+  return valid;
+}
+
+function normalizeIdes(val) {
+  if (!val || val === true) return null;
+  const list = Array.isArray(val) ? val : String(val).split(',');
+  const ids = list.map((s) => s.trim()).filter(Boolean);
+  return ids.length ? ids : null;
 }
