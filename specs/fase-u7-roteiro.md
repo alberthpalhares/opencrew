@@ -25,7 +25,8 @@ comportamento ou polimento = minor; o número final é decidido na spec de cada 
 | **F0** | documentação | este roteiro, a triagem dos achados abertos e os documentos que mentem |
 | **F1** | defeito/segurança | higiene técnica e segurança do CLI e dos scripts — **publicada (1.19.4, 2026-10-31)** |
 | **F2** | infraestrutura | publicação e CI seguros (Trusted Publishing, Node 24, Actions) — **publicada (1.19.5, 2026-11-01), a primeira por OIDC** |
-| **F3** | defeito (alto risco) | `update` que reconcilia: remove o que saiu do payload, `init` sem mistura de versões, melhoria em arquivo não editado (H3-11) |
+| **F3** | defeito (alto risco) | `update` que reconcilia: remove o que saiu do payload, `init` sem mistura de versões, melhoria em arquivo não editado (H3-11) — **implementada (1.20.0)** |
+| **F3b** | defeito | porta única de escrita do CLI (pasta-link em todos os escritores; `crews/` como link do usuário não pode virar erro) — separada da F3 pela revisão independente |
 | **F4** | estrutura | divisão dos prompts de criação (só movimento de texto) e reforma das travas de prompt |
 | **F5** | comportamento | criação de crew coerente (R6) e o que sobrou da criação e da investigação |
 | **F6** | textos | PT-BR (CLI e runner) e arestas do runner (R8) |

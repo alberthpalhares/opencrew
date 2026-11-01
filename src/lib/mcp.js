@@ -7,7 +7,7 @@
 // version is never changed, and a file out of the expected format is left as it is.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { exists } from './fsx.js';
+import { exists, isLink } from './fsx.js';
 import { backupFile, hashOf, isRecord } from './manifest.js';
 
 /** Path of the file, relative to the project root: also its key in the manifest. */
@@ -29,6 +29,7 @@ const lacksOutputDir = (args) => Array.isArray(args) && args.some((a) => String(
 export async function createMcp(ctx, template) {
   const dest = path.join(ctx.target, MCP_FILE);
   if (await exists(dest)) return false;
+  if (await isLink(dest)) return false; // a dangling link: not written through (spec U7-F3, rule 5)
   await fs.writeFile(dest, template);
   ctx.files[MCP_FILE] = hashOf(template);
   return true;
@@ -93,6 +94,10 @@ export async function updateMcp(ctx, template) {
   if (!(await exists(dest))) {
     if (!record) await createMcp(ctx, template);
     return { action: record ? 'missing' : 'created', copied: false };
+  }
+  if (await isLink(dest)) { // the user's link: not written through, said in the summary
+    ctx.links.push(MCP_FILE);
+    return { action: 'kept', copied: false };
   }
   const text = await fs.readFile(dest, 'utf8');
   const plan = planMcp(text, template, Boolean(record));

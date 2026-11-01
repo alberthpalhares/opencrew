@@ -1,76 +1,87 @@
 # Spec — Fase U7-F3: `update` que reconcilia
 
-- **Fase:** F3 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/update.js`, `src/commands/init.js`, `src/lib/manifest.js`, `src/lib/blocos.js`, `src/lib/mcp.js`, `src/lib/fsx.js`, `src/lib/migrations.js`, `src/lib/resumo.js`) + testes + CHANGELOG + AGENTS.md + IDEIAS.md · **Status:** rascunho — aguardando aprovação do dono (regra 1: SPEC ⏸ → BDD ⏸)
+- **Fase:** F3 do roteiro U7 (`specs/fase-u7-roteiro.md`) · **Módulos:** CLI (`src/commands/update.js`, `src/commands/init.js`, `src/lib/manifest.js`, `src/lib/blocos.js`, `src/lib/mcp.js`, `src/lib/legado.js`, `src/lib/migrations.js`, `src/lib/resumo.js`, novo `src/lib/reconciliar.js`) + testes + CHANGELOG + AGENTS.md + GLOSSARIO.md + IDEIAS.md · **Status:** aprovada pelo dono em 2026-11-01 (spec e as decisões da §8, todas como recomendadas) e **revisada no mesmo dia** depois de uma revisão independente (Fable 5.1, high), com os quatro ajustes de escopo aprovados (§2); implementada (1.20.0), aguardando segunda revisão independente, merge e Release
 - **Versão:** 1.20.0 (minor: o `update` passa a **apagar** arquivo que saiu do pacote e a **renovar** arquivo que antes ficava para sempre na versão velha).
 - **Termos novos no GLOSSARIO.md:** "Arquivo órfão" (arquivo que o OpenCrew entregou numa versão e que o pacote novo não traz mais).
-- **Modelo sugerido:** execução Opus 5.5 · alto (regras 3 e 14: o `update` mexe no projeto do usuário; revisão independente obrigatória).
+- **Modelo sugerido:** execução Opus 5.5 · alto (regras 3 e 14: o `update` mexe no projeto do usuário; duas revisões independentes).
 - **Origem:** auditoria técnica independente de 2026-10-31 (itens 7.1 e 7.2) e a triagem da F0 (C-27, H3-11, T-M9). Cada problema abaixo foi **reproduzido em 2026-11-01** numa pasta temporária, com o código da 1.19.5.
 - **Depende de:** F1 (1.19.4) e F2 (1.19.5), publicadas. É pré-requisito da F4 (dividir prompts renomeia arquivos) e da F10 (reescrever os agentes-base).
+- **Fato que mede o risco:** `git log --diff-filter=D,R -- templates` está **vazio**: nenhum arquivo do payload foi removido ou renomeado em toda a história. Hoje nenhum projeto tem órfão; a F3 é a fundação para as fases que vão renomear arquivos, e **não apaga nada em projeto real por enquanto**.
 
 ## 1. Objetivo
 Fazer o `update` deixar o projeto igual ao que a versão nova entregaria, sem tocar no que é do usuário: tirar o que o pacote não traz mais, levar a melhoria ao arquivo que o usuário não editou, respeitar a skill que ele desinstalou, e não carimbar a versão nova sobre arquivos velhos.
 
-## 2. O que o código faz hoje (reproduzido)
+## 2. Mudanças de escopo depois da revisão independente (aprovadas em 2026-11-01)
+1. **A porta única de escrita sai para uma F3b** (nove pontos em seis módulos, com semântica própria de pasta-link e `realpath` no Windows). Na F3 ficam: o `isLink` do destino em todos os escritores que ainda não o têm, e a checagem de **pasta-link onde se apaga** (órfãos).
+2. **`update --check` lista** o que seria removido e as skills desinstaladas, sem apagar nem copiar nada.
+3. **Skill desinstalada** é a que **não tem pasta**; pasta sem `SKILL.md` é recriada.
+4. **`init` delegado ao `update` ignora `--ide/--all/--yes`** e diz como criar a ponte de uma IDE nova.
+
+## 3. O que o código faz hoje (reproduzido)
 | # | Problema | Como reproduzi | Causa no código |
 |---|---|---|---|
-| 1 | **Arquivo que saiu do pacote fica para sempre.** Um prompt renomeado ou removido numa versão nova continua em `_opencrew/core/` e a IA pode carregá-lo. | `init`, um arquivo extra em `_opencrew/core/prompts/` com a entrada dele no `manifest.json`, `update`: o arquivo continua lá (`(a) … true`). | `refreshFramework` (`update.js:111-121`) só grava; nada compara o manifesto com o pacote. |
-| 2 | **Agente-base não editado nunca recebe a melhoria (H3-11).** | `init`, um `agents/copywriter.agent.md` com o texto de uma versão anterior e o hash dele no manifesto (nada editado pelo usuário), `update`: o arquivo continua velho **e a entrada some do manifesto** (`(c) false`, `false`). | `agents/`, `config/`, `_investigations/` entram com `overwrite: false` (`update.js:118`); `deliverFile` (`manifest.js:98-115`) devolve `kept` sem registrar o arquivo; `writeManifest` regrava a lista só com o que foi registrado. Depois do primeiro `update`, o arquivo deixa de ser rastreado. |
-| 3 | **Skill desinstalada volta no próximo `update` (T-M9).** | `init`, apagar `skills/canva/`, `update`: a pasta volta (`(d) true`). | `deliverTree(tpl('skills'), …, { overwrite: true })` recria tudo que falta (`update.js:115`). O `skills.engine.md` (Operação 4) apaga a pasta e não deixa rastro. |
-| 4 | **`init` sobre workspace completo sem carimbo mistura versões.** | `init`, um arquivo velho em `_opencrew/core/`, apagar `.opencrew-version`, `init` de novo: o arquivo velho fica e o carimbo vira a versão nova (`(b) true`, `1.19.5`). | `workspaceState` (`init.js:150-153`) lê "sem carimbo" como instalação interrompida e retoma com `overwrite: false`; o `update` recusa o mesmo workspace ("rode init", `update.js:44-49`). Cada um manda para o outro. |
-| 5 | **A escrita através de link simbólico ainda existe fora do `deliverFile`.** `deliverBlock` (`blocos.js:103-114`), `mcp.js:31,105`, `writeManifest`, o carimbo, e uma **pasta** que é link (`_opencrew/core` → fora). | Revisão independente da F1 (confirmada na leitura); registrada no `IDEIAS.md` → F3. | `exists` + `fs.writeFile` direto, sem olhar o link. |
+| 1 | **Arquivo que saiu do pacote fica para sempre.** | `init`, um arquivo extra em `_opencrew/core/prompts/` com entrada no `manifest.json`, `update`: continua lá. | `refreshFramework` (`update.js`) só grava; nada compara o manifesto com o pacote. |
+| 2 | **Agente-base não editado nunca recebe a melhoria (H3-11)** e a entrada dele **some do manifesto**. | `init`, `agents/copywriter.agent.md` com texto antigo e o hash dele no manifesto, `update`: o arquivo fica velho e a entrada some. | `agents/`, `config/`, `_investigations/` entram com `overwrite: false`; `deliverFile` devolve `kept` sem registrar; `writeManifest` regrava só o que foi registrado. |
+| 3 | **Skill desinstalada volta no próximo `update` (T-M9).** | `init`, apagar `skills/canva/`, `update`: volta. | `deliverTree(tpl('skills'), …, { overwrite: true })` recria o que falta. A Operação 4 do `skills.engine.md` apaga a pasta e não deixa rastro. |
+| 4 | **`init` sobre workspace sem carimbo mistura versões.** | `init`, um arquivo velho em `_opencrew/core/`, apagar `.opencrew-version`, `init`: o velho fica e o carimbo vira o novo. | `workspaceState` lê "sem carimbo" como instalação interrompida e retoma sem sobrescrever; o `update` recusa o mesmo workspace. Cada um manda para o outro. |
+| 5 | **Escrita através de link simbólico** fora do `deliverFile`: `deliverBlock`, `mcp.js`, `writeManifest`, o carimbo, `legado.js`. | Revisão da F1 e leitura. | `exists` + `fs.writeFile` direto. |
 
-**Já resolvido, fora desta fase:** o "marcador de fim apagado gera bloco duplicado e mistura LF/CRLF" (C-26 da auditoria antiga): o `deliverBlock` trata o marcador órfão (copia o arquivo, devolve o bloco inteiro) e escreve no fim de linha do arquivo (`blocos.js:60-77`); está coberto por `tests/update-u3a2.test.js` (U3a-12i-f2).
+**Já resolvido, fora desta fase:** o "marcador de fim apagado gera bloco duplicado e mistura LF/CRLF" (C-26): `deliverBlock` trata o marcador órfão e escreve no fim de linha do arquivo; coberto por `tests/update-u3a2.test.js` (U3a-12i-f2).
 
-## 3. Regras
-1. **Arquivo órfão (C-27).** Depois de entregar, o `update` compara o `manifest.json` anterior com o que o pacote novo traz. É órfão o caminho que está no manifesto, **sob `_opencrew/core/`, `_opencrew/agents/`, `_opencrew/config/` ou `skills/`**, e que o pacote novo não entrega. Nada fora desses quatro prefixos é órfão: `crews/`, `_opencrew/_memory/`, `.env*`, `.claude/` e o resto são do usuário. Sem manifesto (versões ≤ 1.5.0) ou com manifesto ilegível: nenhum órfão é tocado.
-   - **Órfão que o usuário não editou** (o hash do arquivo é o do manifesto; CRLF/LF não conta): é removido, **com cópia em `.opencrew-backup/<data>/`**, e a pasta que ficar vazia sai junto.
-   - **Órfão que o usuário editou**: **fica onde está**, sai do manifesto (passa a ser dele) e o resumo avisa quais são.
-   - Link simbólico nunca é seguido nem apagado; o caminho precisa ficar dentro do projeto.
-2. **Arquivo não editado recebe a melhoria (H3-11).** Em `_opencrew/agents/` e `_opencrew/config/`, se o arquivo existe, o pacote novo traz outro texto e o hash do arquivo é o **registrado no manifesto** (o usuário não editou), o `update` o substitui (sem cópia: nada do usuário se perde) e o registra. Se o usuário editou, o arquivo fica como está **e a entrada dele continua no manifesto** (hoje some). `crews/` fica como está: nunca é renovado (são modelos que o usuário pode estar usando).
-3. **Skill desinstalada não volta (T-M9).** Uma skill está desinstalada quando o manifesto tem arquivos de `skills/<nome>/` e `skills/<nome>/SKILL.md` **não existe**. O `update` não recria nenhum arquivo dela, mantém as entradas no manifesto e o resumo diz "Skill desinstalada, não recriei: <nomes>". Falta de um arquivo solto numa skill instalada (com `SKILL.md`) continua sendo recriada. Skill nova do pacote (sem entrada no manifesto) é criada como hoje. Para reinstalar, vale a Operação 1 do `skills.engine.md`.
-4. **`init` sem carimbo, com registro.** Se `_opencrew/core` existe, o carimbo falta e há `manifest.json` legível, o `init` **não retoma como instalação nova**: diz "O carimbo da versão sumiu; refazendo como atualização" e segue o caminho do `update`. O `update`, sem carimbo e com manifesto legível, **usa a versão do manifesto como a instalada** (em vez de recusar) e grava o carimbo no fim. Sem carimbo **e** sem manifesto continua como hoje (instalação interrompida: o `init` retoma, o `update` pede o `init`).
-5. **Uma só porta de escrita no projeto.** Toda escrita do CLI dentro do projeto (arquivos, blocos, `.mcp.json`, manifesto, carimbo, cópias de segurança) passa por uma função de `fsx.js` que **não grava quando o destino é um link simbólico ou quando uma pasta do caminho, dentro do projeto, é um link** (compara o caminho real da pasta com o do projeto). O resultado é o `kept` de hoje, com o aviso "link simbólico: não gravei …" (`ctx.links`, da F1).
-6. **O resumo diz o que foi feito**: uma linha para os órfãos removidos (com o nome da pasta da cópia), uma para os editados que ficaram, uma para as skills desinstaladas, uma para o carimbo refeito. Em PT-BR, com acentos.
+## 4. Regras
+1. **Arquivo órfão (C-27).** Depois de entregar, o `update` compara o `manifest.json` anterior com o que o pacote novo trouxe. Candidato a órfão é o caminho do manifesto que:
+   - está sob `_opencrew/core/`, `_opencrew/agents/`, `_opencrew/config/` ou `skills/` (nada fora desses quatro prefixos: `crews/`, `_opencrew/_memory/`, `.env*`, `.claude/` e o resto são do usuário; e **`skills/.custom/` nunca**);
+   - depois de normalizado continua sob o prefixo, não é absoluto e não tem `\`, `:` nem segmento `..` (chave estranha é ignorada: nem órfão, nem erro);
+   - o pacote novo não entrega.
+   Sem manifesto (≤ 1.5.0) ou com manifesto ilegível: nenhum órfão é tocado. Arquivo da entrada que já não existe: a entrada sai em silêncio.
+   - **Não editado** (o hash é o do manifesto; CRLF/LF não conta): na ordem **link? → hash → cópia em `.opencrew-backup/<data>/` → remoção**. Link simbólico nunca é seguido, copiado nem apagado, e **a pasta do arquivo também não pode ser um link nem apontar para fora do projeto** (comparação do caminho real, com `path.relative`, como o `comum.mjs` dos scripts). Pasta que ficar vazia sai (`rmdir` não recursivo, nunca acima do prefixo, nunca o prefixo em si; só `skills/<nome>/`).
+   - **Editado** (ou ilegível por EISDIR, EACCES, EPERM): fica onde está, sai do manifesto (passa a ser do usuário) e o resumo avisa. Nunca lança erro.
+2. **Arquivo não editado recebe a melhoria (H3-11).** Em `_opencrew/agents/` e `_opencrew/config/`, se o arquivo existe, o pacote traz outro texto e o hash dele é o **registrado no manifesto**, o `update` o substitui (sem cópia) e o registra. Se o usuário editou, fica **e a entrada anterior continua no manifesto**. **Sem entrada no manifesto, o arquivo fica e continua sem registro: o CLI nunca registra o hash de um arquivo que não entregou** (senão a edição do usuário viraria "não editado" no update seguinte). `crews/` nunca é renovado.
+3. **Skill desinstalada não volta (T-M9).** Está desinstalada a skill cujos arquivos o manifesto conhece e cuja **pasta `skills/<nome>/` não existe** (ou está sem arquivos). O `update` não recria nada dela, **mantém as entradas no manifesto** e o resumo diz "Skill desinstalada, não recriei: <nomes>. Para reinstalar: peça `/opencrew` → skills → instalar." Se a pasta existe sem `SKILL.md`, o `SKILL.md` é recriado como hoje. Se o pacote novo **não entrega mais** a skill, vale "órfão" (as entradas saem). Skill nova do pacote (sem entrada) é criada como hoje. Skill renomeada pelo usuário é só mais uma skill dele.
+4. **`init` sem carimbo, com registro.** Se `_opencrew/core` existe, o carimbo falta e há `manifest.json` legível, o `init` diz "O carimbo da versão sumiu; refazendo como atualização. Para a ponte de uma IDE nova: `init --repair-bridges --ide=<id>`" e segue o `update` **sem** as opções do `init`. O `update`, sem carimbo, usa `manifest.version` como a instalada (`carimbo ?? manifest.version ?? null`; sem os dois, `INTERRUPTED` como hoje); a trava de versão mais nova continua valendo. Sem carimbo e sem manifesto: como hoje.
+5. **Escrita e link (parte da F3).** Todo escritor do CLI que ainda não olha o destino (`deliverBlock`, `mcp.js`, `writeManifest`, o carimbo, `legado.js`, `writeFileSafe` da ponte legada) não grava quando o **destino** é link simbólico, com o aviso "link simbólico: não gravei …" (`ctx.links`). A checagem de **pasta-link** é obrigatória só onde se apaga (regra 1). A porta única de escrita é a F3b.
+6. **`update --check`** (e `--dry-run`) lista o que seria removido (e o que ficaria por estar editado) e as skills desinstaladas, **sem apagar, copiar nem gravar nada** (a árvore do projeto é igual antes e depois).
+7. **O resumo diz o que foi feito**, em PT-BR com acentos: os arquivos removidos (com teto de linhas, como as cópias) e a pasta da cópia; os órfãos editados que ficaram; as skills desinstaladas; o carimbo refeito. `removeOrphans` roda **antes** do resumo.
 
-## 4. Cenários (BDD)
+## 5. Cenários (BDD)
 - **U7F3-01a** DADO um arquivo de `_opencrew/core/` que o manifesto conhece e o pacote novo não traz, não editado, QUANDO `update` ENTÃO ele some, a cópia está em `.opencrew-backup/<data>/` e o resumo cita o arquivo.
 - **U7F3-01b** DADO o mesmo arquivo **editado** ENTÃO ele continua, sai do manifesto e o resumo avisa.
-- **U7F3-01c** DADOS um arquivo de `crews/`, um de `_opencrew/_memory/`, um `.env` e um arquivo qualquer do usuário com entrada no manifesto QUANDO `update` ENTÃO nenhum é tocado.
-- **U7F3-01d** DADO um órfão que é link simbólico para fora do projeto ENTÃO o link e o alvo ficam como estão. DADO manifesto ausente ou ilegível ENTÃO nenhum órfão é removido.
-- **U7F3-01e** DADA uma pasta que fica vazia depois da remoção ENTÃO ela sai; uma pasta com arquivo do usuário não sai.
+- **U7F3-01c** DADOS um arquivo de `crews/`, um de `_opencrew/_memory/`, um `.env`, um de `skills/.custom/` e um qualquer do usuário, todos com entrada forjada no manifesto, QUANDO `update` ENTÃO nenhum é tocado.
+- **U7F3-01d** DADO um órfão que é link simbólico para fora do projeto ENTÃO o link e o alvo ficam como estão e nada é copiado. DADO manifesto ausente ou ilegível ENTÃO nenhum órfão é removido.
+- **U7F3-01e** DADA uma pasta que fica vazia depois da remoção ENTÃO ela sai; uma pasta com arquivo do usuário (inclusive oculto) não sai; `_opencrew/core` e `skills` em si nunca saem.
+- **U7F3-01f** DADA a **pasta do caminho** do órfão que é um link para fora do projeto (`_opencrew/core` → fora) ENTÃO nada é apagado nem copiado do outro lado. (Pulado onde não dá para criar link.)
+- **U7F3-01g** DADA uma chave do manifesto com `..`, absoluta, com `\` ou `:` ENTÃO é ignorada: o arquivo que ela aponta fora do prefixo (um `.env` na raiz) fica, e nada vai para fora de `.opencrew-backup/`.
+- **U7F3-01h** DADO o `update` rodado **duas vezes seguidas** ENTÃO o segundo não remove nem avisa nada novo e o manifesto fica igual. DADO um manifesto que lista um arquivo que já não existe (um `update` interrompido) ENTÃO a entrada sai em silêncio. DADA uma pasta no lugar de um arquivo do manifesto (EISDIR) ENTÃO o `update` conclui e avisa.
 - **U7F3-02a** DADO `_opencrew/agents/x.agent.md` não editado (hash do manifesto) e com texto antigo QUANDO `update` ENTÃO recebe o texto novo, sem cópia, e fica no manifesto com o hash novo.
 - **U7F3-02b** DADO o mesmo arquivo **editado** ENTÃO fica como está **e a entrada continua no manifesto** (hash anterior).
 - **U7F3-02c** DADO um modelo em `crews/` com texto antigo e não editado ENTÃO continua como está.
-- **U7F3-03a** DADA a skill `canva` desinstalada (pasta apagada, entradas no manifesto) QUANDO `update` ENTÃO a pasta **não** volta, as entradas ficam no manifesto e o resumo diz "Skill desinstalada, não recriei: canva".
-- **U7F3-03b** DADA uma skill instalada com um arquivo solto apagado ENTÃO o arquivo é recriado. DADA uma skill nova no pacote (sem entrada no manifesto) ENTÃO é criada.
-- **U7F3-04a** DADO workspace completo sem `.opencrew-version`, com manifesto legível, QUANDO `init` ENTÃO uma linha diz que refaz como atualização, o arquivo velho de `_opencrew/core/` é renovado (com cópia, se editado) e o carimbo é o da versão nova.
-- **U7F3-04b** DADO o mesmo workspace QUANDO `update` ENTÃO usa a versão do manifesto, renova e grava o carimbo; sem manifesto, continua pedindo o `init`.
-- **U7F3-05a** DADO um link simbólico no lugar de `AGENTS.md`/`.gitignore`/`.mcp.json`/`manifest.json`/`.opencrew-version` ENTÃO nada é gravado através dele e o resumo diz "link simbólico: não gravei …".
-- **U7F3-05b** DADA `_opencrew/core` que é um link para fora ENTÃO nada é gravado do outro lado. (Teste pulado onde não dá para criar link.)
-- **U7F3-06a** (contrato) DADO `resumo.js` ENTÃO as quatro linhas novas existem em PT-BR.
-- **U7F3-upg** DADO um workspace 1.19.5 com um órfão não editado, um agente-base não editado com texto antigo, uma skill desinstalada e o carimbo de uma versão antiga QUANDO `update` ENTÃO o órfão sai (com cópia), o agente-base é renovado, a skill não volta, a crew do usuário fica intacta e o manifesto novo é consistente (`npm ci` não é necessário: o teste lê o JSON).
+- **U7F3-02d** DADO um arquivo de `agents/` **sem entrada no manifesto** (workspace antigo) e com texto diferente do pacote ENTÃO fica como está e **continua sem entrada** (o segundo `update` também o deixa).
+- **U7F3-03a** DADA a skill `canva` desinstalada (pasta apagada, entradas no manifesto) QUANDO `update` ENTÃO a pasta **não** volta, as entradas ficam e o resumo diz "Skill desinstalada, não recriei: canva", **também no segundo `update`**.
+- **U7F3-03b** DADA uma skill instalada com a pasta mas sem `SKILL.md`, ou com um arquivo solto apagado ENTÃO os arquivos são recriados. DADA uma skill nova no pacote (sem entrada) ENTÃO é criada. DADA uma skill que o pacote não entrega mais E está desinstalada ENTÃO as entradas saem.
+- **U7F3-04a** DADO workspace completo sem `.opencrew-version`, com manifesto legível, QUANDO `init` ENTÃO uma linha diz que refaz como atualização e como criar a ponte de IDE nova, o arquivo velho de `_opencrew/core/` é renovado e o carimbo é o da versão nova.
+- **U7F3-04b** DADO o mesmo workspace QUANDO `update` ENTÃO usa a versão do manifesto, renova e grava o carimbo; manifesto com versão **mais nova** que o pacote ENTÃO recusa; sem manifesto e sem carimbo, continua pedindo o `init`; manifesto sem `version` ENTÃO `INTERRUPTED`.
+- **U7F3-05a** DADO um link simbólico no lugar de `AGENTS.md`, `.gitignore`, `.mcp.json`, `manifest.json` ou `.opencrew-version` ENTÃO nada é gravado através dele e o resumo diz "link simbólico: não gravei …". (Pulado onde não dá para criar link.)
+- **U7F3-06a** DADO `update --check` (e `--dry-run`) com um órfão e uma skill desinstalada ENTÃO a saída os lista e a árvore do projeto é igual antes e depois (inclusive sem `.opencrew-backup/`).
+- **U7F3-06b** (contrato) DADO `resumo.js` ENTÃO as linhas novas existem em PT-BR, e uma `.opencrew-backup/` já existente de outra data não atrapalha.
+- **U7F3-upg** DADO um workspace 1.19.5 com um órfão não editado, um agente-base não editado com texto antigo, uma skill desinstalada e o carimbo de uma versão antiga QUANDO `update` ENTÃO o órfão sai (com cópia), o agente-base é renovado, a skill não volta, a crew do usuário fica intacta e o manifesto novo é consistente.
 
-## 5. Travas que mudam
-- Testes que fixam que `agents/`, `config/` ficam "só o que falta" **sem distinguir arquivo editado de não editado** (conferir em `tests/update*.test.js`, `tests/r2-*.test.js`, `tests/upgrade*.test.js`) passam a distinguir; o caso "editado fica como está" continua valendo.
-- Testes que fixam "`update` sem carimbo recusa" (`INTERRUPTED`) passam a cobrir os dois casos (com e sem manifesto).
-- `AGENTS.md`: regra 3 (acrescentar que o `update` remove órfão não editado, com cópia) e a regra 14 (acrescentar `tests/upgrade-u7f3.test.js`).
-- Teto: `update.js` (156 linhas), `manifest.js` (136) e `init.js` (198) estão perto dos 200: a lógica nova mora num módulo novo (`src/lib/reconciliar.js`) para não passar do alvo.
+## 6. Travas que mudam
+- A revisão independente não achou teste antigo que fixe o comportamento de hoje ("a entrada some", "update sem carimbo recusa" sem manifesto): os casos sem manifesto continuam valendo, e os novos fixam os dois lados. Se a implementação quebrar algum, o motivo entra aqui.
+- `AGENTS.md`: regra 3 (o `update` remove órfão não editado, com cópia, e nunca toca `crews/`, `_memory/`, `.env*`) e regra 14 (`tests/upgrade-u7f3.test.js`).
+- Teto: `init.js` fica em até 200 linhas (mover `normalizeIdes`/`tpl` para um módulo); a lógica nova mora em `src/lib/reconciliar.js`.
 
-## 6. Fora do escopo
-- **`crews/` renovado.** Modelos de crew continuam intocados.
-- Arquivos do usuário que ele mesmo registrou no manifesto (o manifesto só guarda o que o CLI entregou).
-- Desfazer o `update` (a cópia em `.opencrew-backup/` é manual) e um comando `uninstall`.
-- O formato do `manifest.json` não muda (lista de caminho → hash); o que a F3 muda é como ele é usado.
+## 7. Fora do escopo
+- **A porta única de escrita** (`escrever`, pasta-link em todos os escritores, `crews/` como link do usuário que não pode virar erro): **F3b**, com spec própria.
+- Renovar `crews/`; um comando `uninstall`; desfazer o `update` (a cópia em `.opencrew-backup/` é manual); mudar o formato do `manifest.json`.
 - A F4 (dividir prompts) e a F10 (agentes-base): só dependem desta fase.
 
-## 7. Conferência que o `npm run verify` não cobre (regra 7)
-Um `update` real, com o pacote desta versão, numa **cópia** de um projeto do dono que já use o OpenCrew (nunca o original): conferir o resumo, que nada de `crews/` e `_memory/` mudou (`diff -r` antes e depois, ignorando `.opencrew-backup/`) e que o que foi removido está na pasta de cópia. **Conferência do dono.** A suíte roda no CI do Windows e do Linux, que cobre os caminhos.
+## 8. Conferência que o `npm run verify` não cobre (regra 7)
+Um `update` real, com o pacote desta versão, numa **cópia** de um projeto do dono que já use o OpenCrew (nunca o original): primeiro `update --check`, depois `update`; conferir o resumo, que nada de `crews/` e `_memory/` mudou (`diff -r` antes e depois, ignorando `.opencrew-backup/`) e que o que foi removido está na pasta de cópia. **Conferência do dono.** Como hoje não há órfão histórico, a prova de que a remoção funciona é o `tests/upgrade-u7f3.test.js` e os cenários acima.
 
-## 8. Decisões pedidas ao dono
-1. **Aprovar esta spec e os cenários** (⏸).
-2. **Órfão que o usuário editou:** deixar onde está e avisar (recomendado) — ou fazer a cópia e apagar também? Recomendo deixar: a regra 3 diz que arquivo editado não se destrói.
-3. **Órfão não editado:** remover **com cópia** (recomendado) — ou remover sem cópia? A cópia é barata e desfaz o erro.
-4. **H3-11 só em `agents/` e `config/`** (recomendado, `crews/` fica de fora) — ou também renovar os modelos de `crews/` não editados?
-5. **Skill desinstalada não volta** (recomendado). A alternativa é manter o comportamento de hoje (volta sempre).
-6. **`update` sem carimbo e com registro segue em frente** (recomendado) — ou continua exigindo o `init`?
-7. **Versão 1.20.0** (minor) por apagar arquivo do projeto — ou 1.19.6?
+## 9. Decisões do dono (2026-11-01, todas como recomendadas)
+1. **Spec e cenários aprovados** (⏸); os quatro ajustes da §2, aprovados com o plano revisado.
+2. **Órfão que o usuário editou:** fica onde está e avisa. **Órfão não editado:** sai com cópia.
+3. **H3-11 só em `agents/` e `config/`.**
+4. **Skill desinstalada não volta.**
+5. **`update` e `init` sem carimbo e com registro seguem como atualização.**
+6. **Versão 1.20.0.**

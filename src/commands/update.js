@@ -10,7 +10,8 @@ import { withoutLegacy } from '../lib/legado.js';
 import { updateMcp } from '../lib/mcp.js';
 import { compareVersions, installedVersion, findLeftovers } from '../lib/migrations.js';
 import { officeLine } from '../lib/escritorio.js';
-import { say, recreatedLines, updateSummary, UNTOUCHED, INTERRUPTED } from '../lib/resumo.js';
+import { say, marked, recreatedLines, updateSummary, UNTOUCHED, INTERRUPTED } from '../lib/resumo.js';
+import { payloadKeys, uninstalledSkills, removeOrphans, previewLines } from '../lib/reconciliar.js';
 import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
 
 const tpl = (...p) => path.join(templatesDir, ...p);
@@ -41,8 +42,11 @@ export async function update(opts = {}) {
     return;
   }
 
-  // No stamp = an install that did not finish: nothing is written or stamped (rule 31).
-  const current = await installedVersion(target);
+  // No stamp and no manifest = an install that did not finish: nothing is written or stamped (rule 31).
+  // With the manifest the stamp is only lost: its version stands for the installed one (spec U7-F3, rule 4).
+  const manifest = await readManifest(target);
+  const stamped = await installedVersion(target);
+  const current = stamped ?? manifest?.version ?? null;
   if (!current) {
     err(INTERRUPTED);
     process.exitCode = 1;
@@ -50,7 +54,8 @@ export async function update(opts = {}) {
   }
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
-  if (canApply(opts, current, version)) await apply(target, version, opts);
+  if (canApply(opts, current, version)) await apply(target, version, opts, stamped ? null : current);
+  else if (opts.check) say(marked(await previewLines(target, manifest))); // what a real update would do; writes nothing
 }
 
 /** `--check` only reports, and a package older than the workspace stops: false = write nothing. */
@@ -74,15 +79,17 @@ function canApply(opts, current, version) {
   return !newer;
 }
 
-async function apply(target, version, opts) {
+async function apply(target, version, opts, restamped = null) {
   // A manifest that exists but cannot be used is said so, then treated as none (R2 rule 12).
   const manifest = await readManifest(target);
   const unreadable = !manifest && (await manifestUnreadable(target));
   if (unreadable) warn(UNREADABLE.update);
   const ctx = newDelivery(target, manifest);
+  const payload = manifest ? await payloadKeys() : null;
+  const skills = manifest ? await uninstalledSkills(ctx, payload) : new Set(); // not brought back (U7-F3, rule 3)
 
   step('Refreshing framework');
-  const crews = await refreshFramework(ctx);
+  const crews = await refreshFramework(ctx, skills);
   ok(`Framework and catalog skills refreshed (${ctx.written} files written)`);
   say(recreatedLines(crews));
 
@@ -92,11 +99,13 @@ async function apply(target, version, opts) {
   done.leftovers = await findLeftovers(target);
   done.hasCrew = await hasCrew(target);
   done.office = await officeLine(target, version, opts.officePorts);
-  say(updateSummary(ctx, done));
+  // The files the package no longer delivers leave (with a copy) unless the user edited them (rule 1).
+  done.reconcile = { ...(manifest ? await removeOrphans(ctx, payload) : {}), skills: [...skills], restamped };
 
-  await writeManifest(target, version, ctx.files);
+  if (!(await writeManifest(target, version, ctx.files))) ctx.links.push('_opencrew/manifest.json');
   // Stamp last: a crash above leaves the old version, so the next update retries.
-  await fs.writeFile(path.join(target, '_opencrew', '.opencrew-version'), version + '\n');
+  if (!(await writeFileSafe(path.join(target, '_opencrew', '.opencrew-version'), version + '\n'))) ctx.links.push('_opencrew/.opencrew-version');
+  say(updateSummary(ctx, done));
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
   log(c.dim(`${UNTOUCHED}\n`));
 }
@@ -109,14 +118,14 @@ async function hasCrew(target) {
 }
 
 /** @returns what `deliverTree` did to each crew template (only the missing ones are written). */
-async function refreshFramework(ctx) {
+async function refreshFramework(ctx, uninstalled) {
   const dest = (...p) => path.join(ctx.target, ...p);
   await deliverTree(ctx, tpl('_opencrew', 'core'), dest('_opencrew', 'core'), { overwrite: true });
   await deliverFile(ctx, dest('_opencrew', 'core', 'system.md'), await fs.readFile(tpl('AGENTS.md')), { overwrite: true });
-  await deliverTree(ctx, tpl('skills'), dest('skills'), { overwrite: true });
-  // New framework folders (e.g. base agents since 1.3.2): only what is missing.
+  await deliverTree(ctx, tpl('skills'), dest('skills'), { overwrite: true, skip: (rel) => uninstalled.has(rel.split('/')[0]) });
+  // Base agents, config and the rest: what is missing arrives; an unedited agent or config renews (H3-11); crews never.
   for (const dir of ['agents', 'config', '_investigations']) {
-    await deliverTree(ctx, tpl('_opencrew', dir), dest('_opencrew', dir), { overwrite: false });
+    await deliverTree(ctx, tpl('_opencrew', dir), dest('_opencrew', dir), { overwrite: false, renewUnedited: dir !== '_investigations' });
   }
   return deliverTree(ctx, tpl('crews'), dest('crews'), { overwrite: false });
 }

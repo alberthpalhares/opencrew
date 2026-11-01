@@ -6,7 +6,7 @@
 // none) is rewritten. CRLF/LF is never a difference, and what is written follows the file.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { exists } from './fsx.js';
+import { exists, isLink } from './fsx.js';
 import { deliverFile, backupFile, hashOf } from './manifest.js';
 
 // The file is handled byte by byte (latin1 goes there and back unchanged): whatever its encoding,
@@ -100,6 +100,14 @@ export async function deliverBlock(ctx, file, content) {
   const [start, end] = markersOf(file);
   const marked = `${start}\n${content.replace(/\r\n/g, '\n').trimEnd()}\n${end}`;
   const dest = path.join(ctx.target, file);
+  if (await isLink(dest)) { // the user's link: the block is not written through it (spec U7-F3, rule 5)
+    ctx.links.push(file);
+    const record = ctx.manifest?.files?.[blockKey(file)];
+    if (record) ctx.files[blockKey(file)] = record;
+    const result = { file, action: 'kept', copied: false, block: true };
+    ctx.blocks.push(result);
+    return result;
+  }
   const raw = (await exists(dest)) ? await fs.readFile(dest) : null;
   const plan = planBlock(file, raw && raw.toString('latin1'), marked);
   const record = ctx.manifest?.files?.[blockKey(file)];

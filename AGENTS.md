@@ -44,8 +44,10 @@ o projeto de cada usuário. **Trava:** `tests/ides.test.js` + `tests/package.tes
 `init` e `update` nunca sobrescrevem, sem backup ou confirmação, arquivo que o usuário
 possa ter editado (`crews/`, `_opencrew/_memory/`, `.env*`, `.gitignore`, `.mcp.json`,
 `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`). Arquivo compartilhado recebe **bloco marcado**
-(`opencrew:start/end`). **Trava:** `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`,
-`tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`.
+(`opencrew:start/end`). O `update` remove arquivo que o pacote não traz mais **só** se o OpenCrew o entregou e o usuário
+não o editou (hash do `manifest.json`), com cópia em `.opencrew-backup/`, e só em `_opencrew/core|agents|config` e `skills/`.
+**Trava:** `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`,
+`tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`, `tests/u7f3-orfaos.test.js`, `tests/u7f3-reconciliar.test.js`.
 
 ### 4. Referências do payload existem
 Todo caminho de `_opencrew/...` ou `skills/<x>/...` citado num prompt existe em
@@ -107,7 +109,7 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`,
 `tests/upgrade-u5a.test.js`, `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a),
 `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg) e
-`tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg) e `tests/upgrade-u7f1.test.js` (U7F1-upg).
+`tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg) e `tests/upgrade-u7f3.test.js` (U7F3-upg).
 
 ### 15. Script do runtime só escreve onde foi combinado
 Script do runtime só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da
@@ -141,7 +143,7 @@ muda a linha da execução.
 |---|---|---|
 | 1 Ciclo | sem trava — revisão humana | — |
 | 2 Payload sem mantenedor | `tests/ides.test.js`, `tests/package.test.js` (U3b-07a: o modelo do perfil), `tests/documento-contratos.test.js` (U3b-06a: o exemplo do guia) | Reprova |
-| 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`, `tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`, `tests/r2-*.test.js`, `tests/scripts-links.test.js` | Reprova |
+| 3 Não destruir dado | `tests/init.test.js`, `tests/init-safety.test.js`, `tests/init-repair.test.js`, `tests/update.test.js`, `tests/update-u2.test.js`, `tests/update-u3a2.test.js`, `tests/r2-*.test.js`, `tests/scripts-links.test.js`, `tests/u7f3-orfaos.test.js`, `tests/u7f3-reconciliar.test.js` | Reprova |
 | 4 Referências existem | `tests/template-refs.test.js` | Reprova |
 | 5 Pacote = doc | `tests/package.test.js` | Reprova |
 | 6 Tamanho | `scripts/check-size.js`; o núcleo do runner em até 560 linhas: `tests/runtime-contracts-u5b.test.js` (U5b-01b), `tests/runtime-contracts-u5c.test.js` (U5c-10a) e `tests/runtime-contracts-u5d.test.js` (U5d-05a; U6a-06a: núcleo ≤ 560, total ≤ 1.030) | Alerta; o teto do runner reprova |
@@ -152,7 +154,7 @@ muda a linha da execução.
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/runtime-contracts-r4.test.js` (R4-01: os limites do Instagram de 2026), `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ F4 e F6 do roteiro U7) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a), `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg), `tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg) | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a), `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg), `tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg), `tests/upgrade-u7f3.test.js` (U7F3-upg) | Reprova |
 | 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido), `tests/limpeza*.test.js` (U6b-02 e 05a: só some o pedido), `tests/custo.test.js` (U6b-06c), `tests/relato.test.js` (U6b-08b: nada do cliente), `tests/caminho-aberta.test.js` (E4-03a: a execução aberta é perguntada sem gravar nada) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)

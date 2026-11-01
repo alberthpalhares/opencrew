@@ -50,9 +50,12 @@ export const UNREADABLE = {
   repair: 'O registro de arquivos (`_opencrew/manifest.json`) está ilegível; o reparo não o refaz. Rode `npx @aksp/opencrew@latest update` para refazer.',
 };
 
+/** @returns {Promise<boolean>} false when MANIFEST is a symbolic link of the user's: not written through it */
 export async function writeManifest(target, version, files) {
   const sorted = Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b)));
+  if (await isLink(path.join(target, MANIFEST))) return false;
   await fs.writeFile(path.join(target, MANIFEST), JSON.stringify({ version, files: sorted }, null, 2) + '\n');
+  return true;
 }
 
 /**
@@ -78,6 +81,8 @@ export function newDelivery(target, manifest) {
 export async function backupFile(ctx, key) {
   if (ctx.copied.includes(key)) return false;
   const copy = path.join(ctx.backupDir, key);
+  const inside = path.relative(ctx.backupDir, copy);
+  if (!inside || inside.startsWith('..') || path.isAbsolute(inside)) return false; // never outside the backup dir
   await fs.mkdir(path.dirname(copy), { recursive: true });
   await fs.copyFile(path.join(ctx.target, key), copy);
   ctx.copied.push(key);
@@ -86,10 +91,13 @@ export async function backupFile(ctx, key) {
 
 /**
  * Put `content` at `dest`. Missing → write. Equal → nothing. Different → only if `overwrite`,
- * copying the current file to the backup dir first when the user edited it.
+ * copying the current file to the backup dir first when the user edited it. `renewUnedited`
+ * (agents/, config/): a different file the manifest says was delivered and was not edited since
+ * is replaced, with no copy; an edited one stays and keeps its entry. A file with no entry is
+ * never registered here: its current hash is not something this package delivered.
  * @returns {Promise<{file:string, action:'created'|'updated'|'kept', copied:boolean}>}
  */
-export async function deliverFile(ctx, dest, content, { overwrite }) {
+export async function deliverFile(ctx, dest, content, { overwrite, renewUnedited = false }) {
   const file = rel(ctx.target, dest);
   const fresh = hashOf(content);
   if (await isLink(dest)) {
@@ -105,10 +113,15 @@ export async function deliverFile(ctx, dest, content, { overwrite }) {
     return { file, action: 'created', copied: false };
   }
   const current = hashOf(await fs.readFile(dest));
+  const recorded = ctx.manifest?.files?.[file];
+  const unedited = renewUnedited && recorded !== undefined && recorded === current;
   if (current === fresh) ctx.files[file] = fresh;
-  // Different and no `overwrite`: the user's version stays (and is not tracked).
-  if (current === fresh || !overwrite) return { file, action: 'kept', copied: false };
-  const edited = ctx.manifest ? ctx.manifest.files[file] !== current : true;
+  // Different and not replaceable: the user's version stays, and so does its entry (if any).
+  if (current === fresh || (!overwrite && !unedited)) {
+    if (current !== fresh && recorded !== undefined) ctx.files[file] = recorded;
+    return { file, action: 'kept', copied: false };
+  }
+  const edited = !unedited && (ctx.manifest ? recorded !== current : true);
   const copied = edited && (await backupFile(ctx, file));
   await fs.writeFile(dest, content);
   ctx.files[file] = fresh;
@@ -120,7 +133,7 @@ export async function deliverFile(ctx, dest, content, { overwrite }) {
  * deliverFile for every file under `src`, mirrored into `dest`.
  * @returns {Promise<Array<{file:string, action:string, copied:boolean}>>} one result per file
  */
-export async function deliverTree(ctx, src, dest, { overwrite, skip = () => false }) {
+export async function deliverTree(ctx, src, dest, { overwrite, skip = () => false, renewUnedited = false }) {
   const results = [];
   async function walk(dir) {
     for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
@@ -128,7 +141,7 @@ export async function deliverTree(ctx, src, dest, { overwrite, skip = () => fals
       const relPath = path.relative(src, from).split(path.sep).join('/');
       if (skip(relPath)) continue;
       if (entry.isDirectory()) await walk(from);
-      else results.push(await deliverFile(ctx, path.join(dest, relPath), await fs.readFile(from), { overwrite }));
+      else results.push(await deliverFile(ctx, path.join(dest, relPath), await fs.readFile(from), { overwrite, renewUnedited }));
     }
   }
   await walk(src);

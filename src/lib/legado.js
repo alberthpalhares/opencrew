@@ -7,7 +7,7 @@
 // `src/lib/ides.js` wrote ONE text per file from v1.0.0 to v1.2.2; they are fixed below.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { exists } from './fsx.js';
+import { exists, isLink } from './fsx.js';
 import { backupFile } from './manifest.js';
 import { blockRanges } from './blocos.js';
 import { USER_FILE_TITLES, plainLine } from './deteccao.js';
@@ -103,6 +103,10 @@ function hasTraces(text, file) {
 async function clean(ctx, file, write) {
   const dest = path.join(ctx.target, file);
   if (!(await exists(dest))) return;
+  if (await isLink(dest)) { // never written (or copied) through a link (spec U7-F3, rule 5)
+    ctx.links.push(file);
+    return;
+  }
   const text = await fs.readFile(dest, 'utf8');
   const stripped = strip(text, file);
   if (stripped !== text) await backupFile(ctx, file); // once per run: the file as it was
