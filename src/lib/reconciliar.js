@@ -10,7 +10,7 @@ import { backupFile, hashOf } from './manifest.js';
 
 /** The only folders (relative to the project, with `/`) where a file can be an orphan. */
 export const PREFIXES = ['_opencrew/core/', '_opencrew/agents/', '_opencrew/config/', 'skills/'];
-const NEVER = 'skills/.custom/'; // the user's own skills: not even a forged manifest entry reaches them
+const NEVER = 'skills/.custom'; // the user's own skills: not even a forged manifest entry reaches them
 const MAX_LISTED = 20;
 
 const keyToPath = (target, key) => path.join(target, ...key.split('/'));
@@ -21,16 +21,16 @@ const prefixOf = (key) => PREFIXES.find((p) => key.startsWith(p));
  * not absolute and has no backslash, colon or `..` segment. Anything else is ignored.
  */
 export function candidateKey(key) {
-  if (typeof key !== 'string' || key.includes('#') || key.includes('\\') || key.includes(':') || key.startsWith('/')) return false;
+  if (typeof key !== 'string' || key.includes('#') || key.includes('\\') || key.includes(':') || key.startsWith('/') || key.endsWith('/')) return false;
   if (key.split('/').includes('..') || path.posix.normalize(key) !== key) return false;
-  return Boolean(prefixOf(key)) && !key.startsWith(NEVER);
+  return Boolean(prefixOf(key)) && key !== NEVER && !key.startsWith(`${NEVER}/`);
 }
 
 /** Every file the package delivers under the four folders, as manifest keys (`init` and `update` write the same). */
 export async function payloadKeys() {
   const keys = new Set(['_opencrew/core/system.md']);
   async function walk(dir, base) {
-    for (const e of await fs.readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    for (const e of await fs.readdir(dir, { withFileTypes: true })) { // no catch: an unreadable package stops the update before it writes (U7-F3, review)
       if (e.isDirectory()) await walk(path.join(dir, e.name), `${base}${e.name}/`);
       else keys.add(`${base}${e.name}`);
     }
@@ -96,8 +96,10 @@ async function folderInPlace(target, key) {
  */
 export async function planOrphans(target, manifest, payload) {
   const plan = { remove: [], edited: [] };
+  // `Foo.md` renamed to `foo.md` is one file on a disk that ignores case: it is not an orphan.
+  const lowered = new Set([...payload].map((k) => k.toLowerCase()));
   for (const [key, recorded] of Object.entries(manifest?.files ?? {})) {
-    if (!candidateKey(key) || payload.has(key)) continue;
+    if (!candidateKey(key) || payload.has(key) || lowered.has(key.toLowerCase())) continue;
     const abs = keyToPath(target, key);
     const info = await fs.lstat(abs).catch(() => null);
     if (!info || info.isSymbolicLink() || !(await folderInPlace(target, key))) continue;
@@ -120,17 +122,19 @@ async function pruneEmptyFolders(target, key) {
 
 /**
  * Remove the orphans the user did not edit — link? → hash → copy → remove, in that order, and no
- * copy means no removal. Whatever is not removed and was edited is reported; the manifest is
+ * copy means no removal, and a copy that fails keeps the file. Whatever is not removed is reported; the manifest is
  * rebuilt from `ctx.files`, so removed and edited orphans are no longer in it.
  * @returns {Promise<{removed: string[], edited: string[]}>}
  */
 export async function removeOrphans(ctx, payload) {
-  const { remove, edited } = await planOrphans(ctx.target, ctx.manifest, payload);
+  const plan = await planOrphans(ctx.target, ctx.manifest, payload);
+  const delivered = (key) => key in ctx.files; // what this very run delivered is never an orphan, whatever the package list says
+  const edited = plan.edited.filter((key) => !delivered(key));
   const removed = [];
-  for (const key of remove) {
-    await backupFile(ctx, key);
-    if (!ctx.copied.includes(key)) { edited.push(key); continue; }
+  for (const key of plan.remove.filter((k) => !delivered(k))) {
     try {
+      await backupFile(ctx, key);
+      if (!ctx.copied.includes(key)) { edited.push(key); continue; }
       await fs.rm(keyToPath(ctx.target, key));
       removed.push(key);
       await pruneEmptyFolders(ctx.target, key);

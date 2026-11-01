@@ -156,3 +156,38 @@ test('U7F3-06a: update --check (and --dry-run) says what would go and which skil
     assert.deepEqual(await snapshot(dir), antes, JSON.stringify(opcoes));
   }
 });
+
+// ── Extra cases found by the independent review of the code (2026-11-01) ───────────────────────
+
+test('U7F3-02e: an agent already equal to the package, with an older hash in the manifest, is not copied and gets the new hash', async () => {
+  const dir = await workspace();
+  const novo = await doPacote('_opencrew', 'agents', 'copywriter.agent.md');
+  await entregueAntes(dir, AGENTE, novo, { registrar: 'hash de uma versão anterior\n' });
+  await carimboAntigo(dir);
+  await rodar(dir);
+  assert.equal(await lerOuNada(aqui(dir, AGENTE)), novo);
+  assert.equal((await manifesto(dir)).files[AGENTE], hashOf(novo));
+  assert.equal(await pastaDeCopia(dir), null);
+});
+
+test('U7F3-04c: a manifest version that is not a version (junk) is no installed version: update asks for init', async () => {
+  for (const lixo of ['abc', 1, {}, '1.5', true, '1.19.5-beta']) {
+    const dir = await workspace();
+    await fs.rm(aqui(dir, CARIMBO));
+    await gravarManifesto(dir, { version: lixo, files: (await manifesto(dir)).files });
+    const r = await rodar(dir);
+    assert.equal(r.code, 1, JSON.stringify(lixo));
+    assert.match(r.out, /instalação anterior não terminou/, JSON.stringify(lixo));
+    assert.doesNotMatch(r.out, /\[object Object\]/, JSON.stringify(lixo));
+  }
+});
+
+test('U7F3-05b: init does not write the stamp through a dangling link, and says so', async (t) => {
+  const dir = await workspace();
+  await fs.rm(aqui(dir, MANIFESTO));
+  await fs.rm(aqui(dir, CARIMBO));
+  if (!(await criarLink(path.join(dir, 'alvo-do-link.txt'), aqui(dir, CARIMBO)))) return t.skip('cannot create symbolic links here');
+  const out = await captureOutput(() => withCwd(dir, () => init({ ide: ['claude-code'] })));
+  assert.equal(await lerOuNada(path.join(dir, 'alvo-do-link.txt')), null, 'nothing was created on the other side of the link');
+  assert.match(out, /link simbólico: não gravei/);
+});

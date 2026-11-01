@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { exists, readJson } from '../lib/fsx.js';
+import { exists, readJson, writeFileSafe } from '../lib/fsx.js';
 import { newDelivery, deliverTree, deliverFile, writeManifest, readManifest, manifestUnreadable, UNREADABLE } from '../lib/manifest.js';
 import { deliverBlock, deliverBridges } from '../lib/blocos.js';
 import { createMcp } from '../lib/mcp.js';
@@ -90,8 +90,8 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
 
   // 4. Manifest (what OpenCrew delivered — lets `update` spot the user's edits), then the
   // version stamp LAST: it is what marks the install as complete.
-  await writeManifest(target, version, ctx.files);
-  await fs.writeFile(path.join(target, STAMP), version + '\n');
+  if (!(await writeManifest(target, version, ctx.files))) ctx.links.push('_opencrew/manifest.json');
+  if (!(await writeFileSafe(path.join(target, STAMP), version + '\n'))) ctx.links.push('_opencrew/.opencrew-version');
   reportBackups(ctx); // a reinstall over blocks the user edited copies those files first
 
   // 5. Done.

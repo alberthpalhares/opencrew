@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { templatesDir, packageJsonPath } from '../lib/paths.js';
-import { exists, writeFileSafe, readJson, readFile } from '../lib/fsx.js';
+import { exists, isLink, writeFileSafe, readJson, readFile } from '../lib/fsx.js';
 import { AGENTS_BRIDGE, LEAKED_STATUS_SECTION } from '../lib/ides.js';
 import { readManifest, manifestUnreadable, UNREADABLE, writeManifest, newDelivery, deliverTree, deliverFile, backupFile } from '../lib/manifest.js';
 import { deliverBlock, deliverBridges, blockHas } from '../lib/blocos.js';
@@ -46,7 +46,8 @@ export async function update(opts = {}) {
   // With the manifest the stamp is only lost: its version stands for the installed one (spec U7-F3, rule 4).
   const manifest = await readManifest(target);
   const stamped = await installedVersion(target);
-  const current = stamped ?? manifest?.version ?? null;
+  const fromManifest = /^\d+\.\d+\.\d+$/.test(manifest?.version ?? '') ? manifest.version : null; // junk is no version
+  const current = stamped ?? fromManifest;
   if (!current) {
     err(INTERRUPTED);
     process.exitCode = 1;
@@ -151,11 +152,12 @@ async function refreshAgentsBridge(ctx) {
   const agentsPath = path.join(ctx.target, 'AGENTS.md');
   const existing = (await exists(agentsPath)) ? await readFile(agentsPath) : '';
   if (existing.includes('# opencrew Instructions') && !existing.includes('<!-- opencrew:start -->')) {
-    await backupFile(ctx, 'AGENTS.md'); // .opencrew-backup/<date>/: the root stays free of copies (spec U7-F1, rule 4)
-    if (!(await writeFileSafe(agentsPath, AGENTS_BRIDGE))) { // a link at AGENTS.md: not written through
+    if (await isLink(agentsPath)) { // a link at AGENTS.md: neither copied nor written through
       ctx.links.push('AGENTS.md');
       return null;
     }
+    await backupFile(ctx, 'AGENTS.md'); // .opencrew-backup/<date>/: the root stays free of copies (spec U7-F1, rule 4)
+    await writeFileSafe(agentsPath, AGENTS_BRIDGE);
     const copy = path.relative(ctx.target, path.join(ctx.backupDir, 'AGENTS.md')).split(path.sep).join('/');
     ok(`AGENTS.md (migrated from legacy full-system to thin bridge — backed up to ${copy})`);
     return null;

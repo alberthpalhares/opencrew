@@ -360,7 +360,8 @@
 - **O que já existe:** desde a F1 (1.19.4), `deliverFile` e `writeFileSafe` não gravam através de link simbólico.
   Continuam seguindo o link: `deliverBlock` (`AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.env.example` e as pontes das
   IDEs, `src/lib/blocos.js`), `createMcp`/`updateMcp` (`src/lib/mcp.js`), `writeManifest`, o carimbo `.opencrew-version`
-  e uma **pasta** que é link (`_opencrew/core` apontando para fora). Só o próprio usuário cria esses links.
+  e uma **pasta** que é link (`_opencrew/core` apontando para fora). Caso concreto achado na revisão da F3: `skills/<nome>` como link
+  para uma pasta do usuário recebe o `SKILL.md` do pacote **dentro** da pasta dele. Só o próprio usuário cria esses links.
 - **Ideia:** um único guarda de escrita no CLI (arquivo e pasta), com o mesmo aviso "link simbólico: não gravei".
 - **Alocação:** → Fase F3b (roteiro U7): a F3 só cobre o destino que é link e a pasta-link onde se apaga; a porta única de escrita em todos os escritores (e `crews/` como link legítimo do usuário) é a F3b.
 - **Custo de adiar:** baixo: exige um link que o próprio usuário pôs no lugar de um arquivo do OpenCrew.

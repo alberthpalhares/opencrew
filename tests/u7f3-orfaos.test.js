@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { snapshot, mkTmp } from './_helpers.js';
+import { newDelivery } from '../src/lib/manifest.js';
+import { candidateKey, planOrphans, removeOrphans, payloadKeys } from '../src/lib/reconciliar.js';
 import { workspace, manifesto, gravarManifesto, carimboAntigo, entregueAntes, rodar, pastaDeCopia, criarLink, lerOuNada, hashOf, MANIFESTO } from './_reconciliar.js';
 
 const ORFAO = '_opencrew/core/prompts/obsoleto.md';
@@ -142,4 +144,51 @@ test('U7F3-06b: a .opencrew-backup/ of another date is left as it is', async () 
   await rodar(dir);
   assert.equal(await lerOuNada(aqui(dir, '.opencrew-backup/2020-01-01T00-00-00-000Z/velho.md')), 'velho\n');
   assert.ok((await snapshot(path.join(dir, '.opencrew-backup'))).some((f) => f.includes('obsoleto.md')));
+});
+
+// ── Extra cases found by the independent review of the code (2026-11-01) ───────────────────────
+
+test('U7F3-01i: what this run delivered is never an orphan, even if the package list came out empty', async () => {
+  const dir = await workspace();
+  const m = await manifesto(dir);
+  const ctx = newDelivery(dir, m);
+  ctx.files = { ...m.files }; // as after a run that delivered everything
+  const { removed, edited } = await removeOrphans(ctx, new Set());
+  assert.deepEqual([removed, edited], [[], []]);
+  assert.ok(await lerOuNada(aqui(dir, '_opencrew/core/system.md')), 'system.md stays');
+});
+
+test('U7F3-01j: odd keys never name an orphan: trailing slash, the folder itself, skills/.custom without a slash', () => {
+  for (const chave of ['_opencrew/core/system.md/', '_opencrew/core/', 'skills/', 'skills/.custom', 'skills/.custom/x/SKILL.md', '_opencrew/core/a//b.md', '_opencrew/core/./a.md']) {
+    assert.equal(candidateKey(chave), false, chave);
+  }
+  for (const chave of ['_opencrew/core/prompts/x.md', 'skills/canva/SKILL.md', '_opencrew/agents/a.agent.md', '_opencrew/config/c.json']) assert.equal(candidateKey(chave), true, chave);
+});
+
+test('U7F3-01k: a rename that only changes the case is one file, not an orphan', async () => {
+  const dir = await workspace();
+  await entregueAntes(dir, '_opencrew/core/prompts/Obsoleto.md', 'x\n');
+  const payload = await payloadKeys();
+  assert.deepEqual(await planOrphans(dir, await manifesto(dir), payload), { remove: ['_opencrew/core/prompts/Obsoleto.md'], edited: [] }, 'with no such file in the package it is an orphan');
+  payload.add('_opencrew/core/prompts/obsoleto.md'); // the package now ships the same name in lower case
+  assert.deepEqual(await planOrphans(dir, await manifesto(dir), payload), { remove: [], edited: [] });
+});
+
+test('U7F3-01l: an unedited orphan saved with CRLF is still unedited (the manifest hashes the text with LF)', async () => {
+  const dir = await workspace();
+  await entregueAntes(dir, ORFAO, 'linha 1\r\nlinha 2\r\n', { registrar: 'linha 1\nlinha 2\n' });
+  await carimboAntigo(dir);
+  await rodar(dir);
+  assert.equal(await lerOuNada(aqui(dir, ORFAO)), null);
+});
+
+test('U7F3-01g2: the whole skills/ folder gone: every catalog skill is uninstalled, nothing else is touched', async () => {
+  const dir = await workspace();
+  await fs.rm(aqui(dir, 'skills'), { recursive: true });
+  await carimboAntigo(dir);
+  const { out, code } = await rodar(dir);
+  assert.equal(code, 0);
+  await assert.rejects(() => fs.stat(aqui(dir, 'skills/canva')));
+  assert.match(out, /Skill desinstalada, não recriei: /);
+  assert.ok(await lerOuNada(aqui(dir, '_opencrew/core/system.md')));
 });
