@@ -55,9 +55,9 @@ Trusted Publishing (OIDC) no lugar do `NPM_TOKEN`, que expira (ação do dono no
 Actions fora do runtime Node 20 e fixadas por SHA (C-19), célula Node 24 (C-18, T-B14). A matriz é travada por
 `release-gate.test.js` e repetida no `CONTRIBUTING.md` e no `publish.yml`: mudar nos quatro lugares no mesmo commit.
 
-### F3 — `update` que reconcilia
+### F3 — `update` que reconcilia (spec: `fase-u7-f3-update-que-reconcilia.md`)
 `update` nunca remove arquivo que saiu do payload (C-27): usar o `manifest.json`, com cópia em `.opencrew-backup/`;
-marcador de fim apagado gera bloco duplicado e mistura LF/CRLF (C-26); `init` sobre workspace completo sem carimbo trata como
+(o C-26, marcador de fim apagado, **já estava corrigido** e coberto por teste: conferido em 2026-11-01; spec `fase-u7-f3-update-que-reconcilia.md`); `init` sobre workspace completo sem carimbo trata como
 "interrompido" e mistura versões: com `manifest.json`, delegar ao caminho do `update`; H3-11 (arquivo registrado no manifesto e não
 editado recebe a melhoria); T-M9 (desinstalar skill de catálogo é desfeito no `update`). Pré-requisito de qualquer divisão de prompt
 (F4, F10) e da reescrita dos agentes-base (F10).
@@ -135,7 +135,8 @@ contagens do README; `CHANGELOG.md` no tarball.
 | C-20, C-22, C-25 | `init`/`update`: alvo sem proteção, código morto, saída 0 sem workspace | F1 |
 | C-11, C-21 | `-y` × `--ide`; pilha de erro em falha parcial | já corrigidos no código (conferido em 2026-10-31); sem ação |
 | C-18, C-19, T-B14 | Node 24 na matriz, OIDC e SHA no publish | F2 |
-| C-26, C-27, H3-11, T-M9 | `update`: bloco duplicado, arquivo órfão, melhoria em arquivo não editado, desinstalação | F3 |
+| C-27, H3-11, T-M9 | `update`: arquivo órfão, melhoria em arquivo não editado, desinstalação | F3 |
+| C-26 | marcador de fim apagado gera bloco duplicado | já corrigido no código (`deliverBlock`, teste U3a-12i-f2; conferido em 2026-11-01); sem ação |
 | T-A8, T-A9, T-B7, T-B9, T-M15, H3-07, H3-16 | criação e investigação | F5 |
 | C-15, T-M12, T-M13, T-B5, T-B13, G-28 | textos e arestas do runner e do CLI | F6 |
 | T-A12, T-B10, T-B11, T-M7, T-M1, T-A1 | custo do `generate.py`, skills e segredos de MCP | F8 |
