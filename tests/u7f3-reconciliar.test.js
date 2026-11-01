@@ -182,12 +182,17 @@ test('U7F3-04c: a manifest version that is not a version (junk) is no installed 
   }
 });
 
-test('U7F3-05b: init does not write the stamp through a dangling link, and says so', async (t) => {
-  const dir = await workspace();
-  await fs.rm(aqui(dir, MANIFESTO));
-  await fs.rm(aqui(dir, CARIMBO));
-  if (!(await criarLink(path.join(dir, 'alvo-do-link.txt'), aqui(dir, CARIMBO)))) return t.skip('cannot create symbolic links here');
-  const out = await captureOutput(() => withCwd(dir, () => init({ ide: ['claude-code'] })));
-  assert.equal(await lerOuNada(path.join(dir, 'alvo-do-link.txt')), null, 'nothing was created on the other side of the link');
-  assert.match(out, /link simbólico: não gravei/);
+test('U7F3-05b: init does not write the manifest or the stamp through a dangling link, and says so', async (t) => {
+  // On Windows a dangling link counts as an existing file, so a dangling STAMP cannot leave the workspace
+  // "partial" there (init sees it complete and refuses): that case runs where it can arise.
+  const alvos = process.platform === 'win32' ? [MANIFESTO] : [MANIFESTO, CARIMBO];
+  for (const arquivo of alvos) {
+    const dir = await workspace();
+    await fs.rm(aqui(dir, MANIFESTO));
+    await fs.rm(aqui(dir, CARIMBO));
+    if (!(await criarLink(path.join(dir, 'alvo-do-link.txt'), aqui(dir, arquivo)))) return t.skip('cannot create symbolic links here');
+    const out = await captureOutput(() => withCwd(dir, () => init({ ide: ['claude-code'] })));
+    assert.equal(await lerOuNada(path.join(dir, 'alvo-do-link.txt')), null, `${arquivo}: nothing was created on the other side of the link`);
+    assert.match(out, /link simbólico: não gravei/, arquivo);
+  }
 });
