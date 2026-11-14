@@ -43,16 +43,18 @@ test('E1-07b: the README tree of installed folders shows escritorio/ and the scr
 
 test('E1-07b: the README no longer says the dashboard is not installed, nor cites the old app', () => {
   assert.doesNotMatch(readme, /dashboard\/index\.html|não é instalado|experimental/);
-  const mencoes = readme.split(/\r?\n/).filter((l) => /dashboard/i.test(l) && !/\/opencrew dashboard/.test(l));
+  const mencoes = readme.split(/\r?\n/).filter((l) => /dashboard/i.test(l) && !/\/opencrew dashboard|Dashboard:/.test(l));
   assert.deepEqual(mencoes, [], 'every mention of "dashboard" left in the README is the command');
 });
 
-test('E1 §9: CHANGELOG has the Escritório entry, whatever its title and place, and it tells what changes for the user', () => {
-  const entrada = ler('CHANGELOG.md').split(/^(?=## \[)/m).find((p) => p.includes('/opencrew dashboard') && p.includes('state.json')) ?? ''; // later entries cite the command too (E4)
+test('U7F3C §9: CHANGELOG records per-run state, default activation and update delivery', () => {
+  const entrada = ler('CHANGELOG.md').split(/^(?=## \[)/m).find((p) => p.includes('U7-F3c')) ?? '';
   assert.notEqual(entrada, '', 'CHANGELOG lacks the Escritório entry');
   const texto = flat(entrada);
   assert.match(texto, /`\/opencrew dashboard`/);
-  assert.match(texto, /`crews\/<crew>\/output\/<run>\/state\.json`/, 'the final state is no longer copied to the run folder');
+  assert.match(texto, /`output\/<run_id>\/estado-escritorio\.json`/, 'the office state is scoped to the run folder');
+  assert.match(texto, /Dashboard: disabled/);
+  assert.match(texto, /Dashboard: off/);
   assert.match(texto, /npx @aksp\/opencrew@latest update/);
 });
 

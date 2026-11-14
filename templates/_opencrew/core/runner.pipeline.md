@@ -34,7 +34,7 @@ Before starting execution:
    - Crew memory from `crews/{name}/_memory/memories.md`
    - User preferences from `_opencrew/_memory/preferences.md`
 
-1a. **Escritório toggle** — the optional live view is off unless `preferences.md` turns it on (see "Escritório" below).
+1a. **Escritório toggle** — the live view is on by default; only `Dashboard: off` disables it (see "Escritório" below).
 
 1b. **Memory format** — check, with the read tool (no command), whether `memories.md` has the
     `## Estilo de Escrita` section header. It has → proceed. It does not, or the file is empty or does not
@@ -100,11 +100,12 @@ Before starting execution:
 
 ## Escritório (optional live view)
 
-Only when the already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled`
-or plain `Dashboard: enabled`, any letter case): read `_opencrew/core/runner/escritorio.md` completely,
-once, and follow it at each moment it names (start of the run, each step, each checkpoint, end, abort).
-With the Dashboard off, read nothing and run none of its commands. Either way: never read, write or
-describe `crews/{name}/state.json` yourself, and a failure there never stops the run.
+Unless the already-loaded `preferences.md` has `Dashboard: off` (any letter case), read
+`_opencrew/core/runner/escritorio.md` completely once and follow it at each moment it names (start
+of `run` or confirmed `retomar`, each step, each checkpoint, end, abort). The legacy value
+`Dashboard: disabled` is on. With the explicit `off`, read nothing and run none of its commands.
+Either way, never read, write or describe `crews/{name}/state.json` or the per-run Office file
+yourself; a failure there never stops the run.
 
 ## Execution Rules
 

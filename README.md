@@ -60,8 +60,8 @@ dentro da sua IDE, nos arquivos do seu projeto.**
   quando falta um dado real, ela pergunta na aprovação final.
 - 🖥️ **Escritório ao vivo** — veja a equipe trabalhando numa sala em pixel-art, no navegador:
   quem está digitando, quem leva o trabalho ao colega (e o que diz), quem espera a sua resposta.
-  A sala tem o tamanho da equipe e segue o dia e a noite do seu relógio. Opcional, desligado por
-  padrão, só neste computador. Liga com `/opencrew dashboard`.
+  A sala tem o tamanho da equipe e segue o dia e a noite do seu relógio. Abre automaticamente ao
+  iniciar ou retomar uma execução; vem ligado por padrão e roda só neste computador.
 - 📂 **Crew que conhece o projeto** — liste em `fontes:` os arquivos e pastas do seu projeto
   (decisões, calendário, manual de marca) e a crew os lê em toda execução, tratando-os como
   verdade. Reorganizou as pastas? No início da execução ela confere os caminhos, acha para onde o arquivo foi
@@ -446,18 +446,23 @@ a última passagem de bastão.
 *Cada agente tem o seu personagem — feminino ou masculino, com corte de cabelo, tom de pele e cor
 dos olhos próprios —, e ele é sempre o mesmo, em qualquer execução.*
 
-**Como abrir:** no chat da sua IDE, digite `/opencrew dashboard`. O comando liga o Escritório,
-sobe a página e mostra o endereço — `http://127.0.0.1:4747`, ou a porta livre seguinte. A próxima
-execução de crew aparece ali; enquanto não há nenhuma, a página roda uma demonstração. Repetir o
-comando é seguro: ele devolve o mesmo endereço.
+**Abertura automática:** ao iniciar ou retomar uma crew, o OpenCrew abre o Escritório já apontado
+para aquela execução. Em Claude Code Desktop, Codex App e Antigravity App, usa o navegador
+integrado quando disponível; nos harnesses CLI, abre o navegador padrão do sistema e mostra um
+link clicável no chat. Um pedido avulso (`pedir`) também abre a sua execução, depois da
+confirmação do usuário. Se a sessão não puder abrir a página, o link continua disponível e o
+trabalho segue.
 
-**Depois de atualizar o OpenCrew com o Escritório aberto, feche-o e abra de novo.** O processo que
-ficou aberto não conhece os arquivos novos da página. Você é avisado três vezes: o `update` diz que
-achou o Escritório aberto, o `/opencrew dashboard` responde que ele "é de uma versão anterior", e a
-própria página diz qual arquivo faltou.
+Para abrir a visão geral manualmente, digite `/opencrew dashboard`. O comando inicia ou reutiliza
+um servidor local compatível e mostra o endereço — normalmente `http://127.0.0.1:4747`, ou outra
+porta livre. Sem uma execução selecionada, a página roda uma demonstração.
 
-Se a sua IDE não roda comando em segundo plano, ela mostra o comando para você rodar em outro
-terminal, na pasta do projeto:
+Depois de atualizar o OpenCrew, um servidor antigo continua aberto para as abas que já o usam.
+Uma execução nova inicia ou reutiliza o servidor da versão instalada, em outra porta se necessário;
+assim, cada aba existente continua na versão em que foi aberta e a nova execução recebe a página
+atualizada.
+
+Para iniciar a página manualmente em um terminal, na pasta do projeto:
 
 ```bash
 node _opencrew/core/scripts/escritorio.mjs            # Ctrl+C para fechar
@@ -468,10 +473,12 @@ Para desligar: `/opencrew dashboard off`.
 
 O que vale saber antes de ligar:
 
-- **Vem desligado.** Sem o `/opencrew dashboard`, nada muda nas suas execuções.
+- **Vem ligado.** `/opencrew dashboard off` grava `Dashboard: off` para desativar; o valor antigo
+  `Dashboard: disabled` continua valendo como ligado, sem o `update` reescrever suas preferências.
 - **Roda só neste computador, sem internet e sem medição.** A página é servida em `127.0.0.1`,
-  só lê o estado das suas crews (`crews/<crew>/state.json`), não carrega nada de fora e não envia
-  dado nenhum para lugar nenhum.
+  só lê o estado das suas crews: a visão geral também reconhece `state.json` antigo, e cada
+  execução nova grava `crews/<crew>/output/<run_id>/estado-escritorio.json`. Não carrega nada de
+  fora e não envia dado nenhum para lugar nenhum.
 - **Com ele ligado, cada passo custa um comando curto a mais.** É assim que a IA avisa o que está
   fazendo: um comando de terminal por passo. Em IDE que pede aprovação a cada comando, libere o
   `estado.mjs` uma vez.

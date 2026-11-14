@@ -9,11 +9,26 @@ AI agent crews. In that case, read \`_opencrew/core/system.md\` and follow its i
 command routing and workflow instructions. For anything else, the other instructions of this
 project take precedence.`;
 
+const LIVE_OFFICE = `
+
+## Live Escritório when a crew starts
+
+After a \`run\`, confirmed \`retomar\` or confirmed \`pedir\` has created its run folder and the
+per-run state reports \`ESTADO:OK\`, call
+\`node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"\`.
+Use the exact \`ESCRITORIO:URL\` it returns, open it with this harness's native Browser when
+available (Claude Code Desktop Browser pane, Codex App built-in Browser, or Antigravity browser
+agent), and show it as a clickable link in chat. In a CLI harness, add \`--externo\` to open the
+system browser. If an embedded Browser is unavailable, use the CLI fallback; if it fails for a
+technical reason, try \`--externo\`. A user refusal, host policy block or headless environment leaves
+the link for manual opening; never bypass the refusal or policy. If the server cannot start, say so
+once and continue the crew.`;
+
 const BRIDGE = `${ACTIVATION}
 
 If invoked with arguments (e.g. \`/opencrew create ...\`, \`/opencrew run ...\`),
 route to the matching action from the Command Routing table in \`_opencrew/core/system.md\`.
-If invoked without arguments, show the Main Menu.`;
+If invoked without arguments, show the Main Menu.${LIVE_OFFICE}`;
 
 // Claude Code needs one extra rule (checkpoints must use AskUserQuestion) and a
 // note that its own Playwright plugin must be off (opencrew ships its own via .mcp.json).
@@ -31,6 +46,9 @@ ${BRIDGE}
 - **Checkpoints MUST use \`AskUserQuestion\`** — never output a checkpoint question as plain text.
   Combine multiple questions into a single call (max 4 slots, each with 2–4 options).
 - Checkpoint steps always run inline (never dispatched as subagents).
+- In Claude Code Desktop, open the returned local URL in its native Browser pane as soon as the
+  Office command returns; do not ask for an extra click. If the pane fails technically, use the
+  system-browser fallback described above.
 - opencrew uses its own \`@playwright/mcp\` server (see \`.mcp.json\`). The native Claude Code
   Playwright plugin must be disabled to avoid conflicts.
 `;
@@ -46,6 +64,8 @@ Type \`/opencrew\` to open the main menu.
 ## Notes for Claude Code
 
 - All checkpoint questions use \`AskUserQuestion\`.
+- In Claude Code Desktop, open each returned local Escritório URL directly in the native Browser
+  pane; use the system-browser fallback only when that pane fails technically.
 - opencrew ships its own Playwright MCP (\`.mcp.json\`); disable the native Playwright plugin.
 - Do not manually edit files under \`_opencrew/core/\` unless you know what you're doing.
 `;
@@ -121,7 +141,7 @@ export const IDES = [
     files: [
       {
         path: '.agent/rules/opencrew.md',
-        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- This environment does not support background/parallel subagents. Run all tasks inline and\n  sequentially — never announce parallel work and then skip it.\n- Ask only one question per message; present options as a numbered list.\n`,
+        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- When Antigravity's integrated browser agent is available, use it to open the exact local Escritório URL as soon as it is returned and keep that page active during the run. If that browser mode is unavailable, use the system-browser fallback; if it fails technically, continue with the link.\n- This environment does not support background/parallel subagents. Run all tasks inline and\n  sequentially — never announce parallel work and then skip it.\n- Ask only one question per message; present options as a numbered list.\n`,
       },
       { path: '.agent/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${render('opencrew Workflow (Antigravity)')}` },
       // .agents/ (plural) — standard location for Antigravity 2.0+ and CLI.

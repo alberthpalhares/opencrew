@@ -13,7 +13,7 @@ const TETO_DA_SONDA = 1_000_000;
  * quem escuta a mesma porta em 0.0.0.0 ou `::` e toma o tráfego local dele: só a conexão mostra
  * que a porta tem dono. Porta livre recusa na hora; sem resposta dentro da espera, conta como livre.
  */
-function alguemEscuta(porta, esperaMs = 1000) {
+export function alguemEscuta(porta, esperaMs = 1000) {
   return new Promise((resolve) => {
     const conexao = net.connect({ host: LOCAL, port: porta });
     const fim = (escuta) => { conexao.destroy(); resolve(escuta); };
@@ -103,6 +103,23 @@ export async function procurar({ inicial, projeto, versao, abrir: tentar, sondar
     if (await tentar(porta)) return { tipo: 'aberto', porta, ultima };
     const quem = await perguntar(porta);
     if (quem?.projeto === projeto) return { tipo: quem.versao === versao ? 'ja-aberto' : 'desatualizado', porta, ultima };
+  }
+  return { tipo: 'sem-porta', ultima };
+}
+
+/**
+ * Busca primeiro uma instância compatível em todo o intervalo; só depois tenta iniciar em portas
+ * livres. Um serviço estranho ou um escritório antigo ocupa sua porta, mas nunca é encerrado.
+ */
+export async function procurarAutomatico({ inicial, projeto, versao, sondar: perguntar = sondarEstado, ocupada = alguemEscuta, tentarAbrir, confirmar = async () => true, tentativas = 10 }) {
+  const ultima = Math.min(inicial + tentativas - 1, ULTIMA_PORTA);
+  for (let porta = inicial; porta <= ultima; porta++) {
+    const quem = await perguntar(porta);
+    if (quem?.projeto === projeto && quem.versao === versao) return { tipo: 'ja-aberto', porta, ultima };
+  }
+  for (let porta = inicial; porta <= ultima; porta++) {
+    if (await ocupada(porta)) continue;
+    if (await tentarAbrir(porta) && await confirmar(porta)) return { tipo: 'aberto', porta, ultima };
   }
   return { tipo: 'sem-porta', ultima };
 }

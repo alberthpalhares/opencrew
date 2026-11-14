@@ -1,37 +1,29 @@
-# Escritório (optional live view)
+# Escritório por execução
 
-> Part of the Pipeline Runner (`_opencrew/core/runner.pipeline.md`). Read it only when `preferences.md` has `Dashboard: enabled`.
+> Part of the Pipeline Runner (`_opencrew/core/runner.pipeline.md`). Read it when the Office is on.
 
-A local page that shows the crew at work, off by default. Follow this part only when the
-already-loaded `preferences.md` has `Dashboard: enabled` (written `- **Dashboard:** enabled` or
-plain `Dashboard: enabled`, any letter case); otherwise run none of these commands. When it is on,
-run, from the project root, the one-line command of each moment:
+The Escritório is on by default; only `Dashboard: off` disables it. Legacy `Dashboard: disabled` is on, so an update activates old projects without changing preferences. When on, run these commands from the project root:
 
 | Moment | Command |
 |---|---|
-| Start of the run (Initialization, step 6) | `node _opencrew/core/scripts/estado.mjs "{name}" iniciar --passos {N}` |
-| Right after `iniciar`, once per deselected agent | `node _opencrew/core/scripts/estado.mjs "{name}" pular --agente {id}` |
-| Before each step, each time it starts | `node _opencrew/core/scripts/estado.mjs "{name}" passo --n {K} --agente {id} --rotulo "{rótulo}" --mensagem "{frase}"` |
-| Before asking the question of a checkpoint (instead of `passo`) | `node _opencrew/core/scripts/estado.mjs "{name}" checkpoint --n {K} --agente {id} --rotulo "{rótulo}"` |
-| End of the run (After Pipeline Completion) | `node _opencrew/core/scripts/estado.mjs "{name}" concluir` |
-| Run aborted after `iniciar`, by the user or by an error | `node _opencrew/core/scripts/estado.mjs "{name}" falhar --motivo "{motivo}"` |
+| Start of `run` or confirmed `retomar` | `node _opencrew/core/scripts/estado.mjs "{name}" iniciar --run "{run_id}" --passos {N}` |
+| Start of `pedir`, after the user's confirmation | `node _opencrew/core/scripts/estado.mjs "{name}" iniciar --run "{run_id}" --pedido --agente {worker_id} --passos {N}` |
+| Right after `iniciar`, once per deselected agent | `node _opencrew/core/scripts/estado.mjs "{name}" pular --run "{run_id}" --agente {id}` |
+| Before each pipeline step or checkpoint | `node _opencrew/core/scripts/estado.mjs "{name}" {passo or checkpoint} --run "{run_id}" --n {K} --agente {id} --rotulo "{label}" --mensagem "{message}"` |
+| Before work or review in a pedido | `node _opencrew/core/scripts/estado.mjs "{name}" passo --run "{run_id}" --pedido --n {K} --agente {worker_or_reviewer_id} --rotulo "{label}"` |
+| End of the run | `node _opencrew/core/scripts/estado.mjs "{name}" concluir --run "{run_id}"` |
+| Run aborted after `iniciar` | `node _opencrew/core/scripts/estado.mjs "{name}" falhar --run "{run_id}" --motivo "{reason}"` |
 
-- **One at a time** — Run these commands one at a time, waiting for the `ESTADO:` line of each
-  before the next — never in parallel or in the background (each one reads and rewrites the same file).
-- **Values** — `{name}`: the crew code. `{N}`: how many steps will run, checkpoints included (a
-  deselected agent's steps do not count). `{K}`: the step's position among them, from 1. `{id}`: the step's `agent:` value (the same text as the agent's `id` column in
-  `crew-party.csv`); a step or checkpoint with no `agent:` goes without `--agente`
-  (the table shows the full form). `{rótulo}`: the step's name, in
-  a few words. `--mensagem` goes only when the agent changed since the last `passo` (so never on the first
-  one): one sentence on what the previous agent delivered — never look at the next step. `{motivo}`: why the run stopped.
-- **Text on the command line** — `--rotulo`, `--mensagem` and `--motivo` go between double quotes,
-  on one line, starting with a letter or a digit, with only letters (accents included), digits,
-  spaces and `. , : ; - ( ) / ?`. Drop every other sign (quotes of any kind, `$`, backtick, `\`,
-  `%`, `!`, emoji). If no text is left, omit the option. Write them in the user's language.
-- **After `iniciar`**, when it answers `ESTADO:OK`, show the user once:
-  `Escritório ligado. Se a página não estiver aberta, rode em outro terminal: node _opencrew/core/scripts/escritorio.mjs`
-- **The Escritório never stops the run.** A command that fails, does not run or answers
-  `ESTADO:IGNORADO`: go on, do not repeat that event, ask nothing, and tell the user once per run,
-  in one line: `O escritório não foi atualizado nesta execução; o trabalho segue normalmente.` With
-  the reason "escritório desligado", say nothing and stop calling the script for the rest of this run.
-- The script is the only writer: never read, write or describe `crews/{name}/state.json` yourself.
+After the first `ESTADO:OK`, ensure the server and obtain the targeted URL:
+
+```
+node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"
+```
+
+It returns `ESCRITORIO:URL` only after `/estado` confirms this project and installed version. Open that URL in the app's native Browser when available (Claude Code Desktop Browser pane, Codex App built-in Browser, or Antigravity browser agent); in a CLI, or when the embedded Browser is unavailable, add `--externo` to open the system browser. Show the URL as a clickable link in chat. If the embedded Browser fails technically, try `--externo`; if the user refuses, host policy blocks navigation, or no graphical browser is available, leave the link manual and continue. Never bypass a refusal or policy block. On `ESCRITORIO:INDISPONIVEL`, tell the user once and continue.
+
+- **One event at a time:** wait for each `ESTADO:` line before the next. Per-run events write `crews/{name}/output/{run_id}/estado-escritorio.json`; this keeps simultaneous runs apart. Use the `run_id` from `CAMINHO:OK` or `EXECUCAO:RETOMAR`; never create one yourself.
+- **Pedido agents:** pass `--pedido` on every pedido event and the selected worker or reviewer in `--agente`; never infer it from pipeline step numbers.
+- **Values:** `{name}` is the crew code; `{N}` is the run's step count; `{K}` is the current step; `{id}`: the step's `agent:` value (the same text as the agent's `id` column in `crew-party.csv`) for `run`/`retomar`; a pedido uses the selected worker or reviewer id from that file. `{label}`, `{message}` and `{reason}` are one-line user-language text with letters (including accents), digits, spaces and `. , : ; - ( ) / ?`; drop quotes, `$`, backticks, `\`, `%`, `!` and emoji. `{message}` says what the previous agent delivered and is used only when the agent changed. Omit empty text options.
+- The script is the only writer. Never read, write or describe the per-run file or legacy `crews/{name}/state.json` yourself.
+- **The Escritório never stops the run.** Do not repeat a failed command or `ESTADO:IGNORADO`; tell the user once that the run's Office was not updated, then continue. If it says `escritório desligado`, make no more Office calls for that run.

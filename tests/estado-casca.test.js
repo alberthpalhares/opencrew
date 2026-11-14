@@ -125,7 +125,7 @@ test('E1-02c: a crew that does not exist, or outside crews/ — exit 1, no ESTAD
     await fs.writeFile(path.join(pasta, 'crew-party.csv'), CSV);
   }
   const antes = await snapshot(raiz);
-  const fora = ['../fora', '../../fora', path.join(raiz, 'fora')].map((crew) => [crew, `Caminho fora do projeto: ${crew}`]);
+  const fora = ['../fora', '../../fora', path.join(raiz, 'fora')].map((crew) => [crew, `Caminho fora do projeto: ${crew.slice(0, 120)}`]);
   const casos = [['nao-existe', 'Crew não encontrada: nao-existe'], ['teste/agents', 'Crew não encontrada: teste/agents'], ...fora];
   for (const [crew, motivo] of casos) {
     for (const evento of [['iniciar', '--passos', '3'], ['passo', '--n', '1', '--agente', 'a']]) {
@@ -199,27 +199,37 @@ test('E1-02f: after a whole sequence of events the only new or changed file is s
 });
 
 const SEIS = [['iniciar', '--passos', '3'], ['passo', '--n', '1', '--agente', 'a'], ['checkpoint'], ['pular', '--agente', 'c'], ['concluir'], ['falhar']];
-const DESLIGADOS = { 'no preferences.md': null, 'no Dashboard line': '# opencrew Preferences\n\n- **User Name:** Ana\n', 'Dashboard: disabled': '- **Dashboard:** disabled\n' };
-for (const [caso, preferencia] of Object.entries(DESLIGADOS)) {
-  test(`E1-02g: ${caso} — no event creates a file, not even iniciar; the "desligado" line, exit 0`, async (t) => {
-    for (const estado of [null, CORTADO, '{ "crew": "teste", "status": "running", "agents": [] }']) {
-      const raiz = await projeto(t, { preferencia, estado });
-      const antes = await snapshot(raiz);
-      for (const argv of SEIS) assert.deepEqual(await rodar(raiz, argv), { code: 0, linhas: [DESLIGADO] });
-      assert.deepEqual(await snapshot(raiz), antes);
-    }
+const LIGADOS_POR_PADRAO = { 'no preferences.md': null, 'no Dashboard line': '# opencrew Preferences\n\n- **User Name:** Ana\n', 'Dashboard: disabled (legacy)': '- **Dashboard:** disabled\n' };
+for (const [caso, preferencia] of Object.entries(LIGADOS_POR_PADRAO)) {
+  test(`E1-02g: ${caso} keeps the Escritório on`, async (t) => {
+    const raiz = await projeto(t, { preferencia });
+    assert.deepEqual(await rodar(raiz, ['iniciar', '--passos', '3']), { code: 0, linhas: [OK] });
+    assert.equal((await ler(raiz)).status, 'running');
   });
 }
 
-test('E1-02g: the two forms of the line turn the office on, in any letter case; anything else does not', async (t) => {
+test('E1-02g: only Dashboard: off suppresses every write, even with an existing state', async (t) => {
+  const preferencia = '- **Dashboard:** off\n';
+  for (const estado of [null, CORTADO, '{ "crew": "teste", "status": "running", "agents": [] }']) {
+    const raiz = await projeto(t, { preferencia, estado });
+    const antes = await snapshot(raiz);
+    for (const argv of SEIS) assert.deepEqual(await rodar(raiz, argv), { code: 0, linhas: [DESLIGADO] });
+    assert.deepEqual(await snapshot(raiz), antes);
+  }
+});
+
+test('E1-02g: enabled and legacy preference values keep the office on in any letter case', async (t) => {
   for (const linha of ['- **Dashboard:** enabled', 'Dashboard: enabled', '- **DASHBOARD:** ENABLED', 'dashboard: Enabled']) {
     const raiz = await projeto(t, { preferencia: `# opencrew Preferences\r\n\r\n- **Default Tier:** standard\r\n${linha}\r\n` });
     assert.deepEqual((await rodar(raiz, ['iniciar'])).linhas, [OK], linha);
     assert.equal((await ler(raiz)).status, 'running', linha);
   }
   assert.deepEqual((await rodar(await projeto(t, { preferencia: '\uFEFF- **Dashboard:** enabled' }), ['iniciar'])).linhas, [OK]); // the line alone, after a byte order mark
-  const desligam = ['- **Dashboard:** enabledx\n', 'Dashboard: disabled\nenabled\n', '<!-- Dashboard: enabled -->\n- **Dashboard:** disabled\n'];
-  for (const texto of desligam) assert.deepEqual((await rodar(await projeto(t, { preferencia: texto }), ['iniciar'])).linhas, [DESLIGADO], texto);
+  const legadoEValores = ['- **Dashboard:** enabledx\n', 'Dashboard: disabled\nenabled\n', '<!-- Dashboard: enabled -->\n- **Dashboard:** disabled\n'];
+  for (const texto of legadoEValores) assert.deepEqual((await rodar(await projeto(t, { preferencia: texto }), ['iniciar'])).linhas, [OK], texto);
+  for (const texto of ['- **Dashboard:** off\n', 'Dashboard: OFF\n']) {
+    assert.deepEqual((await rodar(await projeto(t, { preferencia: texto }), ['iniciar'])).linhas, [DESLIGADO], texto);
+  }
 });
 
 test('E1-02h: a rename refused twice with EPERM passes on the third try — the state is written', async (t) => {

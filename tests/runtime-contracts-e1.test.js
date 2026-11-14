@@ -26,43 +26,41 @@ const tem = (onde, frase) => assert.ok(onde.includes(frase), `missing: ${frase}`
 
 const SCRIPT = 'node _opencrew/core/scripts/estado.mjs "{name}"';
 const COMANDOS = {
-  iniciar: `${SCRIPT} iniciar --passos {N}`,
-  pular: `${SCRIPT} pular --agente {id}`,
-  passo: `${SCRIPT} passo --n {K} --agente {id} --rotulo "{rótulo}" --mensagem "{frase}"`,
-  checkpoint: `${SCRIPT} checkpoint --n {K} --agente {id} --rotulo "{rótulo}"`,
-  concluir: `${SCRIPT} concluir`,
-  falhar: `${SCRIPT} falhar --motivo "{motivo}"`,
+  iniciarRun: `${SCRIPT} iniciar --run "{run_id}" --passos {N}`,
+  iniciarPedido: `${SCRIPT} iniciar --run "{run_id}" --pedido --agente {worker_id} --passos {N}`,
+  pular: `${SCRIPT} pular --run "{run_id}" --agente {id}`,
+  passoPipeline: `${SCRIPT} {passo or checkpoint} --run "{run_id}" --n {K} --agente {id} --rotulo "{label}" --mensagem "{message}"`,
+  passoPedido: `${SCRIPT} passo --run "{run_id}" --pedido --n {K} --agente {worker_or_reviewer_id} --rotulo "{label}"`,
+  concluir: `${SCRIPT} concluir --run "{run_id}"`,
+  falhar: `${SCRIPT} falhar --run "{run_id}" --motivo "{reason}"`,
 };
-const EVENTOS = Object.keys(COMANDOS);
+const EVENTOS = ['iniciar', 'pular', 'passo', 'checkpoint', 'concluir', 'falhar'];
 
 // The "moment → command" table: [moment, command] of every row that runs the script.
 const tabela = linhas(escritorio)
   .filter((l) => l.startsWith('|') && l.includes('estado.mjs'))
   .map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
-const momento = Object.fromEntries(tabela.map(([m, c]) => [c.match(/" (\w+)/)?.[1], m]));
 
 // ── E1-03a The runner calls the script; it does not write the state (rules 9 and 10) ──
 
-test('E1-03a: one section has the moment → command table: the six events, one exact one-line command each', () => {
+test('U7F3C-05a: the Office table starts pipeline, resume and pedido with their exact run_id', () => {
   assert.ok(escritorio, 'the runner has no "## Escritório" section');
   assert.deepEqual(tabela.map(([, comando]) => comando), Object.values(COMANDOS).map((c) => `\`${c}\``));
 });
 
-test('E1-03a: the six moments are the ones of rule 10', () => {
-  assert.deepEqual(Object.keys(momento), EVENTOS);
-  assert.match(momento.iniciar, /^Start of the run/);
-  assert.match(momento.pular, /^Right after `iniciar`, once per deselected agent/);
-  assert.match(momento.passo, /^Before each step/);
-  assert.match(momento.checkpoint, /^Before asking the question of a checkpoint/);
-  assert.match(momento.concluir, /^End of the run/);
-  assert.match(momento.falhar, /^Run aborted/);
+test('U7F3C-05a: each run type has an opening moment after its existing confirmation', () => {
+  assert.match(tabela[0][0], /^Start of `run` or confirmed `retomar`/);
+  assert.match(tabela[1][0], /^Start of `pedir`, after the user's confirmation/);
+  assert.match(tabela[2][0], /^Right after `iniciar`, once per deselected agent/);
+  assert.match(tabela[3][0], /^Before each pipeline step or checkpoint/);
+  assert.match(tabela[5][0], /^End of the run/);
+  assert.match(tabela[6][0], /^Run aborted/);
 });
 
-test('E1-03a: every command depends on Dashboard: enabled, in the two forms preferences.md may have', () => {
-  tem(texto, 'only when the already-loaded `preferences.md` has `Dashboard: enabled`');
-  tem(texto, '`- **Dashboard:** enabled`');
-  tem(texto, 'plain `Dashboard: enabled`');
-  tem(texto, 'otherwise run none of these commands');
+test('U7F3C-01a: every command is on by default and Dashboard: off disables the Escritório', () => {
+  tem(texto, 'Unless the already-loaded `preferences.md` has `Dashboard: off`');
+  tem(texto, 'The legacy value `Dashboard: disabled` is on');
+  tem(texto, 'With the explicit `off`, read nothing and run none of its commands');
 });
 
 test('E1-03a: outside the section the script is never called; the old points keep a one-line conditional reminder', () => {
@@ -85,9 +83,10 @@ test('E1-03a: the runner does not describe the JSON', () => {
 test('E1-03a: the runner does not tell the AI to write, read or copy state.json', () => {
   assert.doesNotMatch(fora, /state\.json/, 'state.json is mentioned outside the Escritório section');
   // Since U5-2: once in the stub that stays in the core and once in the part, both times to forbid it.
-  assert.equal(escritorio.split('state.json').length - 1, 2, 'state.json is named in the stub and in the part, to forbid it');
-  tem(flat(nucleo), 'never read, write or describe `crews/{name}/state.json` yourself');
-  tem(texto, 'The script is the only writer: never read, write or describe `crews/{name}/state.json` yourself.');
+  assert.ok(escritorio.includes('estado-escritorio.json'), 'per-run state must be described');
+  tem(flat(nucleo), 'never read, write or describe `crews/{name}/state.json`');
+  tem(texto, 'The script is the only writer. Never read, write or describe');
+  tem(texto, '`crews/{name}/output/{run_id}/estado-escritorio.json`');
 });
 
 test('E1-03a: there is no handoff event', () => {
@@ -95,40 +94,40 @@ test('E1-03a: there is no handoff event', () => {
   assert.doesNotMatch(runner, /`handoff`|"handoff"|no handoff\b/);
 });
 
-test('E1-03a: --agente is the id column of crew-party.csv and --passos counts the steps that will run', () => {
-  tem(texto, "`{id}`: the step's `agent:` value (the same text as the agent's `id` column in `crew-party.csv`)"); // E4, rule 11
-  tem(texto, 'with no `agent:` goes without `--agente`');
-  tem(texto, '`{N}`: how many steps will run');
-  tem(texto, "`{K}`: the step's position among them, from 1");
+test('U7F3C-03c: pedido events use the selected agent and never infer from the pipeline step number', () => {
+  tem(texto, 'pass `--pedido` on every pedido event');
+  tem(texto, 'never infer it from pipeline step numbers');
+  tem(texto, '`{id}`: the step\'s `agent:` value (the same text as the agent\'s `id` column in `crew-party.csv`) for `run`/`retomar`; a pedido uses the selected worker or reviewer id from that file');
 });
 
-test('E1-03a: when the agent changes, passo carries one sentence on what the previous agent delivered', () => {
-  tem(texto, '`--mensagem` goes only when the agent changed since the last `passo`');
-  tem(texto, 'one sentence on what the previous agent delivered');
-  tem(texto, 'never look at the next step');
+test('E1-03a: a pipeline handoff keeps its optional transfer message', () => {
+  tem(texto, '--mensagem "{message}"');
+  tem(texto, '`{message}` says what the previous agent delivered');
 });
 
 // What a real run showed a literal AI gets wrong (2026-10-06): the total without the checkpoints,
 // --agente on a step that has no agent, --mensagem on the very first passo.
 test('E1 (review): --passos counts the checkpoints, a step or checkpoint without agent drops --agente, the first passo has no --mensagem', () => {
-  tem(texto, "`{N}`: how many steps will run, checkpoints included (a deselected agent's steps do not count)");
-  tem(texto, 'a step or checkpoint with no `agent:` goes without `--agente` (the table shows the full form)');
-  tem(texto, 'since the last `passo` (so never on the first one): one sentence');
+  assert.match(texto, /\{N\}.*step count/);
+  tem(texto, '`{K}` is the current step');
+  tem(texto, 'used only when the agent changed');
 });
 
 test('E1-03a: the runner carries the character list of rule 10', () => {
-  tem(texto, '`--rotulo`, `--mensagem` and `--motivo` go between double quotes, on one line, starting with a letter or a digit');
-  tem(texto, 'with only letters (accents included), digits, spaces and `. , : ; - ( ) / ?`');
-  tem(texto, 'Drop every other sign (quotes of any kind, `$`, backtick, `\\`, `%`, `!`, emoji).');
-  tem(texto, 'If no text is left, omit the option.');
+  tem(texto, 'one-line user-language text');
+  tem(texto, 'letters (including accents), digits, spaces and `. , : ; - ( ) / ?`');
+  tem(texto, 'drop quotes, `$`, backticks, `\\`, `%`, `!` and emoji');
+  tem(texto, 'Omit empty text options.');
 });
 
 test('E1-03a: after iniciar the runner shows the "Runner, início" line of §6, once', () => {
-  tem(texto, 'show the user once: `Escritório ligado. Se a página não estiver aberta, rode em outro terminal: node _opencrew/core/scripts/escritorio.mjs`');
+  tem(texto, 'After the first `ESTADO:OK`, ensure the server and obtain the targeted URL');
+  tem(texto, 'Show the URL as a clickable link in chat');
 });
 
 test('E1 (review): the commands run one at a time, each waiting for the ESTADO: line of the one before, never in parallel', () => {
-  tem(texto, 'Run these commands one at a time, waiting for the `ESTADO:` line of each before the next — never in parallel or in the background (each one reads and rewrites the same file).');
+  tem(texto, 'One event at a time');
+  tem(texto, 'wait for each `ESTADO:` line before the next');
   tem(flat(fora), 'run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below)');
 });
 
@@ -136,12 +135,12 @@ test('E1 (review): the commands run one at a time, each waiting for the ESTADO: 
 
 test('E1-03b: a command that fails does not stop the run: no repeat, no question, one warning per run (§6)', () => {
   tem(texto, '**The Escritório never stops the run.**');
-  tem(texto, 'A command that fails, does not run or answers `ESTADO:IGNORADO`: go on, do not repeat that event, ask nothing, and tell the user once per run');
-  tem(texto, '`O escritório não foi atualizado nesta execução; o trabalho segue normalmente.`');
+  tem(texto, 'Do not repeat a failed command or `ESTADO:IGNORADO`');
+  tem(texto, 'then continue');
 });
 
 test('E1-03b: "escritório desligado" gives no warning and ends the calls for that run', () => {
-  tem(texto, 'With the reason "escritório desligado", say nothing and stop calling the script for the rest of this run.');
+  tem(texto, 'If it says `escritório desligado`, make no more Office calls for that run.');
 });
 
 // ── E1-03d The other prompts leave the state to the script ──────────────────────────
@@ -161,18 +160,16 @@ test('E1 regra 12: /opencrew dashboard changes only the Dashboard line of prefer
   tem(painel, 'if the file has no `Dashboard` line, add it at the end');
 });
 
-test('E1 regra 12: it starts the server in the background, shows the address and says the next run appears there', () => {
-  tem(painel, 'Start `node _opencrew/core/scripts/escritorio.mjs` in the background');
-  tem(painel, 'Show the address and tell the user that the next crew run appears there');
+test('U7F3C-02a: manual dashboard route starts or reuses the confirmed server and opens its address', () => {
+  tem(painel, 'Start `node _opencrew/core/scripts/escritorio.mjs --automatico` from the project root');
+  tem(painel, 'starts or reuses a confirmed server in the background and prints its URL');
+  tem(painel, 'open it in the harness Browser when available');
 });
 
-test('E1 regra 12: an IDE without background processes hands the command over; repeating the route is safe', () => {
-  tem(painel, 'cannot keep a process running in the background');
-  tem(painel, 'to run in another terminal');
-  tem(painel, 'again is safe');
-  tem(painel, 'the same address');
+test('U7F3C-02c: an old server stays available while the current version uses another port', () => {
+  tem(painel, 'An older server stays available on its port while the current version uses another one');
 });
 
-test('E1 regra 12: /opencrew dashboard off writes disabled and touches nothing else', () => {
-  tem(painel, '**`/opencrew dashboard off`** — write `- **Dashboard:** disabled` the same way (only that line) and touch nothing else');
+test('U7F3C-01b: /opencrew dashboard off writes off and touches nothing else', () => {
+  tem(painel, '**`/opencrew dashboard off`** — write `- **Dashboard:** off` the same way (only that line) and touch nothing else');
 });

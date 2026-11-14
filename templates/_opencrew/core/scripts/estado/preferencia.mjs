@@ -1,4 +1,4 @@
-// O escritório está ligado? A preferência mora em `_opencrew/_memory/preferences.md`.
+// O escritório está ligado por padrão; só `Dashboard: off` é uma desativação explícita.
 // Spec: fase-e1-escritorio-ao-vivo.md, regra 9 (repositório do OpenCrew).
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -12,13 +12,13 @@ const LINHA = /^[ \t]*(?:[-*+][ \t]+)?(?:\*\*)?dashboard(?:\*\*)?:(?:\*\*)?[ \t]
  * de ordem de bytes que o PowerShell do Windows e alguns editores gravam no início do arquivo não
  * faz parte da linha.
  */
-export const ligadoNoTexto = (texto) => texto.replace(/^\uFEFF/, '').match(LINHA)?.[1].toLowerCase() === 'enabled';
+export const ligadoNoTexto = (texto) => texto.replace(/^\uFEFF/, '').match(LINHA)?.[1].toLowerCase() !== 'off';
 
-/** Desligado por padrão: sem o arquivo, sem a linha ou com outro valor, a resposta é `false`. */
+/** Ausência e `disabled` são legado ligado; somente `off` respeita a desativação explícita. */
 export async function escritorioLigado(raiz) {
   try {
     return ligadoNoTexto(await fs.readFile(path.join(raiz, '_opencrew', '_memory', 'preferences.md'), 'utf8'));
   } catch {
-    return false;
+    return true;
   }
 }

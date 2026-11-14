@@ -6,7 +6,8 @@ export const USO = 'Uso: node _opencrew/core/scripts/estado.mjs <crew> <evento> 
 /** Teto, em caracteres visíveis, de `--rotulo`, `--mensagem` e `--motivo`. */
 export const TETO = 120;
 
-const OPCAO = /^--(passos|n|agente|rotulo|mensagem|motivo)(?:=(.*))?$/s;
+const OPCAO = /^--(passos|n|agente|rotulo|mensagem|motivo|run|pedido)(?:=(.*))?$/s;
+const SEM_VALOR = new Set(['pedido']);
 const QUEBRA = /[\r\n\v\f\u0085\u2028\u2029]+/g;
 const segmentador = new Intl.Segmenter('pt', { granularity: 'grapheme' });
 
@@ -38,14 +39,16 @@ function converter(cru) {
     rotulo: limparTexto(cru.rotulo ?? ''),
     mensagem: limparTexto(cru.mensagem ?? ''),
     motivo: limparTexto(cru.motivo ?? ''),
+    run: typeof cru.run === 'string' ? cru.run : null,
+    pedido: Boolean(cru.pedido),
   };
 }
 
 /**
- * `argv` → `{ crew, evento, opcoes: { passos, n, agente, rotulo, mensagem, motivo } }`. Os dois
+ * `argv` → `{ crew, evento, opcoes: { passos, n, agente, rotulo, mensagem, motivo, run, pedido } }`. Os dois
  * primeiros argumentos soltos são a crew e o evento (indefinidos, se faltam). Opção vale como
  * `--nome valor` e `--nome=valor`; opção sem valor (a última, ou seguida de outra opção) não
- * consome o argumento seguinte.
+ * consome o argumento seguinte; `--pedido` não leva valor.
  */
 export function lerArgs(argv) {
   const soltos = [];
@@ -53,6 +56,7 @@ export function lerArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const [, nome, colado] = argv[i].match(OPCAO) ?? [];
     if (!nome) soltos.push(argv[i]);
+    else if (SEM_VALOR.has(nome)) cru[nome] = true;
     else if (colado !== undefined) cru[nome] = colado;
     else if (i + 1 < argv.length && !OPCAO.test(argv[i + 1])) cru[nome] = argv[++i];
   }

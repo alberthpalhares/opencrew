@@ -34,6 +34,7 @@
   .marca { font: 700 14px/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ambar); }
   .marca::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 10px; background: var(--ambar); box-shadow: 4px 4px 0 var(--poco); }
   .crew { font: 700 18px/1.2 var(--mono); overflow-wrap: anywhere; }
+  .run { color: var(--apagado); font: 11px/1.4 var(--mono); overflow-wrap: anywhere; }
   .seletor { margin-left: auto; font: 12px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--apagado); }
   .seletor select { max-width: 60vw; margin-left: 6px; padding: 4px 8px; font: 700 13px var(--mono); color: var(--texto); background: var(--poco); border: 2px solid var(--borda); border-radius: 0; }
   .seletor select:focus-visible { outline: 2px solid var(--ambar); outline-offset: 2px; }
@@ -157,6 +158,7 @@
 <header class="topo">
   <h1 class="marca">Escritório</h1>
   <p class="crew" id="crew" hidden></p>
+  <p class="run" id="run" hidden></p>
   <label class="seletor" id="seletor-caixa" hidden>Crew em exibição <select id="seletor"></select></label>
 </header>
 <p class="abertura" id="abertura">Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.</p>

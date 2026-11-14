@@ -66,6 +66,7 @@ export function normalizar(bruto) {
   if (!ehObjeto(bruto) || !Array.isArray(bruto.agents)) return null;
   return {
     crew: texto(bruto.crew),
+    runId: texto(bruto.runId),
     status: STATUS_DE_EXECUCAO.includes(bruto.status) ? bruto.status : 'running',
     step: lerPasso(bruto.step),
     agents: bruto.agents.filter(ehObjeto).map(lerAgente),

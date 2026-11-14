@@ -26,7 +26,7 @@ const ESPERADAS = ['contrato-de-saida.md', 'correcao-no-checkpoint.md', 'escrito
 const CONDICAO = {
   'selecao-de-agentes.md': 'ONLY if `crew.yaml` declares an `agent_dependencies:` field',
   'memoria.md': 'whether `memories.md` has the `## Estilo de Escrita` section header',
-  'escritorio.md': 'Only when the already-loaded `preferences.md` has `Dashboard: enabled`',
+  'escritorio.md': 'Unless the already-loaded `preferences.md` has `Dashboard: off`',
   'tarefas-do-agente.md': 'Only when the agent\'s `.agent.md` frontmatter contains a `tasks:` field',
   'contrato-de-saida.md': 'Only when the step\'s frontmatter declares an `output_contract:` field',
   'fontes-pendentes.md': 'Otherwise (`FONTES:PENDENTE`, or the script did not run)',
@@ -83,7 +83,7 @@ test('U5b-02b: each stub carries the exact condition that makes the AI read the 
   }
   const texto = flat(nucleo);
   assert.ok(texto.includes('If the field is absent, read nothing: run ALL agents, with no selection step.'));
-  assert.ok(texto.includes('With the Dashboard off, read nothing and run none of its commands.'));
+  assert.ok(texto.includes('With the explicit `off`, read nothing and run none of its commands.'));
   assert.ok(texto.includes('Never skip it, and never write the memory or the history from what you remember of it.'));
 });
 
@@ -93,13 +93,15 @@ test('U5b-03b: the safe-name rule and Output Path Transformation stay headings o
   assert.ok(nucleo.indexOf('## Safe names in commands (nome seguro)') < nucleo.indexOf('node _opencrew/core/scripts/'), 'the safe-name rule must come before the first command');
 });
 
-test('U5b-03c: estado.mjs is not in the core; its six commands are in the part; the stub forbids touching state.json', () => {
+test('U7F3C-03a: estado.mjs is only in the part; it covers pipeline and pedido events', () => {
   assert.ok(!nucleo.includes('estado.mjs'), 'the core still names estado.mjs');
   const escritorio = parte('escritorio.md');
-  for (const evento of ['iniciar', 'pular', 'passo', 'checkpoint', 'concluir', 'falhar']) {
+  for (const evento of ['iniciar', 'pular', 'concluir', 'falhar']) {
     assert.ok(escritorio.includes(`node _opencrew/core/scripts/estado.mjs "{name}" ${evento}`), `no command for ${evento} in the part`);
   }
-  assert.ok(flat(nucleo).includes('never read, write or describe `crews/{name}/state.json` yourself, and a failure there never stops the run'));
+  assert.ok(escritorio.includes('node _opencrew/core/scripts/estado.mjs "{name}" {passo or checkpoint}'), 'pipeline step command missing');
+  assert.ok(escritorio.includes('node _opencrew/core/scripts/estado.mjs "{name}" passo --run "{run_id}" --pedido'), 'pedido step command missing');
+  assert.ok(flat(nucleo).includes('never read, write or describe `crews/{name}/state.json` or the per-run Office file yourself; a failure there never stops the run'));
 });
 
 test('U5b-03d: the commands written in the core are the ones of the other five scripts', () => {

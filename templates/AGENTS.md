@@ -108,24 +108,24 @@ When running a crew:
 ## Dashboard (Optional)
 
 The dashboard is the **Escritório**: a local page that shows the crew at work, step by step.
-It is **disabled by default**. The switch is the `Dashboard` line of
-`_opencrew/_memory/preferences.md`; while it says `enabled`, the Pipeline Runner reports each
-step with one short command (see `_opencrew/core/runner.pipeline.md`).
+It is **enabled by default**. Only `Dashboard: off` in `_opencrew/_memory/preferences.md` disables
+it; `Dashboard: disabled` from older installs is treated as enabled. The Pipeline Runner reports
+each step with one short command (see `_opencrew/core/runner.pipeline.md`).
 
 **`/opencrew dashboard`** — in this order:
 1. Write `- **Dashboard:** enabled` in `_opencrew/_memory/preferences.md`, changing only that
    line (if the file has no `Dashboard` line, add it at the end). Leave the rest of the file as is.
-2. Start `node _opencrew/core/scripts/escritorio.mjs` in the background, from the project root.
-   The line it prints carries the address (`http://127.0.0.1:<port>`; the port may vary).
-3. Show the address and tell the user that the next crew run appears there.
+2. Start `node _opencrew/core/scripts/escritorio.mjs --automatico` from the project root. It starts
+   or reuses a confirmed server in the background and prints its URL.
+3. Show the address and open it in the harness Browser when available; in a CLI, add `--externo`
+   to open the system browser.
 
-If your IDE cannot keep a process running in the background, do step 1 and show the user the
-command of step 2 to run in another terminal. Running `/opencrew dashboard` again is safe: the
-script answers with the same address instead of opening a second page. If its line says the open
-office `é de uma versão anterior` (it stayed open across an `update`): stop the background process
-you started and run the command again. If you did not start it, show the line to the user.
+If a host policy blocks localhost or the user refuses the Browser, do not open an external browser;
+leave the link for manual use. Without a graphical browser, show the link and continue. Repeating
+`/opencrew dashboard` is safe: the script reuses the current version when it finds it. An older
+server stays available on its port while the current version uses another one.
 
-**`/opencrew dashboard off`** — write `- **Dashboard:** disabled` the same way (only that line)
+**`/opencrew dashboard off`** — write `- **Dashboard:** off` the same way (only that line)
 and touch nothing else: stop no process, delete no file.
 
 ## Language Handling

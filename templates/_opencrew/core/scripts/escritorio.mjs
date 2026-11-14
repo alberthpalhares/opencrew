@@ -5,10 +5,9 @@
 // Só leitura e só neste computador: escuta em 127.0.0.1, aceita só GET e não escreve em disco.
 // Serve a página (`_opencrew/core/escritorio/`) e `GET /estado`, que lê `crews/*/state.json` a
 // cada pedido.
-// Porta ocupada: se quem responde nela é o escritório deste mesmo projeto, avisa e sai com 0, sem
-// subir outro; senão tenta a seguinte, até 10 portas ao todo. Se o escritório que responde foi
-// aberto por outra versão do OpenCrew (ficou de antes de um `update`), avisa e sai com 1: ele não
-// conhece os arquivos novos da página, e é preciso fechá-lo.
+// Modo manual: reutiliza a versão atual deste projeto; porta ocupada leva à seguinte, até 10.
+// Modo automático: primeiro procura uma instância compatível e, se só houver servidores antigos,
+// deixa-os ativos e inicia a versão atual na próxima porta livre.
 // Código de saída: 0 = escritório aberto (o processo segue rodando até Ctrl+C) ou já aberto ·
 // 1 = erro de uso (porta inválida, pasta sem `_opencrew/`), nenhuma das 10 portas livre ou
 // escritório de versão anterior no ar.
@@ -20,6 +19,8 @@ import { fileURLToPath } from 'node:url';
 import { ehPrincipal } from './comum.mjs';
 import { criarServidor } from './escritorio/servidor.mjs';
 import { abrir, sondarEstado, procurar } from './escritorio/porta.mjs';
+import { garantirServidor } from './escritorio/automatico.mjs';
+import { abrirNoSistema } from './escritorio/navegador.mjs';
 import { projetoDe, versaoDe } from './escritorio/projeto.mjs';
 
 /**
@@ -46,14 +47,15 @@ const PASTA_DA_PAGINA = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 
 const endereco = (porta) => `http://127.0.0.1:${porta}`;
 
-const USO = `Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <${PORTA_MINIMA} a ${PORTA_MAXIMA}>]`;
+const USO = `Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <${PORTA_MINIMA} a ${PORTA_MAXIMA}>] [--automatico --crew <nome> --run <id> [--externo]]`;
 const MSG = {
   aberto: (porta) => `Escritório aberto em ${endereco(porta)} — Ctrl+C para fechar`,
   jaAberto: (porta) => `O escritório já está aberto em ${endereco(porta)}`,
-  desatualizado: (porta) => `O escritório aberto em ${endereco(porta)} é de uma versão anterior. Feche esse processo e rode o comando de novo.`,
+  desatualizado: (porta) => `O Escritório aberto em ${endereco(porta)} é de uma versão anterior e continua ativo. Use --automatico para abrir a versão atual em outra porta.`,
   semPorta: (a, b) => `Não foi possível abrir o escritório: as portas ${a} a ${b} estão ocupadas. Use --porta.`,
   foraDaRaiz: 'Rode este comando na pasta do projeto (a que contém _opencrew/).',
   portaInvalida: `Porta inválida: use --porta com um número de ${PORTA_MINIMA} a ${PORTA_MAXIMA}.`,
+  autoIndisponivel: 'ESCRITORIO:INDISPONIVEL — não consegui iniciar ou confirmar o servidor; a execução pode continuar.',
 };
 
 const ehPasta = (p) => existsSync(p) && statSync(p).isDirectory();
@@ -85,6 +87,68 @@ function erroDeUso(porta, cwd) {
   return null;
 }
 
+const flag = (argv, nome) => argv.includes(nome);
+
+function valor(argv, nome) {
+  let achado;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i].startsWith(`${nome}=`)) achado = argv[i].slice(nome.length + 1);
+    else if (argv[i] === nome) achado = argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[++i] : '';
+  }
+  return achado;
+}
+
+function erroAutomatico(argv) {
+  if (!flag(argv, '--automatico')) return null;
+  const crew = valor(argv, '--crew');
+  const run = valor(argv, '--run');
+  if ((crew === undefined) !== (run === undefined)) return ['No modo automático, informe `--crew` e `--run` juntos.', USO];
+  if (crew !== undefined && (!/^[\p{L}\p{N} ._-]+$/u.test(crew) || crew === '.' || crew === '..')) return ['Nome de crew inválido para abrir o Escritório.', USO];
+  if (run !== undefined && (!/^(?!\.{1,2}$)[A-Za-z0-9._-]+$/.test(run))) return ['O --run precisa ser o run_id de uma execução.', USO];
+  if (flag(argv, '--servidor')) return ['Não combine `--servidor` com `--automatico`.', USO];
+  return null;
+}
+
+function urlDoEscritorio(porta, crew, run) {
+  const url = new URL(`${endereco(porta)}/`);
+  if (crew && run) {
+    url.searchParams.set('crew', crew);
+    url.searchParams.set('run_id', run);
+  }
+  return url.href;
+}
+
+async function servidorExato(raiz, pasta, arquivos, porta) {
+  const servidor = criarServidor({ raiz, pasta, arquivos });
+  return new Promise((resolver) => {
+    const falhou = () => resolver({ code: 1 });
+    servidor.once('error', falhou).listen(porta, '127.0.0.1', () => {
+      servidor.off('error', falhou);
+      resolver({ code: 0, porta, servidor });
+    });
+  });
+}
+
+async function executarAutomatico(argv, o, raiz, inicial) {
+  const crew = valor(argv, '--crew');
+  const run = valor(argv, '--run');
+  const resultado = await garantirServidor({
+    raiz, script: fileURLToPath(import.meta.url), inicial,
+    projeto: projetoDe(raiz), versao: versaoDe(raiz),
+    ...(o.auto ?? {}),
+  });
+  if (resultado.tipo === 'sem-porta') {
+    o.escrever?.(MSG.autoIndisponivel);
+    return { code: 0 };
+  }
+  const url = urlDoEscritorio(resultado.porta, crew, run);
+  (o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`)))(`ESCRITORIO:URL ${url}`);
+  if (flag(argv, '--externo') && !(await (o.abrirNavegador ?? abrirNoSistema)(url, o.navegador))) {
+    (o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`)))('NAVEGADOR:INDISPONIVEL — o link continua disponível para abertura manual.');
+  }
+  return { code: 0, porta: resultado.porta, url };
+}
+
 /**
  * Sobe o escritório do projeto que mora em `cwd`, ou reconhece o que já está aberto.
  * @param {string[]} argv argumentos da linha de comando
@@ -105,11 +169,13 @@ function erroDeUso(porta, cwd) {
 export async function main(argv, o = {}) {
   const { cwd = process.cwd(), escrever = (linha) => process.stdout.write(`${linha}\n`), pasta = PASTA_DA_PAGINA, arquivos = ARQUIVOS } = o;
   const inicial = lerPorta(argv);
-  const erro = erroDeUso(inicial, cwd);
+  const erro = erroDeUso(inicial, cwd) ?? erroAutomatico(argv);
   if (erro) {
     erro.forEach((linha) => escrever(linha));
     return { code: 1 };
   }
+  if (flag(argv, '--servidor')) return servidorExato(cwd, pasta, arquivos, inicial);
+  if (flag(argv, '--automatico')) return executarAutomatico(argv, { ...o, escrever }, cwd, inicial);
   const servidor = criarServidor({ raiz: cwd, pasta, arquivos });
   const tentar = (porta) => (o.abrir ?? abrir)(servidor, porta);
   const r = await procurar({ inicial, projeto: projetoDe(cwd), versao: versaoDe(cwd), abrir: tentar, sondar: o.sondar ?? sondarEstado });

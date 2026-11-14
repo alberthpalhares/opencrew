@@ -14,7 +14,7 @@ export const MOTIVO = {
   inesperado: (erro) => `erro inesperado: ${erro?.message ?? erro}`,
 };
 
-const USAM_AGENTE = ['passo', 'checkpoint', 'pular'];
+const USAM_AGENTE = ['iniciar', 'passo', 'checkpoint', 'pular'];
 /** Eventos que montam o estado quando ele falta; os outros são ignorados sem ele. */
 const MONTAM = ['iniciar', 'passo', 'checkpoint'];
 const ENCERRADA = ['completed', 'failed'];

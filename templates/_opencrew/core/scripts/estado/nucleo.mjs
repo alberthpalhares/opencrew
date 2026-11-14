@@ -38,6 +38,8 @@ function normalizar(e) {
 function fechar(e, agora) {
   return {
     crew: e.crew,
+    ...(e.runId ? { runId: e.runId } : {}),
+    ...(e.pedido ? { pedido: true } : {}),
     status: e.status,
     step: e.step,
     agents: e.agents,
@@ -55,12 +57,15 @@ const trocar = (agents, quem, status) => agents.map((a) => (quem(a) ? { ...a, st
 /** `--n` grava `step.current`; `--rotulo` grava `step.label` (sem ele: vazio). */
 const comPasso = (step, { n, rotulo }) => ({ ...step, current: aPartirDe(1, n) ?? step.current, label: texto(rotulo) });
 
-function iniciar(_anterior, { crew, elenco, passos, agora }) {
+function iniciar(_anterior, evento) {
+  const { crew, elenco, passos, agora, runId, pedido, agente } = evento;
   return {
     crew: texto(crew),
+    ...(runId ? { runId } : {}),
+    ...(pedido ? { pedido: true } : {}),
     status: 'running',
     step: { current: 0, total: aPartirDe(1, passos), label: '' },
-    agents: elenco.map((a) => agenteNormal({ ...a, status: 'idle', label: '' })),
+    agents: elenco.map((a) => agenteNormal({ ...a, status: a.id === agente ? 'working' : 'idle', label: '' })),
     handoff: null,
     startedAt: agora,
   };

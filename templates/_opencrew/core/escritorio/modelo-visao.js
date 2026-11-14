@@ -51,6 +51,7 @@ function verEstado(estado, { parada, semSinal }, reduzirMovimento, { sala }) {
   return {
     semEstado: false,
     crew: estado.crew,
+    runId: estado.runId,
     execucao: estado.status,
     passo: { atual: current, total, rotulo: label, contagem },
     faixa: estado.status === 'checkpoint' ? textoFaixa(label) : null,

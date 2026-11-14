@@ -3,7 +3,7 @@
 import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { lerCrews } from './leitura.mjs';
+import { lerEstadoDaConsulta } from './leitura.mjs';
 import { projetoDe, versaoDe } from './projeto.mjs';
 
 // Vão em TODA resposta. Nenhuma resposta leva `Access-Control-*`: outra origem não lê o estado, e
@@ -49,7 +49,9 @@ async function atender(req, res, ctx) {
   if (req.method !== 'GET') return responder(res, 405, { corpo: 'Método não permitido', extras: { Allow: 'GET' } });
   const caminho = req.url.split('?')[0];
   if (caminho === '/estado') {
-    const corpo = JSON.stringify({ projeto: ctx.projeto, versao: ctx.versao, crews: await lerCrews(ctx.raiz) });
+    const consulta = new URL(req.url, `http://127.0.0.1:${req.socket.localPort}`).searchParams;
+    const crews = await lerEstadoDaConsulta(ctx.raiz, consulta);
+    const corpo = JSON.stringify({ projeto: ctx.projeto, versao: ctx.versao, crews });
     return responder(res, 200, { corpo, tipo: JSON_UTF8 });
   }
   const arquivo = await lerArquivo(ctx, caminho);

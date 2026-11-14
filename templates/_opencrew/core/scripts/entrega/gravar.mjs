@@ -4,6 +4,7 @@
 // Spec: fase-u3a1-pasta-de-entrega.md, regras 12 e 15 (repositório do OpenCrew).
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { trocarNome } from '../comum.mjs';
 
 const apagar = (pasta) => fs.rm(pasta, { recursive: true, force: true, maxRetries: 3 });
 
@@ -20,7 +21,7 @@ async function tipoDe(caminho) {
 async function limparSobras({ entrega, tmp, antiga }) {
   if ((await tipoDe(antiga)) === 'pasta') {
     if (await tipoDe(entrega)) await apagar(antiga);
-    else await fs.rename(antiga, entrega); // a troca anterior parou no meio: a entrega volta
+    else await trocarNome(antiga, entrega); // a troca anterior parou no meio: a entrega volta
   }
   if ((await tipoDe(tmp)) === 'pasta') await apagar(tmp);
 }
@@ -37,11 +38,11 @@ async function trocar({ entrega, tmp, antiga }, passo) {
   const anterior = await tipoDe(entrega);
   passo(entrega);
   if (anterior === 'arquivo') throw new Error('entrega não é uma pasta');
-  if (anterior) await fs.rename(entrega, antiga);
+  if (anterior) await trocarNome(entrega, antiga);
   try {
-    await fs.rename(tmp, entrega);
+    await trocarNome(tmp, entrega);
   } catch (erro) {
-    if (anterior) await fs.rename(antiga, entrega);
+    if (anterior) await trocarNome(antiga, entrega);
     throw erro;
   }
   passo(antiga);

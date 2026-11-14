@@ -11,7 +11,7 @@ import { officeLine } from '../src/lib/escritorio.js';
 import { projetoDe } from '../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
 import { mkTmp, withCwd, captureOutput } from './_helpers.js';
 
-const LINHA = (porta) => `O escritório está aberto em http://127.0.0.1:${porta}. Feche e rode /opencrew dashboard de novo para ver a versão nova.`;
+const LINHA = (porta) => `O Escritório em http://127.0.0.1:${porta} continua ativo para as abas abertas; novas execuções usarão a versão atualizada.`;
 const fechar = (servidor) => new Promise((ok) => { servidor.closeAllConnections?.(); servidor.close(() => ok()); });
 
 /** A service that answers `/estado` as an office would, on a free port. */

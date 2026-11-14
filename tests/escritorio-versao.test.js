@@ -14,7 +14,7 @@ import { mkTmp } from './_helpers.js';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JA_ABERTO = (porta) => `O escritório já está aberto em http://127.0.0.1:${porta}`;
-const ANTERIOR = (porta) => `O escritório aberto em http://127.0.0.1:${porta} é de uma versão anterior. Feche esse processo e rode o comando de novo.`;
+const ANTERIOR = (porta) => `O Escritório aberto em http://127.0.0.1:${porta} é de uma versão anterior e continua ativo. Use --automatico para abrir a versão atual em outra porta.`;
 const fechar = (servidor) => new Promise((ok) => { servidor.closeAllConnections?.(); servidor.close(() => ok()); });
 const carimbar = (raiz, versao) => fs.writeFile(path.join(raiz, '_opencrew', '.opencrew-version'), `${versao}\n`);
 
@@ -84,9 +84,8 @@ test('E4-01c: an office up to 1.19.0 answers without "versao" — it is of an ea
   assert.deepEqual(await rodar(t, p.raiz, porta), [1, [ANTERIOR(porta)], undefined]);
 });
 
-test('E4-01e: /opencrew dashboard says what to do with the line of the earlier version', () => {
+test('E4-01e: dashboard opens the current version and leaves earlier Office servers available', () => {
   const sistema = readFileSync(path.join(RAIZ, 'templates', 'AGENTS.md'), 'utf8').replace(/\s+/g, ' ');
-  assert.match(sistema, /é de uma versão anterior/);
-  assert.match(sistema, /stop the background process you started[^.]*run the command again/);
-  assert.match(sistema, /If you did not start it, show the line to the user/);
+  assert.match(sistema, /escritorio\.mjs --automatico/);
+  assert.match(sistema, /An older server stays available on its port while the current version uses another one/);
 });

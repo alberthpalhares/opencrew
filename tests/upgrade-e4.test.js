@@ -1,6 +1,6 @@
 // AGENTS.md rule 14 for phase E4 (specs/fase-e4-robustez-do-escritorio.md, E4-upg): a 1.19.0
-// workspace with its office still open gets, with one `update`, the warning that the office has to
-// be opened again; the new command tells that old server apart; and a new server gives the whole
+// workspace with its office still open gets, with one `update`, the notice that existing tabs keep
+// using that server; the new command tells that old server apart; and a new server gives the whole
 // page, with `aviso.js`. No file of the crew is touched.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +11,8 @@ import { pathToFileURL } from 'node:url';
 import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
 import { exists } from '../src/lib/fsx.js';
+import { hashOf } from '../src/lib/manifest.js';
+import { manifesto, gravarManifesto } from './_reconciliar.js';
 import { projetoDe } from '../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
 import { mkTmp, withCwd, snapshot, captureOutput } from './_helpers.js';
 import { ANTIGA } from './_conserto.js';
@@ -25,7 +27,11 @@ async function workspace1190(t) {
   await captureOutput(() => withCwd(dir, () => init({ ide: ['claude-code'] })));
   const core = path.join(dir, '_opencrew', 'core');
   for (const novo of NOVOS) await fs.rm(path.join(core, novo), { force: true });
-  await fs.writeFile(path.join(core, 'scripts', 'escritorio.mjs'), '// 1.19.0\nexport const ARQUIVOS = [];\n');
+  const scriptAntigo = '// 1.19.0\nexport const ARQUIVOS = [];\n';
+  await fs.writeFile(path.join(core, 'scripts', 'escritorio.mjs'), scriptAntigo);
+  const registro = await manifesto(dir);
+  registro.files['_opencrew/core/scripts/escritorio.mjs'] = hashOf(scriptAntigo);
+  await gravarManifesto(dir, registro);
   await fs.writeFile(path.join(dir, '_opencrew', '.opencrew-version'), '1.19.0\n');
   for (const [arquivo, conteudo] of Object.entries(ANTIGA)) {
     await fs.mkdir(path.dirname(path.join(dir, arquivo)), { recursive: true });
@@ -55,7 +61,7 @@ test('E4-upg: update from 1.19.0 with the office open — the summary says so, t
 
   const saida = await captureOutput(() => withCwd(dir, () => update({ officePorts: { first: antigo, count: 1 } })));
 
-  assert.ok(saida.includes(`O escritório está aberto em http://127.0.0.1:${antigo}. Feche e rode /opencrew dashboard de novo para ver a versão nova.`), saida);
+  assert.ok(saida.includes(`O Escritório em http://127.0.0.1:${antigo} continua ativo para as abas abertas; novas execuções usarão a versão atualizada.`), saida);
   for (const novo of NOVOS) assert.equal(await exists(path.join(core, novo)), true, `missing after update: ${novo}`);
   assert.deepEqual(await snapshot(path.join(dir, 'crews')), antes, 'update changed a file under crews/');
 
@@ -63,7 +69,7 @@ test('E4-upg: update from 1.19.0 with the office open — the summary says so, t
   const { main, ARQUIVOS } = await doWorkspace(core, 'scripts', 'escritorio.mjs');
   const linhas = [];
   const r = await main(['--porta', String(antigo)], { cwd: dir, escrever: (s) => linhas.push(s) });
-  assert.deepEqual([r.code, linhas, r.servidor], [1, [`O escritório aberto em http://127.0.0.1:${antigo} é de uma versão anterior. Feche esse processo e rode o comando de novo.`], undefined]);
+  assert.deepEqual([r.code, linhas, r.servidor], [1, [`O Escritório aberto em http://127.0.0.1:${antigo} é de uma versão anterior e continua ativo. Use --automatico para abrir a versão atual em outra porta.`], undefined]);
 
   // A new server of the WORKSPACE: every file of the page, and the version of the workspace.
   const pagina = (await fs.readdir(path.join(core, 'escritorio'))).filter((nome) => nome !== 'package.json').sort();

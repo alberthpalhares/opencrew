@@ -6,6 +6,10 @@
 > fica no `CHANGELOG.md`. Ordem de execução: trilhas U e R em
 > `docs/auditoria/2026-10-02-auditoria-geral.md` §3 (emenda de 2026-10-04) e
 > `docs/jornada/2026-10-02-uso-real.md`.
+
+> **Registro:** a proposta de abertura automática do Escritório foi recebida sem fase em
+> 2026-11-12, reavaliada a pedido do dono, alocada na U7-F3c e entregue na v1.21.0. Sai do backlog;
+> histórico e escopo final estão no `CHANGELOG.md` e em `specs/fase-u7-f3c-escritorio-auto-open.md`.
 >
 > As 10 ideias do backlog original (Sherlock multi-fonte, criação por papéis, skills
 > dinâmicas, tiers, aprendizado contínuo, templates de crew, exportação, registro de

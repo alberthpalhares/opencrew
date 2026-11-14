@@ -3,6 +3,25 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.21.0] — 2026-11-12
+
+Fase U7-F3c: Escritório automático por execução (`specs/fase-u7-f3c-escritorio-auto-open.md`).
+Chega com `npx @aksp/opencrew@latest update`; as preferências antigas são preservadas.
+
+### Added
+- **O Escritório abre ao começar `run`, `retomar` ou `pedir`**, já selecionando a execução que
+  disparou a abertura. Apps desktop usam o Browser integrado disponível; harnesses CLI exibem o link
+  e abrem o navegador do sistema.
+- **Estado isolado por execução:** `output/<run_id>/estado-escritorio.json` permite acompanhar duas
+  execuções simultâneas da mesma crew. A visão geral continua disponível e escolhe a execução mais
+  recentemente atualizada.
+- **Ativação padrão:** preferências ausentes e o valor legado `Dashboard: disabled` ficam ligados.
+  `/opencrew dashboard off` grava `Dashboard: off` para desativar explicitamente; `update` preserva
+  o arquivo de preferências.
+- `/opencrew dashboard` continua abrindo manualmente a visão geral.
+- O servidor automático reutiliza uma instância da versão atual ou inicia uma em segundo plano na
+  próxima porta livre. Um servidor antigo continua ativo para abas já abertas.
+
 ## [1.20.0] — 2026-11-01
 
 Fase U7-F3: "`update` que reconcilia", F3 do roteiro U7 (`specs/fase-u7-f3-update-que-reconcilia.md`).

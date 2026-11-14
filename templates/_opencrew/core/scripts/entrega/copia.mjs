@@ -6,6 +6,7 @@
 // Spec: fase-u3a2-entrega-no-projeto.md, regras 14 e 15 (repositório do OpenCrew).
 import { constants, existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { trocarNome } from '../comum.mjs';
 import { emLf, oQueFalta, pastasDaExecucao } from './comparar.mjs';
 
 export const AVISO = (pasta) => `Há uma entrega mais nova desta execução em \`${pasta}\`.`;
@@ -34,7 +35,7 @@ async function montar(pasta, arquivos, leiame, em) {
     em.alvo = path.join(pasta, LEIAME);
     await fs.writeFile(path.join(tmp, LEIAME), leiame, 'utf8');
     em.alvo = pasta;
-    await fs.rename(tmp, pasta);
+    await trocarNome(tmp, pasta);
   } catch (erro) {
     await apagar(tmp).catch(() => {});
     throw erro;

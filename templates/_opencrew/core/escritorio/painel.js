@@ -8,7 +8,7 @@ import { TEXTOS } from './modelo.js';
 
 /** Os elementos de `index.html` que o painel escreve. */
 const IDS = [
-  'pagina', 'crew', 'situacao', 'passo', 'barra', 'barra-feito', 'barra-atual', 'barra-resto', 'aviso', 'frase',
+  'pagina', 'crew', 'run', 'situacao', 'passo', 'barra', 'barra-feito', 'barra-atual', 'barra-resto', 'aviso', 'frase',
   'faixa', 'etiqueta', 'parada', 'motivo', 'passagem', 'rever', 'lista', 'seletor', 'seletor-caixa',
 ];
 /** A situação da execução, por extenso. */
@@ -108,6 +108,7 @@ export function criarPainel(documento, aoEscolher, aoRever = () => {}) {
     el.pagina.dataset.execucao = modelo.execucao ?? '';
     el.etiqueta.hidden = modelo.modo !== 'demo';
     escrever(el.crew, modelo.crew);
+    escrever(el.run, modelo.runId && `Execução ${modelo.runId}`);
     escrever(el.situacao, SITUACAO[modelo.execucao]);
     escrever(el.passo, modelo.passo && textoDoPasso(modelo.passo));
     escrever(el.aviso, modelo.aviso);

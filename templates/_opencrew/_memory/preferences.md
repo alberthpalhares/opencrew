@@ -8,6 +8,6 @@
 - **IDEs:**
 - **Date Format:** YYYY-MM-DD
 - **Default Tier:** standard
-- **Dashboard:** disabled
+- **Dashboard:** enabled
 - **Budget:**
 - **Retencao:** 10

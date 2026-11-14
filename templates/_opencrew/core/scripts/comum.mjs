@@ -2,9 +2,25 @@
 // conferir-fontes…). Node puro, sem dependências.
 // Specs: specs/fase-r1-reparos-1-6-1.md, regra 13, e specs/fase-r2-update-e-envio-seguros.md,
 // regra 23 (repositório do OpenCrew).
-import { existsSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, promises as fs, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/** O Windows recusa a troca de nome com um destes códigos enquanto outro processo lê a pasta ou o arquivo. */
+const RECUSAS_RENAME = ['EPERM', 'EBUSY', 'EACCES'];
+const pausa = (ms) => new Promise((seguir) => { setTimeout(seguir, ms); });
+
+/** Renomeia `de` para `para`, repetindo até 3 vezes (a cada 100 ms) em recusas transitórias do Windows. */
+export async function trocarNome(de, para, { renomear = fs.rename, esperar = pausa } = {}) {
+  for (let repeticao = 0; ; repeticao++) {
+    try {
+      return await renomear(de, para);
+    } catch (erro) {
+      if (!RECUSAS_RENAME.includes(erro?.code) || repeticao === 3) throw erro;
+      await esperar(100);
+    }
+  }
+}
 
 export const MSG = {
   faltaOpcao: (opcao) => `Falta a opção obrigatória ${opcao}.`,

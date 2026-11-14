@@ -1,14 +1,13 @@
-// The office (Escritório) seen from `update`: is the page of this project open, served by a
-// process that started before the update? That server keeps the list of page files it started
-// with, so the new page does not load in it until it is closed and opened again
-// (specs/fase-e4-robustez-do-escritorio.md, rule 4). Only asks `GET /estado`; writes nothing.
+// The office (Escritório) seen from `update`: does an older server of this project still answer?
+// Its existing tabs stay on that version; automatic openings start the installed version on a
+// compatible server or another port. Only asks `GET /estado`; writes nothing.
 import { sondarEstado } from '../../templates/_opencrew/core/scripts/escritorio/porta.mjs';
 import { projetoDe } from '../../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
 
 // The ports `escritorio.mjs` tries when run without `--porta`.
 const DEFAULT_PORTS = { first: 4747, count: 10 };
 
-const LINE = (port) => `O escritório está aberto em http://127.0.0.1:${port}. Feche e rode /opencrew dashboard de novo para ver a versão nova.`;
+const LINE = (port) => `O Escritório em http://127.0.0.1:${port} continua ativo para as abas abertas; novas execuções usarão a versão atualizada.`;
 
 /**
  * The line for the summary of `update`, or null when no office of this project, started by a

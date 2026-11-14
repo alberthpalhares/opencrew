@@ -83,7 +83,13 @@ async function perguntar(p) {
   const corte = new AbortController();
   const prazo = p.janela.setTimeout(() => corte.abort(), PRAZO_MS);
   try {
-    const resposta = await p.janela.fetch(ENDERECO, { cache: 'no-store', signal: corte.signal });
+    const consulta = new URLSearchParams();
+    if (p.crew && p.runId) {
+      consulta.set('crew', p.crew);
+      consulta.set('run_id', p.runId);
+    }
+    const destino = consulta.size ? `${ENDERECO}?${consulta}` : ENDERECO;
+    const resposta = await p.janela.fetch(destino, { cache: 'no-store', signal: corte.signal });
     return resposta.ok ? await resposta.json() : null;
   } catch {
     return null;
@@ -135,6 +141,8 @@ function criarPagina(janela) {
     documento,
     el,
     demo: endereco.has('demo'),
+    crew: endereco.get('crew'),
+    runId: endereco.get('run_id'),
     periodo: endereco.get('periodo'), // força o período do dia; valor desconhecido: vale a hora
     menosMovimento: janela.matchMedia('(prefers-reduced-motion: reduce)'),
     rotulos: criarRotulos(el('rotulos'), documento),

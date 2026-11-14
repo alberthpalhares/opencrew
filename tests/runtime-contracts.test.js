@@ -66,9 +66,10 @@ test('F1-11c: image-ai-generator runs its own script and documents Windows', () 
   assert.match(gen, /py -3/);
 });
 
-test('F1-12a: the dashboard toggle rule matches the bold list format preferences.md writes', () => {
-  assert.match(read('_opencrew/_memory/preferences.md'), /- \*\*Dashboard:\*\* disabled/);
-  assert.match(runner, /- \*\*Dashboard:\*\* enabled/);
+test('U7F3C-01a: the dashboard defaults on and supports an explicit opt-out', () => {
+  assert.match(read('_opencrew/_memory/preferences.md'), /- \*\*Dashboard:\*\* enabled/);
+  assert.match(runner, /Dashboard: off/);
+  assert.match(runner, /Dashboard: disabled.*on/);
 });
 
 test('F1-13a: system definition keeps the title used by legacy AGENTS.md detection', () => {

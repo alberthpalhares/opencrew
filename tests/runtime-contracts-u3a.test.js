@@ -169,7 +169,7 @@ test('U3a-08h: a channel that has no item in the list is never passed, because t
 test('U3a-14a: AGENTS.md has rule 15, with the text of the spec, and its line in the Regra → Trava table', () => {
   const regra = flat(regras.split(/\n(?=### )/).find((s) => s.startsWith('### 15. ')) ?? '');
   assert.ok(regra, 'AGENTS.md has no rule 15');
-  tem(regra, 'só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da crew, a pasta de saída da crew (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve arquivo do usuário, e só apaga a própria pasta de entrega e os temporários que ele mesmo criou.');
+  tem(regra, 'só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da crew e `output/<execução>/estado-escritorio.json`, a pasta de saída da crew (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve arquivo do usuário, e só apaga a própria pasta de entrega e os temporários que ele mesmo criou.');
   tem(regra, '**Trava:** `tests/entregar*.test.js` (U3a-14b)');
   const linha = regras.split(/\r?\n/).find((l) => l.startsWith('| 15 '));
   assert.ok(linha, 'the Regra → Trava table has no line for rule 15');

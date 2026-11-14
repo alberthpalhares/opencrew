@@ -1,14 +1,7 @@
 // Leitura e gravação de `crews/<crew>/state.json`: inteira ou nenhuma.
 // Spec: fase-e1-escritorio-ao-vivo.md, regras 3 e 6 (repositório do OpenCrew).
 import { promises as fs } from 'node:fs';
-
-/** O Windows recusa a troca de nome com um destes códigos enquanto outro processo lê o arquivo. */
-const RECUSAS = ['EPERM', 'EBUSY', 'EACCES'];
-/** Depois da primeira tentativa: até 3 repetições, uma a cada 100 ms (cerca de 300 ms ao todo). */
-const REPETICOES = 3;
-const INTERVALO_MS = 100;
-
-const pausa = (ms) => new Promise((seguir) => { setTimeout(seguir, ms); });
+import { trocarNome } from '../comum.mjs';
 
 /** O estado gravado, ou `null` quando o arquivo falta ou está ilegível (pela metade, sem `agents` em lista). */
 export async function lerEstado(arquivo) {
@@ -17,17 +10,6 @@ export async function lerEstado(arquivo) {
     return Array.isArray(estado?.agents) ? estado : null;
   } catch {
     return null;
-  }
-}
-
-async function trocarNome(de, para, { renomear = fs.rename, esperar = pausa }) {
-  for (let repeticao = 0; ; repeticao++) {
-    try {
-      return await renomear(de, para);
-    } catch (erro) {
-      if (!RECUSAS.includes(erro?.code) || repeticao === REPETICOES) throw erro;
-      await esperar(INTERVALO_MS);
-    }
   }
 }
 
