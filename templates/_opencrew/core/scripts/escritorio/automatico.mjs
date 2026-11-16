@@ -27,12 +27,20 @@ async function confirmar(porta, projeto, versao, sondar, esperar, tentativas) {
   return false;
 }
 
-/** Devolve uma instância já confirmada, ou `sem-porta`; a instância anterior nunca é encerrada. */
+/** Devolve uma instância já confirmada, `daemon` (com `--preparar`) ou `sem-porta`; instância anterior fica ativa. */
 export async function garantirServidor(opcoes) {
   const {
-    raiz, script, inicial, projeto, versao, tentativas = 10, sondar = sondarEstado,
+    raiz, script, inicial, projeto, versao, tentativas = 10, hostRede = null, preparar = false,
+    sondar = (porta) => sondarEstado(porta, 1000, hostRede),
     ocupada = alguemEscuta, spawn = criarProcesso, esperar = pausa, ciclos = 30,
   } = opcoes;
+  if (preparar) {
+    const achado = await procurarAutomatico({
+      inicial, projeto, versao, tentativas, sondar, ocupada,
+      tentarAbrir: async () => true, confirmar: async () => true,
+    });
+    return achado.tipo === 'aberto' ? { ...achado, tipo: 'daemon' } : achado;
+  }
   return procurarAutomatico({
     inicial, projeto, versao, tentativas, sondar, ocupada,
     tentarAbrir: (porta) => subir(script, raiz, porta, spawn),

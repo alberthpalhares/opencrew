@@ -18,11 +18,12 @@ per-run state reports \`ESTADO:OK\`, call
 \`node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"\`.
 Use the exact \`ESCRITORIO:URL\` it returns, open it with this harness's native Browser when
 available (Claude Code Desktop Browser pane, Codex App built-in Browser, or Antigravity browser
-agent), and show it as a clickable link in chat. In a CLI harness, add \`--externo\` to open the
-system browser. If an embedded Browser is unavailable, use the CLI fallback; if it fails for a
-technical reason, try \`--externo\`. A user refusal, host policy block or headless environment leaves
-the link for manual opening; never bypass the refusal or policy. If the server cannot start, say so
-once and continue the crew.`;
+agent), and show it as a clickable link in chat along with any returned \`ESCRITORIO:URL_REDE\`
+(same Wi-Fi/LAN) and \`ESCRITORIO:URL_VPN\` (Tailscale/VPN) links for phone or tablet. In a CLI
+harness, add \`--externo\` to open the system browser. If an embedded Browser is unavailable, use the
+CLI fallback; if it fails for a technical reason, try \`--externo\`. A user refusal, host policy block
+or headless environment leaves the link for manual opening; never bypass the refusal or policy. If
+the server cannot start, say so once and continue the crew.`;
 
 const BRIDGE = `${ACTIVATION}
 
@@ -141,7 +142,7 @@ export const IDES = [
     files: [
       {
         path: '.agent/rules/opencrew.md',
-        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- When Antigravity's integrated browser agent is available, use it to open the exact local Escritório URL as soon as it is returned and keep that page active during the run. If that browser mode is unavailable, use the system-browser fallback; if it fails technically, continue with the link.\n- This environment does not support background/parallel subagents. Run all tasks inline and\n  sequentially — never announce parallel work and then skip it.\n- Ask only one question per message; present options as a numbered list.\n`,
+        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- **Escritório live preview (required, no user action):** After \`ESTADO:OK\`, run \`node _opencrew/core/scripts/escritorio.mjs --automatico --preparar --crew "{name}" --run "{run_id}"\` outside the terminal sandbox. On \`ESCRITORIO:DAEMON <port> <url>\`, start \`node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>\` outside the sandbox as a persistent background daemon (\`IsDaemon: true\`), then open \`<url>\` immediately in Antigravity's integrated browser agent (browser subagent, \`Model: "flash"\`) so the right-hand preview opens automatically. On \`ESCRITORIO:URL <url>\`, open \`<url>\` directly in that browser agent. Show a clickable chat link, base address and any \`ESCRITORIO:URL_REDE\`/\`ESCRITORIO:URL_VPN\` links.\n- Run **crew pipeline steps** inline and sequentially (including steps marked \`execution: subagent\`: execute them inline in the main conversation and never spawn worker subagents for crew steps — reserve subagents strictly for the integrated \`browser\` opening the live Escritório). Never announce parallel crew work and then skip it.\n- Run each OpenCrew script (\`estado.mjs\`, \`caminho.mjs\`, \`verificar.mjs\`, \`escritorio.mjs\`) as its own standalone \`node\` command: never chain script commands with \`&&\` or \`;\`, and never wrap them in \`npm\`, avoiding stalled background task wakeups on Windows.\n- Ask only one question per message; present options as a numbered list.\n`,
       },
       { path: '.agent/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${render('opencrew Workflow (Antigravity)')}` },
       // .agents/ (plural) — standard location for Antigravity 2.0+ and CLI.

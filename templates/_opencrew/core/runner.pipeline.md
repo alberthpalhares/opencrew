@@ -96,7 +96,7 @@ Before starting execution:
    - The date of this run, wherever one is asked below, is the first 10 characters of the `run_id`
    - Never create a folder by command yourself
    - Store `run_id` in working memory for this run — it will be used for ALL output paths
-6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below).
+6. **Escritório** — if it is on, run `iniciar`, then one `pular` per deselected agent, one after the other (see "Escritório" below), and open its live URL automatically in the Browser.
 
 ## Escritório (optional live view)
 

@@ -3,6 +3,40 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.21.1] — 2026-11-16
+
+Fases E5 (Copa, Lazer e Convivência em 4:3/3:2), E6 (Link do Escritório para Celular e Tablet na
+Rede Local e VPN) e revisão da abertura automática persistente do Escritório.
+Chega com `npx @aksp/opencrew@latest update` preservando `crews/` e `_opencrew/_memory/`.
+
+### Added
+- **Ala de Copa e Lazer em 4:3 e 3:2 (Fase E5):** as 4 salas agora concentram as mesas de trabalho à
+  esquerda e empilham Copa/Café (`cafe`, `bancada-copa`, `bebedouro`), Vídeo Game (`videogame` com
+  telas animadas e `pufe`), Mesa de Sinuca ampliada (`52×26`) e Lounge (`sofa` e `poltrona` que
+  acomodam os agentes sentados lendo `livro` ou conversando) à direita, em `320×240` (4:3) e
+  `360×240` (3:2). Agentes `idle`/`done` caminham entre estações, conversam em duplas (PT-BR) e
+  retornam caminhando para o computador quando uma tarefa volta para `working`.
+- **Links de rede local e VPN para celular/tablet (Fase E6):** o servidor escuta em `0.0.0.0` com
+  validação estrita de `Host` (loopback + IPs reais da máquina, rejeitando domínios estranhos com
+  `421`), e `escritorio.mjs --automatico` passa a emitir `ESCRITORIO:URL_REDE` (Wi-Fi/LAN) e
+  `ESCRITORIO:URL_VPN` (Tailscale/WireGuard), ignorando adaptadores virtuais.
+- **Modo `--preparar` e atalhos `/escritorio` e `/dashboard`:** `escritorio.mjs --automatico --preparar`
+  retorna `ESCRITORIO:URL` quando o servidor já responde ou `ESCRITORIO:DAEMON <porta> <url>` para
+  subir `--servidor` como daemon persistente fora do sandbox sem derrubar processos filhos no Windows.
+
+### Fixed
+- **Abertura automática no painel e prevenção de `page not found` / perda de sinal:**
+  - `porta.mjs`: sondagem `alguemEscuta` verifica IPv4 (`127.0.0.1`) e IPv6 (`::1`) para evitar
+    colisões silenciosas em `localhost`.
+  - `servidor.mjs`: `keepAliveTimeout` de `65 s`, `clientError` tratado e `204` em `/favicon.ico`.
+  - `leitura.mjs`: fallback seguro para o estado ativo da crew em `?crew=` truncado, pontuação final
+    colada ao `run_id` ou run ainda inicializando (mantendo bloqueadas travessias `..`), mais
+    retentativa em locks transitórios no Windows (`EBUSY`/`EPERM`/`EACCES`).
+  - `navegador.mjs`: abertura externa no Windows via `Start-Process` sem shell, preservando `&`.
+  - Pontes e runner (`runner.pipeline.md`, `runner/escritorio.md`, `pedido.prompt.md` e ponte do
+    Antigravity em `src/lib/ides.js`): removida contradição sobre subagentes, forçando steps
+    `execution: subagent` da crew a rodarem inline e comandos `node` isolados sem encadeamento.
+
 ## [1.21.0] — 2026-11-12
 
 Fase U7-F3c: Escritório automático por execução (`specs/fase-u7-f3c-escritorio-auto-open.md`).

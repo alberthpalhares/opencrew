@@ -11,17 +11,24 @@ function crewSegura(crew) {
   return typeof crew === 'string' && crew.length > 0 && crew !== '.' && crew !== '..' && !/[\\/]/.test(crew);
 }
 
+const TRANSITORIO = new Set(['EBUSY', 'EPERM', 'EACCES']);
+const pausa = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
+
 async function lerArquivo(raiz, base, arquivo) {
-  try {
-    if (!realDentroDe(raiz, arquivo) || !realDentroDe(base, arquivo)) return null;
-    const info = await fs.lstat(arquivo);
-    if (!info.isFile() || info.isSymbolicLink()) return null;
-    const texto = await fs.readFile(arquivo, 'utf8');
-    const estado = JSON.parse(texto.charCodeAt(0) === MARCA_DE_ORDEM ? texto.slice(1) : texto);
-    return Array.isArray(estado?.agents) ? estado : null;
-  } catch {
-    return null;
+  if (!realDentroDe(raiz, arquivo) || !realDentroDe(base, arquivo)) return null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const info = await fs.lstat(arquivo);
+      if (!info.isFile() || info.isSymbolicLink()) return null;
+      const texto = await fs.readFile(arquivo, 'utf8');
+      const estado = JSON.parse(texto.charCodeAt(0) === MARCA_DE_ORDEM ? texto.slice(1) : texto);
+      return Array.isArray(estado?.agents) ? estado : null;
+    } catch (erro) {
+      if (!TRANSITORIO.has(erro?.code) || i === 2) return null;
+      await pausa(25);
+    }
   }
+  return null;
 }
 
 /** O estado de uma execução, somente quando o run e seus pais reais ficam dentro de output/. */
@@ -63,12 +70,24 @@ export async function lerCrews(raiz) {
   return lidas.filter(Boolean).sort((a, b) => atualizadaEm(b) - atualizadaEm(a));
 }
 
-/** Resolve a visão geral ou a execução da query da URL; query incompleta nunca lê uma pasta. */
+function limparRun(run) {
+  if (typeof run !== 'string' || run.includes('..') || /[\\/]/.test(run)) return null;
+  const limpo = run.replace(/[.,;:!?\])>]+$/, '');
+  return RUN.test(limpo) ? limpo : null;
+}
+
+/** Resolve a visão geral ou a execução da query da URL; query com travessia nunca lê pastas. */
 export async function lerEstadoDaConsulta(raiz, consulta) {
   const crew = consulta.get('crew');
   const run = consulta.get('run_id');
   if (crew === null && run === null) return lerCrews(raiz);
-  if (crew === null || run === null) return [];
-  const estado = await lerExecucao(raiz, crew, run);
+  if (!crewSegura(crew)) return [];
+  if (run === null) {
+    const atual = await lerCrew(raiz, crew);
+    return atual ? [atual] : [];
+  }
+  const runLimpo = limparRun(run);
+  if (!runLimpo) return [];
+  const estado = (await lerExecucao(raiz, crew, runLimpo)) ?? (await lerCrew(raiz, crew));
   return estado ? [estado] : [];
 }

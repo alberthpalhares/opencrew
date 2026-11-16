@@ -10,10 +10,12 @@ import { CORES, noite, retangulos } from './sprites.js';
 import { JANELAS, LADRILHO, LADRILHO_ESCURO, PAREDE, PLANTA, RELOGIO } from './sprites-sala.js';
 import { ESTANTE, QUADRO, QUADRO_BRANCO } from './sprites-parede.js';
 import { ABAJUR, ABAJUR_ACESO, BEBEDOURO, CAFE, MESA_BAIXA, PLANTA_ALTA, POLTRONA, SOFA, halo, tapete } from './sprites-moveis.js';
+import { BANCADA_COPA, PUFE, SINUCA, TELAS_DE_JOGO, TV_EM, VIDEOGAME } from './sprites-lazer.js';
 
 const DESENHOS = Object.freeze({
   relogio: RELOGIO, planta: PLANTA, estante: ESTANTE, quadro: QUADRO, 'quadro-branco': QUADRO_BRANCO, sofa: SOFA,
   poltrona: POLTRONA, 'mesa-baixa': MESA_BAIXA, bebedouro: BEBEDOURO, cafe: CAFE, 'planta-alta': PLANTA_ALTA,
+  'bancada-copa': BANCADA_COPA, pufe: PUFE, sinuca: SINUCA, videogame: VIDEOGAME,
 });
 /** O que não escurece à noite: o céu lá fora e o abajur aceso. */
 const COM_LUZ_PROPRIA = Object.freeze(['janela', 'abajur']);
@@ -53,12 +55,24 @@ export function pintarMovel(ctx, movel, { periodo }) {
   pintar(ctx, desenhoDe(movel, periodo), movel.x, movel.y, COM_LUZ_PROPRIA.includes(movel.tipo) ? COMO_E : tomDe(periodo));
 }
 
+/** Preenche uma matriz de pixels recortada aos limites da sala, para ladrilhos ou faixas de parede. */
+function pintarRecorte(ctx, { paleta, linhas }, x, y, sala, tom) {
+  for (const [dx, dy, l, a, letra] of retangulos(linhas)) {
+    const [rx, ry] = [x + dx, y + dy];
+    const [rl, ra] = [Math.min(l, sala.largura - rx), Math.min(a, sala.altura - ry)];
+    if (rl > 0 && ra > 0) {
+      ctx.fillStyle = tom(paleta[letra]);
+      ctx.fillRect(rx, ry, rl, ra);
+    }
+  }
+}
+
 /** O piso: ladrilhos claros e escuros em xadrez, da parede até o fim da sala. */
 function pintarPiso(ctx, sala, tom) {
   const [largura, altura] = [LADRILHO.linhas[0].length, LADRILHO.linhas.length];
   for (let y = TOPO, linha = 0; y < sala.altura; y += altura, linha++) {
     for (let x = 0, coluna = 0; x < sala.largura; x += largura, coluna++) {
-      pintar(ctx, (linha + coluna) % 2 ? LADRILHO_ESCURO : LADRILHO, x, y, tom);
+      pintarRecorte(ctx, (linha + coluna) % 2 ? LADRILHO_ESCURO : LADRILHO, x, y, sala, tom);
     }
   }
 }
@@ -106,7 +120,7 @@ function pintarLuz(ctx, abajur, sala) {
 export function pintarSala(ctx, ambiente) {
   const { sala, moveis, periodo, relogio } = ambiente;
   const tom = tomDe(periodo);
-  for (let x = 0; x < sala.largura; x += PAREDE.linhas[0].length) pintar(ctx, PAREDE, x, 0, tom);
+  for (let x = 0; x < sala.largura; x += PAREDE.linhas[0].length) pintarRecorte(ctx, PAREDE, x, 0, sala, tom);
   pintarPiso(ctx, sala, tom);
   for (const movel of moveis.filter((m) => m.camada !== 'chao')) {
     pintarMovel(ctx, movel, ambiente);
@@ -114,4 +128,12 @@ export function pintarSala(ctx, ambiente) {
   }
   if (periodo !== 'noite') return;
   for (const abajur of moveis.filter((m) => m.tipo === 'abajur')) pintarLuz(ctx, abajur, sala);
+}
+
+/** Pinta a tela animada do vídeo game em cor viva enquanto há gente jogando. */
+export function pintarTvLigada(ctx, ambiente, quadroJogo = 0) {
+  const movel = ambiente.moveis.find((m) => m.tipo === 'videogame');
+  if (!movel) return;
+  const tela = TELAS_DE_JOGO[Math.abs(quadroJogo) % TELAS_DE_JOGO.length];
+  pintar(ctx, tela, movel.x + TV_EM.x, movel.y + TV_EM.y, COMO_E);
 }

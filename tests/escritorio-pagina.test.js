@@ -205,9 +205,9 @@ test('E1-06 (rules 16, 18, 28): sprites and scene draw every status, a delivery 
   for (const visto of ['andar-a com papel', 'andar-b com papel', 'parado com papel', 'andar-a espelhado', 'andar-b espelhado', 'parado']) assert.ok(vistos.has(visto), visto);
   const naFrente = pintar(entrega, quadro(entrega, AGORA + IDA_MS + 100));
   assert.ok(camisa(naFrente) > mesa(naFrente));
-  assert.deepEqual([parada, naFrente].map((f) => f.filter((c) => c.cor === CORES.junta && c.args[2] === 8).length), [0, 1], 'a shadow on the floor only under who stands');
+  assert.deepEqual([parada, naFrente].map((f) => f.filter((c) => c.cor === CORES.junta && c.args[2] === 8).length), [0, 2], 'a shadow on the floor only under standing figures');
   const festa = transicao(entrega, ler(estado({ status: 'completed', agentes: ['done', 'done', 'done'] })), AGORA + 12000);
-  const bracos = [12000, 12300].map((ms) => aMais(pintar(festa, quadro(festa, AGORA + ms)), vazia).filter((c) => c.cor === CORES.tinta && c.args[0] === MESAS[0].boneco.x).length);
+  const bracos = [12000, 12300].map((ms) => aMais(pintar(festa, quadro(festa, AGORA + ms)), vazia).filter((c) => c.cor === CORES.tinta && c.args[0] === MESAS[0].boneco.x && c.args[1] < MESAS[0].retangulo.y).length);
   assert.deepEqual(bracos, [1, 0], 'who celebrates raises both arms, then lowers them');
   // Every room paints, full: 3, 6, 9 and 14 agents.
   for (const n of [3, 6, 9, 14]) pintar(ler(estado({ agentes: Array(n).fill('working') })));
@@ -251,9 +251,10 @@ test('E1-06 (rule 19): name and balloon are text over the canvas, placed in perc
   assert.deepEqual([nomes.length, baloes.length, camada.children.length], [12, 12, 24], 'only who has a desk');
   const logico = (porcento, total) => Math.round((parseFloat(porcento) * total) / 100 * 1000) / 1000;
   mesas.forEach((m, i) => {
+    const larguraCol = `${(LARGURA_COLUNA / LARGURA) * 100}%`;
     assert.deepEqual([textoDe(nomes[i]), textoDe(baloes[i])], [`Agente ${i + 1}`, '<i>Escrever</i>']);
-    assert.deepEqual([logico(nomes[i].style.left, LARGURA), logico(nomes[i].style.top, ALTURA), nomes[i].style.width], [m.nome.x - LARGURA_COLUNA / 2, m.nome.y, '20%']);
-    assert.deepEqual([logico(baloes[i].style.left, LARGURA), ALTURA - logico(baloes[i].style.bottom, ALTURA), baloes[i].style.width], [m.balao.x - LARGURA_COLUNA / 2, m.balao.y, '20%']);
+    assert.deepEqual([logico(nomes[i].style.left, LARGURA), logico(nomes[i].style.top, ALTURA), nomes[i].style.width], [m.nome.x - LARGURA_COLUNA / 2, m.nome.y, larguraCol]);
+    assert.deepEqual([logico(baloes[i].style.left, LARGURA), ALTURA - logico(baloes[i].style.bottom, ALTURA), baloes[i].style.width], [m.balao.x - LARGURA_COLUNA / 2, m.balao.y, larguraCol]);
   });
   // The name of the desk a delivery stops at gives way while the figure stands on it; and the status
   // balloon of who receives gives way while it says the label of the step (the first 3 s) and during
@@ -278,7 +279,7 @@ test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on with
   await new Promise((ok) => setImmediate(ok));
   assert.deepEqual([t('aviso'), t('frase'), t('abertura'), t('pagina')], [SEM_SERVIDOR, DEMONSTRACAO, ABRINDO, ''], 'no server: the page shows, with the demo, the warning and still the sentence');
   quadros.shift()(0);
-  assert.deepEqual([t('abertura'), doc.getElementById('tela').width, doc.getElementById('sala').style.width], [null, SALAS.media.largura * 3, '960px'], 'the demo has a cast of 5: the medium room');
+  assert.deepEqual([t('abertura'), doc.getElementById('tela').width, doc.getElementById('sala').style.width], [null, SALAS.media.largura * 2, `${SALAS.media.largura * 2}px`], 'the demo has a cast of 5: the medium room');
   assert.deepEqual(intervalos.map(([, ms]) => ms), [1000]);
   await denovo();
   assert.deepEqual([t('aviso'), t('frase'), t('crew'), doc.getElementById('seletor').children.map((o) => o.value)], [null, null, 'alfa', ['alfa', 'beta']]);

@@ -50,12 +50,12 @@ function criarMesa(indice, colunasDeMesa) {
   };
 }
 
-function criarSala({ nome, titulo, colunas, linhas, colunasDeMesa, lugares }) {
+function criarSala({ nome, titulo, largura, altura, colunas, linhas, colunasDeMesa, lugares }) {
   return {
     nome,
     titulo,
-    largura: colunas * LARGURA_COLUNA,
-    altura: TOPO + linhas * ALTURA_LINHA,
+    largura: largura ?? colunas * LARGURA_COLUNA,
+    altura: altura ?? TOPO + linhas * ALTURA_LINHA,
     colunas,
     linhas,
     colunasDeMesa,
@@ -64,12 +64,12 @@ function criarSala({ nome, titulo, colunas, linhas, colunasDeMesa, lugares }) {
   };
 }
 
-// §2B. Na sala Completa as mesas ocupam as 4 primeiras colunas; a quinta é a área comum.
+// Trabalho concentrado à esquerda e Ala de Copa/Lazer à direita em 4:3 (320×240) e 3:2 (360×240).
 const PLANTAS = [
-  { nome: 'pequena', titulo: 'Pequena', colunas: 3, linhas: 2, colunasDeMesa: 3, lugares: 3 },
-  { nome: 'media', titulo: 'Média', colunas: 4, linhas: 2, colunasDeMesa: 4, lugares: 6 },
-  { nome: 'grande', titulo: 'Grande', colunas: 4, linhas: 3, colunasDeMesa: 4, lugares: 9 },
-  { nome: 'completa', titulo: 'Completa', colunas: 5, linhas: 3, colunasDeMesa: 4, lugares: MAX_MESAS },
+  { nome: 'pequena', titulo: 'Pequena', largura: 320, altura: 240, colunas: 4, linhas: 4, colunasDeMesa: 2, lugares: 3 },
+  { nome: 'media', titulo: 'Média', largura: 320, altura: 240, colunas: 4, linhas: 4, colunasDeMesa: 2, lugares: 6 },
+  { nome: 'grande', titulo: 'Grande', largura: 360, altura: 240, colunas: 4.5, linhas: 4, colunasDeMesa: 3, lugares: 9 },
+  { nome: 'completa', titulo: 'Completa', largura: 360, altura: 240, colunas: 4.5, linhas: 4, colunasDeMesa: 3, lugares: MAX_MESAS },
 ];
 
 /**

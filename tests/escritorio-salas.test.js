@@ -19,7 +19,7 @@ import { criarRotulos } from '../templates/_opencrew/core/escritorio/rotulos.js'
 
 const HTML = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../templates/_opencrew/core/escritorio/index.html'), 'utf8').replace(/\r\n/g, '\n');
 const AGORA = Date.parse('2026-10-05T12:00:00.000Z');
-const TELAS = { pequena: [240, 126], media: [320, 126], grande: [320, 180], completa: [400, 180] };
+const TELAS = { pequena: [320, 240], media: [320, 240], grande: [360, 240], completa: [360, 240] };
 const NOMES = Array.from({ length: 30 }, (_, i) => `crew-${i + 1}-${'abcdefghij'[i % 10]}`);
 const elenco = (n, status = 'idle') => Array.from({ length: n }, (_, i) => ({ id: `a${i + 1}`, name: `Agente ${i + 1}`, icon: '🙂', status, label: '' }));
 const estado = (n, extra = {}) => ({ crew: 'minha-crew', status: 'running', step: { current: 2, total: 5, label: 'Escrever' }, agents: elenco(n), handoff: null, updatedAt: new Date(AGORA).toISOString(), ...extra });
@@ -53,7 +53,7 @@ test('E3-08a: casts of 1, 3, 4, 6, 7, 9, 10, 12 and 14 get the small, medium, la
     const { sala } = m.ambiente;
     assert.deepEqual([sala.nome, sala.largura, sala.altura], [nome, ...TELAS[nome]], `${n} agents`);
     assert.equal(sala, salaDe(n));
-    assert.deepEqual([sala.largura, sala.altura], [sala.colunas * LARGURA_COLUNA, TOPO + sala.linhas * ALTURA_LINHA], 'the cell is still 80×54');
+    assert.deepEqual([sala.largura, sala.altura], [sala.colunas * LARGURA_COLUNA, Math.max(240, TOPO + sala.linhas * ALTURA_LINHA)], '4:3 or 3:2 grid');
     const mesas = m.agentes.map((a) => a.mesa);
     assert.deepEqual(mesas.map((mesa) => mesa !== null), Array.from({ length: n }, (_, i) => i < 12), `${n}: a desk for the first 12`);
     mesas.filter(Boolean).forEach((mesa, i, todas) => {
@@ -126,9 +126,9 @@ test('E3-08c: no floor furniture in a cell with a desk; what hangs on the wall c
     assert.ok(tem('pequena', crew).some((t) => t === 'sofa' || t === 'poltrona'));
     for (const tipo of ['tapete', 'estante', 'abajur', 'planta', 'bebedouro']) assert.ok(tem('media', crew).includes(tipo), `media: ${tipo}`);
     for (const tipo of ['tapete', 'mesa-baixa', 'quadro-branco', 'bebedouro', 'planta']) assert.ok(tem('grande', crew).includes(tipo), `grande: ${tipo}`);
-    assert.equal(tem('grande', crew).filter((t) => t === 'estante').length, 2);
+    assert.equal(tem('grande', crew).filter((t) => t === 'estante').length, 3);
     for (const tipo of ['sofa', 'tapete', 'estante', 'cafe', 'abajur']) assert.ok(tem('completa', crew).includes(tipo), `completa: ${tipo}`);
-    assert.ok(moveisDe(SALAS.completa, crew).filter((m) => m.camada !== 'parede').every((m) => m.x >= 4 * LARGURA_COLUNA), 'completa: the fifth column is the common area');
+    assert.ok(moveisDe(SALAS.completa, crew).filter((m) => m.camada !== 'parede').every((m) => m.x >= 3 * LARGURA_COLUNA), 'completa: the right wing is the common area');
   }
 });
 
@@ -143,9 +143,9 @@ test('E3-08d: the same crew name and cast give the same furniture in the same pl
   assert.deepEqual(montarAmbiente({ total: 5, crew: 'alfa' }).moveis, a.ambiente.moveis);
 });
 
-test('E3-08e: the small room in an area of 1000×600 is drawn at scale 4, the full one at 2; names and balloons sit over the right desks in the four rooms', () => {
-  assert.deepEqual([escala(1000, 600, 1, SALAS.pequena), escala(1000, 600, 1, SALAS.completa)], [{ n: 4, largura: 960, altura: 504 }, { n: 2, largura: 800, altura: 360 }]);
-  assert.deepEqual([escala(1000, 600, 1, SALAS.media).n, escala(1000, 600, 1, SALAS.grande).n, escala(1000, 600, 1.5, SALAS.pequena).n], [3, 3, 6]);
+test('E3-08e: the small room in an area of 1000×600 is drawn at scale 2, the full one at 2; in 1080×720 the full one reaches scale 3; names and balloons sit over the right desks in the four rooms', () => {
+  assert.deepEqual([escala(1000, 600, 1, SALAS.pequena), escala(1000, 600, 1, SALAS.completa)], [{ n: 2, largura: 640, altura: 480 }, { n: 2, largura: 720, altura: 480 }]);
+  assert.deepEqual([escala(1000, 600, 1, SALAS.media).n, escala(1000, 600, 1, SALAS.grande).n, escala(1000, 600, 1.5, SALAS.pequena).n, escala(1080, 720, 1, SALAS.completa).n], [2, 2, 3, 3]);
   const elemento = () => ({ className: '', textContent: '', children: [], style: {}, append(...n) { this.children.push(...n); }, replaceChildren(...n) { this.children = n; }, remove() {} });
   const logico = (porcento, total) => Math.round((parseFloat(porcento) * total) / 100 * 1000) / 1000;
   for (const n of [3, 6, 9, 12]) {
@@ -234,12 +234,12 @@ test('E3-09c: a reading at 18h59 and another at 19h change the period, with no d
   assert.equal(ver(estado(3), { hora: { horas: 15, minutos: 20 } }).ambiente.chave, ver(estado(3), { hora: { horas: 15, minutos: 24 } }).ambiente.chave, 'the hands move in steps of 5 minutes');
 });
 
-test('E3-06a: with 1000 px of useful width the panel goes below the drawing and the scale is 3; with 1400 px it stays beside it', () => {
+test('E3-06a: with 1000 px of useful width the panel goes below the drawing and the scale is 2; with 1400 px it stays beside it', () => {
   assert.equal(LARGURA_AO_LADO, 1100);
   const estreita = disposicao(1000);
   assert.equal(estreita.painel, 'abaixo');
-  assert.equal(escala(estreita.desenho, Infinity, 1, SALAS.grande).n, 3);
-  assert.equal(escala(disposicao(1024).desenho, Infinity, 1, SALAS.grande).n, 3, 'a window of 1024 px: scale 3');
+  assert.equal(escala(estreita.desenho, Infinity, 1, SALAS.grande).n, 2);
+  assert.equal(escala(disposicao(1024).desenho, Infinity, 1, SALAS.grande).n, 2, 'a window of 1024 px: scale 2');
   assert.deepEqual([disposicao(1400).painel, disposicao(1100).painel, disposicao(1099).painel], ['ao-lado', 'ao-lado', 'abaixo']);
   // The stylesheet does what the model says: the same threshold, and the margins the count assumes.
   const regra = HTML.match(new RegExp(`@media \\(max-width: ${LARGURA_AO_LADO - 1}px\\) \\{\\n([\\s\\S]*?)\\n  \\}`));

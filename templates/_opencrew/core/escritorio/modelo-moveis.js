@@ -14,7 +14,7 @@ import { sementeDe } from './modelo-personagem.js';
 export const TAMANHOS = Object.freeze({
   janela: [24, 10], relogio: [9, 9], planta: [11, 16], estante: [20, 20], quadro: [13, 10], 'quadro-branco': [28, 12],
   abajur: [9, 22], sofa: [40, 18], poltrona: [18, 16], 'mesa-baixa': [24, 10], bebedouro: [10, 22], cafe: [16, 22],
-  'planta-alta': [11, 19],
+  'planta-alta': [11, 19], sinuca: [52, 26], videogame: [32, 20], pufe: [14, 10], 'bancada-copa': [28, 18],
 });
 /** Onde termina, no chão, o que fica encostado na parede do fundo. */
 const PE_DA_PAREDE = 24;
@@ -30,52 +30,61 @@ const tapete = (padrao, x, y, largura, altura) => ({ tipo: 'tapete', padrao, x, 
 const meio = (coluna) => coluna * LARGURA_COLUNA + LARGURA_COLUNA / 2;
 const janelas = (colunas) => colunas.map((coluna) => pendurado('janela', meio(coluna)));
 
-function pequena({ lado, assento, padrao, parede }) {
-  const cx = lado ? 150 : 90;
-  const [estante, relogio] = parede ? [160, 80] : [80, 160];
-  const lugares = assento ? [peca('poltrona', cx - 34, 80), peca('poltrona', cx + 16, 80)] : [peca('sofa', cx - 20, 78)];
+function alaDeLazer(x0, larguraAla, { lado, padrao }) {
+  const dx = larguraAla >= 160 ? 16 : 0;
+  const extras = larguraAla >= 160 ? [encostado('planta', x0 + dx + 129)] : [];
   return [
-    ...janelas([0, 1, 2]), pendurado('relogio', relogio), encostado('estante', estante),
-    encostado('planta', lado ? 12 : 228), pendurado('quadro', lado ? 228 : 12),
-    tapete(padrao, cx - 48, 82, 96, 40), ...lugares, peca('mesa-baixa', cx - 12, 104),
-    peca('abajur', lado ? cx + 38 : cx - 47, 74), peca('planta-alta', lado ? 24 : 205, 100),
+    peca('cafe', x0 + dx + 18, 2, 'parede'),
+    peca('bancada-copa', x0 + dx + 38, 6, 'parede'),
+    peca('bebedouro', x0 + dx + 70, 2, 'parede'),
+    peca('estante', x0 + dx + 84, 4, 'parede'),
+    ...extras,
+    peca('videogame', x0 + dx + 44, 56),
+    peca('pufe', x0 + dx + 38, 92),
+    peca('pufe', x0 + dx + 68, 92),
+    peca('sinuca', x0 + dx + 36, 119),
+    peca('planta-alta', x0 + dx + 107, 114),
+    tapete(padrao, x0 + dx + 22, 168, 64, 54),
+    peca('sofa', x0 + dx + 26, 170),
+    peca('abajur', x0 + dx + (lado ? 68 : 16), 166),
+    peca('poltrona', x0 + dx + 78, 200),
+    peca('mesa-baixa', x0 + dx + 34, 210),
   ];
 }
 
-function media({ lado, assento, padrao, parede }) {
-  const cx = lado ? 272 : 208;
-  const [estante, planta] = parede ? [240, 80] : [80, 240];
+function pequena(o) {
+  const relogio = o.parede ? 62 : 98;
   return [
-    ...janelas([0, 1, 2, 3]), pendurado('relogio', 160), encostado('estante', estante), encostado('planta', planta),
-    tapete(padrao, cx - 32, 86, 64, 36), peca('poltrona', assento ? cx + 2 : cx - 20, 80),
-    peca('abajur', assento ? cx - 14 : cx + 5, 76), peca('bebedouro', lado ? 172 : 304, 78),
-    peca('planta-alta', lado ? 206 : 262, 102),
+    ...janelas([0, 1]), pendurado('relogio', relogio), encostado('estante', 80),
+    encostado('planta', o.lado ? 12 : 148), pendurado('quadro', o.lado ? 148 : 12),
+    ...alaDeLazer(2 * LARGURA_COLUNA, 160, o),
   ];
 }
 
-function grande({ lado, assento, padrao, parede }) {
-  const cx = lado ? 244 : 160;
-  const lousa = parede ? 2 : 1;
-  const reuniao = assento
-    ? [peca('sofa', cx - 20, 134), peca('mesa-baixa', cx - 12, 158)]
-    : [peca('poltrona', cx - 42, 146), peca('poltrona', cx + 24, 146), peca('mesa-baixa', cx - 12, 152)];
+function media(o) {
+  const relogio = o.parede ? 98 : 62;
   return [
-    ...janelas([0, 1, 2, 3].filter((coluna) => coluna !== lousa)), pendurado('quadro-branco', meio(lousa)), pendurado('relogio', 160),
-    encostado('estante', 80), encostado('estante', 240), encostado('planta', lado ? 308 : 12),
-    tapete(padrao, cx - 52, 132, 104, 44), ...reuniao, peca('bebedouro', lado ? 94 : 302, 130),
-    peca('planta-alta', lado ? 140 : 262, 154),
+    ...janelas([0, 1]), pendurado('relogio', relogio), encostado('estante', 80),
+    encostado('planta', o.lado ? 148 : 12), pendurado('quadro', o.lado ? 12 : 148),
+    ...alaDeLazer(2 * LARGURA_COLUNA, 160, o),
   ];
 }
 
-function completa({ lado, assento, padrao }) {
-  const [cafe, abajur] = lado ? [384, 332] : [334, 384];
-  const lugares = assento
-    ? [peca('poltrona', 351, 50), peca('mesa-baixa', 348, 76), peca('sofa', 340, 98)]
-    : [peca('sofa', 340, 50), peca('mesa-baixa', 348, 78), peca('poltrona', 351, 100)];
+function grande(o) {
+  const lousa = o.parede ? 2 : 1;
   return [
-    ...janelas([0, 1, 2, 3]), pendurado('relogio', 160), encostado('planta', 80), encostado('planta', 240),
-    encostado('estante', 358), peca('cafe', cafe - 8, 8), peca('abajur', abajur - 4, 8),
-    tapete(padrao, 328, 44, 64, 96), ...lugares, peca('planta-alta', lado ? 380 : 330, 154),
+    ...janelas([0, 1, 2].filter((coluna) => coluna !== lousa)), pendurado('quadro-branco', meio(lousa)),
+    pendurado('relogio', 60), encostado('estante', 80), encostado('estante', 160),
+    encostado('planta', o.lado ? 228 : 12),
+    ...alaDeLazer(3 * LARGURA_COLUNA, 120, o),
+  ];
+}
+
+function completa(o) {
+  return [
+    ...janelas([0, 1, 2]), pendurado('relogio', 80), encostado('planta', 160),
+    encostado('planta', o.lado ? 228 : 12),
+    ...alaDeLazer(3 * LARGURA_COLUNA, 120, o),
   ];
 }
 

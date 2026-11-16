@@ -2,7 +2,7 @@
 import { spawn as criarProcesso } from 'node:child_process';
 
 function navegador(plataforma, url) {
-  if (plataforma === 'win32') return ['rundll32.exe', ['url.dll,FileProtocolHandler', url]];
+  if (plataforma === 'win32') return ['powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '& { Start-Process -FilePath $args[0] }', url]];
   if (plataforma === 'darwin') return ['open', [url]];
   if (plataforma === 'linux') return ['xdg-open', [url]];
   return null;

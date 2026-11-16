@@ -99,7 +99,7 @@ export function criarRotulos(camada, documento) {
   }
   function falar(bonecos) {
     const falando = sala ? bonecos.filter((boneco) => boneco.fala) : [];
-    const novo = JSON.stringify([sala?.nome, falando.map((b) => [b.indice, b.fala, b.x, b.sentado])]);
+    const novo = JSON.stringify([sala?.nome, falando.map((b) => [b.indice, b.fala, b.x, b.y, b.sentado])]);
     if (novo === falado) return;
     falado = novo;
     if (!falas && !falando.length) return;

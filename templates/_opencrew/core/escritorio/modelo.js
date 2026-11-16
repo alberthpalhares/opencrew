@@ -36,3 +36,6 @@ export * from './rota.js';
 export * from './animacao.js';
 // Pose, posição e monitor de cada boneco num instante: `quadro`.
 export * from './quadro.js';
+// Copa, Lazer e diálogos de convivência (Fase E5).
+export * from './modelo-lazer.js';
+export * from './modelo-dialogos.js';

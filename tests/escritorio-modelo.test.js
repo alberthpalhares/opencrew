@@ -45,7 +45,7 @@ const pecas = (m) => [m.retangulo, caixa(m.boneco), caixa(m.frente)];
 const inteiros = (m) => [m.retangulo, m.boneco, m.frente, m.nome, m.balao].flatMap(Object.values).every(Number.isInteger);
 
 test('E1-05a: 1, 4, 5, 9 and 12 agents — the grid of the room of that cast, nothing overlapping, anchors in the own column', () => {
-  assert.deepEqual([SALAS.grande.largura, SALAS.grande.altura, SALAS.grande.colunasDeMesa, BONECO, MAX_MESAS, SALAS.completa.mesas.length], [320, 180, 4, 16, 12, 12]);
+  assert.deepEqual([SALAS.grande.largura, SALAS.grande.altura, SALAS.grande.colunasDeMesa, BONECO, MAX_MESAS, SALAS.completa.mesas.length], [360, 240, 3, 16, 12, 12]);
   for (const n of [1, 4, 5, 9, 12]) {
     const sala = salaDe(n);
     const lista = ver(estado({ agents: elenco(n) })).agentes.map((a) => a.mesa);
@@ -70,7 +70,7 @@ test('E1-05a: the gaps between the desks fit a walking figure — behind and in 
     const corredores = sala.mesas.filter((mesa) => mesa.coluna === 0).flatMap((m) => [m.boneco.y, m.frente.y]);
     for (const y of corredores) assert.ok(livre(sala, { x: 0, y, largura: sala.largura, altura: BONECO }), `${sala.nome}: row corridor at y ${y}`);
   }
-  assert.deepEqual(SALAS.grande.vaosX.map((x) => (x + BONECO / 2) / LARGURA_COLUNA), [1, 2, 3]);
+  assert.deepEqual(SALAS.grande.vaosX.map((x) => (x + BONECO / 2) / LARGURA_COLUNA), [1, 2]);
 });
 
 test('E1-05a: with 14 agents the last two have no desk and are still in the list', () => {

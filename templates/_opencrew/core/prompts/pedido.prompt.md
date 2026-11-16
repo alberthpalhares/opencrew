@@ -64,8 +64,7 @@ After `ESTADO:OK`, ensure the server and get this run's URL:
 node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"
 ```
 
-Open the exact URL in the app's built-in Browser when the session offers it. In a CLI, add `--externo` to open the system browser. Show the URL as a clickable chat link. If the
-host denies or blocks navigation, leave the link manual; do not bypass the refusal. If the server cannot start, tell the user once and continue the pedido.
+In sandboxed harnesses (such as Antigravity), pass `--preparar` outside the sandbox and, on `ESCRITORIO:DAEMON <port> <url>`, start `node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>` outside the sandbox as a persistent daemon before opening `<url>`. Open the exact URL in the app's built-in Browser when the session offers it. In a CLI, add `--externo` to open the system browser. Show the URL as a clickable chat link (with base `http://127.0.0.1:<port>`), along with any `ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` links returned for phone or tablet. If the host denies or blocks navigation, leave the link manual; do not bypass the refusal. If the server cannot start, tell the user once and continue the pedido.
 
 ## Step 5: The work (step 1)
 

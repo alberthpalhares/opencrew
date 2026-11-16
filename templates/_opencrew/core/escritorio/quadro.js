@@ -6,6 +6,8 @@
 // e regras 1 a 3, 6 e 8 (repositório do OpenCrew).
 import { ANDAR_MS, COMEMORACAO_MS, CONVERSA_MS, DIGITAR_MS, ENTREGA_MS, FALA_MS, IDA_MS, VOLTA_MS } from './animacao.js';
 import { falaFixa } from './modelo-falas.js';
+import { posicoesDeLazer } from './modelo-lazer.js';
+import { falaDeConvivencia } from './modelo-dialogos.js';
 import { FALAS, cortarFala } from './modelo-textos.js';
 import { pontoDaRota, rota } from './rota.js';
 
@@ -58,6 +60,8 @@ function naMesa(agente, agoraMs, semMovimento) {
     x: mesa.boneco.x,
     y: mesa.boneco.y,
     destino: null,
+    adereco: null,
+    lazer: null,
     ...monitorDe(agente, agoraMs),
   };
 }
@@ -125,9 +129,22 @@ export function quadro(modelo, agoraMs) {
   const semMovimento = Boolean(modelo?.reduzirMovimento);
   const emCurso = entregaEmCurso(modelo, todos, agoraMs);
   const festa = semMovimento ? null : decorrido(modelo?.animacao?.comemoracao, COMEMORACAO_MS, agoraMs);
+  const posicoes = posicoesDeLazer(modelo, agoraMs, { emEntrega: emCurso, comemorando: festa !== null, andarMs: ANDAR_MS });
+  const algumFixo = emCurso !== null || todos.some((a) => a?.mesa && falaFixa(modelo?.falas, a.id, agoraMs));
+  const convivencia = algumFixo ? null : falaDeConvivencia(modelo, posicoes, agoraMs);
   return todos.filter((agente) => agente?.mesa).map((agente) => {
-    const boneco = { ...naMesa(agente, agoraMs, semMovimento), ...falar(agente, emCurso, modelo, agoraMs) };
+    const base = { ...naMesa(agente, agoraMs, semMovimento), ...falar(agente, emCurso, modelo, agoraMs) };
+    const fala = base.fala ?? (convivencia?.id === agente.id ? convivencia.texto : null);
+    const boneco = { ...base, fala };
     if (!semMovimento && emCurso?.de === agente) return { ...boneco, ...andar(emCurso) };
-    return festa !== null && agente.acao !== 'skipped' ? comemorar(boneco, festa) : boneco;
+    if (festa !== null && agente.acao !== 'skipped') return comemorar(boneco, festa);
+    const pos = posicoes.get(agente.id);
+    if (!pos) return boneco;
+    const jogando = pos.lazer === 'videogame' && !pos.caminhando;
+    return {
+      ...boneco,
+      ...pos,
+      monitorFase: jogando ? fase(agoraMs, MONITOR_MS, PASSOS_DO_MONITOR) : boneco.monitorFase,
+    };
   });
 }

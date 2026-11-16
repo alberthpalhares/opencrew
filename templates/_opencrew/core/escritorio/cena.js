@@ -8,7 +8,7 @@
 // regras 14, 15 e 19 (repositório do OpenCrew).
 import { BONECO, montarAmbiente } from './modelo.js';
 import { coresDoBoneco, linhasDoBoneco } from './sprites-boneco.js';
-import { pintar, pintarMovel, pintarSala, tomDe } from './cena-sala.js';
+import { pintar, pintarMovel, pintarSala, pintarTvLigada, tomDe } from './cena-sala.js';
 import {
   MESA, MESA_ACIMA, MONITOR, MONITOR_EM, SINAL_DUVIDA, SINAL_FALHA, SINAL_FEITO, SOMBRA,
   TELA_AMBAR, TELA_EM, TELA_VERMELHA, TELAS_ACESAS,
@@ -39,11 +39,11 @@ function pintarMesa(ctx, { mesa, monitor, monitorFase }, tom) {
 
 /** O boneco na pose do quadro, com a sombra no chão (se está em pé) e o sinal sobre a cabeça. */
 function pintarBoneco(ctx, boneco, tom) {
-  const { x, y, acao, pose, papel, espelhado } = boneco;
+  const { x, y, acao, pose, papel, espelhado, adereco, sentado, emAssento } = boneco;
   const { molde, corte } = boneco.aparencia;
-  const linhas = linhasDoBoneco(pose, { molde, corte, papel, espelhado, festa: acao === 'comemorando' && pose === 'mao' });
-  const sinal = SINAIS[acao];
-  if (!boneco.sentado) pintar(ctx, SOMBRA, x + Math.floor((BONECO - largura(SOMBRA)) / 2), y + BONECO, tom);
+  const linhas = linhasDoBoneco(pose, { molde, corte, papel, espelhado, adereco, festa: acao === 'comemorando' && pose === 'mao' });
+  const sinal = sentado ? SINAIS[acao] : null;
+  if (!sentado && !emAssento) pintar(ctx, SOMBRA, x + Math.floor((BONECO - largura(SOMBRA)) / 2), y + BONECO, tom);
   ctx.globalAlpha = acao === 'skipped' ? ALFA_DO_PULADO : 1;
   pintar(ctx, { linhas, paleta: coresDoBoneco(boneco.aparencia) }, x, y, tom);
   ctx.globalAlpha = 1;
@@ -64,7 +64,10 @@ function pintarBoneco(ctx, boneco, tom) {
 export function pintarCena(ctx, bonecos, ambiente = montarAmbiente({ total: bonecos.length })) {
   const tom = tomDe(ambiente.periodo);
   pintarSala(ctx, ambiente);
-  const moveis = ambiente.moveis.filter((movel) => movel.camada === 'chao').map((movel) => ({ base: movel.y + movel.altura, pintar: () => pintarMovel(ctx, movel, ambiente) }));
+  const jogador = bonecos.find((b) => b.adereco === 'controle');
+  if (jogador) pintarTvLigada(ctx, ambiente, jogador.monitorFase);
+  const baseMovel = (m) => (m.tipo === 'sofa' || m.tipo === 'poltrona' ? m.y : m.y + m.altura);
+  const moveis = ambiente.moveis.filter((movel) => movel.camada === 'chao').map((movel) => ({ base: baseMovel(movel), pintar: () => pintarMovel(ctx, movel, ambiente) }));
   const camadas = bonecos.flatMap((boneco) => [
     { base: boneco.mesa.retangulo.y + boneco.mesa.retangulo.altura, pintar: () => pintarMesa(ctx, boneco, tom) },
     ...(boneco.vazio ? [] : [{ base: boneco.y + BONECO, pintar: () => pintarBoneco(ctx, boneco, tom) }]),
@@ -73,7 +76,7 @@ export function pintarCena(ctx, bonecos, ambiente = montarAmbiente({ total: bone
 }
 
 /** O que muda o desenho de um boneco: se nada disto mudou, o quadro é o mesmo. */
-const resumo = (b) => [b.id, b.indice, b.aparencia.molde, b.acao, b.pose, b.papel, b.espelhado, b.x, b.y, b.monitor, b.monitorFase].join(':');
+const resumo = (b) => [b.id, b.indice, b.aparencia.molde, b.acao, b.pose, b.papel, b.adereco ?? '', b.espelhado, b.x, b.y, b.monitor, b.monitorFase].join(':');
 
 /**
  * O laço de animação. A cada quadro do navegador pede os bonecos e, se algo mudou desde a última

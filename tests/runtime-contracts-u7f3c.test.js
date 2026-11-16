@@ -58,5 +58,40 @@ test('U7F3C-05a: app bridges select native Browser and CLI bridges select the sy
   assert.match(claude, /Claude Code Desktop[\s\S]*native Browser pane/);
   assert.match(codex, /Codex App built-in Browser/);
   assert.match(antigravity, /Antigravity's integrated browser agent/);
-  assert.match(achatar(cli), /In a CLI harness, add `--externo` to open the system browser/);
+  assert.match(cli ? achatar(cli) : '', /In a CLI harness, add `--externo` to open the system browser/);
+});
+
+test('U7F3C-06b: runner initialization points directly to opening the Browser, sandbox/daemon rules are explicit, and Antigravity bridge has no subagent contradiction', async () => {
+  const pipeline = await ler('_opencrew/core/runner.pipeline.md');
+  const step6 = pipeline.split(/\r?\n/).find((l) => l.startsWith('6. **Escritório**')) ?? '';
+  assert.match(step6, /open its live URL automatically in the Browser/);
+  const office = achatar(await ler('_opencrew/core/runner/escritorio.md'));
+  assert.match(office, /--preparar/);
+  assert.match(office, /ESCRITORIO:DAEMON/);
+  assert.match(office, /--servidor --porta/);
+  const pedido = achatar(await ler('_opencrew/core/prompts/pedido.prompt.md'));
+  assert.match(pedido, /--preparar/);
+  const antigravity = achatar(ideById('antigravity').files.map((f) => f.content).join('\n'));
+  assert.match(antigravity, /--automatico --preparar/);
+  assert.match(antigravity, /IsDaemon: true/);
+  assert.match(antigravity, /Run \*\*crew pipeline steps\*\* inline and sequentially/);
+  assert.doesNotMatch(antigravity, /This environment does not support background\/parallel subagents\./);
+});
+
+test('U7F3C-06c: Antigravity bridge forces execution: subagent crew steps inline and standalone node script calls', () => {
+  const antigravity = achatar(ideById('antigravity').files.map((f) => f.content).join('\n'));
+  assert.match(antigravity, /execution: subagent[\s\S]*inline/i);
+  assert.match(antigravity, /standalone `node` command/i);
+  assert.match(antigravity, /never chain script commands with `&&` or `;`/i);
+});
+
+test('E6-03a: runner, pedido, AGENTS and IDE bridges instruct showing mobile/tablet network URLs in chat', async () => {
+  const office = achatar(runnerCompleto.split('## Escritório')[1].split('## Execution Rules')[0]);
+  const pedido = achatar(await ler('_opencrew/core/prompts/pedido.prompt.md'));
+  const agents = achatar(await ler('AGENTS.md'));
+  const bridge = achatar(ideById('claude-code').files.map((f) => f.content).join('\n'));
+  for (const [nome, texto] of [['runner/escritorio.md', office], ['pedido.prompt.md', pedido], ['templates/AGENTS.md', agents], ['src/lib/ides.js', bridge]]) {
+    assert.match(texto, /ESCRITORIO:URL_REDE/, nome);
+    assert.match(texto, /ESCRITORIO:URL_VPN/, nome);
+  }
 });

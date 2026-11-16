@@ -6,6 +6,7 @@
 // Spec: fase-e1-escritorio-ao-vivo.md, regra 28, e fase-e3-conversa-e-entrega.md, §2 e regras 3
 // e 5 a 7 (repositório do OpenCrew).
 import { falasDaLeitura } from './modelo-falas.js';
+import { RETORNO_MS, TURNO_LAZER_MS, alocarEstacoes } from './modelo-lazer.js';
 
 /** A entrega: a ida até a frente da mesa de quem recebe, com o papel; a conversa; e a volta. */
 export const IDA_MS = 3000;
@@ -64,6 +65,24 @@ function comemoracaoDe(anterior, atual, agoraMs) {
  *   nada anima e ninguém fala · `animacao` só guarda quando cada coisa começou, e a entrega fica
  *   anotada depois de terminar: quem diz o que ainda se move num instante é `quadro`
  */
+/** Registra o inicio do lazer e os retornos ao computador de quem acabou de entrar em `working`. */
+function lazerDe(anterior, atual, agoraMs) {
+  const desdeMs = anterior.lazer?.desdeMs ?? agoraMs;
+  const ativos = (anterior.lazer?.retornos ?? []).filter((r) => agoraMs - r.inicioMs < RETORNO_MS);
+  if (!anterior.lazer || atual.reduzirMovimento) return { desdeMs, retornos: [] };
+  const sala = anterior.ambiente?.sala ?? atual.ambiente?.sala;
+  const turno = Math.floor(Math.max(0, agoraMs - desdeMs) / TURNO_LAZER_MS);
+  const antes = alocarEstacoes(anterior.agentes ?? [], sala, anterior.crew, turno);
+  const novos = (atual.agentes ?? []).flatMap((ag) => {
+    const prev = (anterior.agentes ?? []).find((a) => a.id === ag.id);
+    if (!ag.mesa || ag.status !== 'working' || (prev?.status !== 'idle' && prev?.status !== 'done')) return [];
+    const origem = antes.get(ag.id);
+    return origem ? [{ id: ag.id, inicioMs: agoraMs, origem }] : [];
+  });
+  const ids = new Set(novos.map((r) => r.id));
+  return { desdeMs, retornos: [...ativos.filter((r) => !ids.has(r.id)), ...novos] };
+}
+
 export function transicao(anterior, atual, agoraMs) {
   if (!mesmaCrew(anterior, atual)) return { ...atual, animacao: SEM_ANIMACAO, falas: SEM_FALAS };
   const emCurso = anterior.animacao?.entrega ?? null;
@@ -74,6 +93,7 @@ export function transicao(anterior, atual, agoraMs) {
       comemoracao: comemoracaoDe(anterior, atual, agoraMs),
     },
     falas: falasDaLeitura(anterior, atual, agoraMs),
+    lazer: lazerDe(anterior, atual, agoraMs),
   };
 }
 

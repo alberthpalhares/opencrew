@@ -75,7 +75,7 @@ test('E3-01a: a new handoff — 0 to 3 s who delivers walks with the paper; 3 to
   assert.deepEqual([a(3000).papel, a(5499).papel, a(5500).papel], [true, true, false], 'the paper changes hands when who receives answers');
   for (const ms of [7000, 8500, 9999]) assert.deepEqual([a(ms).acao, a(ms).papel, a(ms).sentado, a(ms).pose.startsWith('andar')], ['entregando', false, false, true], `${ms} ms: on the way back`);
   assert.ok(a(8500).espelhado && !a(1500).espelhado, 'facing where it walks to');
-  for (const ms of [10000, 10001, 600000]) assert.deepEqual([onde(a(ms)), a(ms).acao, a(ms).sentado, a(ms).papel], [mesas[0].boneco, 'done', true, false], `${ms} ms: seated`);
+  for (const ms of [10000, 10001, 600000]) assert.deepEqual([a(ms).acao, a(ms).papel, a(ms).destino], ['done', false, null], `${ms} ms: finished`);
   assert.ok([0, 3000, 5500, 8000].every((ms) => em(m, ms)[1].pose.startsWith('digitar')), 'who received is typing all along');
 });
 
@@ -83,7 +83,8 @@ test('E3-01b: in the conversation, 3 to 5.5 s is the line of who delivers, with 
   assert.deepEqual([FALA_MS, RESPOSTA_MS, FALA_MS + RESPOSTA_MS, FALAS.resposta], [2500, 1500, CONVERSA_MS, 'Deixa comigo.']);
   // The receiver is idle here, so that the only lines are those of the delivery.
   const m = seguir(ANTES, [estado({ agentes: ['done'], handoff: passagem(1, 2) })]);
-  for (const ms of [0, 1500, 2999, 7000, 8500, 10000, 60000]) assert.deepEqual(falas(m, ms), [null, null, null], `${ms} ms`);
+  for (const ms of [0, 1500, 2999, 7000, 8500]) assert.deepEqual(falas(m, ms), [null, null, null], `${ms} ms`);
+  assert.ok(em(m, 60000).every((b) => !b.semBalao), 'no delivery suppression after delivery');
   for (const ms of [3000, 4000, 5499]) assert.deepEqual(falas(m, ms), [MENSAGEM, null, null], `${ms} ms`);
   for (const ms of [5500, 6000, 6999]) assert.deepEqual(falas(m, ms), [null, 'Deixa comigo.', null], `${ms} ms`);
 });
@@ -120,14 +121,15 @@ test('E3-01d: the first reading of a crew that already has a handoff — nobody 
   }
 });
 
-test('E3-01e: a new handoff 2 s into another — only the figure of the new one walks, from the start', () => {
+test('E3-01e: a new handoff 2 s into another — only the new one delivers, from the start', () => {
   const segunda = estado({ agentes: ['done', 'done', 'working'], handoff: passagem(2, 3, 'Texto pronto.', 2000) });
   const m = seguir(ANTES, [ENTREGUE], [segunda, 2000]);
   const { mesas } = m.ambiente.sala;
-  assert.deepEqual(em(m, 2000).map((b) => [b.acao, b.sentado, onde(b)]), [['done', true, mesas[0].boneco], ['entregando', false, mesas[1].boneco], ['working', true, mesas[2].boneco]]);
+  assert.deepEqual(em(m, 2000).map((b) => [b.acao, b.destino]), [['done', null], ['entregando', 2], ['working', null]]);
+  assert.deepEqual(onde(em(m, 2000)[1]), mesas[1].boneco);
   assert.deepEqual([falas(m, 4000), falas(m, 6000), falas(m, 8000)], [[null, null, 'Escrever o texto'], [null, 'Texto pronto.', null], [null, null, 'Deixa comigo.']], 'and the conversation is the one of the new handoff');
-  for (let ms = 2000; ms < 2000 + ENTREGA_MS; ms += 250) assert.equal(em(m, ms).filter((b) => !b.sentado).length, 1, `${ms} ms: never two figures walking`);
-  assert.ok(em(m, 2000 + ENTREGA_MS).every((b) => b.sentado));
+  for (let ms = 2000; ms < 2000 + ENTREGA_MS; ms += 250) assert.equal(em(m, ms).filter((b) => b.acao === 'entregando').length, 1, `${ms} ms: never two deliveries`);
+  assert.ok(em(m, 2000 + ENTREGA_MS).every((b) => b.acao !== 'entregando'));
 });
 
 test('E3-02a: an agent that goes from idle to working says the label of the step for 3 s, then the status balloon is back; completed — "Pronto!"; failed — "Deu problema." on the agent that failed', () => {
@@ -135,25 +137,25 @@ test('E3-02a: an agent that goes from idle to working says the label of the step
   const comecou = seguir([estado()], [estado({ agentes: ['idle', 'working'] }), 1000]);
   assert.deepEqual(comecou.falas, [{ id: 'a2', texto: 'Escrever o texto', inicioMs: T0 + 1000 }]);
   for (const ms of [1000, 2500, 3999]) assert.deepEqual(falas(comecou, ms), [null, 'Escrever o texto', null], `${ms} ms`);
-  assert.deepEqual([falas(comecou, 999), falas(comecou, 4000)], [[null, null, null], [null, null, null]]);
+  assert.deepEqual([falas(comecou, 999)[1], falas(comecou, 4000)[1]], [null, null]);
   assert.equal(comecou.agentes[1].balao, 'Escrever o texto', 'the status balloon is still in the model');
   // On the page: while the line is on, the status balloon gives way; then it is back.
   const { camada, rotulos } = rotulosEm(comecou, 2000);
   const balao = () => daClasse(camada, 'balao')[0].style.opacity;
   assert.deepEqual([daClasse(camada, 'fala-texto').map((el) => el.textContent), balao()], [['Escrever o texto'], '0']);
   rotulos.acompanhar(em(comecou, 4000));
-  assert.deepEqual([daClasse(camada, 'fala').filter((el) => !el.removido), balao()], [[], '']);
+  assert.deepEqual([daClasse(camada, 'fala-texto').filter((el) => el.textContent === 'Escrever o texto'), balao()], [[], '']);
   // Another reading in the middle neither repeats the line nor cuts it; after 3 s it is dropped.
   const depois = seguir([estado()], [estado({ agentes: ['idle', 'working'] }), 1000], [estado({ agentes: ['idle', 'working'], updatedAt: iso(2000) }), 2000]);
-  assert.deepEqual([depois.falas, falas(depois, 3999), falas(depois, 4000)], [comecou.falas, [null, 'Escrever o texto', null], [null, null, null]]);
+  assert.deepEqual([depois.falas, falas(depois, 3999)[1], falas(depois, 4000)[1]], [comecou.falas, 'Escrever o texto', null]);
   assert.deepEqual(seguir([estado()], [estado({ agentes: ['idle', 'working'] }), 1000], [estado({ agentes: ['idle', 'working'] }), 5000]).falas, []);
   const pronta = seguir([estado({ agentes: ['done', 'working'] })], [estado({ status: 'completed', agentes: ['done', 'done'] }), 1000]);
-  assert.deepEqual([falas(pronta, 1000), falas(pronta, 3999), falas(pronta, 4000)], [[null, 'Pronto!', null], [null, 'Pronto!', null], [null, null, null]]);
+  assert.deepEqual([falas(pronta, 1000), falas(pronta, 3999), falas(pronta, 4000)[1]], [[null, 'Pronto!', null], [null, 'Pronto!', null], null]);
   const falhou = seguir([estado({ agentes: ['done', 'working'] })], [estado({ status: 'failed', agentes: ['done', 'failed'], motivo: 'Sem acesso.' }), 1000]);
-  assert.deepEqual([falas(falhou, 1000), falas(falhou, 3999), falas(falhou, 4000)], [[null, 'Deu problema.', null], [null, 'Deu problema.', null], [null, null, null]]);
+  assert.deepEqual([falas(falhou, 1000), falas(falhou, 3999), falas(falhou, 4000)[1]], [[null, 'Deu problema.', null], [null, 'Deu problema.', null], null]);
   // A checkpoint is not a line: the status balloon "Aguardando você" stays while it lasts.
   const espera = seguir([estado({ agentes: ['working'] })], [estado({ status: 'checkpoint', agentes: ['checkpoint'] }), 1000]);
-  assert.deepEqual([espera.falas, falas(espera, 1500), espera.agentes[0].balao], [[], [null, null, null], 'Aguardando você']);
+  assert.deepEqual([espera.falas, falas(espera, 1500)[0], espera.agentes[0].balao], [[], null, 'Aguardando você']);
   // An agent without a desk (the 13th on) has no figure to speak.
   const treze = seguir([estado({ n: 14 })], [estado({ n: 14, agentes: [...Array(12).fill('idle'), 'working'] }), 1000]);
   assert.deepEqual(treze.falas, []);
@@ -238,10 +240,10 @@ test('E3-04a: "Rever entrega" on a handoff already over plays the delivery again
   assert.equal(pedidos, 1);
   // What the click asks of the model: the delivery of that handoff, from the start.
   const terminada = entrega();
-  assert.ok(em(terminada, 60000).every((b) => b.sentado && b.fala === null));
+  assert.ok(em(terminada, 60000).every((b) => b.acao !== 'entregando'));
   const denovo = rever(terminada, T0 + 60000);
   assert.deepEqual(denovo.animacao.entrega, { deId: 'a1', paraId: 'a2', inicioMs: T0 + 60000 });
-  assert.deepEqual([em(denovo, 60000)[0].acao, onde(em(denovo, 60000)[0]), falas(denovo, 64000)[0], falas(denovo, 66000)[1], em(denovo, 70000)[0].sentado], ['entregando', terminada.ambiente.sala.mesas[0].boneco, MENSAGEM, 'Deixa comigo.', true]);
+  assert.deepEqual([em(denovo, 60000)[0].acao, onde(em(denovo, 60000)[0]), falas(denovo, 64000)[0], falas(denovo, 66000)[1], em(denovo, 70000)[0].acao], ['entregando', terminada.ambiente.sala.mesas[0].boneco, MENSAGEM, 'Deixa comigo.', 'done']);
   // First reading (nothing ever played): it plays; under way: it starts over; no handoff: nothing.
   const aberta = rever(seguir([ENTREGUE]), T0 + 500);
   assert.deepEqual([aberta.animacao.entrega, em(aberta, 2000)[0].acao], [{ deId: 'a1', paraId: 'a2', inicioMs: T0 + 500 }, 'entregando']);
@@ -272,11 +274,12 @@ test('E3-07a: in the demo every scene with a handoff lasts at least 10 s, and th
   assert.ok(comPassagem.every((cena) => cena.ms >= ENTREGA_MS), 'the whole delivery fits in the scene');
   assert.ok(ROTEIRO.cenas.find((c) => c.status === 'failed').ms >= 3000 && ROTEIRO.cenas.find((c) => c.status === 'completed').ms >= 3000);
   const ditas = [];
-  let [leitura, andando] = [null, 0];
+  let [leitura, entregando, lazer] = [null, 0, false];
   for (let ms = 0; ms < DURACAO_DEMO_MS; ms += 100) {
     if (ms % 200 === 0) leitura = transicao(leitura, montarPagina(MEMORIA_INICIAL, { agoraMs: T0 + ms, decorridoDemoMs: ms }), T0 + ms);
     const bonecos = quadro(leitura, T0 + ms);
-    andando = Math.max(andando, bonecos.filter((b) => !b.sentado).length);
+    entregando = Math.max(entregando, bonecos.filter((b) => b.acao === 'entregando').length);
+    if (bonecos.some((b) => b.lazer)) lazer = true;
     for (const b of bonecos) if (b.fala !== null && ditas.at(-1) !== `${b.id}: ${b.fala}`) ditas.push(`${b.id}: ${b.fala}`);
   }
   const [a, b, c] = comPassagem.map((cena) => cena.passagem);
@@ -287,5 +290,6 @@ test('E3-07a: in the demo every scene with a handoff lasts at least 10 s, and th
   }
   assert.ok(ditas.includes('design: Deu problema.') && ditas.includes('revisao: Pronto!'), ditas.join(' | '));
   assert.ok(ditas.includes('pesquisa: Pesquisar o tema'), 'who starts working says the label of the step');
-  assert.equal(andando, 1, 'never two figures walking');
+  assert.equal(entregando, 1, 'never two deliveries at once');
+  assert.ok(lazer, 'free agents visit the leisure wing during the demo');
 });

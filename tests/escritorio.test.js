@@ -174,10 +174,10 @@ test('E1-04d: a path that is not on the list is 404, wherever it points; a metho
   }
 });
 
-test('E1-04e: another Host gets 421 with the real address and no echo of what came; the server listens on 127.0.0.1 only', async (t) => {
+test('E1-04e (E6): another Host gets 421 with the real address and no echo of what came; the server listens on 0.0.0.0', async (t) => {
   const { raiz } = await projeto(t);
   const { servidor, porta } = await rodar(t, raiz, ['--porta', await portaLivre(t)]);
-  assert.equal(servidor.address().address, '127.0.0.1');
+  assert.equal(servidor.address().address, '0.0.0.0');
   const recusa = [421, 'text/plain; charset=utf-8', `Abra por http://127.0.0.1:${porta}`];
   for (const Host of ['exemplo.com', `exemplo.com:${porta}`, `localhost.exemplo.com:${porta}`, '127.0.0.1', `127.0.0.1:${porta + 1}`, 'localhost']) {
     for (const metodo of ['GET', 'POST']) {

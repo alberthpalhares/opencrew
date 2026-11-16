@@ -5,7 +5,7 @@
 // A fala da entrega e a resposta de quem recebe saem do tempo da entrega, em `quadro.js`.
 // Puro: sem DOM, sem relógio, sem rede. A hora entra por parâmetro.
 // Spec: fase-e3-conversa-e-entrega.md, regras 3 a 5 (repositório do OpenCrew).
-import { BONECO } from './modelo-mesas.js';
+import { BONECO, LARGURA_COLUNA } from './modelo-mesas.js';
 import { FALAS, cortarFala } from './modelo-textos.js';
 
 /** Quanto dura uma fala fixa. */
@@ -71,6 +71,7 @@ export function caixaDaFala(boneco, sala) {
   // Quem comemora pula: o balão fica na altura do assento, sem pular junto.
   const y = boneco.sentado && boneco.mesa ? boneco.mesa.boneco.y : boneco.y;
   const baixo = y - FOLGA;
-  const nomes = sala.mesas.map((mesa) => mesa.nome.y + FAIXA_DO_NOME).filter((fim) => fim <= baixo);
+  const noLazer = boneco.x >= sala.colunasDeMesa * LARGURA_COLUNA;
+  const nomes = noLazer ? [] : sala.mesas.map((mesa) => mesa.nome.y + FAIXA_DO_NOME).filter((fim) => fim <= baixo);
   return { x: boneco.x + BONECO / 2, teto: Math.max(0, ...nomes), baixo };
 }

@@ -448,10 +448,11 @@ dos olhos próprios —, e ele é sempre o mesmo, em qualquer execução.*
 
 **Abertura automática:** ao iniciar ou retomar uma crew, o OpenCrew abre o Escritório já apontado
 para aquela execução. Em Claude Code Desktop, Codex App e Antigravity App, usa o navegador
-integrado quando disponível; nos harnesses CLI, abre o navegador padrão do sistema e mostra um
-link clicável no chat. Um pedido avulso (`pedir`) também abre a sua execução, depois da
-confirmação do usuário. Se a sessão não puder abrir a página, o link continua disponível e o
-trabalho segue.
+integrado quando disponível; nos harnesses CLI, abre o navegador padrão do sistema e mostra os
+links clicáveis no chat — tanto o endereço local (`127.0.0.1`) quanto, quando disponíveis, os links
+da mesma rede (Wi-Fi/LAN) e de VPN/Tailscale para abrir no celular ou tablet. Um pedido avulso
+(`pedir`) também abre a sua execução, depois da confirmação do usuário. Se a sessão não puder
+abrir a página, os links continuam disponíveis e o trabalho segue.
 
 Para abrir a visão geral manualmente, digite `/opencrew dashboard`. O comando inicia ou reutiliza
 um servidor local compatível e mostra o endereço — normalmente `http://127.0.0.1:4747`, ou outra
@@ -475,7 +476,7 @@ O que vale saber antes de ligar:
 
 - **Vem ligado.** `/opencrew dashboard off` grava `Dashboard: off` para desativar; o valor antigo
   `Dashboard: disabled` continua valendo como ligado, sem o `update` reescrever suas preferências.
-- **Roda só neste computador, sem internet e sem medição.** A página é servida em `127.0.0.1`,
+- **Roda só neste computador, sem internet e sem medição.** A página é servida localmente (alcançável também pelos IPs locais da máquina na mesma rede Wi-Fi/LAN ou VPN/Tailscale, com validação estrita de `Host`),
   só lê o estado das suas crews: a visão geral também reconhece `state.json` antigo, e cada
   execução nova grava `crews/<crew>/output/<run_id>/estado-escritorio.json`. Não carrega nada de
   fora e não envia dado nenhum para lugar nenhum.
@@ -502,11 +503,13 @@ preferência "reduzir movimento" do sistema ninguém anda, mas as falas aparecem
 
 **A sala tem o tamanho da crew.** São quatro salas, escolhidas pelo número de agentes do elenco:
 Pequena (1 a 3), Média (4 a 6), Grande (7 a 9) e Completa (10 a 12). Sala menor aparece maior na
-tela: numa crew de 3, os bonecos ficam bem mais visíveis. Cada sala tem os seus móveis — tapete,
-estante de livros, abajur, sofá ou poltronas, bebedouro, máquina de café, quadro branco, plantas —,
-e o arranjo sai do nome da crew: cada crew tem o "seu" escritório, sempre o mesmo. Numa janela
-com menos de 1.100 px de largura, a lista da equipe desce para baixo do desenho, para a sala usar
-a largura inteira.
+tela: numa crew de 3, os bonecos ficam bem mais visíveis. Cada sala traz mesas de trabalho e uma
+**Ala de Copa e Lazer** completa — área de café com bancada e bebedouro, lounge com sofás e
+poltronas, mesa de sinuca e vídeo game com tela animada —, com arranjo fixo para cada nome de
+crew. Enquanto não estão numa tarefa, os agentes caminham pela sala, alternam entre os ambientes
+com xícara, taco ou controle, e conversam em duplas; assim que recebem uma tarefa, voltam ao
+computador. Numa janela com menos de 1.100 px de largura, a lista da equipe desce para baixo do
+desenho, para a sala usar a largura inteira.
 
 **Dia e noite.** O escritório segue o relógio do seu computador: manhã (6h às 9h59), dia (10h às
 16h59), entardecer (17h às 18h59) e noite (19h às 5h59). Muda o céu das janelas e, à noite, a

@@ -80,8 +80,8 @@ test('E1-05f: a new handoff in the middle replaces the one under way', () => {
   const segunda = estado({ agentes: ['done', 'done', 'working'], handoff: passagem(2, 3, 1500) });
   const m = seguir([estado({ agentes: ['working'] })], [primeira], [segunda, 1500]);
   assert.deepEqual(m.animacao.entrega, { deId: 'a2', paraId: 'a3', inicioMs: T0 + 1500 });
-  assert.deepEqual(em(m, 1500).map((b) => [b.acao, b.destino, b.sentado]), [['done', null, true], ['entregando', 2, false], ['working', null, true]]);
-  assert.deepEqual(onde(em(m, 1500)[0]), MESAS[0].boneco, 'who was walking is back in the seat');
+  assert.deepEqual(em(m, 1500).map((b) => [b.acao, b.destino]), [['done', null], ['entregando', 2], ['working', null]]);
+  assert.equal(em(m, 1500)[0].sentado, false, 'free agent walks/relaxes in leisure');
   assert.deepEqual([acoes(m, 1500 + ENTREGA_MS - 1), acoes(m, 1500 + ENTREGA_MS)], [['done', 'entregando', 'working'], ['done', 'done', 'working']]);
 });
 
@@ -92,10 +92,10 @@ test('E1-05f: with 14 agents the handoffs from the 12th to the 13th and from the
     for (const ms of [0, 1000, IDA_MS, ENTREGA_MS - 1, ENTREGA_MS]) {
       const bonecos = em(m, ms);
       assert.equal(bonecos.length, 12, 'only who has a desk is drawn');
-      assert.ok(bonecos.every((b) => b.acao === 'idle' && b.sentado && passos(b, b.mesa.boneco) === 0), `${de} → ${para}, ${ms} ms`);
+      assert.ok(bonecos.every((b) => b.acao === 'idle' && b.destino === null), `${de} → ${para}, ${ms} ms`);
     }
   }
-  assert.deepEqual(em(com14(passagem(11, 12)), 1000).filter((b) => !b.sentado).map((b) => [b.indice, b.acao, b.destino]), [[10, 'entregando', 11]], 'both with a desk: it walks');
+  assert.deepEqual(em(com14(passagem(11, 12)), 1000).filter((b) => b.acao === 'entregando').map((b) => [b.indice, b.acao, b.destino]), [[10, 'entregando', 11]], 'both with a desk: it walks');
 });
 
 const pronta = (extra) => estado({ status: 'completed', agentes: ['done', 'done', 'skipped'], handoff: passagem(1, 2), ...extra });
@@ -183,8 +183,8 @@ test('E1-05h: who is working changes pose every 0.3 s; the same instant gives th
 
 test("E1-05h: a delivery from a to b — a's seat at the start, the front of b's desk from 3 to 7 s, seated again at 10 s and 10 minutes later", () => {
   const sala = SALAS.completa;
-  const [de, para] = [sala.mesas[5], sala.mesas[11]];
-  const m = congelar(seguir([estado({ agentes: quem(12, { 6: 'working' }) })], [estado({ agentes: quem(12, { 6: 'done', 12: 'working' }), handoff: passagem(6, 12) })]));
+  const [de, para] = [sala.mesas[4], sala.mesas[11]];
+  const m = congelar(seguir([estado({ agentes: quem(12, { 5: 'working' }) })], [estado({ agentes: quem(12, { 5: 'done', 12: 'working' }), handoff: passagem(5, 12) })]));
   const a = (ms) => em(m, ms)[de.indice];
   assert.deepEqual([onde(a(0)), onde(a(IDA_MS)), onde(a(IDA_MS + CONVERSA_MS)), IDA_MS, CONVERSA_MS, VOLTA_MS], [de.boneco, para.frente, para.frente, 3000, 4000, 3000]);
   const resumo = (b) => [b.acao, b.papel, b.sentado, b.destino];
@@ -205,9 +205,8 @@ test("E1-05h: a delivery from a to b — a's seat at the start, the front of b's
   }
   assert.deepEqual([a(100).espelhado, a(ENTREGA_MS - 100).espelhado, passos(a(ENTREGA_MS - 1), de.boneco) <= 1], [false, true, true]);
   for (const ms of [ENTREGA_MS, ENTREGA_MS + 600000, -1]) {
-    assert.deepEqual([onde(a(ms)), a(ms).acao, a(ms).pose, a(ms).sentado, a(ms).papel, a(ms).destino], [de.boneco, 'done', 'parado', true, false, null], `${ms} ms`);
+    assert.deepEqual([a(ms).acao, POSES.includes(a(ms).pose), a(ms).papel, a(ms).destino], ['done', true, false, null], `${ms} ms`);
   }
-  assert.ok(em(m, 1000).every((b) => b.indice === de.indice || (b.sentado && passos(b, b.mesa.boneco) === 0)), 'nobody else leaves the seat');
   assert.equal(em(m, 1000)[para.indice].pose, 'digitar-b', 'who receives is already typing');
 });
 
@@ -240,7 +239,7 @@ test('E1-05i: for every pair of desks the route has only horizontal and vertical
   for (const sala of Object.values(SALAS)) rotasDa(sala);
   const MESAS = SALAS.grande.mesas;
   const sala = SALAS.grande;
-  assert.deepEqual([sala.largura, sala.altura, MESAS.length], [320, 180, 9], 'the large room is the grid of phase E1, up to nine desks');
+  assert.deepEqual([sala.largura, sala.altura, MESAS.length], [360, 240, 9], 'the large room in 3:2 with Copa and Lazer, up to nine desks');
   assert.deepEqual([rota(sala, 0, 12), rota(sala, 12, 0), rota(sala, -1, 0), rota(sala, 0, 'x'), rota(sala, 1.5, 0)], Array(5).fill(null), 'no desk, no route');
   // Mirrored when the last sideways stretch went left; beyond the ends, the ends.
   const [ida, volta] = [rota(sala, 0, 1), [...rota(sala, 0, 1)].reverse()];
@@ -277,19 +276,15 @@ function rotasDa(sala) {
 }
 
 test('E1-05j: the scale is the largest whole number that fits in device pixels, and the canvas size in CSS follows it', () => {
-  // The 320×180 screen of phase E1 is the large room; the other rooms are in tests/escritorio-salas.test.js.
   const escala = (largura, altura, dpr) => escalaDaSala(largura, altura, dpr, SALAS.grande);
-  for (const [dpr, n] of [[1, 3], [1.25, 3], [1.5, 4], [2, 6]]) {
-    assert.deepEqual(escala(1000, 600, dpr), { n, largura: (320 * n) / dpr, altura: (180 * n) / dpr }, `dpr ${dpr}`);
+  for (const [dpr, n] of [[1, 2], [1.25, 3], [1.5, 3], [2, 5]]) {
+    assert.deepEqual(escala(1000, 600, dpr), { n, largura: (360 * n) / dpr, altura: (240 * n) / dpr }, `dpr ${dpr}`);
   }
-  assert.deepEqual(escala(200, 100, 1), { n: 1, largura: 320, altura: 180 }, 'not even 1 fits: 1, and the page scrolls');
-  // Both sides limit it, and one pixel short does not fit.
-  assert.deepEqual([escala(1000, 359, 1).n, escala(639, 600, 1).n, escala(640, 360, 1).n, escala(959, 540, 1).n, escala(960, 539, 1).n], [1, 1, 2, 2, 2]);
-  // A canvas of the size given back fits again, whatever the pixel ratio (1.7 × 5 misses by a hair).
+  assert.deepEqual(escala(200, 100, 1), { n: 1, largura: 360, altura: 240 }, 'not even 1 fits: 1, and the page scrolls');
+  assert.deepEqual([escala(1000, 479, 1).n, escala(719, 600, 1).n, escala(720, 480, 1).n, escala(1079, 720, 1).n, escala(1080, 719, 1).n, escala(1080, 720, 1).n], [1, 1, 2, 2, 2, 3]);
   for (const dpr of [0.67, 0.9, 1.1, 1.4, 1.7, 1.75, 2.625, 3]) {
-    for (let n = 1; n <= 12; n++) assert.equal(escala((320 * n) / dpr, (180 * n) / dpr, dpr).n, n, `dpr ${dpr}, scale ${n}`);
+    for (let n = 1; n <= 12; n++) assert.equal(escala((360 * n) / dpr, (240 * n) / dpr, dpr).n, n, `dpr ${dpr}, scale ${n}`);
   }
-  // Rubbish in: scale 1, or pixel ratio 1; never an error.
   for (const ruim of [[0, 0, 1], [Number.NaN, 600, 1], [-5, 600, 2], [Infinity, Infinity, 1], [undefined, undefined, undefined]]) assert.equal(escala(...ruim).n, 1, String(ruim));
-  assert.deepEqual([0, -1, undefined, Number.NaN, Infinity].map((dpr) => escala(1000, 600, dpr)), Array(5).fill({ n: 3, largura: 960, altura: 540 }));
+  assert.deepEqual([0, -1, undefined, Number.NaN, Infinity].map((dpr) => escala(1000, 600, dpr)), Array(5).fill({ n: 2, largura: 720, altura: 480 }));
 });

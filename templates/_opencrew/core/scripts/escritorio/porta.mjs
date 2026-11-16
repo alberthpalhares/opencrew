@@ -4,26 +4,30 @@ import http from 'node:http';
 import net from 'node:net';
 
 const LOCAL = '127.0.0.1';
+const TODAS_INTERFACES = '0.0.0.0';
 const ULTIMA_PORTA = 65535;
 // Quem responde na porta pode ser qualquer serviço: a resposta não é guardada sem limite.
 const TETO_DA_SONDA = 1_000_000;
 
+const escutaHost = (host, porta, esperaMs) => new Promise((resolve) => {
+  const conexao = net.connect({ host, port: porta });
+  const fim = (escuta) => { conexao.destroy(); resolve(escuta); };
+  conexao.setTimeout(esperaMs, () => fim(false));
+  conexao.once('connect', () => fim(true)).once('error', () => fim(false));
+});
+
 /**
- * Alguém aceita conexão em 127.0.0.1:porta? No Windows, o `listen` em 127.0.0.1 abre por cima de
- * quem escuta a mesma porta em 0.0.0.0 ou `::` e toma o tráfego local dele: só a conexão mostra
- * que a porta tem dono. Porta livre recusa na hora; sem resposta dentro da espera, conta como livre.
+ * Alguém aceita conexão na porta (IPv4 127.0.0.1 ou IPv6 ::1)? No Windows, `listen` em um
+ * endereço pode conviver com outro processo em `::1` e colidir em `localhost`. Porta livre
+ * recusa na hora; sem resposta dentro da espera, conta como livre.
  */
-export function alguemEscuta(porta, esperaMs = 1000) {
-  return new Promise((resolve) => {
-    const conexao = net.connect({ host: LOCAL, port: porta });
-    const fim = (escuta) => { conexao.destroy(); resolve(escuta); };
-    conexao.setTimeout(esperaMs, () => fim(false));
-    conexao.once('connect', () => fim(true)).once('error', () => fim(false));
-  });
+export async function alguemEscuta(porta, esperaMs = 1000) {
+  if (await escutaHost(LOCAL, porta, esperaMs)) return true;
+  return escutaHost('::1', porta, Math.min(esperaMs, 200));
 }
 
 /**
- * Abre o servidor na porta, preso em 127.0.0.1.
+ * Abre o servidor na porta, escutando em 0.0.0.0 (local + rede local/VPN).
  * @returns {Promise<boolean>} true se subiu; false se a porta não pôde ser aberta (ocupada, por
  *   quem quer que seja e em qualquer endereço, ou reservada pelo sistema). O mesmo servidor pode
  *   tentar outra porta em seguida.
@@ -33,7 +37,7 @@ export async function abrir(servidor, porta) {
   return new Promise((resolve) => {
     const subiu = () => { servidor.off('error', falhou); resolve(true); };
     const falhou = () => { servidor.off('listening', subiu); resolve(false); };
-    servidor.once('listening', subiu).once('error', falhou).listen(porta, LOCAL);
+    servidor.once('listening', subiu).once('error', falhou).listen(porta, TODAS_INTERFACES);
   });
 }
 
@@ -68,9 +72,10 @@ function juntar(res, entregar) {
  *   null para qualquer outra resposta (outro serviço, erro, resposta grande demais) ou nenhuma
  *   dentro da espera
  */
-export function sondarEstado(porta, esperaMs = 1000) {
+export function sondarEstado(porta, esperaMs = 1000, hostHeader = null) {
   return new Promise((resolve) => {
-    const pedido = http.get({ host: LOCAL, port: porta, path: '/estado', agent: false }, (res) => juntar(res, fim));
+    const headers = hostHeader ? { Host: `${hostHeader}:${porta}` } : undefined;
+    const pedido = http.get({ host: LOCAL, port: porta, path: '/estado', agent: false, headers }, (res) => juntar(res, fim));
     const relogio = setTimeout(() => fim(null), esperaMs);
     pedido.on('error', () => fim(null));
     function fim(corpo) {

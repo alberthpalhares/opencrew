@@ -116,9 +116,11 @@ each step with one short command (see `_opencrew/core/runner.pipeline.md`).
 1. Write `- **Dashboard:** enabled` in `_opencrew/_memory/preferences.md`, changing only that
    line (if the file has no `Dashboard` line, add it at the end). Leave the rest of the file as is.
 2. Start `node _opencrew/core/scripts/escritorio.mjs --automatico` from the project root. It starts
-   or reuses a confirmed server in the background and prints its URL.
-3. Show the address and open it in the harness Browser when available; in a CLI, add `--externo`
-   to open the system browser.
+   or reuses a confirmed server in the background and prints its URL (plus `ESCRITORIO:URL_REDE`
+   and `ESCRITORIO:URL_VPN` when available for phone/tablet).
+3. Show the address and any returned mobile/tablet network links (`ESCRITORIO:URL_REDE`,
+   `ESCRITORIO:URL_VPN`), and open it in the harness Browser when available; in a CLI, add
+   `--externo` to open the system browser.
 
 If a host policy blocks localhost or the user refuses the Browser, do not open an external browser;
 leave the link for manual use. Without a graphical browser, show the link and continue. Repeating

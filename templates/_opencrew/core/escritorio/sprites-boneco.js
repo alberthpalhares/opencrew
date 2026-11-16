@@ -6,6 +6,7 @@
 import { CORES, TINTAS, sombra } from './sprites.js';
 import { CORTES } from './sprites-rosto.js';
 import { BRACO, CORPOS, PAPEL, TROCAS } from './sprites-corpo.js';
+import { ADERECOS } from './sprites-lazer.js';
 
 const LADO = 16;
 const VAZIA = '.'.repeat(LADO);
@@ -23,13 +24,14 @@ function sobrepor(linhas, camada) {
   });
 }
 
-function montar({ molde, corte, pose, papel, festa }) {
+function montar({ molde, corte, pose, papel, festa, adereco }) {
   const corpo = CORPOS[molde];
   const trocas = !festa && Object.hasOwn(TROCAS[molde], pose) ? TROCAS[molde][pose] : {};
   const linhas = Array.from({ length: LADO }, (_, y) => trocas[y] ?? corpo.linhas[y - corpo.de] ?? VAZIA);
   if (festa || pose === 'mao') sobrepor(linhas, BRACO);
   if (festa) sobrepor(linhas, BRACO_ESQUERDO);
   if (papel) sobrepor(linhas, PAPEL);
+  else if (!festa && Object.hasOwn(ADERECOS, adereco)) sobrepor(linhas, ADERECOS[adereco]);
   sobrepor(linhas, CORTES[molde][corte]);
   return linhas;
 }
@@ -47,7 +49,8 @@ const POSTAS = new Map();
 export function linhasDoBoneco(pose, o = {}) {
   const molde = Object.hasOwn(CORPOS, o.molde ?? '') ? o.molde : MOLDE_PADRAO;
   const corte = Number.isInteger(o.corte) && o.corte >= 0 && o.corte < CORTES[molde].length ? o.corte : 0;
-  const pedido = { molde, corte, pose: String(pose), papel: Boolean(o.papel), festa: Boolean(o.festa) };
+  const adereco = Object.hasOwn(ADERECOS, o.adereco ?? '') ? o.adereco : '';
+  const pedido = { molde, corte, pose: String(pose), papel: Boolean(o.papel), festa: Boolean(o.festa), adereco };
   const chave = `${Object.values(pedido).join('|')}|${Boolean(o.espelhado)}`;
   if (!POSTAS.has(chave)) {
     const linhas = montar(pedido);
