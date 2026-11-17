@@ -42,6 +42,8 @@ test('E5-upg: update entrega módulos de lazer e preserva e desenha state.json e
   }
   assert.equal(await fs.readFile(estadoPath, 'utf8'), ESTADO_ANTIGO);
 
+  // Node 20.17 precisa de "type": "module" num pacote temporário para importar arquivos `.js` em ESM.
+  await fs.writeFile(path.join(dir, BASE, 'package.json'), '{"type":"module"}\n');
   const modelo = await import(pathToFileURL(path.join(dir, BASE, 'modelo.js')).href);
   const base = modelo.montarModelo(JSON.parse(ESTADO_ANTIGO), { agoraMs: 1000, crew: 'equipe-antiga' });
   const trans = modelo.transicao(base, base, 5000);
