@@ -5,9 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.21.2] — 2026-11-19
+
+Correção da prontidão e abertura automática do Escritório por execução.
+Chega com `npx @aksp/opencrew@latest update`, preservando crews, preferências e conteúdo local.
+
 ### Fixed
-- O Escritório só divulga a URL depois de confirmar HTTP 200 com HTML e o estado da crew e do `run_id` exatos. As pontes usam o mesmo fluxo de preparação, confirmação, abertura visível e conferência de carregamento.
-- Após `ESCRITORIO:DAEMON`, `--automatico --confirmar --porta` valida somente a porta escolhida antes de liberar a URL e identifica conflito para permitir uma única nova preparação.
+- O Escritório só divulga a URL depois de confirmar HTTP 200 com HTML e o estado do projeto, versão, crew e `run_id` exatos, evitando abrir uma página ausente ou de outra execução.
+- `run`, `retomar` e `pedir` compartilham o fluxo de preparação, confirmação da porta do daemon e abertura visível no Browser integrado disponível; falhas não interrompem a crew.
+- Conflitos de porta são identificados sem encerrar o processo existente, com no máximo uma nova preparação.
 
 ## [1.21.1] — 2026-11-16
 
