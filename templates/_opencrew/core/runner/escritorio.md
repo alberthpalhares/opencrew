@@ -14,13 +14,17 @@ The Escritório is on by default; only `Dashboard: off` disables it. Legacy `Das
 | End of the run | `node _opencrew/core/scripts/estado.mjs "{name}" concluir --run "{run_id}"` |
 | Run aborted after `iniciar` | `node _opencrew/core/scripts/estado.mjs "{name}" falhar --run "{run_id}" --motivo "{reason}"` |
 
-After the first `ESTADO:OK`, ensure the server and obtain the targeted URL:
+After the first `ESTADO:OK`, ensure the server and obtain the targeted URL. In a normal CLI or
+host session that keeps a detached child alive, use `--automatico` directly:
 
 ```
 node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"
 ```
 
-It returns `ESCRITORIO:URL` only after `/estado` confirms this project and installed version, and also emits `ESCRITORIO:URL_REDE` (same Wi-Fi/LAN) and `ESCRITORIO:URL_VPN` (Tailscale/VPN) when available for phone or tablet. In harnesses whose commands run in a sandbox or kill detached children on exit (such as Antigravity), pass `--preparar` outside the sandbox: on `ESCRITORIO:DAEMON <port> <url>`, start `node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>` outside the sandbox as a persistent background daemon before opening `<url>`. Open that URL in the app's native Browser when available (Claude Code Desktop Browser pane, Codex App built-in Browser, or Antigravity browser agent); in a CLI, or when the embedded Browser is unavailable, add `--externo` to open the system browser. Show the URL as a clickable link in chat (along with the base `http://127.0.0.1:<port>` address and any `ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` links so the user can watch the team on a phone or tablet). If the embedded Browser fails technically, try `--externo`; if the user refuses, host policy blocks navigation, or no graphical browser is available, leave the link manual and continue. Never bypass a refusal or policy block. On `ESCRITORIO:INDISPONIVEL`, tell the user once and continue.
+In Codex App and any sandbox that stops detached children, add `--preparar`. `ESCRITORIO:URL` is released only after `/` responds HTTP 200 and `/estado` confirms this project, installed version, crew and exact `run_id`.
+If preparation returns `ESCRITORIO:DAEMON <port> <url>`, start `node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>` in a persistent authorized host session, then run `node _opencrew/core/scripts/escritorio.mjs --automatico --confirmar --porta <port> --crew "{name}" --run "{run_id}"`. Confirmation checks only that port. If daemon startup or confirmation reports `ESCRITORIO:PORTA_OCUPADA`, prepare and start once more on the newly selected port. Add `--externo` when opening the system browser.
+
+Open only the confirmed `ESCRITORIO:URL` in the app's visible native Browser when available (Claude Code Desktop Browser pane, Codex App integrated Browser, or Antigravity browser agent), and check that the page loaded before saying it opened. In a CLI, or if the integrated Browser is absent or fails technically, use `--externo` if that browser can access the confirmed URL. When browser and server are on different machines, use only port forwarding provided and authorized by the harness, then verify the page. Show the URL as a clickable link in chat, along with the base address and any `ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` links for phone or tablet. A refusal or policy block leaves the link manual and must not be bypassed. On `ESCRITORIO:INDISPONIVEL`, tell the user once and continue.
 
 - **One event at a time:** wait for each `ESTADO:` line before the next. Per-run events write `crews/{name}/output/{run_id}/estado-escritorio.json`; this keeps simultaneous runs apart. Use the `run_id` from `CAMINHO:OK` or `EXECUCAO:RETOMAR`; never create one yourself.
 - **Pedido agents:** pass `--pedido` on every pedido event and the selected worker or reviewer in `--agente`; never infer it from pipeline step numbers.

@@ -58,13 +58,10 @@ When `preferences.md` does not say `Dashboard: off`, start the per-run Office st
 node _opencrew/core/scripts/estado.mjs "{name}" iniciar --run "{run_id}" --pedido --agente {worker_id} --passos {2 or 3}
 ```
 
-After `ESTADO:OK`, ensure the server and get this run's URL:
-
-```
-node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"
-```
-
-In sandboxed harnesses (such as Antigravity), pass `--preparar` outside the sandbox and, on `ESCRITORIO:DAEMON <port> <url>`, start `node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>` outside the sandbox as a persistent daemon before opening `<url>`. Open the exact URL in the app's built-in Browser when the session offers it. In a CLI, add `--externo` to open the system browser. Show the URL as a clickable chat link (with base `http://127.0.0.1:<port>`), along with any `ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` links returned for phone or tablet. If the host denies or blocks navigation, leave the link manual; do not bypass the refusal. If the server cannot start, tell the user once and continue the pedido.
+After `ESTADO:OK`, follow the shared server launch, exact-run confirmation, Browser and fallback
+flow in `_opencrew/core/runner/escritorio.md`, using the pedido's `run_id`. Show any returned
+`ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` as clickable links for phone and tablet. If the
+server cannot start, tell the user once and continue the pedido.
 
 ## Step 5: The work (step 1)
 

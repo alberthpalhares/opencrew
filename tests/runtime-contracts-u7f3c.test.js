@@ -33,8 +33,9 @@ test('U7F3C-05a: run and resume open their own Office after the run state starts
   assert.match(office, /Start of `run` or confirmed `retomar`/);
   assert.match(office, /--run "\{run_id\}"/);
   assert.match(office, /escritorio\.mjs --automatico --crew "\{name\}" --run "\{run_id\}"/);
-  assert.match(office, /app's native Browser/);
-  assert.match(office, /add `--externo`/);
+  assert.match(office, /HTTP 200[\s\S]*exact `run_id`/);
+  assert.match(office, /app's visible native Browser/);
+  assert.match(office, /add `--externo`/i);
   assert.match(runner, /The Escritório never stops the run/);
 });
 
@@ -42,7 +43,7 @@ test('U7F3C-05a: a pedido opens after confirmation and reports the chosen worker
   const pedido = await ler('_opencrew/core/prompts/pedido.prompt.md');
   const afterYes = pedido.indexOf('After the yes');
   const officeStart = pedido.indexOf('estado.mjs', afterYes);
-  const officeOpen = pedido.indexOf('escritorio.mjs --automatico', officeStart);
+  const officeOpen = pedido.indexOf('_opencrew/core/runner/escritorio.md', officeStart);
   assert.ok(afterYes >= 0 && officeStart > afterYes && officeOpen > officeStart);
   assert.match(pedido, /iniciar --run "\{run_id\}" --pedido --agente \{worker_id\}/);
   assert.match(pedido, /passo --run "\{run_id\}" --pedido --n 2 --agente \{reviewer_id\}/);
@@ -56,9 +57,9 @@ test('U7F3C-05a: app bridges select native Browser and CLI bridges select the sy
   const antigravity = ideById('antigravity').files.map((f) => f.content).join('\n');
   const cli = ideById('gemini').files.map((f) => f.content).join('\n');
   assert.match(claude, /Claude Code Desktop[\s\S]*native Browser pane/);
-  assert.match(codex, /Codex App built-in Browser/);
+  assert.match(codex, /Codex App integrated Browser/);
   assert.match(antigravity, /Antigravity's integrated browser agent/);
-  assert.match(cli ? achatar(cli) : '', /In a CLI harness, add `--externo` to open the system browser/);
+  assert.match(cli ? achatar(cli) : '', /In a CLI harness, add `--externo`/);
 });
 
 test('U7F3C-06b: runner initialization points directly to opening the Browser, sandbox/daemon rules are explicit, and Antigravity bridge has no subagent contradiction', async () => {
@@ -70,7 +71,7 @@ test('U7F3C-06b: runner initialization points directly to opening the Browser, s
   assert.match(office, /ESCRITORIO:DAEMON/);
   assert.match(office, /--servidor --porta/);
   const pedido = achatar(await ler('_opencrew/core/prompts/pedido.prompt.md'));
-  assert.match(pedido, /--preparar/);
+  assert.match(pedido, /shared server launch, exact-run confirmation, Browser and fallback flow/);
   const antigravity = achatar(ideById('antigravity').files.map((f) => f.content).join('\n'));
   assert.match(antigravity, /--automatico --preparar/);
   assert.match(antigravity, /IsDaemon: true/);
@@ -83,6 +84,32 @@ test('U7F3C-06c: Antigravity bridge forces execution: subagent crew steps inline
   assert.match(antigravity, /execution: subagent[\s\S]*inline/i);
   assert.match(antigravity, /standalone `node` command/i);
   assert.match(antigravity, /never chain script commands with `&&` or `;`/i);
+});
+
+test('U7F3C-07c: Codex bridge opens the confirmed Office URL in a visible integrated browser', () => {
+  const codex = ideById('codex').files.map((f) => f.content).join('\n');
+  assert.match(codex, /After the Office command returns a confirmed `ESCRITORIO:URL`/);
+  assert.match(codex, /visible tab with the integrated Browser tool/);
+  assert.match(codex, /verify that the Office page loaded/);
+  assert.match(codex, /host policy blocks navigation/);
+  assert.match(codex, /--automatico --preparar/);
+  assert.match(codex, /--automatico --confirmar --porta/);
+  assert.match(codex, /If startup or confirmation reports `ESCRITORIO:PORTA_OCUPADA`, repeat preparation and startup once/);
+  const antigravity = ideById('antigravity').files.map((f) => f.content).join('\n');
+  assert.match(antigravity, /--automatico --confirmar --porta/);
+  assert.match(antigravity, /Open only the confirmed `ESCRITORIO:URL`/);
+});
+
+test('U7F3C-07d: Dashboard off prevents Office state updates and browser startup', async () => {
+  const office = achatar(await ler('_opencrew/core/runner/escritorio.md'));
+  const pedido = achatar(await ler('_opencrew/core/prompts/pedido.prompt.md'));
+  const runner = achatar(runnerCompleto);
+  assert.equal(ligadoNoTexto('- **Dashboard:** off\n'), false);
+  assert.match(office, /only `Dashboard: off` disables it/);
+  assert.match(office, /Start of `run` or confirmed `retomar`/);
+  assert.match(pedido, /shared server launch, exact-run confirmation, Browser and fallback flow/);
+  assert.match(runner, /read `_opencrew\/core\/runner\/escritorio\.md` completely once/i);
+  assert.match(office, /If it says `escritório desligado`, make no more Office calls/);
 });
 
 test('E6-03a: runner, pedido, AGENTS and IDE bridges instruct showing mobile/tablet network URLs in chat', async () => {

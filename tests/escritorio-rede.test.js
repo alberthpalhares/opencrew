@@ -123,6 +123,7 @@ test('E6-02b: automatic mode skips an old server that refuses the LAN Host heade
     escrever: (l) => linhas.push(l),
     auto: {
       ocupada: async (p) => p === portaAntiga,
+      pronto: async () => true,
       spawn,
       esperar: async () => {},
       sondar: async (p) => {

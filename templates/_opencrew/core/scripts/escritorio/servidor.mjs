@@ -93,3 +93,18 @@ export function criarServidor({ raiz, pasta, arquivos, ipsPermitidos }) {
   servidor.on('clientError', (_erro, socket) => socket.destroy());
   return servidor;
 }
+
+/** Starts the server on the selected port; an occupied port is reported without touching its owner. */
+export async function iniciarServidorExato({ raiz, pasta, arquivos, porta, escrever }) {
+  const servidor = criarServidor({ raiz, pasta, arquivos });
+  return new Promise((resolver) => {
+    const falhou = (erro) => {
+      if (erro.code === 'EADDRINUSE') escrever(`ESCRITORIO:PORTA_OCUPADA ${porta}`);
+      resolver({ code: 1 });
+    };
+    servidor.once('error', falhou).listen(porta, '0.0.0.0', () => {
+      servidor.off('error', falhou);
+      resolver({ code: 0, porta, servidor });
+    });
+  });
+}

@@ -5,6 +5,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { templatesDir } from '../src/lib/paths.js';
+import { ideById } from '../src/lib/ides.js';
 import { workspace, entregueAntes, manifesto, gravarManifesto, carimboAntigo, rodar } from './_reconciliar.js';
 
 const arquivo = (dir, rel) => path.join(dir, ...rel.split('/'));
@@ -17,6 +18,8 @@ test('U7F3C-upg: one update delivers the auto-open runtime and leaves Dashboard:
   t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 3 }));
   const pref = arquivo(dir, '_opencrew/_memory/preferences.md');
   await fs.writeFile(pref, PREFERENCIAS);
+  const codexBridge = ideById('codex').files[0];
+  await entregueAntes(dir, codexBridge.path, '# Codex bridge from 1.20.0\n');
   await entregueAntes(dir, '_opencrew/core/scripts/estado.mjs', '// runtime 1.20.0\n');
   await entregueAntes(dir, '_opencrew/core/scripts/escritorio.mjs', '// runtime 1.20.0\n');
   for (const rel of ['_opencrew/core/scripts/escritorio/automatico.mjs', '_opencrew/core/scripts/escritorio/navegador.mjs']) {
@@ -33,8 +36,10 @@ test('U7F3C-upg: one update delivers the auto-open runtime and leaves Dashboard:
 
   assert.equal(code, 0);
   assert.equal(await fs.readFile(pref, 'utf8'), PREFERENCIAS);
+  assert.equal(await fs.readFile(arquivo(dir, codexBridge.path), 'utf8'), codexBridge.content);
   for (const rel of ['_opencrew/core/scripts/estado.mjs', '_opencrew/core/scripts/escritorio.mjs',
-    '_opencrew/core/scripts/escritorio/automatico.mjs', '_opencrew/core/scripts/escritorio/navegador.mjs']) {
+    '_opencrew/core/scripts/escritorio/automatico.mjs', '_opencrew/core/scripts/escritorio/navegador.mjs',
+    '_opencrew/core/scripts/escritorio/porta.mjs']) {
     assert.equal(await fs.readFile(arquivo(dir, rel), 'utf8'), await fs.readFile(arquivo(templatesDir, rel), 'utf8'), rel);
   }
 

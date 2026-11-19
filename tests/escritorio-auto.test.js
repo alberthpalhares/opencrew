@@ -7,8 +7,7 @@ import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
 import { main } from '../templates/_opencrew/core/scripts/escritorio.mjs';
-import { criarServidor } from '../templates/_opencrew/core/scripts/escritorio/servidor.mjs';
-import { abrir, alguemEscuta, procurarAutomatico } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
+import { alguemEscuta, procurarAutomatico } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
 import { abrirNoSistema } from '../templates/_opencrew/core/scripts/escritorio/navegador.mjs';
 import { lerEstadoDaConsulta } from '../templates/_opencrew/core/scripts/escritorio/leitura.mjs';
 import { projetoDe } from '../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
@@ -19,7 +18,6 @@ const ESTADO = (runId, agente, updatedAt) => ({
   crew: 'teste', runId, pedido: true, status: 'running', step: { current: 1, total: 2, label: 'Redação' },
   agents: [{ id: agente, name: agente, status: 'working' }], updatedAt,
 });
-
 async function projeto(t) {
   const raiz = await mkTmp('escritorio-auto');
   t.after(() => fs.rm(raiz, { recursive: true, force: true, maxRetries: 3 }));
@@ -97,10 +95,13 @@ test('U7F3C-02d: external browser launch keeps URL usable and reports a launch f
 test('U7F3C-02a: automatic mode starts in the background, confirms the server and returns the run URL', async (t) => {
   const p = await projeto(t);
   let iniciado = false;
+  let opcoesSpawn;
+  let desanexado = false;
   const linhas = [];
-  const spawn = () => {
+  const spawn = (exe, args, opcoes) => {
     const processo = new EventEmitter();
-    processo.unref = () => {};
+    processo.unref = () => { desanexado = true; };
+    opcoesSpawn = { exe, args, opcoes };
     queueMicrotask(() => { iniciado = true; processo.emit('spawn'); });
     return processo;
   };
@@ -109,13 +110,19 @@ test('U7F3C-02a: automatic mode starts in the background, confirms the server an
     cwd: p.raiz,
     interfaces: {},
     escrever: (linha) => linhas.push(linha),
-    auto: { sondar, ocupada: async () => false, spawn, esperar: async () => {} },
+    auto: { sondar, pronto: async () => true, ocupada: async () => false, spawn, esperar: async () => {} },
   });
   const url = `http://127.0.0.1:4747/?crew=teste&run_id=${RUN}`;
   assert.deepEqual([resultado.code, resultado.url, linhas], [0, url, [`ESCRITORIO:URL ${url}`]]);
+  assert.equal(desanexado, true);
+  assert.equal(opcoesSpawn.exe, process.execPath);
+  assert.deepEqual(opcoesSpawn.args.slice(-3), ['--servidor', '--porta', '4747']);
+  assert.deepEqual(opcoesSpawn.opcoes, {
+    cwd: p.raiz, detached: true, stdio: 'ignore', windowsHide: true, shell: false,
+  });
 });
 
-test('U7F3C-06a: --automatico --preparar reuses compatible server or returns ESCRITORIO:DAEMON on next free port; win32 keeps & intact', async (t) => {
+test('U7F3C-06a/07b: --preparar confirms or returns a daemon, which keeps serving after startup returns; port conflict is reported', async (t) => {
   const p = await projeto(t);
   const url = `http://127.0.0.1:4748/?crew=teste&run_id=${RUN}`;
   const preparaLivre = [];
@@ -132,7 +139,7 @@ test('U7F3C-06a: --automatico --preparar reuses compatible server or returns ESC
     cwd: p.raiz,
     interfaces: {},
     escrever: (linha) => preparaVivo.push(linha),
-    auto: { sondar: async (porta) => (porta === 4748 ? { projeto: projetoDe(p.raiz), versao: '' } : null), ocupada: async () => false },
+    auto: { sondar: async (porta) => (porta === 4748 ? { projeto: projetoDe(p.raiz), versao: '' } : null), pronto: async () => true, ocupada: async () => false },
   });
   assert.deepEqual([resVivo.code, resVivo.url, preparaVivo], [0, url, [`ESCRITORIO:URL ${url}`]]);
 
@@ -149,11 +156,27 @@ test('U7F3C-06a: --automatico --preparar reuses compatible server or returns ESC
   assert.equal(cmds[0][1].at(-1), url);
   assert.equal(cmds[0][2].shell, false);
 
-  const srv = criarServidor({ ...p, ipsPermitidos: new Set() });
+  const reserva = net.createServer();
+  await new Promise((resolve, reject) => reserva.once('error', reject).listen(0, '127.0.0.1', resolve));
+  const porta = reserva.address().port;
+  await new Promise((resolve) => reserva.close(resolve));
+  const servidor = await main(['--servidor', '--porta', String(porta)], { cwd: p.raiz });
+  const srv = servidor.servidor;
+  assert.equal(servidor.code, 0);
   assert.ok(srv.keepAliveTimeout >= 65000 && srv.headersTimeout > srv.keepAliveTimeout, 'keepAlive prevents 5s WebView polling resets');
   t.after(() => new Promise((ok) => { srv.closeAllConnections?.(); srv.close(() => ok()); }));
-  assert.equal(await abrir(srv, 0), true);
-  const porta = srv.address().port;
+  const conflito = [];
+  const resConflito = await main(['--servidor', '--porta', String(porta)], {
+    cwd: p.raiz, escrever: (linha) => conflito.push(linha),
+  });
+  assert.deepEqual([resConflito.code, conflito], [1, [`ESCRITORIO:PORTA_OCUPADA ${porta}`]]);
+  const estadoReal = await fetch(`http://127.0.0.1:${porta}/estado?crew=teste&run_id=${RUN}`).then((r) => r.json());
+  const paginaReal = await fetch(`http://127.0.0.1:${porta}/`).then(async (r) => [r.status, await r.text()]);
+  assert.equal(paginaReal[0], 200);
+  assert.ok(paginaReal[1].includes('<'));
+  assert.equal(estadoReal.projeto, projetoDe(p.raiz));
+  assert.equal(estadoReal.versao, '');
+  assert.equal(estadoReal.crews?.[0]?.estado?.runId, RUN);
   const ask = (rota) => new Promise((res, rej) => {
     http.get({ host: '127.0.0.1', port: porta, path: rota, agent: false }, (r) => {
       let b = '';
@@ -205,7 +228,7 @@ test('E6-01b: automatic mode emits LAN and VPN URLs alongside the local URL', as
       Tailscale: [{ family: 'IPv4', address: '100.88.12.34', internal: false }],
     },
     escrever: (linha) => linhas.push(linha),
-    auto: { sondar, ocupada: async () => false, spawn, esperar: async () => {} },
+    auto: { sondar, pronto: async () => true, ocupada: async () => false, spawn, esperar: async () => {} },
   });
   assert.equal(resultado.code, 0);
   assert.deepEqual(linhas, [

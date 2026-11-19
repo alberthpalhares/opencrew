@@ -68,7 +68,7 @@ test('E6-upg: update delivers rede.mjs and updated office scripts/prompts while 
     cwd: dir,
     interfaces: { 'Wi-Fi': [{ family: 'IPv4', address: '192.168.10.25', internal: false }] },
     escrever: (l) => linhas.push(l),
-    auto: { sondar: async () => iniciado ? { projeto: projetoDe(dir), versao: versaoDe(dir) } : null, ocupada: async () => false, spawn, esperar: async () => {} },
+    auto: { sondar: async () => iniciado ? { projeto: projetoDe(dir), versao: versaoDe(dir) } : null, pronto: async () => true, ocupada: async () => false, spawn, esperar: async () => {} },
   });
   assert.equal(r.code, 0);
   assert.deepEqual(linhas, [

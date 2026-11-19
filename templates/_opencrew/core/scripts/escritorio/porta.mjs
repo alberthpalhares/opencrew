@@ -86,6 +86,49 @@ export function sondarEstado(porta, esperaMs = 1000, hostHeader = null) {
   });
 }
 
+/** Confirma a página e o estado exato da execução antes de divulgar sua URL. */
+export async function sondarPronto(porta, projeto, versao, crew, run, esperaMs = 1000, solicitar = fetch) {
+  const pagina = await resposta(porta, '/', esperaMs, solicitar);
+  if (pagina?.status !== 200 || !/<(?:!doctype\s+html|html\b)/i.test(pagina.corpo)) return false;
+  if ((crew === undefined) !== (run === undefined)) return false;
+  const consulta = crew === undefined ? '' : `?${new URLSearchParams({ crew, run_id: run })}`;
+  const estado = await resposta(porta, `/estado${consulta}`, esperaMs, solicitar);
+  if (estado?.status !== 200) return false;
+  try {
+    const corpo = JSON.parse(estado.corpo);
+    if (corpo.projeto !== projeto || corpo.versao !== versao) return false;
+    return crew === undefined || corpo.crews?.some((item) => item.crew === crew && item.estado?.runId === run) === true;
+  } catch {
+    return false;
+  }
+}
+
+async function resposta(porta, rota, esperaMs, solicitar) {
+  try {
+    const res = await solicitar(`http://${LOCAL}:${porta}${rota}`, { signal: AbortSignal.timeout(esperaMs) });
+    return { status: res.status, corpo: await lerCorpoLimitado(res) };
+  } catch {
+    return null;
+  }
+}
+
+async function lerCorpoLimitado(res) {
+  if (!res.body?.getReader) {
+    const corpo = await res.text();
+    return corpo.length <= TETO_DA_SONDA ? corpo : '';
+  }
+  const leitor = res.body.getReader();
+  const decodificador = new TextDecoder();
+  let corpo = '';
+  while (corpo.length <= TETO_DA_SONDA) {
+    const { done, value } = await leitor.read();
+    if (done) return corpo + decodificador.decode();
+    corpo += decodificador.decode(value, { stream: true });
+  }
+  await leitor.cancel();
+  return '';
+}
+
 /** Só o `projeto` de quem está na porta, ou null. */
 export const sondar = (porta, esperaMs) => sondarEstado(porta, esperaMs).then((quem) => quem?.projeto ?? null);
 
@@ -116,15 +159,17 @@ export async function procurar({ inicial, projeto, versao, abrir: tentar, sondar
  * Busca primeiro uma instância compatível em todo o intervalo; só depois tenta iniciar em portas
  * livres. Um serviço estranho ou um escritório antigo ocupa sua porta, mas nunca é encerrado.
  */
-export async function procurarAutomatico({ inicial, projeto, versao, sondar: perguntar = sondarEstado, ocupada = alguemEscuta, tentarAbrir, confirmar = async () => true, tentativas = 10 }) {
+export async function procurarAutomatico({ inicial, projeto, versao, sondar: perguntar = sondarEstado, ocupada = alguemEscuta, tentarAbrir, confirmar = async () => true, confirmarExistente = async () => true, pararAposFalha = false, tentativas = 10 }) {
   const ultima = Math.min(inicial + tentativas - 1, ULTIMA_PORTA);
   for (let porta = inicial; porta <= ultima; porta++) {
     const quem = await perguntar(porta);
-    if (quem?.projeto === projeto && quem.versao === versao) return { tipo: 'ja-aberto', porta, ultima };
+    if (quem?.projeto === projeto && quem.versao === versao && await confirmarExistente(porta)) return { tipo: 'ja-aberto', porta, ultima };
   }
   for (let porta = inicial; porta <= ultima; porta++) {
     if (await ocupada(porta)) continue;
-    if (await tentarAbrir(porta) && await confirmar(porta)) return { tipo: 'aberto', porta, ultima };
+    if (!(await tentarAbrir(porta))) continue;
+    if (await confirmar(porta)) return { tipo: 'aberto', porta, ultima };
+    if (pararAposFalha) return { tipo: 'nao-confirmado', porta, ultima };
   }
   return { tipo: 'sem-porta', ultima };
 }

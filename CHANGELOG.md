@@ -3,6 +3,12 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- O Escritório só divulga a URL depois de confirmar HTTP 200 com HTML e o estado da crew e do `run_id` exatos. As pontes usam o mesmo fluxo de preparação, confirmação, abertura visível e conferência de carregamento.
+- Após `ESCRITORIO:DAEMON`, `--automatico --confirmar --porta` valida somente a porta escolhida antes de liberar a URL e identifica conflito para permitir uma única nova preparação.
+
 ## [1.21.1] — 2026-11-16
 
 Fases E5 (Copa, Lazer e Convivência em 4:3/3:2), E6 (Link do Escritório para Celular e Tablet na

@@ -34,6 +34,8 @@ test('default steps cover lint, test, version-sync and size, and call node direc
   for (const s of steps) assert.equal(s.cmd, process.execPath, `${s.name} must spawn node directly`);
   const testStep = steps.find((s) => s.name === 'test');
   assert.ok(testStep.args.some((a) => a.endsWith('verify.test.js')), 'test step discovers every tests/*.test.js');
+  const paralelismo = Number(testStep.args.find((a) => a.startsWith('--test-concurrency='))?.split('=')[1]);
+  assert.ok(paralelismo >= 1 && paralelismo <= 4, `bounded test concurrency: ${paralelismo}`);
 });
 
 test('E1: the lint step covers the office page shipped in the payload, next to the runtime scripts', () => {

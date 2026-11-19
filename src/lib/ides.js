@@ -14,17 +14,16 @@ const LIVE_OFFICE = `
 ## Live Escritório when a crew starts
 
 After a \`run\`, confirmed \`retomar\` or confirmed \`pedir\` has created its run folder and the
-per-run state reports \`ESTADO:OK\`, call
-\`node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}"\`.
-Use the exact \`ESCRITORIO:URL\` it returns, open it with this harness's native Browser when
-available (Claude Code Desktop Browser pane, Codex App built-in Browser, or Antigravity browser
-agent), and show it as a clickable link in chat along with any returned \`ESCRITORIO:URL_REDE\`
-(same Wi-Fi/LAN) and \`ESCRITORIO:URL_VPN\` (Tailscale/VPN) links for phone or tablet. In a CLI
-harness, add \`--externo\` to open the system browser. If an embedded Browser is unavailable, use the
-CLI fallback; if it fails for a technical reason, try \`--externo\`. A user refusal, host policy block
-or headless environment leaves the link for manual opening; never bypass the refusal or policy. If
-the server cannot start, say so once and continue the crew.`;
-
+per-run state reports \`ESTADO:OK\`, follow the shared launch and confirmation flow in
+\`_opencrew/core/runner/escritorio.md\`. Open only its confirmed \`ESCRITORIO:URL\` in this harness's
+native Browser when available (Claude Code Desktop Browser pane, Codex App integrated Browser, or
+Antigravity browser agent); verify the page loaded before saying it opened. Show it as a clickable
+link in chat along with any returned \`ESCRITORIO:URL_REDE\` (same Wi-Fi/LAN) and
+\`ESCRITORIO:URL_VPN\` (Tailscale/VPN) links for phone or tablet. In a CLI harness, add \`--externo\`
+to open the system browser. If an embedded Browser is unavailable or fails technically, use the
+CLI fallback when it can access the URL. A user refusal or host policy block leaves the link for
+manual opening; never bypass the refusal or policy. If the server cannot start, say so once and
+continue the crew.`;
 const BRIDGE = `${ACTIVATION}
 
 If invoked with arguments (e.g. \`/opencrew create ...\`, \`/opencrew run ...\`),
@@ -96,6 +95,12 @@ description: Run opencrew — multi-agent orchestration. Use when the user types
 ---
 
 ${BRIDGE}
+
+## Codex App only
+
+When this skill runs in Codex App, follow the shared Office flow in \`_opencrew/core/runner/escritorio.md\`, using \`--automatico --preparar\` after each crew run's \`ESTADO:OK\`. After the Office command returns a confirmed \`ESCRITORIO:URL\`, open that exact URL in a visible tab with the integrated Browser tool exposed by this session. Wait for navigation and verify that the Office page loaded before telling the user it opened. If the tool is unavailable or fails technically, run \`node _opencrew/core/scripts/escritorio.mjs --automatico --crew "{name}" --run "{run_id}" --externo\` and report the fallback. If the host policy blocks navigation or the user declines, do not retry through another route. When the Browser runs on another machine, use only a port-forwarding option provided by the harness and verify the forwarded page before opening it.
+
+When \`--preparar\` returns \`ESCRITORIO:DAEMON <port> <url>\`, start \`node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>\` in a persistent host process outside the terminal sandbox, then run \`node _opencrew/core/scripts/escritorio.mjs --automatico --confirmar --porta <port> --crew "{name}" --run "{run_id}"\`. If startup or confirmation reports \`ESCRITORIO:PORTA_OCUPADA\`, repeat preparation and startup once on the newly selected port. Open only the URL returned after confirmation.
 `;
 
 export const IDES = [
@@ -142,7 +147,7 @@ export const IDES = [
     files: [
       {
         path: '.agent/rules/opencrew.md',
-        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- **Escritório live preview (required, no user action):** After \`ESTADO:OK\`, run \`node _opencrew/core/scripts/escritorio.mjs --automatico --preparar --crew "{name}" --run "{run_id}"\` outside the terminal sandbox. On \`ESCRITORIO:DAEMON <port> <url>\`, start \`node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>\` outside the sandbox as a persistent background daemon (\`IsDaemon: true\`), then open \`<url>\` immediately in Antigravity's integrated browser agent (browser subagent, \`Model: "flash"\`) so the right-hand preview opens automatically. On \`ESCRITORIO:URL <url>\`, open \`<url>\` directly in that browser agent. Show a clickable chat link, base address and any \`ESCRITORIO:URL_REDE\`/\`ESCRITORIO:URL_VPN\` links.\n- Run **crew pipeline steps** inline and sequentially (including steps marked \`execution: subagent\`: execute them inline in the main conversation and never spawn worker subagents for crew steps — reserve subagents strictly for the integrated \`browser\` opening the live Escritório). Never announce parallel crew work and then skip it.\n- Run each OpenCrew script (\`estado.mjs\`, \`caminho.mjs\`, \`verificar.mjs\`, \`escritorio.mjs\`) as its own standalone \`node\` command: never chain script commands with \`&&\` or \`;\`, and never wrap them in \`npm\`, avoiding stalled background task wakeups on Windows.\n- Ask only one question per message; present options as a numbered list.\n`,
+        content: `---\nname: opencrew\n---\n\n${BRIDGE}\n\n## Antigravity specifics\n\n- **Escritório live preview (required, no user action):** Follow the shared launch and confirmation flow in \`_opencrew/core/runner/escritorio.md\`. On \`ESCRITORIO:DAEMON <port> <url>\`, start \`node _opencrew/core/scripts/escritorio.mjs --servidor --porta <port>\` outside the terminal sandbox as a persistent background daemon (\`IsDaemon: true\`), then run \`node _opencrew/core/scripts/escritorio.mjs --automatico --confirmar --porta <port> --crew "{name}" --run "{run_id}"\`. Open only the confirmed \`ESCRITORIO:URL\` in Antigravity's integrated browser agent (browser subagent, \`Model: "flash"\`), wait and verify the page loaded. If startup or confirmation reports \`ESCRITORIO:PORTA_OCUPADA\`, repeat preparation and startup once on the newly selected port. Show a clickable chat link, base address and any \`ESCRITORIO:URL_REDE\`/\`ESCRITORIO:URL_VPN\` links.\n- Run **crew pipeline steps** inline and sequentially (including steps marked \`execution: subagent\`: execute them inline in the main conversation and never spawn worker subagents for crew steps — reserve subagents strictly for the integrated \`browser\` opening the live Escritório). Never announce parallel crew work and then skip it.\n- Run each OpenCrew script (\`estado.mjs\`, \`caminho.mjs\`, \`verificar.mjs\`, \`escritorio.mjs\`) as its own standalone \`node\` command: never chain script commands with \`&&\` or \`;\`, and never wrap them in \`npm\`, avoiding stalled background task wakeups on Windows.\n- Ask only one question per message; present options as a numbered list.\n`,
       },
       { path: '.agent/workflows/opencrew.md', content: `---\nname: opencrew\ndescription: opencrew — multi-agent orchestration. Use when the user types /opencrew or asks to create, run, or manage crews.\n---\n\n${render('opencrew Workflow (Antigravity)')}` },
       // .agents/ (plural) — standard location for Antigravity 2.0+ and CLI.

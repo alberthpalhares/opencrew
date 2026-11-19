@@ -17,8 +17,8 @@ import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ehPrincipal } from './comum.mjs';
-import { criarServidor } from './escritorio/servidor.mjs';
-import { abrir, sondarEstado, procurar } from './escritorio/porta.mjs';
+import { criarServidor, iniciarServidorExato } from './escritorio/servidor.mjs';
+import { abrir, sondarEstado, sondarPronto, procurar } from './escritorio/porta.mjs';
 import { garantirServidor } from './escritorio/automatico.mjs';
 import { abrirNoSistema } from './escritorio/navegador.mjs';
 import { projetoDe, versaoDe } from './escritorio/projeto.mjs';
@@ -49,7 +49,7 @@ const PASTA_DA_PAGINA = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 
 const endereco = (porta) => `http://127.0.0.1:${porta}`;
 
-const USO = `Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <${PORTA_MINIMA} a ${PORTA_MAXIMA}>] [--automatico --crew <nome> --run <id> [--externo]]`;
+const USO = `Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <${PORTA_MINIMA} a ${PORTA_MAXIMA}>] [--automatico --crew <nome> --run <id> [--preparar|--confirmar] [--externo]]`;
 const MSG = {
   aberto: (porta) => `Escritório aberto em ${endereco(porta)} — Ctrl+C para fechar`,
   jaAberto: (porta) => `O escritório já está aberto em ${endereco(porta)}`,
@@ -58,6 +58,7 @@ const MSG = {
   foraDaRaiz: 'Rode este comando na pasta do projeto (a que contém _opencrew/).',
   portaInvalida: `Porta inválida: use --porta com um número de ${PORTA_MINIMA} a ${PORTA_MAXIMA}.`,
   autoIndisponivel: 'ESCRITORIO:INDISPONIVEL — não consegui iniciar ou confirmar o servidor; a execução pode continuar.',
+  portaOcupada: (porta) => `ESCRITORIO:PORTA_OCUPADA ${porta} — escolha outra porta e confirme novamente.`,
 };
 
 const ehPasta = (p) => existsSync(p) && statSync(p).isDirectory();
@@ -107,29 +108,36 @@ function erroAutomatico(argv) {
   if ((crew === undefined) !== (run === undefined)) return ['No modo automático, informe `--crew` e `--run` juntos.', USO];
   if (crew !== undefined && (!/^[\p{L}\p{N} ._-]+$/u.test(crew) || crew === '.' || crew === '..')) return ['Nome de crew inválido para abrir o Escritório.', USO];
   if (run !== undefined && (!/^(?!\.{1,2}$)[A-Za-z0-9._-]+$/.test(run))) return ['O --run precisa ser o run_id de uma execução.', USO];
+  if (flag(argv, '--confirmar') && crew === undefined) return ['No modo de confirmação, informe `--crew` e `--run`.', USO];
+  if (flag(argv, '--confirmar') && !flag(argv, '--porta')) return ['No modo de confirmação, informe a porta recebida em `ESCRITORIO:DAEMON`.', USO];
+  if (flag(argv, '--confirmar') && flag(argv, '--preparar')) return ['Não combine `--confirmar` com `--preparar`.', USO];
   if (flag(argv, '--servidor')) return ['Não combine `--servidor` com `--automatico`.', USO];
   return null;
-}
-
-async function servidorExato(raiz, pasta, arquivos, porta) {
-  const servidor = criarServidor({ raiz, pasta, arquivos });
-  return new Promise((resolver) => {
-    const falhou = () => resolver({ code: 1 });
-    servidor.once('error', falhou).listen(porta, '0.0.0.0', () => {
-      servidor.off('error', falhou);
-      resolver({ code: 0, porta, servidor });
-    });
-  });
 }
 
 async function executarAutomatico(argv, o, raiz, inicial) {
   const [crew, run, preparar] = [valor(argv, '--crew'), valor(argv, '--run'), flag(argv, '--preparar')];
   const { lan, vpn } = enderecosDeRede(o.interfaces);
+  const projeto = projetoDe(raiz);
+  const versao = versaoDe(raiz);
+  if (flag(argv, '--confirmar')) {
+    if (!(await (o.pronto ?? sondarPronto)(inicial, projeto, versao, crew, run))) {
+      const escrever = o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`));
+      const servidor = await (o.sondar ?? sondarEstado)(inicial);
+      const conflito = servidor && (servidor.projeto !== projeto || servidor.versao !== versao);
+      escrever(conflito ? MSG.portaOcupada(inicial) : MSG.autoIndisponivel);
+      return { code: 0 };
+    }
+    const resultado = linhasDeUrl(inicial, crew, run, o.interfaces);
+    resultado.linhas.forEach((linha) => (o.escrever ?? ((texto) => process.stdout.write(`${texto}\n`)))(linha));
+    return { code: 0, porta: inicial, url: resultado.url };
+  }
   const resultado = await garantirServidor({
     raiz, script: fileURLToPath(import.meta.url), inicial, preparar,
-    projeto: projetoDe(raiz), versao: versaoDe(raiz), hostRede: lan ?? vpn, ...(o.auto ?? {}),
+    projeto, versao, crew, run, hostRede: lan ?? vpn, ...(o.auto ?? {}), pronto: o.pronto ?? o.auto?.pronto ?? sondarPronto,
   });
   if (resultado.tipo === 'sem-porta') return (o.escrever?.(MSG.autoIndisponivel), { code: 0 });
+  if (resultado.tipo === 'nao-confirmado') return (o.escrever?.(MSG.autoIndisponivel), { code: 0 });
   const { url, urlsRede, linhas } = linhasDeUrl(resultado.porta, crew, run, o.interfaces);
   const escrever = o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`));
   const saida = resultado.tipo === 'daemon' ? [`ESCRITORIO:DAEMON ${resultado.porta} ${url}`, ...linhas.slice(1)] : linhas;
@@ -165,7 +173,7 @@ export async function main(argv, o = {}) {
     erro.forEach((linha) => escrever(linha));
     return { code: 1 };
   }
-  if (flag(argv, '--servidor')) return servidorExato(cwd, pasta, arquivos, inicial);
+  if (flag(argv, '--servidor')) return iniciarServidorExato({ raiz: cwd, pasta, arquivos, porta: inicial, escrever });
   if (flag(argv, '--automatico')) return executarAutomatico(argv, { ...o, escrever }, cwd, inicial);
   const servidor = criarServidor({ raiz: cwd, pasta, arquivos });
   const tentar = (porta) => (o.abrir ?? abrir)(servidor, porta);

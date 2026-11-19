@@ -7,11 +7,13 @@
 // swallow an exit code, and it works the same on Windows.
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const node = process.execPath;
+const testConcurrency = Math.min(4, availableParallelism());
 
 function testFiles() {
   return readdirSync(path.join(root, 'tests'))
@@ -27,7 +29,7 @@ const LINT_DIRS = ['bin/', 'src/', 'tests/', 'scripts/', 'templates/_opencrew/co
 export function defaultSteps() {
   return [
     { name: 'lint', cmd: node, args: ['node_modules/eslint/bin/eslint.js', ...LINT_DIRS] },
-    { name: 'test', cmd: node, args: ['--test', ...testFiles()] },
+    { name: 'test', cmd: node, args: [`--test-concurrency=${testConcurrency}`, '--test', ...testFiles()] },
     { name: 'version-sync', cmd: node, args: ['scripts/check-version-sync.js'] },
     { name: 'size (alert only)', cmd: node, args: ['scripts/check-size.js'] },
   ];
