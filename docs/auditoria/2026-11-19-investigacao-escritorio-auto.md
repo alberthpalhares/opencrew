@@ -9,7 +9,7 @@ Data: 2026-11-19 · Situação: correção implementada e verificada em runtime/
 3. `--automatico` inicia um processo filho e confirma `/estado` antes de emitir URL, mas essa confirmação não garante que o processo sobreviva ao término da ferramenta do harness. `--preparar` pode emitir `ESCRITORIO:DAEMON` com URL antes de existir servidor; a instrução exige iniciar o daemon antes de abrir. Não se deve apresentar essa URL como funcional antes de nova verificação de prontidão e identidade. Isso é uma hipótese compatível com o relato, não uma reprodução do incidente.
 4. O registro de 16/11 relata que a confirmação visual no WebView ficou pendente por solicitação de permissão expirada. A suíte verifica principalmente instruções por regex e comportamento simulado de processos; não prova abertura integrada, persistência real nem atualização visual durante um run.
 5. O `STATUS.md` registra falha de publicação de 1.21.1 e npm em 1.21.0 naquele momento; não foi conferido o estado atual do registro npm nem a versão instalada no projeto em que o problema ocorreu. A correção `--preparar` pode não estar presente naquele projeto: verificar antes de atribuir causa. Não há servidor escutando nas portas 4747–4756 neste momento, o que não prova o estado da sessão anterior.
-6. A spec U7-F3c ainda afirma que o servidor escuta apenas em 127.0.0.1, mas E6 e o código usam 0.0.0.0; reconciliar os contratos sem alterar a política de rede aprovada por E6.
+6. Na inspeção original, antes desta correção, a spec U7-F3c ainda afirmava que o servidor escutava apenas em 127.0.0.1, embora E6 e o código já usassem 0.0.0.0; o contrato foi reconciliado sem alterar a política de rede aprovada por E6.
 
 ## Correção aplicada
 
@@ -26,4 +26,12 @@ Data: 2026-11-19 · Situação: correção implementada e verificada em runtime/
 - Um processo real foi lançado em pasta temporária: continuou respondendo depois de o comando de inicialização retornar. A raiz respondeu HTTP 200, `/estado` respondeu 200, e `--confirmar --porta ... --crew teste --run <id>` devolveu a URL com aquele run exato; o daemon permaneceu ativo. Outro ensaio confirmou marcador de conflito sem terminar o serviço existente.
 - A tentativa de inspeção assistida por CUA nesta sessão expirou ao aguardar `service_info`. Depois, o dono executou uma crew de teste no Codex App e confirmou que funcionou, concluindo o aceite visual principal. Não foram registrados o run_id, a versão do workspace nem os passos observados. Antigravity e Claude Code Desktop não foram conferidos nesta validação.
 - A confirmação por harness remoto, VPN e encaminhamento de porta depende de capacidade oferecida e autorizada pelo próprio harness; esta sessão não verificou esses ambientes.
-- Não houve bump de versão, commit, push, tag ou publicação. A release depende de conferência visual e das decisões de entrega previstas nas regras do repositório.
+- A causa exata do incidente original permanece sem reprodução porque não foram identificados o workspace e a versão afetados.
+
+## Atualização da publicação (2026-11-19)
+
+- Publicada a versão **1.21.2** no GitHub e no npm. A tag `v1.21.2` aponta para `bb4aff7`; o workflow `Publish to npm` (`44609787339`) concluiu com sucesso depois das seis células de CI verdes. O `npm publish --provenance` concluiu, e `npm view` confirmou `1.21.2` como `latest`.
+- Criada a página formal [GitHub Release v1.21.2](https://github.com/alberthpalhares/opencrew/releases/tag/v1.21.2).
+- `npm run verify` passou em Windows/Node 24 na versão carimbada. A bateria de testes passou com 1.698 testes, 0 falhas e 2 pulados específicos de POSIX.
+- Dois workspaces que estavam em `1.21.0` foram atualizados via `npx --yes @aksp/opencrew@1.21.2 update`; ambos terminaram em `1.21.2`. As oito crews de cada workspace permaneceram presentes, e o comando informou que não alterou crews, memória, preferências locais ou `.env`.
+- O dono confirmou anteriormente que uma crew de teste abriu e usou o Escritório no Codex App. A causa exata da ocorrência original permanece sem reprodução.
