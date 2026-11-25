@@ -37,7 +37,7 @@ async function rodar(raiz, ...argv) {
 async function rodarProcesso(raiz, ...opcoes) {
   const script = pathToFileURL(path.join(CORE, 'scripts', 'caminho.mjs')).href;
   const args = JSON.stringify([CREW, 'pasta', '--nova', ...opcoes]);
-  const codigo = `import { main } from ${JSON.stringify(script)}; await main(${args}, { cwd: ${JSON.stringify(raiz)}, agora: () => new Date(2026, 9, 12, 15, 0, 0), escrever: console.log });`;
+    const codigo = `import { main } from ${JSON.stringify(script)}; process.exitCode = await main(${args}, { cwd: ${JSON.stringify(raiz)}, agora: () => new Date(2026, 9, 12, 15, 0, 0), escrever: console.log });`;
   return new Promise((resolve, reject) => {
     const processo = spawn(process.execPath, ['--input-type=module', '-e', codigo], { cwd: raiz, windowsHide: true });
     let saida = '';
@@ -97,9 +97,15 @@ test('U7F3C-10a: simultaneous generated runs and requests reserve distinct folde
   for (const opcoes of [['--passos', '5'], ['--pedido']]) {
     const respostas = await abrir(opcoes);
     const caminhos = respostas.map(({ linhas }) => linhas.at(-1).slice('CAMINHO:OK '.length));
-    assert.ok(respostas.every(({ code }) => code === 0));
+    assert.ok(respostas.every(({ code, linhas }) => code === 0 && linhas.at(-1).startsWith('CAMINHO:OK ')), JSON.stringify(respostas));
     assert.equal(new Set(caminhos).size, 12);
-    for (const caminho of caminhos) assert.equal((await registro(raiz, path.basename(caminho))).status, 'aberta');
+    for (const caminho of caminhos) {
+      const run = path.basename(caminho);
+      const salvo = await registro(raiz, run).catch((erro) => {
+        throw new Error(`${JSON.stringify({ caminho, respostas })}\n${erro.message}`);
+      });
+      assert.equal(salvo.status, 'aberta', JSON.stringify({ caminho, respostas }));
+    }
   }
 });
 

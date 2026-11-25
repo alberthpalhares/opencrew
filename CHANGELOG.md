@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Consulta dirigida do update reconhece a resposta disponível com versões exatas; a atualização do menu usa a mesma versão da prévia e mostra o resumo efetivo.
 - O cache do aviso fica em `_opencrew/logs/`, não grava por links simbólicos e não impede o menu quando está indisponível.
-- A recuperação da trava compartilhada tolera `EPERM`/`EBUSY` transitório do Windows, evitando perder a linha do histórico quando duas execuções fecham ao mesmo tempo.
+- A recuperação e a liberação da trava compartilhada toleram `EPERM`/`EBUSY` transitório do Windows, preservando o histórico e a confirmação quando execuções começam ou fecham ao mesmo tempo.
 
 ## [1.21.3] — 2026-11-23 (candidata local)
 

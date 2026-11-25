@@ -8,6 +8,7 @@ const pausa = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
 const MARCA = /^opencrew-(\d+)-(\d+)-[a-f0-9-]+$/;
 const IGNORAR = new Set(['ENOENT', 'ENOTEMPTY', 'EEXIST']);
 const RECUPERACAO_CONCORRENTE = new Set(['EPERM', 'EBUSY']);
+const TENTATIVAS_SOLTAR = 12;
 const PRAZO_MS = 12000;
 
 function pidVivo(pid) {
@@ -19,17 +20,21 @@ function pidVivo(pid) {
   }
 }
 
-async function soltar(pasta, dono) {
-  try {
-    if (dono) {
-      await fs.unlink(path.join(pasta, dono)).catch((erro) => {
-        if (erro.code !== 'ENOENT') throw erro;
-      });
+async function repetirSoltura(operacao) {
+  for (let tentativa = 0; ; tentativa++) {
+    try {
+      return await operacao();
+    } catch (erro) {
+      if (IGNORAR.has(erro.code)) return;
+      if (!RECUPERACAO_CONCORRENTE.has(erro.code) || tentativa === TENTATIVAS_SOLTAR) throw erro;
+      await pausa(25 + Math.floor(Math.random() * 50));
     }
-    await fs.rmdir(pasta);
-  } catch (erro) {
-    if (!IGNORAR.has(erro.code)) throw erro;
   }
+}
+
+async function soltar(pasta, dono) {
+  if (dono) await repetirSoltura(() => fs.unlink(path.join(pasta, dono)));
+  await repetirSoltura(() => fs.rmdir(pasta));
 }
 
 /** O nome do dono é único. Um recuperador atrasado nunca remove o arquivo de um novo dono. */
