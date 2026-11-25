@@ -7,6 +7,7 @@ import path from 'node:path';
 const pausa = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
 const MARCA = /^opencrew-(\d+)-(\d+)-[a-f0-9-]+$/;
 const IGNORAR = new Set(['ENOENT', 'ENOTEMPTY', 'EEXIST']);
+const RECUPERACAO_CONCORRENTE = new Set(['EPERM', 'EBUSY']);
 const PRAZO_MS = 12000;
 
 function pidVivo(pid) {
@@ -33,21 +34,21 @@ async function soltar(pasta, dono) {
 
 /** O nome do dono é único. Um recuperador atrasado nunca remove o arquivo de um novo dono. */
 async function recuperar(trava) {
-  const info = await fs.lstat(trava).catch((erro) => {
-    if (erro.code === 'ENOENT') return null;
-    throw erro;
-  });
-  if (!info?.isDirectory() || info.isSymbolicLink()) return;
-  const nomes = await fs.readdir(trava).catch((erro) => {
-    if (erro.code === 'ENOENT') return [];
-    throw erro;
-  });
-  if (!nomes.length) return soltar(trava);
-  if (nomes.length !== 1) return;
-  const [dono] = nomes;
-  const marca = dono.match(MARCA);
-  if (marca && (Number(marca[2]) < Date.now() - uptime() * 1000 - 5000 || !pidVivo(Number(marca[1])))) {
-    await soltar(trava, dono);
+  try {
+    const info = await fs.lstat(trava);
+    if (!info.isDirectory() || info.isSymbolicLink()) return;
+    const nomes = await fs.readdir(trava);
+    if (!nomes.length) return soltar(trava);
+    if (nomes.length !== 1) return;
+    const [dono] = nomes;
+    const marca = dono.match(MARCA);
+    if (marca && (Number(marca[2]) < Date.now() - uptime() * 1000 - 5000 || !pidVivo(Number(marca[1])))) {
+      await soltar(trava, dono);
+    }
+  } catch (erro) {
+    // No Windows, outro recuperador pode remover a pasta entre lstat/readdir/rmdir.
+    // Esses códigos indicam disputa transitória; adquirir() tenta a trava novamente.
+    if (!IGNORAR.has(erro.code) && !RECUPERACAO_CONCORRENTE.has(erro.code)) throw erro;
   }
 }
 

@@ -35,8 +35,10 @@ Evidência: `sandbox/aceite-destinos-1.22.0-20261124/aceite-fisico.log`.
 ## Pré-publicação
 
 - Consulta ao npm: `latest` = 1.21.2; `@aksp/opencrew@1.22.0` ainda não publicado.
-- Consulta ao GitHub: `v1.22.0` não existe. Antes do commit, `main` local coincidia com `origin/main` em `2edc7f4`.
-- O dono autorizou commit, push, tag e publicação. Restam criar o commit, enviar a `main`, aguardar CI verde em Windows e Ubuntu com Node 20.17, 22 e 24, enviar a tag `v1.22.0`, confirmar o workflow OIDC/npm `latest` e publicar a release do GitHub.
+- A primeira tentativa de publicação (workflow `45538366890`, commit `0334465`) parou antes do publish: o cenário de dois fechamentos simultâneos falhou no Windows/Node 22 e o job `publish` foi pulado. Nenhum pacote 1.22.0 foi publicado.
+- Reproduzi a corrida no Windows: em 100 repetições, falhou na 87ª; a segunda execução recebeu `EPERM` transitório na recuperação da trava e deixou de gravar a linha de `runs.md`. A recuperação agora trata `EPERM`/`EBUSY` como disputa transitória e volta ao ciclo de aquisição. Depois da correção, o mesmo cenário passou em 200 repetições consecutivas.
+- A tag `v1.22.0` já existe no commit da tentativa que falhou, mas ainda não publicou no npm. O próximo commit deve chegar à `main` e passar a matriz inteira antes de substituir essa tag não publicada pelo commit final; então será possível disparar a publicação OIDC com o código corrigido.
+- O dono autorizou commit, push, tag e publicação. Restam `npm run verify`, commit e push, CI verde em Windows e Ubuntu com Node 20.17, 22 e 24, confirmar a ausência de 1.22.0 no registry e que `latest` não retrocederá, recriar a tag final, acompanhar OIDC, confirmar `latest` e publicar a release do GitHub.
 
 ## Limitação conhecida
 

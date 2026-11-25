@@ -146,16 +146,21 @@ test('U7F3C-09c: concurrent runs from the same crew both reach the history', asy
   const outro = '2026-10-07-143023';
   await pasta(raiz);
   await rodarCaminho(raiz, 'pasta', '--run', outro);
-  const fecha = (run) => execucao(['atas', 'fechar', '--run', run, '--resultado', 'aprovado'], {
-    cwd: raiz, escrever() {},
-    renomear: async (origem, destino) => {
-      if (destino.endsWith('runs.md')) await new Promise((resolver) => setTimeout(resolver, 50));
-      await fs.rename(origem, destino);
-    },
-  });
-  assert.deepEqual(await Promise.all([fecha(RUN), fecha(outro)]), [0, 0]);
+  const fecha = async (run) => {
+    const saida = [];
+    const code = await execucao(['atas', 'fechar', '--run', run, '--resultado', 'aprovado'], {
+      cwd: raiz, escrever: (linha) => saida.push(linha),
+      renomear: async (origem, destino) => {
+        if (destino.endsWith('runs.md')) await new Promise((resolver) => setTimeout(resolver, 50));
+        await fs.rename(origem, destino);
+      },
+    });
+    return { code, saida };
+  };
+  const fechamentos = await Promise.all([fecha(RUN), fecha(outro)]);
+  assert.deepEqual(fechamentos.map(({ code }) => code), [0, 0], JSON.stringify(fechamentos));
   const historico = await ler(raiz, RUNS);
-  for (const run of [RUN, outro]) assert.ok(historico.includes(`| ${run} |`));
+  for (const run of [RUN, outro]) assert.ok(historico.includes(`| ${run} |`), JSON.stringify({ run, historico, fechamentos }));
   assert.deepEqual(await temporarios(raiz), []);
 });
 
