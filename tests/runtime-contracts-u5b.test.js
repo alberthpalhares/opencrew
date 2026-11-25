@@ -30,7 +30,7 @@ const CONDICAO = {
   'tarefas-do-agente.md': 'Only when the agent\'s `.agent.md` frontmatter contains a `tasks:` field',
   'contrato-de-saida.md': 'Only when the step\'s frontmatter declares an `output_contract:` field',
   'fontes-pendentes.md': 'Otherwise (`FONTES:PENDENTE`, or the script did not run)',
-  'fim-da-execucao.md': '**Close the run**',
+  'fim-da-execucao.md': '**After closing**',
   'retomar.md': 'only on `/opencrew retomar {name}`',
   'correcao-no-checkpoint.md': 'only when the answer asks for a change',
 };
@@ -84,7 +84,7 @@ test('U5b-02b: each stub carries the exact condition that makes the AI read the 
   const texto = flat(nucleo);
   assert.ok(texto.includes('If the field is absent, read nothing: run ALL agents, with no selection step.'));
   assert.ok(texto.includes('With the explicit `off`, read nothing and run none of its commands.'));
-  assert.ok(texto.includes('Never skip it, and never write the memory or the history from what you remember of it.'));
+  assert.ok(texto.includes('Never write the memory or the history from what you remember of it.'));
 });
 
 test('U5b-03b: the safe-name rule and Output Path Transformation stay headings of the core, the first before any command', () => {
@@ -96,9 +96,10 @@ test('U5b-03b: the safe-name rule and Output Path Transformation stay headings o
 test('U7F3C-03a: estado.mjs is only in the part; it covers pipeline and pedido events', () => {
   assert.ok(!nucleo.includes('estado.mjs'), 'the core still names estado.mjs');
   const escritorio = parte('escritorio.md');
-  for (const evento of ['iniciar', 'pular', 'concluir', 'falhar']) {
+  for (const evento of ['iniciar', 'pular']) {
     assert.ok(escritorio.includes(`node _opencrew/core/scripts/estado.mjs "{name}" ${evento}`), `no command for ${evento} in the part`);
   }
+  assert.doesNotMatch(escritorio, /estado\.mjs "[^"]+" (?:concluir|falhar)/);
   assert.ok(escritorio.includes('node _opencrew/core/scripts/estado.mjs "{name}" {passo or checkpoint}'), 'pipeline step command missing');
   assert.ok(escritorio.includes('node _opencrew/core/scripts/estado.mjs "{name}" passo --run "{run_id}" --pedido'), 'pedido step command missing');
   assert.ok(flat(nucleo).includes('never read, write or describe `crews/{name}/state.json` or the per-run Office file yourself; a failure there never stops the run'));
@@ -117,7 +118,7 @@ test('U5b-03e: the "Step Execution Order (Summary)" recap is gone', () => {
 
 test('U5b-03a: what the end of the run needs is in its part, in order', () => {
   const fim = parte('fim-da-execucao.md');
-  const ordem = ['### 2a. Update `memories.md`', '### 2b. Prepend to `runs.md`', '### 2c. Post-Run Reflection', '3. Present completion summary:', 'O que você quer fazer?'];
+  const ordem = ['### 2a. Update `memories.md`', '### 2b. Confirm the close', '### 2c. Post-Run Reflection', '3. Present completion summary:', 'O que você quer fazer?'];
   let ultimo = -1;
   for (const marco of ordem) {
     const i = fim.indexOf(marco);
@@ -175,7 +176,8 @@ test('U5b-02b: the core still names the five memory sections, the inline branch 
   }
   assert.ok(texto.includes('an agent with `tasks:` runs them as `Task-Based Agent Execution` says'));
   for (const nome of PARTES) assert.doesNotMatch(parte(nome), /this section/i, `${nome} still says "this section"`);
-  assert.ok(parte('fim-da-execucao.md').includes('items 2 and 3 below are the items 2 and 3 of that list'));
+  assert.ok(parte('fim-da-execucao.md').includes('Read it after the run is closed.'));
+  assert.ok(nucleo.indexOf('2. **Close the run**') < nucleo.indexOf('3. **After closing**'));
   assert.ok(parte('tarefas-do-agente.md').includes('`crews/{crew-name}/agents/{agent-id}/tasks/{task}.md`'));
   assert.ok(ler('templates/_opencrew/core/formato-da-crew.md').includes('agents/{agent-id}/tasks/'));
 });

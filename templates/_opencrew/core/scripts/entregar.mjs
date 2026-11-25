@@ -6,11 +6,9 @@
 //   --run "<id>" --arquivo "<caminho=formato>[,<caminho=formato>…]" [--destino "<pasta>"]
 //   [--lembrar-destino "<pasta>"|nao] [--aceitar-pendencias] [--vai-publicar <canal>] [--ajuda]
 //   --arquivo: a lista do verificador (o "=formato" é opcional); entra o que estiver nela e existir.
-//   --destino: pasta do projeto que recebe a cópia, só nesta chamada (vale sobre o crew.yaml).
-//   --lembrar-destino: grava a pasta (ou "nao") em `entrega.destino` do crew.yaml e já vale agora.
-//   --aceitar-pendencias: as pendências deste momento viram ressalvas ("entregar assim mesmo"); a
-//     ressalva vale enquanto a pendência dela existir: a que some sai do `ressalvas.json`.
-//   --vai-publicar: canal que a crew publica sozinha (pode repetir); o LEIA-ME avisa.
+//   --somente-local [--aprovada]: monta o pacote e, com aceite, registra sua assinatura.
+//   --copiar-final --destino "<pasta>" [--lembrar-final]: guarda o pacote aprovado.
+//   --sugerir-destino: lista as sugestões da crew; não grava.
 // Item de formato com a plataforma `documento` (`.md` ou `.txt`) sai em `entrega/documentos/`, em
 // Word, com o perfil de documento oficial do projeto (fase-u3b-documento-word.md, regra 12).
 // Grava em crews/<crew>/output/<run>/: a pasta `entrega/` (refeita do zero a cada chamada, montada
@@ -26,7 +24,7 @@
 // Specs: fase-u3a1-pasta-de-entrega.md e fase-u3a2-entrega-no-projeto.md (repositório do OpenCrew).
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { MSG as COMUM, erroDeUso, ehPrincipal, relativoAoProjeto } from './comum.mjs';
+import { MSG as COMUM, erroDeUso, ehPrincipal, relativoAoProjeto, realDentroDe } from './comum.mjs';
 import { formatarRelatorio, verificar } from './verificar.mjs';
 import { USO, lerArgs, lerLista, limpar, runValido } from './entrega/argumentos.mjs';
 import { CANAIS, canalDoFormato, ehCanal, ehDeServico } from './entrega/canais.mjs';
@@ -42,6 +40,8 @@ import { alertasDeTamanho, naoConferido, pendenciasPorPasta } from './entrega/pe
 import { ARQUIVO as RESSALVAS, MSG as RESSALVA, gravarRessalvas, lerRessalvas, separarPendencias } from './entrega/ressalvas.mjs';
 import { resumo } from './entrega/resumo.mjs';
 import { separar } from './entrega/separar.mjs';
+import { conferirOrigens, copiarFinal, registrarPacote, sugerirDestino } from './entrega/final.mjs';
+import { comTrava } from './trava.mjs';
 
 const MSG = {
   desconhecida: (opcao) => `Opção desconhecida: ${limpar(opcao)}.`,
@@ -64,6 +64,7 @@ function erroDeChamada(raiz, args, pedidos) {
   const crew = path.resolve(raiz, args.crew);
   if (!existsSync(path.join(crew, 'crew.yaml'))) return { mensagem: COMUM.crewNaoEncontrada(args.crew) };
   const saida = path.join(crew, 'output');
+  if (args.somenteLocal && !realDentroDe(raiz, path.join(saida, args.run))) return { mensagem: 'Execução fora do projeto.' };
   if (!runValido(args.run) || !ehPasta(path.join(saida, args.run))) return { mensagem: MSG.semExecucao(args.run, execucoes(saida)) };
   // O destino a lembrar é validado antes de qualquer escrita: recusado, o crew.yaml fica intacto.
   const lembrar = args.lembrarDestino == null ? null : validarDestino(raiz, args.lembrarDestino);
@@ -113,7 +114,8 @@ async function gravarTudo(raiz, args, validos, pastas) {
   const { dados, relatorio } = await montar(raiz, args, validos, lidas.aceitas);
   // Ilegível, o arquivo fica como está — só um aceite novo o regrava.
   if (!lidas.ilegivel || (args.aceitar && dados.ressalvas.size)) falhas.push(await gravarRessalvas(pastas.execucao, dados.ressalvas));
-  const copia = await guardar(raiz, await escolherDestino(raiz, pastas.crew, args), dados, pastas.execucao);
+  const copia = args.somenteLocal ? { pasta: null, linhas: [], falhou: false }
+    : await guardar(raiz, await escolherDestino(raiz, pastas.crew, args), dados, pastas.execucao);
   const leiame = montarLeiame({ ...dados, copiaEm: copia.pasta });
   const daEntrega = await gravarEntrega(pastas.execucao, dados.arquivos, { leiame, relatorio });
   const naoGravados = falhas.filter(Boolean).map((f) => COPIA.falhaDeEscrita(relativoAoProjeto(raiz, f)));
@@ -128,7 +130,14 @@ function linhaFinal(dados, incompleta) {
 async function entregar(raiz, args, itens, escrever) {
   const execucao = relativoAoProjeto(raiz, path.join(args.crew, 'output', args.run));
   const pastas = { crew: path.resolve(raiz, args.crew), execucao: path.resolve(raiz, execucao) };
-  const r = await gravarTudo(raiz, args, itens.filter((i) => !i.servico), pastas);
+  const montarPacote = async () => {
+    const validos = itens.filter((i) => !i.servico);
+    const origens = args.somenteLocal && args.aprovada ? await conferirOrigens(pastas.execucao, validos) : null;
+    const resultado = await gravarTudo(raiz, args, validos.map((item, i) => ({ ...item, logico: origens?.[i]?.nome })), pastas);
+    if (args.somenteLocal) await registrarPacote(pastas.execucao, args.aprovada && !resultado.daEntrega && !resultado.dados.pendencias.size && !resultado.naoGravados.length, origens);
+    return resultado;
+  };
+  const r = args.somenteLocal ? await comTrava(path.join(pastas.execucao, 'execucao.json'), montarPacote) : await montarPacote();
   if (r.daEntrega) {
     for (const linha of [...r.naoGravados, r.daEntrega]) escrever(linha);
     escrever('ENTREGA:INCOMPLETA');
@@ -143,17 +152,27 @@ async function entregar(raiz, args, itens, escrever) {
   return 0;
 }
 
-/**
- * @param {string[]} argv
- * @param {object} [deps] `cwd` (a pasta do projeto), `escrever` e `gerarDocx` (quem monta o Word
- *   de um documento oficial; sem ele, o do `documento.mjs`)
- * @returns {Promise<number>} 0 = a linha `ENTREGA:` saiu (ou `--ajuda`) · 1 = erro de uso, ou erro
- *   que impediu a entrega inteira (uma linha em PT-BR, sem linha `ENTREGA:`, nada escrito)
- */
+/** Executa o comando e devolve o código de saída. */
 export async function main(argv, { cwd = process.cwd(), escrever = (s) => process.stdout.write(`${s}\n`), gerarDocx } = {}) {
   const args = { ...lerArgs(argv), gerarDocx };
   const sair = (...linhas) => linhas.forEach((l) => escrever(l)) ?? 1;
   if (args.ajuda) return sair(USO) && 0;
+  if (args.copiarFinal || args.sugerirDestino) {
+    if (args.desconhecida || !args.crew || !args.run) return sair(USO);
+    const erro = erroDeChamada(cwd, args, [{ arquivo: args.crew }]);
+    if (erro) return sair(erro.mensagem);
+    const crew = path.resolve(cwd, args.crew);
+    const pasta = path.join(crew, 'output', args.run);
+    if (path.dirname(crew) !== path.resolve(cwd, 'crews') || !realDentroDe(cwd, pasta) || !realDentroDe(path.join(crew, 'output'), pasta)) return sair('Execução fora da pasta da crew.');
+    try {
+      if (args.sugerirDestino) (await sugerirDestino(pasta, crew)).forEach(escrever);
+      else escrever(`Cópia: ${await copiarFinal(cwd, pasta, args)}`);
+      return 0;
+    } catch (erroGeral) {
+      return sair(`Não consegui guardar a entrega: ${limpar(erroGeral.message)}. Pacote local: ${path.join(pasta, 'entrega')}`);
+    }
+  }
+  if (args.somenteLocal && (args.destino !== undefined || args.lembrarDestino !== undefined)) return sair('Escolha o destino após montar o pacote local.');
   const pedidos = lerLista(args.arquivos);
   const erro = erroDeChamada(cwd, args, pedidos);
   if (erro) return sair(erro.mensagem, ...(erro.comUso ? [USO] : []));

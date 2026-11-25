@@ -32,11 +32,12 @@ test('U5c-10a: pasta carries the theme and the number of steps, and conferir the
   ], 'the three moments, and only them');
 });
 
-test('U5c-10a: marcar is asked at the checkpoint and at the review; fechar at the end and at every abort', () => {
+test('U7F3C-08b: marcar is asked at checkpoints; fechar follows delivery and every abort', () => {
   tem(sectionOf(nucleo, '#### If `type: checkpoint`'), 'Record the answer with the `marcar` command (`--evento checkpoint`, see "Run record") — last thing of the checkpoint, after the memory and the `outputFile` below are written');
   tem(sectionOf(nucleo, '### Review Loops'), 'After each verdict — once the review file passed `conferir` — run `marcar` (`--evento revisao`, see "Run record").');
-  tem(sectionOf(nucleo, '### After Pipeline Completion'), 'close the run with the `fechar` command (the script writes the line of `runs.md`)');
-  tem(sectionOf(nucleo, '## Error Handling'), 'When the run is aborted (by the user, by an error, or rejected at the last review cycle): run `fechar` with `abortado` or `rejeitado` (see "Run record")');
+  tem(sectionOf(nucleo, '### After Pipeline Completion'), 'immediately after delivery, run `execucao.mjs fechar`');
+  tem(sectionOf(nucleo, '## Error Handling'), 'When the run is aborted (by the user, by an error, or rejected at the last review cycle): run `execucao.mjs fechar`');
+  tem(sectionOf(nucleo, '### After Pipeline Completion'), 'If the last line is `EXECUCAO:FECHAMENTO_PENDENTE`, retry only this command once');
   tem(sectionOf(nucleo, '## Error Handling'), 'A run that just stopped (the conversation ended) stays open: `/opencrew retomar` finds it.');
 });
 
@@ -47,15 +48,16 @@ test('U5c-10a: the values of each result are said, text goes clean to the comman
   tem(registro, 'when only a checkpoint reveals it, start with no `--tema` and add `--tema "{tema}"` to that checkpoint\'s `marcar`');
   tem(registro, 'one line between double quotes, only letters (accents included), digits, spaces and `. , : ; - ( ) / ?`; drop every other sign, and omit the option when no text is left');
   tem(registro, 'never read, write or describe `execucao.json` yourself, and never write `runs.md`');
-  tem(registro, 'never stops the run: tell the user once and go on');
+  tem(registro, 'If `marcar` returns `EXECUCAO:MARCO_PENDENTE`, retry only the same record command once');
+  tem(registro, 'If `fechar` returns `EXECUCAO:FECHAMENTO_PENDENTE`, retry only that close once');
   tem(registro, '`{N}`: how many steps will run, checkpoints included.');
   assert.ok(!nucleo.includes('This state does NOT persist to disk'), 'the state now persists');
   assert.ok(linhas(nucleo) <= 560, `runner.pipeline.md has ${linhas(nucleo)} lines`);
 });
 
-test('U5c-10b: 2b runs fechar and never writes the row by hand; the score has one definition', () => {
+test('U7F3C-08b: 2b confirms the close result and never writes the row by hand', () => {
   const b = fim.slice(fim.indexOf('### 2b.'), fim.indexOf('### 2c.'));
-  tem(b, 'Never write `crews/{name}/_memory/runs.md` yourself. Close the run with the `fechar` command of the runner ("Run record")');
+  tem(b, 'Never write `crews/{name}/_memory/runs.md` yourself. The runner closed the run immediately after delivery using `fechar`');
   tem(b, '`Data | Run ID | Tema | Output | Score | Resultado`');
   tem(b, 'the checkpoints the user approved without corrections ÷ the checkpoints the user answered (approved + corrected; a skipped one does not count), e.g. `2/3`; `—` when none was answered. Never compute it yourself.');
   tem(b, 'Do not write the row by hand.');

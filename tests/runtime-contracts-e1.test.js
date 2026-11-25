@@ -31,10 +31,8 @@ const COMANDOS = {
   pular: `${SCRIPT} pular --run "{run_id}" --agente {id}`,
   passoPipeline: `${SCRIPT} {passo or checkpoint} --run "{run_id}" --n {K} --agente {id} --rotulo "{label}" --mensagem "{message}"`,
   passoPedido: `${SCRIPT} passo --run "{run_id}" --pedido --n {K} --agente {worker_or_reviewer_id} --rotulo "{label}"`,
-  concluir: `${SCRIPT} concluir --run "{run_id}"`,
-  falhar: `${SCRIPT} falhar --run "{run_id}" --motivo "{reason}"`,
 };
-const EVENTOS = ['iniciar', 'pular', 'passo', 'checkpoint', 'concluir', 'falhar'];
+const EVENTOS = ['iniciar', 'pular', 'passo', 'checkpoint'];
 
 // The "moment → command" table: [moment, command] of every row that runs the script.
 const tabela = linhas(escritorio)
@@ -53,8 +51,8 @@ test('U7F3C-05a: each run type has an opening moment after its existing confirma
   assert.match(tabela[1][0], /^Start of `pedir`, after the user's confirmation/);
   assert.match(tabela[2][0], /^Right after `iniciar`, once per deselected agent/);
   assert.match(tabela[3][0], /^Before each pipeline step or checkpoint/);
-  assert.match(tabela[5][0], /^End of the run/);
-  assert.match(tabela[6][0], /^Run aborted/);
+  assert.match(texto, /End of the run.*execucao\.mjs.*fechar/);
+  assert.match(texto, /Run aborted.*execucao\.mjs fechar/);
 });
 
 test('U7F3C-01a: every command is on by default and Dashboard: off disables the Escritório', () => {
@@ -161,8 +159,8 @@ test('E1 regra 12: /opencrew dashboard changes only the Dashboard line of prefer
 });
 
 test('U7F3C-02a: manual dashboard route starts or reuses the confirmed server and opens its address', () => {
-  tem(painel, 'Start `node _opencrew/core/scripts/escritorio.mjs --automatico` from the project root');
-  tem(painel, 'starts or reuses a confirmed server in the background and prints its URL');
+  tem(painel, 'Start `node _opencrew/core/scripts/escritorio.mjs --automatico --historico` from the project root');
+  tem(painel, 'opens the persistent manual history server and prints its confirmed URLs');
   tem(painel, 'open it in the harness Browser when available');
 });
 

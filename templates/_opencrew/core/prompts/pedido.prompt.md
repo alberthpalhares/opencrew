@@ -58,7 +58,7 @@ When `preferences.md` does not say `Dashboard: off`, start the per-run Office st
 node _opencrew/core/scripts/estado.mjs "{name}" iniciar --run "{run_id}" --pedido --agente {worker_id} --passos {2 or 3}
 ```
 
-After `ESTADO:OK`, follow the shared server launch, exact-run confirmation, Browser and fallback
+After `ESTADO:OK` or `ESTADO:PARCIAL`, follow the shared server launch, exact-run confirmation, Browser and fallback
 flow in `_opencrew/core/runner/escritorio.md`, using the pedido's `run_id`. Show any returned
 `ESCRITORIO:URL_REDE` and `ESCRITORIO:URL_VPN` as clickable links for phone and tablet. If the
 server cannot start, tell the user once and continue the pedido.
@@ -77,7 +77,7 @@ node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquiv
 node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}" --passo 1
 ```
 
-`{path}` is the path `saida` returned. `CAMINHO:REPROVADO` → write the file again, once; still reproved → tell the user and offer to try again or cancel (Step 7, "cancela").
+`{path}` is the path `saida` returned. After `conferir`, replace it with the confirmed path for all later reads. `CAMINHO:REPROVADO` → write the file again, once; still reproved → tell the user and offer to try again or cancel (Step 7, "cancela").
 
 ## Step 6: The automatic check and the review (step 2)
 
@@ -94,7 +94,7 @@ node _opencrew/core/scripts/verificar.mjs --crew "crews/{name}" --arquivo "{path
   ```
   This shows the selected reviewer, not the pipeline's step 2 agent. Write the verdict to `crews/{name}/output/revisao/revisao.md` through `saida` and
   `conferir --passo 2` (verdicts in `revisao/v1`, `revisao/v2`…; the text keeps `v1`, `v2`… alone), and then: `node _opencrew/core/scripts/execucao.mjs "{name}" marcar --run
-  "{run_id}" --passo 2 --evento revisao --resultado {aprovado or rejeitado} --nota "{nota}"` (`--nota` only on a rejection: its reason in a few words — never the score) Rejected →
+  "{run_id}" --passo 2 --evento revisao --resultado {aprovado or rejeitado} --nota "{nota}"` (`--nota` only on a rejection: its reason in a few words — never the score). If the last line is `EXECUCAO:MARCO_PENDENTE`, retry only this record command once before continuing the review loop. Rejected →
   the agent of Step 5 rewrites (a new `saida`, `conferir --passo 1`), and the check and the review run again; at most `max_review_cycles` **rejections** (the crew's number; 3 when
   it declares none). Still rejected → show the reasons and let the user decide in Step 7.
 - **No reviewer**: nobody reviews; the report goes to Step 7 as it is. `VERIFICACAO:BLOQUEADA` → the agent fixes the blocks and the checker runs again, twice at most.
@@ -116,19 +116,16 @@ ask: "Aprova como está, quer um ajuste ou cancela?"
   (the next `verificacao-ciclo-{N}.md`): after an adjustment, the checker and the reviewer; after data for a `[PREENCHER]` only, the checker alone — the reviewer already judged
   that text.
 - **Aprova** → record it, then Step 8: `node _opencrew/core/scripts/execucao.mjs "{name}" marcar --run "{run_id}" --passo {3 or 2} --evento checkpoint --resultado {resultado}` —
-  `aprovado` when no adjustment was asked; `corrigido` when any was, adding `--nota "{nota}"` with the first adjustment (the score then counts this approval as corrected: `0/1`).
-- **Cancela** → `node _opencrew/core/scripts/execucao.mjs "{name}" fechar --run "{run_id}" --resultado abortado`, then run `estado.mjs "{name}" falhar --run "{run_id}" --pedido
-  --motivo "Pedido cancelado"` when the Office is on; say "Pedido cancelado. Nada foi entregue; os arquivos ficaram em {pasta do pedido}." and stop: no delivery, no memory, no
+  `aprovado` when no adjustment was asked; `corrigido` when any was, adding `--nota "{nota}"` with the first adjustment (the score then counts this approval as corrected: `0/1`). If the last line is `EXECUCAO:MARCO_PENDENTE`, retry only this record command once; do not repeat the approval or other effects.
+- **Cancela** → `node _opencrew/core/scripts/execucao.mjs "{name}" fechar --run "{run_id}" --resultado abortado`; if the last line is `EXECUCAO:FECHAMENTO_PENDENTE`, retry only this command once. Say "Pedido cancelado. Nada foi entregue; os arquivos ficaram em {pasta do pedido}." and stop: no delivery, no memory, no
   reflection.
 
 ## Step 8: Deliver and close
 
 1. Delivery: read `_opencrew/core/prompts/entrega.prompt.md` and follow it for this run, with the list made of the approved file (`{path}={formato}`, the newest version).
-2. Memory: item **2a** of `_opencrew/core/runner/fim-da-execucao.md` (only the user's explicit feedback).
-3. Close: `node _opencrew/core/scripts/execucao.mjs "{name}" fechar --run "{run_id}" --resultado aprovado --saida "{saída}"` — `{saída}`: what was produced, in a few words. The
-  script writes the row of the history (the theme comes out as `Pedido: {tema}`). Then item **2c** of the same file (reflection), when the script printed corrections.
+2. Close: `node _opencrew/core/scripts/execucao.mjs "{name}" fechar --run "{run_id}" --resultado aprovado --saida "{saída}"` — `{saída}`: what was produced, in a few words. The script writes the row of the history (the theme comes out as `Pedido: {tema}`). If the last line is `EXECUCAO:FECHAMENTO_PENDENTE`, retry only this command once. Save the complete output.
+3. Memory: item **2a** of `_opencrew/core/runner/fim-da-execucao.md` (only the user's explicit feedback). Then follow item **2c** using the saved close output when the script printed corrections.
 4. Say: "Pedido entregue: {pasta da entrega}. Ficou no histórico da crew {nome}."
-5. If the Office is on, run `estado.mjs "{name}" concluir --run "{run_id}" --pedido`.
 
 ## Resuming a request
 

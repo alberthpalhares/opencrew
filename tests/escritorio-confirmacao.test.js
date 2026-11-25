@@ -57,9 +57,16 @@ test('U7F3C-07a: confirmation requires HTTP 200 and exact project, version, crew
 
   const linhas = [];
   const resultado = await main(['--automatico', '--confirmar', '--porta', '4747', '--crew', 'teste', '--run', RUN], {
-    cwd: p.raiz, interfaces: {}, pronto: async () => true, escrever: (linha) => linhas.push(linha),
+    cwd: p.raiz, interfaces: {}, pronto: async () => true, sondar: async () => null, escrever: (linha) => linhas.push(linha),
   });
   assert.equal(resultado.url, `http://127.0.0.1:4747/?crew=teste&run_id=${RUN}`);
+  let sondagens = 0;
+  const demorou = await main(['--automatico', '--confirmar', '--porta', '4747', '--crew', 'teste', '--run', RUN], {
+    cwd: p.raiz, interfaces: {}, pronto: async () => ++sondagens === 3, sondar: async () => null,
+    escrever() {}, auto: { esperar: async () => {} },
+  });
+  assert.equal(demorou.url, resultado.url);
+  assert.equal(sondagens, 3);
   const ausente = await main(['--automatico', '--confirmar', '--porta', '4747', '--crew', 'teste', '--run', 'run-ausente'], {
     cwd: p.raiz, interfaces: {}, pronto: async () => false, sondar: async () => null, escrever: (linha) => linhas.push(linha),
   });
@@ -83,8 +90,8 @@ test('U7F3C-07a: confirmation requires HTTP 200 and exact project, version, crew
   const indisponivel = await main(['--automatico', '--porta', '4747', '--crew', 'teste', '--run', RUN], {
     cwd: p.raiz, interfaces: {}, escrever: (linha) => falhaDeProntidao.push(linha),
     auto: {
-      sondar: async () => ({ projeto: identidade, versao: '' }), pronto: async () => false,
-      ocupada: async () => false,
+      sondar: async (porta) => porta === 4747 ? ({ projeto: identidade, versao: '' }) : null,
+      pronto: async () => false, ocupada: async (porta) => porta === 4747,
       spawn: () => {
         const processo = new EventEmitter();
         processo.unref = () => {};
@@ -96,6 +103,6 @@ test('U7F3C-07a: confirmation requires HTTP 200 and exact project, version, crew
     },
   });
   assert.equal(indisponivel.code, 0);
-  assert.equal(processosIniciados.length, 1, 'a failed readiness check must not start one daemon per port');
+  assert.equal(processosIniciados.length, 0, 'an existing compatible daemon is not duplicated after a failed readiness check');
   assert.match(falhaDeProntidao[0], /ESCRITORIO:INDISPONIVEL/);
 });

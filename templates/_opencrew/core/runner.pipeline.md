@@ -270,15 +270,15 @@ root the one-line command of each moment and read the last line (`CAMINHO:OK {pa
 |---|---|
 | Start of the run (Initialization, step 5b) | `node _opencrew/core/scripts/caminho.mjs "{name}" pasta --tema "{tema}" --passos {N}` (no `--run`: the script creates the `run_id`). Last line `CAMINHO:ABERTA {run_id}` instead: nothing was created — show the user the lines above it, ask, and do what they say |
 | Before a step, for its `inputFile` | `node _opencrew/core/scripts/caminho.mjs "{name}" entrada --run "{run_id}" --arquivo "{inputFile}"` |
-| Before a step writes, for the first `outputFile` of each group | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` |
-| After a step wrote, for each output file | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}" --passo {step}` |
+| Before a step writes | `node _opencrew/core/scripts/caminho.mjs "{name}" saida --run "{run_id}" --arquivo "{outputFile}"` (repeat `--arquivo` for every output) |
+| After a step wrote | `node _opencrew/core/scripts/caminho.mjs "{name}" conferir --arquivo "{path}" --passo {step}` (repeat `--arquivo` for every output) |
 
 - **Values** — `{name}`: the crew code. `{inputFile}` / `{outputFile}`: the path as the step
   declares it (raw, without the run_id). `{path}`: the path `saida` returned. The safe-name rule
   (nome seguro) applies: the crew and every path between double quotes.
 - **`saida`** answers with the **transformed** path and creates its folder: write the file there,
-  never to the raw path. Run it once per group in a step — the other `outputFile`s of the same
-  group reuse the version folder it returned, and a file written twice in a step goes to the same path.
+  never to the raw path. A single call returns one `CAMINHO:OK` per output, in argument order.
+  The paths from `conferir` replace the draft paths for every later read, review and delivery.
 - **`entrada`** answers with the newest output of that file: use the path it returns, whatever
   its version folder.
 - **The rule the script applies** (apply it yourself only when the script does not run):
@@ -312,7 +312,7 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
 
 - **Values** — `{step}`: the step's number in `pipeline.yaml` (`step:`; without it, its position, from 1) — the same in `conferir --passo`. `{resultado}`: checkpoint → `aprovado` (the user judged something the crew produced and accepted it as it is), `corrigido` (the answer asked for any change) or `pulado` (no judgement: the checkpoint only collected an answer — a topic, a choice — or was skipped); revisao → `aprovado` or `rejeitado`; fechar → `aprovado`, `publicado` (an irreversible step published or sent), `rejeitado` (the review rejected at the last cycle and the user aborted) or `abortado`. `{nota}`: the correction asked or the reason of the rejection — no `--nota` on an approval. `{tema}`: the topic of this run, in a few words; when only a checkpoint reveals it, start with no `--tema` and add `--tema "{tema}"` to that checkpoint's `marcar`. `{N}`: how many steps will run, checkpoints included. `{saída}`: what was produced ("Carrossel 9 slides").
 - **Text on the command line** (`{tema}`, `{nota}`, `{saída}`) — one line between double quotes, only letters (accents included), digits, spaces and `. , : ; - ( ) / ?`; drop every other sign, and omit the option when no text is left.
-- The scripts are the only writers: never read, write or describe `execucao.json` yourself, and never write `runs.md`. A warning `Não consegui gravar o registro desta execução`, or one of these commands not running, never stops the run: tell the user once and go on.
+- The scripts are the only writers: never read, write or describe `execucao.json` yourself, and never write `runs.md`. If `marcar` returns `EXECUCAO:MARCO_PENDENTE`, retry only the same record command once; if it still fails, tell the user once and continue without repeating the step. Other mark failures are reported once. If `fechar` returns `EXECUCAO:FECHAMENTO_PENDENTE`, retry only that close once; if it still fails, tell the user once and continue without repeating completed delivery or publication.
 
 ### For each pipeline step:
 
@@ -351,7 +351,7 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
 - Inform user: `🔍 {Agent Name} is working in the background...`
 - Read the step's `model_tier` frontmatter field (if present).
   Valid values: `fast` or `powerful`. If absent or any other value: default to `powerful`.
-- **Before building the subagent prompt**: Resolve all output paths referenced in the step file with the `saida` command (Output Path Transformation, once per group). Store the transformed path(s) in working memory — they will be used both in the prompt and in post-completion verification. Never pass raw paths from the step file to the subagent.
+- **Before building the subagent prompt**: Resolve all output paths referenced in the step file with one `saida` call (repeat `--arquivo`). Store these draft paths for the prompt and output validation. Never pass raw paths from the step file to the subagent.
 - Dispatch the step with your IDE's subagent mechanism (an IDE without one: run the step inline, in this conversation):
   - If `model_tier: fast`: use the fastest/lightest model available in your current IDE.
   - If `model_tier: powerful` or absent/invalid: use the default model (no model override needed)
@@ -406,7 +406,7 @@ The scripts keep the record of the run on disk (`crews/{name}/output/{run_id}/ex
 
 After a step produces output (subagent or inline) and BEFORE Veto Condition Enforcement, the runner MUST validate that the declared output files exist and are non-empty. This is a binary, non-negotiable gate — the runner does NOT proceed on memory or assumption, only on the script's `CAMINHO:` line.
 
-**If the step declares an `outputFile`** (single or multiple), run the `conferir` command (Output Path Transformation) for EACH output file, with the **stored transformed path** (the one `saida` returned), not the raw path from the step file. A step with an `output_contract:` adds its options to this same call (see Output Contract Validation): one command per file.
+**If the step declares an `outputFile`**, run `conferir` with every stored transformed path in one call. When an `output_contract:` applies, first validate each draft separately with its options and without `--passo`, then register the full batch. For a veto fix, reserve another batch with `saida` before writing.
 
 **Rules** (`FAIL` below = the last line is `CAMINHO:REPROVADO arquivo ausente ou vazio`):
 - If ALL output files return `CAMINHO:OK` → proceed to Veto Condition Enforcement.
@@ -524,13 +524,12 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 
 ### After Pipeline Completion
 
-1. **Entrega** — if the delivery has not run in this run, run it now (see "Entrega" above).
-1b. **Escritório** — if it is on, run `concluir` (see "Escritório" above).
+1. **Entrega** — assemble the approved package if needed. For a ready package, ask “Onde você quer guardar esta entrega?” and wait for the choice before closing or showing the final menu. If the user already chose for this run, apply that choice. Follow the organized delivery prompt.
+2. **Close the run** — immediately after delivery, run `execucao.mjs fechar` with the confirmed result and output. Save its complete output for the post-run reflection. If the last line is `EXECUCAO:FECHAMENTO_PENDENTE`, retry only this command once. A history warning after `EXECUCAO:FECHADA` does not change the run result.
 
-2. **Close the run** — read `_opencrew/core/runner/fim-da-execucao.md` completely and follow it, in its
-   order: update `memories.md`, close the run with the `fechar` command (the script writes the line of `runs.md`), the post-run reflection and the completion
-   summary with the final menu. Never skip it, and never write the memory or the history from what you
-   remember of it.
+3. **After closing** — read `_opencrew/core/runner/fim-da-execucao.md` completely and follow it for
+   memory, reflection and the completion summary. The run is already closed; do not close it again.
+   Never write the memory or the history from what you remember of it.
 
 ## Error Handling
 
@@ -541,7 +540,7 @@ One script turns the approved files into `crews/{name}/output/{run_id}/entrega/`
 - If a step file is missing, inform the user and suggest running `/opencrew edit {crew}` to fix.
 - If company.md is empty, stop and redirect to onboarding.
 - Never continue past a checkpoint without user input.
-- When the run is aborted (by the user, by an error, or rejected at the last review cycle): run `fechar` with `abortado` or `rejeitado` (see "Run record") and, if the Escritório is on, run `falhar` (see "Escritório" above). A run that just stopped (the conversation ended) stays open: `/opencrew retomar` finds it.
+- When the run is aborted (by the user, by an error, or rejected at the last review cycle): run `execucao.mjs fechar` with `abortado` or `rejeitado` (see "Run record"). The Escritório reads the final result from that record. A run that just stopped (the conversation ended) stays open: `/opencrew retomar` finds it.
 
 ## Pipeline State
 

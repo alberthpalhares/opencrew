@@ -1,6 +1,6 @@
 # End of the run
 
-> Part of the Pipeline Runner (`_opencrew/core/runner.pipeline.md`). Read it when the pipeline has completed. It continues the list of "After Pipeline Completion" in the runner: items 2 and 3 below are the items 2 and 3 of that list; follow them in order.
+> Part of the Pipeline Runner (`_opencrew/core/runner.pipeline.md`). Read it after the run is closed. It continues "After Pipeline Completion" with memory, reflection and the final summary.
 
 2. **Update crew memory** — write to BOTH files:
 
@@ -31,16 +31,16 @@ After applying all candidates, write the updated `memories.md`.
 
 If no candidates are found (the run had no explicit user feedback), skip writing `memories.md` entirely — do not write an unmodified copy. Always proceed to step 2b regardless.
 
-### 2b. Prepend to `runs.md` — the script writes the row
+### 2b. Confirm the close — the script writes the row
 
-Never write `crews/{name}/_memory/runs.md` yourself. Close the run with the `fechar` command of the runner ("Run record"): `--resultado` is `aprovado` (the final approval was given), `publicado` (an irreversible step published or sent) or `rejeitado` (the review rejected at the last cycle and the user aborted); `--saida` is a brief description of what was generated (e.g. "Carrossel 9 slides", "Thread 7 posts"); add `--tema "{tema}"` (1 sentence max) if no command of this run carried the topic yet.
+Never write `crews/{name}/_memory/runs.md` yourself. The runner closed the run immediately after delivery using `fechar`, with the confirmed `--resultado`, `--saida` and optional `--tema`. Keep the command output for the reflection below. If its last line was `EXECUCAO:FECHAMENTO_PENDENTE`, the runner retries only that close command once before continuing. A history write warning after `EXECUCAO:FECHADA` is reported to the user and does not trigger a retry.
 
 The script writes the row of this run right below the header — `Data | Run ID | Tema | Output | Score | Resultado`, newest run first; a row this run already had is replaced — and prints it. No other data.
 
 `Score` has one definition, and the script counts it from the recorded checkpoints: the checkpoints the user approved without corrections ÷ the checkpoints the user answered (approved + corrected; a skipped one does not count), e.g. `2/3`; `—` when none was answered. Never compute it yourself.
 
 - Last line `EXECUCAO:FECHADA {resultado} {score}` → go on to 2c. A line `Não consegui gravar o histórico desta execução: {motivo}` before it → show it to the user as it came.
-- The script did not run (no Node, an error, no `EXECUCAO:` line) → tell the user `⚠️ Não consegui gravar o histórico desta execução: {motivo}` and go on. Do not write the row by hand.
+- The script did not run (no Node, an error, no `EXECUCAO:` line) → tell the user `⚠️ Não consegui confirmar o encerramento da execução: {motivo}` and go on. Do not write the row by hand.
 
 ### 2c. Post-Run Reflection (pattern detection)
 

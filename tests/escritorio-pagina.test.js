@@ -154,7 +154,7 @@ test('E1-06c: the page has the list of agents and the page texts of §6, in PT-B
   Object.assign(crew.agents[0], { name: '<b>Zé</b>', label: 'Pesquisar' });
   crew.agents[1].label = 'Escrever o texto';
   const memoria = consultar(MEMORIA_INICIAL, resposta(crew));
-  assert.equal(ver(consultar(memoria, null))('aviso'), SEM_SERVIDOR);
+  assert.equal(ver(consultar(memoria, null))('aviso'), TEXTOS.semServidorComEstado);
   t = ver(memoria);
   assert.deepEqual([t('aviso'), t('frase'), t('etiqueta')], [null, null, null]);
   assert.deepEqual([t('crew'), t('passo'), t('parada'), doc.title], ['minha-crew', 'Passo 2 de 5 — Escrever', 'Última atualização há 21 min', '2/5 Escrever — minha-crew']);
@@ -266,15 +266,17 @@ test('E1-06 (rule 19): name and balloon are text over the canvas, placed in perc
   assert.deepEqual([apagados(0), apagados(IDA_MS + 100), apagados(ENTREGA_MS + 100)], [['Escrever'], ['Agente 3', 'Escrever'], []]);
 });
 
-test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on without a server and hides the opening sentence only after the first drawing', async () => {
-  const [alfa, beta] = [estado({ crew: 'alfa' }), estado({ crew: 'beta', updatedAt: haMin(5) })];
-  function abrir(busca, respostas) {
+function abrirTeste(busca, respostas, identidade) {
     const [doc, pedidos, quadros, intervalos] = [documento(), [], [], []];
+    if (identidade) doc.documentElement = { dataset: identidade };
     const fetch = async (endereco) => { pedidos.push(endereco); const r = respostas.shift(); if (!r) throw new TypeError('fora do ar'); return { ok: true, json: async () => r }; };
     iniciar({ document: doc, location: { search: busca }, devicePixelRatio: 1, matchMedia: () => ({ matches: false }), fetch, setInterval: (fn, ms) => intervalos.push([fn, ms]), setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: (fn) => quadros.push(fn), addEventListener() {} });
     return { doc, t: naTela(doc), pedidos, quadros, intervalos, consultar: () => intervalos[0][0]() };
-  }
-  const { doc, t, pedidos, quadros, intervalos, consultar: denovo } = abrir('', [null, resposta(alfa, beta), resposta(alfa, beta)]);
+}
+
+test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on without a server and hides the opening sentence only after the first drawing', async () => {
+  const [alfa, beta] = [estado({ crew: 'alfa' }), estado({ crew: 'beta', updatedAt: haMin(5) })];
+  const { doc, t, pedidos, quadros, intervalos, consultar: denovo } = abrirTeste('', [null, resposta(alfa, beta), resposta(alfa, beta)]);
   assert.deepEqual([t('abertura'), t('pagina')], [ABRINDO, null], 'before the first answer only the static sentence shows');
   await new Promise((ok) => setImmediate(ok));
   assert.deepEqual([t('aviso'), t('frase'), t('abertura'), t('pagina')], [SEM_SERVIDOR, DEMONSTRACAO, ABRINDO, ''], 'no server: the page shows, with the demo, the warning and still the sentence');
@@ -288,11 +290,38 @@ test('E1-06 (rules 20, 22, 23): the page asks /estado every second, goes on with
   await denovo();
   assert.equal(t('crew'), 'beta', 'the choice of the user holds while the other crew is updated');
   await denovo();
-  assert.deepEqual([t('aviso'), t('crew')], [SEM_SERVIDOR, 'beta'], 'server gone: the last good state stays, with the warning');
+  assert.deepEqual([t('aviso'), t('crew')], [TEXTOS.semServidorComEstado, 'beta'], 'server gone: the last good state stays, with the warning');
   doc.ouvintes.visibilitychange();
   assert.deepEqual([pedidos.length, [...new Set(pedidos)]], [5, ['estado']], 'back to the tab: asks at once, always the same address');
 
-  const forcada = abrir('?demo', [resposta(alfa)]);
+  const forcada = abrirTeste('?demo', [resposta(alfa)]);
   await new Promise((ok) => setImmediate(ok));
   assert.deepEqual([forcada.t('frase'), forcada.t('etiqueta'), forcada.t('seletor-caixa')], [DEMO_FORCADA, 'Demonstração', null]);
+});
+
+test('U7F3C-09e: targeted pages wait, keep the last step offline and recover only for the same project and run', async () => {
+  const progresso = (runId, current) => ({
+    ...estado({ crew: 'alfa', step: { current, total: 5, label: 'Escrever' } }), runId,
+  });
+  const dados = (projeto, ...crews) => ({ ...resposta(...crews), projeto, versao: '1.21.3' });
+  const aba = abrirTeste('?crew=alfa&run_id=r1', [
+    dados('p'), dados('p', progresso('r1', 2)), null,
+    dados('outro', progresso('r1', 4)), dados('p', progresso('r2', 4)), dados('p', progresso('r1', 3)),
+  ], { projeto: 'p', versao: '1.21.3' });
+  await new Promise((ok) => setImmediate(ok));
+  assert.equal(aba.t('frase'), TEXTOS.esperaRun);
+  await aba.consultar();
+  assert.match(aba.t('passo'), /Passo 2/);
+  for (let i = 0; i < 3; i++) {
+    await aba.consultar();
+    assert.match(aba.t('passo'), /Passo 2/);
+    assert.equal(aba.t('aviso'), TEXTOS.semServidorComEstado);
+  }
+  await aba.consultar();
+  assert.match(aba.t('passo'), /Passo 3/);
+  assert.equal(aba.t('aviso'), null);
+  assert.deepEqual([...new Set(aba.pedidos)], ['estado?crew=alfa&run_id=r1']);
+  const crew = abrirTeste('?crew=alfa', [dados('p', progresso('r1', 2))]);
+  await new Promise((ok) => setImmediate(ok));
+  assert.deepEqual(crew.pedidos, ['estado?crew=alfa']);
 });

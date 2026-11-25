@@ -5,6 +5,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { gravarTexto } from '../estado/arquivo.mjs';
+import { comTrava } from '../trava.mjs';
 
 export const ARQUIVO = 'execucao.json';
 /** O `tipo` do registro de um pedido avulso à crew (spec fase-u5d-modo-equipe.md); execução de pipeline não tem o campo. */
@@ -41,9 +42,9 @@ export function conferido(lido) {
  * ser um objeto); qualquer outra falha de leitura (arquivo em uso, sem permissão) sobe — um
  * registro que existe e não pôde ser lido não é trocado por um vazio.
  */
-async function lerParaGravar(pasta) {
+export async function lerParaGravar(pasta, lerArquivo = fs.readFile) {
   try {
-    const texto = await fs.readFile(path.join(pasta, ARQUIVO), 'utf8');
+    const texto = await lerArquivo(path.join(pasta, ARQUIVO), 'utf8');
     return conferido(JSON.parse(texto.charCodeAt(0) === 0xfeff ? texto.slice(1) : texto));
   } catch (erro) {
     if (erro?.code === 'ENOENT' || erro instanceof SyntaxError) return null;
@@ -70,9 +71,9 @@ function ordenado(r) {
 }
 
 /** O passo conferido: troca a entrada do mesmo número (fica a última saída). */
-export function comPasso(registro, { n, arquivo, em }) {
+export function comPasso(registro, { n, arquivo, arquivos, em }) {
   const outros = registro.passos.filter((p) => p.n !== n);
-  return { ...registro, passos: [...outros, { n, arquivo, em }].sort((a, b) => a.n - b.n) };
+  return { ...registro, passos: [...outros, { n, arquivo, ...(arquivos ? { arquivos } : {}), em }].sort((a, b) => a.n - b.n) };
 }
 
 /** Os marcos só acumulam, na ordem em que chegam. */
@@ -94,9 +95,9 @@ export function score(registro) {
 }
 
 /** Grava o registro. @returns {Promise<string|null>} o aviso para o usuário, ou `null` */
-export async function gravarRegistro(pasta, registro) {
+export async function gravarRegistro(pasta, registro, deps = {}) {
   try {
-    await gravarTexto(path.join(pasta, ARQUIVO), `${JSON.stringify(ordenado(registro), null, 2)}\n`);
+    await gravarTexto(path.join(pasta, ARQUIVO), `${JSON.stringify(ordenado(registro), null, 2)}\n`, deps);
     return null;
   } catch (erro) {
     return AVISO(motivoDe(erro));
@@ -109,9 +110,11 @@ export async function gravarRegistro(pasta, registro) {
  * @param {(registro: object) => object} mudar
  * @returns {Promise<string|null>} o aviso de que não gravou, ou `null`
  */
-export async function anotar(pasta, base, mudar) {
+export async function anotar(pasta, base, mudar, deps = {}) {
   try {
-    return await gravarRegistro(pasta, mudar((await lerParaGravar(pasta)) ?? novoRegistro(base)));
+    return await comTrava(path.join(pasta, ARQUIVO), async () => (
+      gravarRegistro(pasta, mudar((await lerParaGravar(pasta)) ?? novoRegistro(base)), deps)
+    ));
   } catch (erro) {
     return AVISO(motivoDe(erro));
   }

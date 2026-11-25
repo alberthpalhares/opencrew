@@ -7,7 +7,7 @@
 //                                             execução; sem --run, o id é a data e a hora do
 //                                             computador (AAAA-MM-DD-HHmmss); --pedido: a execução
 //                                             é um pedido avulso à crew, sem pipeline. Sem --run:
-//                                             se a crew tem execução aberta com atividade nas
+//                                             se a crew tem execução vinculada a uma sessão, com atividade nas
 //                                             últimas 2 horas, não cria nada e responde
 //                                             CAMINHO:ABERTA <id>; --nova cria assim mesmo
 //   saida    --run <id> --arquivo <declarado> onde o passo grava (abre a pasta de versão seguinte)
@@ -15,9 +15,7 @@
 //   conferir --arquivo <caminho já resolvido> [--passo N] [--secoes N] [--tldr]
 //                                             com --passo, o arquivo aprovado entra no registro
 // <crew> é o nome da pasta em `crews/`. <declarado> é o `inputFile` ou `outputFile` do passo.
-// Só cria pastas, e só dentro de crews/<crew>/output/<id>/. O único arquivo que grava é o registro
-// da execução (`crews/<crew>/output/<id>/execucao.json`); nunca altera nem apaga outro arquivo.
-// Registro que não pôde ser gravado não muda a linha CAMINHO: — o aviso sai antes dela.
+// Em uma execução organizada, também grava índice, rascunhos próprios e revisões conferidas.
 // Última linha da saída (o runner lê esta linha): CAMINHO:OK <caminho>, CAMINHO:FALTA <caminho>,
 // CAMINHO:REPROVADO <motivo> ou CAMINHO:ABERTA <id> (as linhas antes dela dizem o que perguntar ao
 // usuário); o caminho sai relativo à pasta do projeto, com `/`.
@@ -27,61 +25,64 @@
 // Specs: fase-r3-runner-em-uso-real.md, fase-u5c-execucao-registrada.md, regras 1 a 5, e
 // fase-e4-robustez-do-escritorio.md, regras 8 e 9 (repositório do OpenCrew).
 import path from 'node:path';
-import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
-import { RUN, USO, erroDeArgumentos, lerArgs, limpar } from './caminho/argumentos.mjs';
-import { acharCrew } from './caminho/crew.mjs';
-import { abertaRecente, linhasDaAberta } from './caminho/aberta.mjs';
-import { ARQUIVO, PEDIDO, anotar, comPasso, limparTema } from './execucao/registro.mjs';
-import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, novoRun, proximaVersao } from './caminho/nucleo.mjs';
+import { ehPrincipal, realDentroDe } from './comum.mjs';
+import { RUN, USO, lerArgs, limpar } from './caminho/argumentos.mjs';
+import { pasta } from './caminho/pasta.mjs';
+import { ARQUIVO, anotar, comPasso, lerRegistro } from './execucao/registro.mjs';
+import { MOTIVO, daMaisNova, motivoDeReprovacao, naExecucao, normalizar, proximaVersao } from './caminho/nucleo.mjs';
 import { criarPasta, lerTexto, pastasDe, temConteudo } from './caminho/disco.mjs';
+import { reservarSaidas, consolidarRevisao } from './caminho/revisao.mjs';
+import { lerAposConsolidacao } from './caminho/transacao.mjs';
+import { comReservaProjeto } from './caminho/reserva.mjs';
+import { localizar } from './caminho/validar.mjs';
 
 const ok = (caminho) => `CAMINHO:OK ${caminho}`;
 const falta = (caminho) => `CAMINHO:FALTA ${caminho}`;
 const reprovado = (motivo) => `CAMINHO:REPROVADO ${motivo}`;
 
-/**
- * O arquivo declarado cabe na execução? Dentro de `output/`, depois de ganhar o run, ele tem de
- * continuar dentro da pasta da execução — pelo texto e pelo lugar real.
- * @returns {string|null} o erro de uso, ou `null`
- */
-function erroDoArquivo(raiz, crew, { acao, run, arquivo }) {
-  if (!dentroDoProjeto(raiz, arquivo)) return MSG.foraDoProjeto(limpar(arquivo));
-  // `pasta` não usa arquivo, e `conferir` recebe o caminho já resolvido: nenhum dos dois o põe na execução.
-  const local = acao === 'conferir' || acao === 'pasta' ? null : naExecucao(arquivo, crew, run);
-  if (!local) return null;
-  if (!local.nome) return `Falta o nome do arquivo em --arquivo: ${limpar(arquivo)}`;
-  const execucao = path.resolve(raiz, 'crews', crew, 'output', run);
-  const partes = normalizar(arquivo).split('/');
-  const sai = partes.includes('..') || partes.includes('.') || !realDentroDe(execucao, path.resolve(raiz, local.grupo));
-  return sai ? `Caminho fora da pasta da execução: ${limpar(arquivo)}` : null;
-}
-
-/**
- * Onde fica a crew, ou o erro de uso. A crew é uma pasta direta de `crews/` (`crews/<nome>`
- * também vale).
- * @returns {{ erro: string } | { crew: string }}
- */
-function localizar(raiz, args) {
-  const erro = erroDeArgumentos(args);
-  if (erro) return { erro };
-  const achada = acharCrew(raiz, args.crew);
-  if (achada.erro) return achada;
-  const doArquivo = args.arquivo ? erroDoArquivo(raiz, achada.crew, args) : null;
-  return doArquivo ? { erro: doArquivo } : achada;
-}
-
 /** Regras 2 e 3: o caminho em que o passo grava; a pasta dele é criada. */
-function saida(raiz, crew, { run, arquivo }) {
+async function saida(raiz, crew, { run, arquivo, arquivos = [arquivo] }) {
   const local = naExecucao(arquivo, crew, run);
-  if (!local) return ok(normalizar(arquivo));
+  const exec = `crews/${crew}/output/${run}`;
+  const locais = arquivos.map((nome) => naExecucao(nome, crew, run));
+  if (locais.some(Boolean) && (await lerRegistro(path.resolve(raiz, exec)))?.organizada) {
+    return (await reservarSaidas(raiz, exec, arquivos.map(normalizar), locais)).map(ok);
+  }
+  if (arquivos.length > 1) {
+    const grupos = new Map();
+    const linhas = [];
+    for (const nome of arquivos) {
+      const item = naExecucao(nome, crew, run);
+      if (!item) linhas.push(ok(normalizar(nome)));
+      else if (grupos.has(item.grupo)) linhas.push(ok(`${grupos.get(item.grupo)}/${item.nome}`));
+      else {
+        const [linha] = await saida(raiz, crew, { run, arquivo: nome });
+        grupos.set(item.grupo, path.posix.dirname(linha.slice('CAMINHO:OK '.length)));
+        linhas.push(linha);
+      }
+    }
+    return linhas;
+  }
+  if (!local) return [ok(normalizar(arquivo))];
   const pasta = `${local.grupo}/${proximaVersao(pastasDe(path.resolve(raiz, local.grupo)))}`;
   criarPasta(path.resolve(raiz, pasta));
-  return ok(`${pasta}/${local.nome}`);
+  return [ok(`${pasta}/${local.nome}`)];
 }
 
 /** Regra 4: a versão mais nova que tem o arquivo; depois, o próprio grupo, sem pasta de versão. */
-function entrada(raiz, crew, { run, arquivo }) {
+async function entrada(raiz, crew, { run, arquivo }) {
   const local = naExecucao(arquivo, crew, run);
+  if (local) {
+    const exec = `crews/${crew}/output/${run}`;
+    const registro = await lerAposConsolidacao(path.resolve(raiz, exec));
+    const nome = `${local.grupo}/${local.nome}`.slice(exec.length + 1);
+    const revisao = registro?.revisoes?.[nome];
+    if (registro?.organizada && revisao?.arquivo?.startsWith(`${exec}/`)) {
+      const pasta = path.resolve(raiz, exec);
+      const alvo = path.resolve(raiz, revisao.arquivo);
+      return realDentroDe(pasta, alvo) && temConteudo(alvo) ? ok(revisao.arquivo) : falta(revisao.arquivo);
+    }
+  }
   const { grupo, nome } = local ?? { grupo: path.posix.dirname(normalizar(arquivo)), nome: path.posix.basename(normalizar(arquivo)) };
   const versoes = local ? daMaisNova(pastasDe(path.resolve(raiz, grupo))) : [];
   const candidatos = [...versoes.map((versao) => `${grupo}/${versao}/${nome}`), local ? `${grupo}/${nome}` : normalizar(arquivo)];
@@ -115,29 +116,27 @@ function execucaoDe(raiz, caminho, crew) {
 
 /** Regra 2 da U5c: o arquivo que passou na conferência entra no registro, como a saída do passo. */
 async function conferirERegistrar(raiz, crew, args, em) {
-  const linha = conferir(raiz, args);
-  const [, caminho] = /^CAMINHO:OK (.*)$/.exec(linha) ?? [];
+  const arquivos = args.arquivos ?? [args.arquivo];
+  const linhas = arquivos.map((arquivo, i) => conferir(raiz, i === 0 ? args : { arquivo }));
+  const falha = linhas.find((item) => item.startsWith('CAMINHO:REPROVADO'));
+  if (falha) return [falha];
+  const confirmados = arquivos.map(normalizar);
+  const base = `crews/${crew}/output/`;
+  const rascunhos = confirmados.filter((p) => p.startsWith(base) && p.slice(base.length).split('/')[1] === 'rascunhos');
+  const caminho = rascunhos[0] ?? confirmados[0];
   const run = caminho && args.passo ? execucaoDe(raiz, caminho, crew) : null;
-  if (!run) return [linha];
+  if (!run) return linhas;
   const pasta = path.resolve(raiz, 'crews', crew, 'output', run);
-  return [await anotar(pasta, { crew, run, em }, (registro) => comPasso(registro, { n: Number(args.passo), arquivo: caminho, em })), linha];
-}
-
-/** A pasta da execução; a que nasce agora ganha o registro (regras 1 e 3 da U5c: a que já existia fica como está). */
-async function pasta(raiz, crew, args, agora) {
-  // Regra 8 da E4: sem --run, sem --pedido e sem --nova, a execução aberta e recente é perguntada antes.
-  const aberta = args.run || args.pedido || args.nova ? null : await abertaRecente(raiz, crew, agora);
-  if (aberta) return linhasDaAberta(crew, aberta);
-  const run = args.run || novoRun(agora, pastasDe(path.resolve(raiz, 'crews', crew, 'output')));
-  const rel = `crews/${crew}/output/${run}`;
-  const nova = criarPasta(path.resolve(raiz, rel));
-  const base = { crew, run, tema: limparTema(args.tema), passos: args.passos ? Number(args.passos) : null, tipo: args.pedido ? PEDIDO : undefined, agente: args.agente, formato: args.formato, em: agora.toISOString() };
-  return [nova ? await anotar(path.resolve(raiz, rel), base, (registro) => registro) : null, ok(rel)];
+  if (rascunhos.length) {
+    const lote = await consolidarRevisao(raiz, pasta, rascunhos, Number(args.passo), em);
+    return confirmados.map((p) => ok(lote[rascunhos.indexOf(p)] ?? p));
+  }
+  return [await anotar(pasta, { crew, run, em }, (registro) => comPasso(registro, { n: Number(args.passo), arquivo: caminho, em })), ...linhas];
 }
 
 async function responder(raiz, crew, args, agora) {
-  if (args.acao === 'saida') return [saida(raiz, crew, args)];
-  if (args.acao === 'entrada') return [entrada(raiz, crew, args)];
+  if (args.acao === 'saida') return saida(raiz, crew, args);
+  if (args.acao === 'entrada') return [await entrada(raiz, crew, args)];
   if (args.acao === 'conferir') return conferirERegistrar(raiz, crew, args, agora.toISOString());
   return pasta(raiz, crew, args, agora);
 }
@@ -158,12 +157,19 @@ export async function main(argv, deps = {}) {
     return 1;
   }
   try {
-    (await responder(cwd, local.crew, args, agora())).filter(Boolean).forEach((linha) => escrever(linha));
+    const linhas = args.acao === 'pasta'
+      ? await novaExecucao(cwd, local.crew, args, agora)
+      : await responder(cwd, local.crew, args, agora());
+    linhas.filter(Boolean).forEach((linha) => escrever(linha));
     return 0;
   } catch (erro) {
     escrever(`Não consegui resolver o caminho: ${limpar(erro?.message ?? erro)}`);
     return 1;
   }
+}
+
+async function novaExecucao(raiz, crew, args, agora) {
+  return comReservaProjeto(raiz, () => responder(raiz, crew, args, agora()));
 }
 
 if (ehPrincipal(import.meta.url)) process.exitCode = await main(process.argv.slice(2));

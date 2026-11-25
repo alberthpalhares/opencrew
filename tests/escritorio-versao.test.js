@@ -50,7 +50,7 @@ test('E4-01a: /estado brings projeto, versao (the stamp of the project when the 
     t.after(() => fechar(servidor));
     assert.equal(await abrir(servidor, 0), true);
     const ler = async () => (await fetch(`http://127.0.0.1:${servidor.address().port}/estado`)).json();
-    assert.deepEqual(await ler(), { projeto: projetoDe(p.raiz), versao: esperada, crews: [] });
+    assert.deepEqual(await ler(), { projeto: projetoDe(p.raiz), versao: esperada, modo: 'manual', crews: [] });
     await carimbar(p.raiz, '9.9.9'); // an `update` under a server that is running: it keeps the version it started with
     assert.equal((await ler()).versao, esperada);
   }

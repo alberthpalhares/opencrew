@@ -98,7 +98,7 @@ export async function init(opts = {}, { pickIdes = promptIdes } = {}) {
   log(`\n${c.green(c.bold('Done!'))} opencrew is installed.\n`);
   log(`${c.bold('Next steps:')}`);
   log(`  1. Open this folder in your AI IDE.`);
-  log(`  2. Type ${c.cyan('/opencrew')} to start (first run sets up your company profile).`);
+  log(`  2. Ask to open the OpenCrew menu. In Codex CLI, select ${c.cyan('$opencrew')} (or use /skills).`);
   log(`     No API keys needed up front — opencrew asks for them in chat only if a skill you use requires one.\n`);
 }
 

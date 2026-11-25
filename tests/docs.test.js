@@ -194,8 +194,8 @@ test('U3a-10c: the README does not promise PDF nor formatted posts, and describe
     assert.match(frase, /não gera PDF|salvar como PDF|não é mais gerado|deixaram de ser gerados/i, `the README still promises PDF: ${frase}`);
   }
   assert.match(readme, /## Entrega por canal/);
-  assert.match(readme, /copia a entrega para uma pasta do seu projeto/);
-  assert.match(readme, /`<pasta>\/<execução>\/`/);
+  assert.match(readme, /copiar para uma pasta do projeto, outro projeto, um disco externo ou uma pasta sincronizada/);
+  assert.match(readme, /`output\/<execução>\/entrega\/`/);
   assert.match(readme, /Entregar assim mesmo/);
   assert.match(readme, /-reentrega-2/);
 });

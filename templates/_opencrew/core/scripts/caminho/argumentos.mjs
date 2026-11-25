@@ -23,15 +23,17 @@ export const limpar = (valor) => String(valor).replace(/\s+/g, ' ').trim().slice
 export function lerArgs(argv) {
   const soltos = [];
   const opcoes = {};
+  const arquivos = [];
   for (let i = 0; i < argv.length; i++) {
     const [, nome, colado] = argv[i].match(OPCAO) ?? [];
     if (!nome) soltos.push(argv[i]);
     else if (SEM_VALOR.includes(nome)) opcoes[nome] = true;
     else if (colado !== undefined) opcoes[nome] = colado;
     else opcoes[nome] = i + 1 < argv.length && !OPCAO.test(argv[i + 1]) ? argv[++i] : '';
+    if (nome === 'arquivo') arquivos.push(opcoes.arquivo);
   }
   const [crew, acao] = soltos.filter((s) => !s.startsWith('--'));
-  return { crew, acao, tldr: false, ...opcoes };
+  return { crew, acao, tldr: false, ...opcoes, ...(arquivos.length > 1 ? { arquivos, arquivo: arquivos[0] } : {}) };
 }
 
 /**

@@ -1,53 +1,69 @@
 // Garante uma instância compatível do Escritório sem prender o processo do harness.
 import { spawn as criarProcesso } from 'node:child_process';
-import { procurarAutomatico, sondarEstado, sondarPronto, alguemEscuta } from './porta.mjs';
+import { aceitaBind, sondarEstado, sondarPronto, alguemEscuta } from './porta.mjs';
+import { procurarAutomatico } from './procurar.mjs';
 
 const pausa = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
 
-function subir(script, raiz, porta, spawn) {
+function subir(script, raiz, porta, spawn, restante) {
   return new Promise((resolver) => {
+    let terminou = false;
+    const espera = setTimeout(() => resolver(null), restante());
     try {
-      const processo = spawn(process.execPath, [script, '--servidor', '--porta', String(porta)], {
-        cwd: raiz, detached: true, stdio: 'ignore', windowsHide: true, shell: false,
+      const modo = raiz.modo === 'automatico' ? ['--automatico-servidor'] : [];
+      const processo = spawn(process.execPath, [script, '--servidor', ...modo, '--porta', String(porta)], {
+        cwd: raiz.pasta, detached: true, stdio: 'ignore', windowsHide: true, shell: false,
       });
-      processo.once('spawn', () => { processo.unref(); resolver(true); });
-      processo.once('error', () => resolver(false));
+      processo.once('exit', () => { terminou = true; });
+      processo.once('spawn', () => {
+        clearTimeout(espera);
+        processo.unref();
+        resolver(() => terminou);
+      });
+      processo.once('error', () => { clearTimeout(espera); terminou = true; resolver(null); });
     } catch {
-      resolver(false);
+      clearTimeout(espera);
+      resolver(null);
     }
   });
 }
 
-async function confirmar(porta, projeto, versao, crew, run, sondar, pronto, esperar, tentativas) {
-  for (let i = 0; i < tentativas; i++) {
-    const servidor = await sondar(porta);
-    if (servidor?.projeto === projeto && servidor.versao === versao
-      && await pronto(porta, projeto, versao, crew, run)) return true;
-    await esperar(100);
+export async function confirmarPorta(porta, { confirmar, sondar, ocupada, projeto, versao, modo, tentativas = 30, esperar = pausa, restante, terminou = () => false }) {
+  for (let i = 0; i < tentativas && restante(); i++) {
+    const quem = await sondar(porta);
+    if (quem && (quem.projeto !== projeto || quem.versao !== versao || (quem.modo && quem.modo !== modo))) return 'ocupada';
+    if ((!quem && !terminou() || quem) && await confirmar(porta)) return 'pronta';
+    if (!quem && terminou()) return 'outra-porta';
+    await esperar(Math.min(100, restante()));
   }
-  return false;
+  return restante() && (await ocupada(porta)) && !(await sondar(porta)) ? 'ocupada' : 'nao-confirmada';
 }
+
+export const prazoDeAbertura = (ms = 8000) => {
+  const fim = performance.now() + ms;
+  return () => Math.max(0, Math.ceil(fim - performance.now()));
+};
 
 /** Devolve uma instância já confirmada, `daemon` (com `--preparar`) ou `sem-porta`; instância anterior fica ativa. */
 export async function garantirServidor(opcoes) {
   const {
-    raiz, script, inicial, projeto, versao, crew, run, tentativas = 10, hostRede = null, preparar = false,
-    sondar = (porta) => sondarEstado(porta, 1000, hostRede),
-    ocupada = alguemEscuta, spawn = criarProcesso, esperar = pausa, ciclos = 30, pronto = sondarPronto,
+    raiz, script, inicial, projeto, versao, crew, run, modo = 'automatico', tentativas = 10, hostRede = null, preparar = false,
+    restante = prazoDeAbertura(),
+    sondar = (porta) => sondarEstado(porta, Math.min(250, restante()), hostRede),
+    ocupada = (porta) => alguemEscuta(porta, Math.min(100, restante())),
+    spawn = criarProcesso, esperar = pausa, ciclos = 30, pronto = sondarPronto, testarBind = aceitaBind,
   } = opcoes;
-  if (preparar) {
-    const achado = await procurarAutomatico({
-      inicial, projeto, versao, tentativas, sondar, ocupada,
-      confirmarExistente: (porta) => pronto(porta, projeto, versao, crew, run),
-      tentarAbrir: async () => true, confirmar: async () => true,
-    });
-    return achado.tipo === 'aberto' ? { ...achado, tipo: 'daemon' } : achado;
-  }
-  return procurarAutomatico({
-    inicial, projeto, versao, tentativas, sondar, ocupada,
-    confirmarExistente: (porta) => pronto(porta, projeto, versao, crew, run),
-    tentarAbrir: (porta) => subir(script, raiz, porta, spawn),
-    confirmar: (porta) => confirmar(porta, projeto, versao, crew, run, sondar, pronto, esperar, ciclos),
+  const confirmar = (porta) => restante() > 0 && pronto(porta, projeto, versao, crew, run, Math.min(500, restante()), undefined, modo);
+  const achado = await procurarAutomatico({
+    inicial, projeto, versao, modo, tentativas, sondar, ocupada, esperar, dentroDoPrazo: restante,
+    confirmarExistente: confirmar,
+    tentarAbrir: preparar ? testarBind : (porta) => subir(script, { pasta: raiz, modo }, porta, spawn, restante),
+    confirmar: preparar ? undefined : async (porta, terminou) => {
+      const res = await confirmarPorta(porta, { confirmar, sondar, ocupada, projeto, versao, modo, tentativas: ciclos, esperar, restante, terminou });
+      if (res === 'pronta') return true;
+      return res === 'ocupada' || res === 'outra-porta' ? 'outra-porta' : false;
+    },
     pararAposFalha: true,
   });
+  return preparar && achado.tipo === 'aberto' ? { ...achado, tipo: 'daemon' } : achado;
 }

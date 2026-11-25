@@ -3,7 +3,37 @@
 All notable changes to opencrew are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.22.0] — 2026-11-24
+
+### Added
+
+- O menu consulta a versão estável do npm com prazo de 1,5 s e cache local de 24 horas. O aviso pode ser desligado nas preferências, adiado, pré-visualizado ou atualizado somente após confirmação.
+- A aplicação iniciada pelo menu revalida execuções sob trava compartilhada com `run` e `pedir`; uma execução aberta ou registro ilegível interrompe o update antes de gravar.
+- A candidata reúne as correções de isolamento, gravação concorrente, retomada e Escritório da 1.21.3, além da organização e busca das entregas.
+
+### Fixed
+
+- Consulta dirigida do update reconhece a resposta disponível com versões exatas; a atualização do menu usa a mesma versão da prévia e mostra o resumo efetivo.
+- O cache do aviso fica em `_opencrew/logs/`, não grava por links simbólicos e não impede o menu quando está indisponível.
+
+## [1.21.3] — 2026-11-23 (candidata local)
+
+### Added
+
+- Execuções novas reúnem as saídas conferidas em `atuais/` e guardam revisões por arquivo. O índice da execução indica o caminho da revisão mais recente.
+- `/opencrew buscar` encontra arquivos e temas entre crews. Depois da aprovação, o usuário pode guardar a entrega na crew ou copiá-la para uma pasta escolhida, inclusive em outro volume.
+
+### Fixed
+
+- Corrigida a orientação de início no Codex CLI para selecionar a skill com `$opencrew` ou `/skills`.
+- O Escritório preserva o `run_id` da URL, deriva o resultado do registro de execução e encerra o servidor automático após dois minutos sem runs ativos. Execuções interrompidas permanecem retomáveis e deixam de manter o servidor após duas horas sem eventos.
+- O comando de encerramento passa a atualizar a tela pela fonte do registro e sinaliza falha de gravação para uma repetição segura, sem repetir entrega ou publicação.
+- O histórico manual usa uma instância própria. O servidor automático tenta outra porta após falha no bind, tolera registros incompletos e respeita a preferência de desligar o Escritório.
+- O histórico preserva fechamentos simultâneos. A página destaca a última etapa durante a desconexão e retoma a consulta para a mesma execução.
+- Cada processo reserva uma pasta exclusiva para seu `run_id`; registros concorrentes serializam marcos e fechamento, e o runner repete apenas a gravação de marco sinalizada como pendente.
+- A abertura automática recupera sondagens e confirmações interrompidas, aceita `--porta N` e `--porta=N`, e aplica `--externo` à URL confirmada. Leitura bloqueada de run responde 503 e mantém a vigia conservadora.
+- O servidor mantém o snapshot de HTML e JavaScript carregado na inicialização. `update` valida manifesto e carimbo e interrompe com erro identificado se um recibo estiver protegido ou não puder ser gravado.
+- A busca automática do Escritório foi extraída para um módulo próprio para manter cada script do payload dentro do teto de 200 linhas; o teste de portas reserva um intervalo realmente livre antes de medir a busca.
 
 ## [1.21.2] — 2026-11-19
 

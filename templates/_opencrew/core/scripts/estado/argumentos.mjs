@@ -6,7 +6,7 @@ export const USO = 'Uso: node _opencrew/core/scripts/estado.mjs <crew> <evento> 
 /** Teto, em caracteres visíveis, de `--rotulo`, `--mensagem` e `--motivo`. */
 export const TETO = 120;
 
-const OPCAO = /^--(passos|n|agente|rotulo|mensagem|motivo|run|pedido)(?:=(.*))?$/s;
+const OPCAO = /^--(passos|n|agente|rotulo|mensagem|motivo|run|pedido|sessao)(?:=(.*))?$/s;
 const SEM_VALOR = new Set(['pedido']);
 const QUEBRA = /[\r\n\v\f\u0085\u2028\u2029]+/g;
 const segmentador = new Intl.Segmenter('pt', { granularity: 'grapheme' });
@@ -41,6 +41,7 @@ function converter(cru) {
     motivo: limparTexto(cru.motivo ?? ''),
     run: typeof cru.run === 'string' ? cru.run : null,
     pedido: Boolean(cru.pedido),
+    ...(cru.sessao === undefined ? {} : { sessao: cru.sessao }),
   };
 }
 

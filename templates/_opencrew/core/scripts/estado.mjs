@@ -20,6 +20,7 @@
 import { existsSync, lstatSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { MSG, dentroDoProjeto, ehPrincipal, realDentroDe } from './comum.mjs';
+import { RUN } from './caminho/argumentos.mjs';
 import { USO, lerArgs, limparTexto } from './estado/argumentos.mjs';
 import { EVENTOS } from './estado/nucleo.mjs';
 import { MOTIVO, decidir } from './estado/decisao.mjs';
@@ -27,17 +28,18 @@ import { lerElenco } from './estado/elenco.mjs';
 import { lerEstado, gravarEstado } from './estado/arquivo.mjs';
 import { escritorioLigado } from './estado/preferencia.mjs';
 import { agenteDoPasso } from './estado/passo-agente.mjs';
+import { comTrava } from './trava.mjs';
 
 const OK = 'ESTADO:OK';
 const RECRIADO = 'ESTADO:OK — estado recriado';
 const DO_PASSO = (n, agente) => `ESTADO:OK — agente do passo ${n}: ${agente ?? 'nenhum'}`;
 const COM_PASSO = ['passo', 'checkpoint'];
-const RUN = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
 const ARQUIVO_RUN = 'estado-escritorio.json';
 /** A resposta é sempre uma linha só, mesmo que o motivo traga um id ou um erro com quebra. */
 const ignorado = (motivo) => `ESTADO:IGNORADO — ${motivo}`.replace(/\s*[\r\n]+\s*/g, ' ');
 
-const LISTA = EVENTOS.join(', ');
+const LISTA = [...EVENTOS, 'desvincular'].join(', ');
+const SESSAO = /^[A-Za-z0-9_-]{8,128}$/;
 
 function ehPasta(caminho) {
   try {
@@ -55,7 +57,11 @@ function ehPasta(caminho) {
 function localizar(raiz, { crew, evento, opcoes }) {
   if (!crew) return { erro: 'Falta o nome da crew.' };
   if (!evento) return { erro: `Falta o evento. Eventos: ${LISTA}.` };
-  if (!EVENTOS.includes(evento)) return { erro: `Evento desconhecido: ${limparTexto(evento)}. Eventos: ${LISTA}.` };
+  if (!EVENTOS.includes(evento) && evento !== 'desvincular') return { erro: `Evento desconhecido: ${limparTexto(evento)}. Eventos: ${LISTA}.` };
+  if ((opcoes.sessao !== undefined || evento === 'desvincular')
+    && (!opcoes.run || !SESSAO.test(opcoes.sessao ?? '') || !['iniciar', 'desvincular'].includes(evento))) {
+    return { erro: 'Informe --run e um identificador de --sessao válido em iniciar ou desvincular.' };
+  }
   if (!ehPasta(path.join(raiz, '_opencrew'))) return { erro: MSG.semRaiz };
   const base = path.resolve(raiz, 'crews');
   const nome = crew.replace(/^crews[\\/]+/, '');
@@ -79,24 +85,55 @@ function localizar(raiz, { crew, evento, opcoes }) {
   return { pasta, crew: crewNome, arquivo, runId: opcoes.run };
 }
 
+async function desvincular(arquivo, estado, sessao, agora, deps) {
+  if (estado?.sessao !== sessao) return ignorado('este run não pertence a esta sessão');
+  if (estado.desvinculadoEm) return OK;
+  return (await gravarEstado(arquivo, { ...estado, desvinculadoEm: agora }, deps)) ? OK : ignorado(MOTIVO.naoGravou);
+}
+
 /** Confere a preferência, lê o elenco e o estado, decide e grava. Devolve a linha `ESTADO:`. */
 async function responder({ raiz, pasta, crew, arquivo, runId }, args, deps) {
-  if (!(await escritorioLigado(raiz))) return ignorado(MOTIVO.desligado);
   const agora = (deps.agora ?? (() => new Date().toISOString()))();
-  const elenco = await lerElenco(pasta);
+  const { evento, opcoes } = args;
   const estado = await lerEstado(arquivo);
   if (runId && estado && estado.runId !== runId) return ignorado('o arquivo existente não pertence a esta execução');
-  if (runId && existsSync(arquivo) && !estado) return ignorado('o estado existente da execução é inválido; não gravei');
-  if (runId && args.evento === 'iniciar' && estado) return OK; // `retomar` must never reset the saved run.
+  if (evento === 'desvincular') return desvincular(arquivo, estado, opcoes.sessao, agora, deps);
+  if (runId && existsSync(arquivo) && !estado) {
+    const motivo = 'o estado existente da execução é inválido; não gravei';
+    return evento === 'iniciar' ? `ESTADO:PARCIAL — ${motivo}` : ignorado(motivo);
+  }
+  if (runId && evento === 'iniciar' && estado) {
+    const retomado = {
+      ...estado,
+      status: 'running',
+      updatedAt: agora,
+      agents: estado.agents.map((a) => ['checkpoint', 'failed'].includes(a?.status) ? { ...a, status: 'idle' } : a),
+    };
+    delete retomado.desvinculadoEm;
+    if (opcoes.sessao) retomado.sessao = opcoes.sessao;
+    else delete retomado.sessao;
+    if (!(await gravarEstado(arquivo, retomado, deps))) return ignorado(MOTIVO.naoGravou);
+    return OK; // A retomada renova o sinal sem apagar o passo salvo.
+  }
+  const elenco = await lerElenco(pasta);
   const pedido = args.opcoes.agente ?? null;
   // O agente é o do passo; o `--agente` só vale quando não dá para saber qual é o passo.
   const doPasso = COM_PASSO.includes(args.evento) && !args.opcoes.pedido ? agenteDoPasso({ raiz, crew, estado, n: args.opcoes.n, ids: elenco.map((a) => a.id) }) : null;
   const agente = doPasso ? doPasso.agente : pedido;
   const decisao = decidir(estado, { tipo: args.evento, ...args.opcoes, agente, crew, elenco, agora, runId, pedido: args.opcoes.pedido });
   if (decisao.ignorado) return ignorado(decisao.ignorado);
-  if (!(await gravarEstado(arquivo, decisao.estado, deps))) return ignorado(MOTIVO.naoGravou);
+  const sessao = evento === 'iniciar' ? opcoes.sessao : estado?.sessao;
+  const fim = estado?.desvinculadoEm;
+  const novo = { ...decisao.estado, ...(sessao ? { sessao } : {}), ...(fim ? { desvinculadoEm: fim } : {}) };
+  if (!(await gravarEstado(arquivo, novo, deps))) return ignorado(MOTIVO.naoGravou);
   if (agente !== pedido) return DO_PASSO(args.opcoes.n, agente);
   return decisao.recriado ? RECRIADO : OK;
+}
+
+async function responderSerializado(raiz, local, args, deps) {
+  if (args.evento !== 'desvincular' && !(await escritorioLigado(raiz))) return ignorado(MOTIVO.desligado);
+  const executar = () => responder({ raiz, ...local }, args, deps);
+  return local.runId ? comTrava(local.arquivo, executar) : executar();
 }
 
 /**
@@ -116,7 +153,7 @@ export async function main(argv, deps = {}) {
     return 1;
   }
   // O escritório nunca para a execução: o que der errado daqui em diante vira ESTADO:IGNORADO.
-  escrever(await responder({ raiz: cwd, ...local }, args, deps).catch((erro) => ignorado(MOTIVO.inesperado(erro))));
+  escrever(await responderSerializado(cwd, local, args, deps).catch((erro) => ignorado(MOTIVO.inesperado(erro))));
   return 0;
 }
 

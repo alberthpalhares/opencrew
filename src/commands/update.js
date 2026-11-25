@@ -13,6 +13,8 @@ import { officeLine } from '../lib/escritorio.js';
 import { say, marked, recreatedLines, updateSummary, UNTOUCHED, INTERRUPTED } from '../lib/resumo.js';
 import { payloadKeys, uninstalledSkills, removeOrphans, previewLines } from '../lib/reconciliar.js';
 import { c, log, info, ok, warn, err, step } from '../lib/ui.js';
+import { aplicarProtegido } from './update-guard.js';
+export { execucaoPendente } from './update-guard.js';
 
 const tpl = (...p) => path.join(templatesDir, ...p);
 
@@ -42,6 +44,15 @@ export async function update(opts = {}) {
     return;
   }
 
+  if (!opts.check) {
+    const protegido = await bloqueioRecibo(target);
+    if (protegido) {
+      err(`link simbólico: não gravei a atualização porque ${protegido}. Nada foi alterado.`);
+      process.exitCode = 1;
+      return;
+    }
+  }
+
   // No stamp and no manifest = an install that did not finish: nothing is written or stamped (rule 31).
   // With the manifest the stamp is only lost: its version stands for the installed one (spec U7-F3, rule 4).
   const manifest = await readManifest(target);
@@ -55,8 +66,21 @@ export async function update(opts = {}) {
   }
   log(`\n${c.bold(c.cyan('opencrew update'))}`);
   log(c.dim(`Installed: ${current}  →  Package: ${version}\n`));
-  if (canApply(opts, current, version)) await apply(target, version, opts, stamped ? null : current);
+  if (canApply(opts, current, version)) {
+    if (opts.menu) await aplicarComProtecao(target, version, opts, stamped ? null : current);
+    else await apply(target, version, opts, stamped ? null : current);
+  }
   else if (opts.check) say(marked(await previewLines(target, manifest))); // what a real update would do; writes nothing
+}
+
+/** A atualização do menu e os inícios de execução compartilham a mesma trava do projeto. */
+async function aplicarComProtecao(target, version, opts, restamped) {
+  try {
+    await aplicarProtegido(target, () => apply(target, version, opts, restamped));
+  } catch (erro) {
+    err(`Atualização cancelada: ${erro.message}.`);
+    process.exitCode = 1;
+  }
 }
 
 /** `--check` only reports, and a package older than the workspace stops: false = write nothing. */
@@ -67,6 +91,7 @@ function canApply(opts, current, version) {
     else if (newer) info(`A versão instalada (v${current}) é mais nova que este pacote (v${version}).`);
     else {
       info(`Update available: v${current} → v${version}.`);
+      info(`ATUALIZACAO:DISPONIVEL ${current} ${version}`);
       info(`Run ${c.cyan('npx @aksp/opencrew update')} to apply.`);
       process.exitCode = 1;
     }
@@ -103,12 +128,32 @@ async function apply(target, version, opts, restamped = null) {
   // The files the package no longer delivers leave (with a copy) unless the user edited them (rule 1).
   done.reconcile = { ...(manifest ? await removeOrphans(ctx, payload) : {}), skills: [...skills], restamped };
 
-  if (!(await writeManifest(target, version, ctx.files))) ctx.links.push('_opencrew/manifest.json');
-  // Stamp last: a crash above leaves the old version, so the next update retries.
-  if (!(await writeFileSafe(path.join(target, '_opencrew', '.opencrew-version'), version + '\n'))) ctx.links.push('_opencrew/.opencrew-version');
+  let arquivoRecibo = '_opencrew/manifest.json';
+  try {
+    if (!(await writeManifest(target, version, ctx.files))) throw new Error('arquivo protegido por link simbólico');
+    // Stamp last: a crash above leaves the old version, so the next update retries.
+    arquivoRecibo = '_opencrew/.opencrew-version';
+    if (!(await writeFileSafe(path.join(target, arquivoRecibo), version + '\n'))) throw new Error('arquivo protegido por link simbólico');
+  } catch (erro) {
+    err(`Falha ao gravar ${arquivoRecibo}: ${erro.message}. Atualização interrompida.`);
+    process.exitCode = 1;
+    return;
+  }
   say(updateSummary(ctx, done));
   log(`\n${c.green(c.bold('Updated to v' + version))}.`);
   log(c.dim(`${UNTOUCHED}\n`));
+}
+
+/** Confere os recibos antes de ler ou alterar o workspace; links não podem receber a atualização. */
+async function bloqueioRecibo(target) {
+  for (const relativo of ['_opencrew/manifest.json', '_opencrew/.opencrew-version']) {
+    try {
+      if ((await fs.lstat(path.join(target, relativo))).isSymbolicLink()) return `${relativo} é um link simbólico`;
+    } catch (erro) {
+      if (erro.code !== 'ENOENT') return `não foi possível verificar ${relativo} (${erro.code ?? 'erro de leitura'})`;
+    }
+  }
+  return null;
 }
 
 /** Is there a crew of the user's? A folder of `crews/` with `crew.yaml` (the templates have none). Only looks. */

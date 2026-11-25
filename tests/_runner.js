@@ -25,7 +25,7 @@ const TOCOS = [
   ['### Task-Based Agent Execution', 'tarefas-do-agente.md', 0],
   ['### Output Contract Validation', 'contrato-de-saida.md', 0],
   ['**Correction at a checkpoint**', 'correcao-no-checkpoint.md', 0],
-  ['2. **Close the run**', 'fim-da-execucao.md', 3],
+  ['3. **After closing**', 'fim-da-execucao.md', 3],
 ];
 
 /** The body of a part: without its title and the "Part of the Pipeline Runner" note. */

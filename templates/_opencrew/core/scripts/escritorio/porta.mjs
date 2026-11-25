@@ -41,14 +41,20 @@ export async function abrir(servidor, porta) {
   });
 }
 
-/**
- * Quem respondeu no `/estado`: o `projeto` e a `versao` (null no escritório até a 1.19.0, que
- * não a informa); null quando a resposta não é a de um escritório.
- */
+/** Porta sem listener ainda pode estar reservada pelo sistema (em particular, no Windows). */
+export function aceitaBind(porta) {
+  return new Promise((resolve) => {
+    const sonda = net.createServer((conexao) => conexao.destroy());
+    sonda.once('error', () => resolve(false));
+    sonda.listen(porta, TODAS_INTERFACES, () => sonda.close(() => resolve(true)));
+  });
+}
+
+/** Identidade do Escritório; a versão é nula nos servidores que a omitem. */
 function quemRespondeu(corpo) {
   try {
-    const { projeto, versao } = JSON.parse(corpo) ?? {};
-    return typeof projeto === 'string' ? { projeto, versao: typeof versao === 'string' ? versao : null } : null;
+    const { projeto, versao, modo } = JSON.parse(corpo) ?? {};
+    return typeof projeto === 'string' ? { projeto, versao: typeof versao === 'string' ? versao : null, ...(modo ? { modo } : {}) } : null;
   } catch {
     return null;
   }
@@ -75,7 +81,7 @@ function juntar(res, entregar) {
 export function sondarEstado(porta, esperaMs = 1000, hostHeader = null) {
   return new Promise((resolve) => {
     const headers = hostHeader ? { Host: `${hostHeader}:${porta}` } : undefined;
-    const pedido = http.get({ host: LOCAL, port: porta, path: '/estado', agent: false, headers }, (res) => juntar(res, fim));
+    const pedido = http.get({ host: LOCAL, port: porta, path: '/estado?identidade=1', agent: false, headers }, (res) => juntar(res, fim));
     const relogio = setTimeout(() => fim(null), esperaMs);
     pedido.on('error', () => fim(null));
     function fim(corpo) {
@@ -87,16 +93,17 @@ export function sondarEstado(porta, esperaMs = 1000, hostHeader = null) {
 }
 
 /** Confirma a página e o estado exato da execução antes de divulgar sua URL. */
-export async function sondarPronto(porta, projeto, versao, crew, run, esperaMs = 1000, solicitar = fetch) {
+export async function sondarPronto(porta, projeto, versao, crew, run, esperaMs = 1000, solicitar = fetch, modo) {
+  const fim = performance.now() + esperaMs;
   const pagina = await resposta(porta, '/', esperaMs, solicitar);
   if (pagina?.status !== 200 || !/<(?:!doctype\s+html|html\b)/i.test(pagina.corpo)) return false;
   if ((crew === undefined) !== (run === undefined)) return false;
   const consulta = crew === undefined ? '' : `?${new URLSearchParams({ crew, run_id: run })}`;
-  const estado = await resposta(porta, `/estado${consulta}`, esperaMs, solicitar);
+  const estado = await resposta(porta, `/estado${consulta || '?identidade=1'}`, Math.max(0, Math.ceil(fim - performance.now())), solicitar);
   if (estado?.status !== 200) return false;
   try {
     const corpo = JSON.parse(estado.corpo);
-    if (corpo.projeto !== projeto || corpo.versao !== versao) return false;
+    if (corpo.projeto !== projeto || corpo.versao !== versao || (corpo.modo && modo && corpo.modo !== modo)) return false;
     return crew === undefined || corpo.crews?.some((item) => item.crew === crew && item.estado?.runId === run) === true;
   } catch {
     return false;
@@ -150,26 +157,7 @@ export async function procurar({ inicial, projeto, versao, abrir: tentar, sondar
   for (let porta = inicial; porta <= ultima; porta++) {
     if (await tentar(porta)) return { tipo: 'aberto', porta, ultima };
     const quem = await perguntar(porta);
-    if (quem?.projeto === projeto) return { tipo: quem.versao === versao ? 'ja-aberto' : 'desatualizado', porta, ultima };
-  }
-  return { tipo: 'sem-porta', ultima };
-}
-
-/**
- * Busca primeiro uma instância compatível em todo o intervalo; só depois tenta iniciar em portas
- * livres. Um serviço estranho ou um escritório antigo ocupa sua porta, mas nunca é encerrado.
- */
-export async function procurarAutomatico({ inicial, projeto, versao, sondar: perguntar = sondarEstado, ocupada = alguemEscuta, tentarAbrir, confirmar = async () => true, confirmarExistente = async () => true, pararAposFalha = false, tentativas = 10 }) {
-  const ultima = Math.min(inicial + tentativas - 1, ULTIMA_PORTA);
-  for (let porta = inicial; porta <= ultima; porta++) {
-    const quem = await perguntar(porta);
-    if (quem?.projeto === projeto && quem.versao === versao && await confirmarExistente(porta)) return { tipo: 'ja-aberto', porta, ultima };
-  }
-  for (let porta = inicial; porta <= ultima; porta++) {
-    if (await ocupada(porta)) continue;
-    if (!(await tentarAbrir(porta))) continue;
-    if (await confirmar(porta)) return { tipo: 'aberto', porta, ultima };
-    if (pararAposFalha) return { tipo: 'nao-confirmado', porta, ultima };
+    if (quem?.projeto === projeto && quem.modo !== 'automatico') return { tipo: quem.versao === versao ? 'ja-aberto' : 'desatualizado', porta, ultima };
   }
   return { tipo: 'sem-porta', ultima };
 }

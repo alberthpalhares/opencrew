@@ -38,7 +38,7 @@ test('U6a-03b: the verdicts of a pedido go to revisao/vN, and with the real path
   const { main } = await import('../templates/_opencrew/core/scripts/caminho.mjs');
   const rodar = async (...argv) => { const l = []; await main(['x', ...argv], { cwd: raiz, escrever: (s) => l.push(s) }); return l.at(-1); };
   const RUN = '2026-10-09-101010';
-  await rodar('pasta', '--run', RUN, '--pedido');
+  await fs.mkdir(path.join(raiz, 'crews', 'x', 'output', RUN), { recursive: true });
   const sequencia = [];
   for (const arquivo of ['oficio', 'revisao/revisao', 'oficio', 'revisao/revisao', 'oficio']) sequencia.push(await rodar('saida', '--run', RUN, '--arquivo', `crews/x/output/${arquivo}.md`));
   const base = `CAMINHO:OK crews/x/output/${RUN}`;

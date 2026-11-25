@@ -1,25 +1,15 @@
 #!/usr/bin/env node
 // Escritório do OpenCrew — servidor local da página que mostra a equipe trabalhando.
-// Uso: node _opencrew/core/scripts/escritorio.mjs [--porta <1024 a 65535>]
-//   Rode na pasta do projeto (a que contém `_opencrew/`). Sem --porta, começa na 4747.
-// Só leitura e com validação de Host: escuta em 0.0.0.0 (local + rede local/VPN), aceita só GET e não escreve em disco.
-// Serve a página (`_opencrew/core/escritorio/`) e `GET /estado`, que lê `crews/*/state.json` a
-// cada pedido.
-// Modo manual: reutiliza a versão atual deste projeto; porta ocupada leva à seguinte, até 10.
-// Modo automático: primeiro procura uma instância compatível e, se só houver servidores antigos,
-// deixa-os ativos e inicia a versão atual na próxima porta livre.
-// Código de saída: 0 = escritório aberto (o processo segue rodando até Ctrl+C) ou já aberto ·
-// 1 = erro de uso (porta inválida, pasta sem `_opencrew/`), nenhuma das 10 portas livre ou
-// escritório de versão anterior no ar.
-// Spec: fase-e1-escritorio-ao-vivo.md, regras 13 a 15, e fase-e4-robustez-do-escritorio.md,
-// regras 1 e 2 (repositório do OpenCrew).
+// Rode na pasta do projeto. O servidor serve só GET para a página e o estado de cada execução.
+// A busca começa em 4747. O servidor de histórico fica ativo até ser encerrado no terminal.
+// Spec: fase-u7-f3c-escritorio-auto-open.md (repositório do OpenCrew).
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ehPrincipal } from './comum.mjs';
 import { criarServidor, iniciarServidorExato } from './escritorio/servidor.mjs';
-import { abrir, sondarEstado, sondarPronto, procurar } from './escritorio/porta.mjs';
-import { garantirServidor } from './escritorio/automatico.mjs';
+import { abrir, alguemEscuta, sondarEstado, sondarPronto, procurar } from './escritorio/porta.mjs';
+import { confirmarPorta, garantirServidor, prazoDeAbertura } from './escritorio/automatico.mjs';
 import { abrirNoSistema } from './escritorio/navegador.mjs';
 import { projetoDe, versaoDe } from './escritorio/projeto.mjs';
 import { enderecosDeRede, linhasDeUrl } from './escritorio/rede.mjs';
@@ -58,6 +48,8 @@ const MSG = {
   foraDaRaiz: 'Rode este comando na pasta do projeto (a que contém _opencrew/).',
   portaInvalida: `Porta inválida: use --porta com um número de ${PORTA_MINIMA} a ${PORTA_MAXIMA}.`,
   autoIndisponivel: 'ESCRITORIO:INDISPONIVEL — não consegui iniciar ou confirmar o servidor; a execução pode continuar.',
+  autoSemPorta: 'ESCRITORIO:INDISPONIVEL — nenhuma porta do intervalo pôde ser aberta.',
+  autoPrazo: 'ESCRITORIO:INDISPONIVEL — o prazo de abertura do Escritório terminou.',
   portaOcupada: (porta) => `ESCRITORIO:PORTA_OCUPADA ${porta} — escolha outra porta e confirme novamente.`,
 };
 
@@ -108,11 +100,23 @@ function erroAutomatico(argv) {
   if ((crew === undefined) !== (run === undefined)) return ['No modo automático, informe `--crew` e `--run` juntos.', USO];
   if (crew !== undefined && (!/^[\p{L}\p{N} ._-]+$/u.test(crew) || crew === '.' || crew === '..')) return ['Nome de crew inválido para abrir o Escritório.', USO];
   if (run !== undefined && (!/^(?!\.{1,2}$)[A-Za-z0-9._-]+$/.test(run))) return ['O --run precisa ser o run_id de uma execução.', USO];
-  if (flag(argv, '--confirmar') && crew === undefined) return ['No modo de confirmação, informe `--crew` e `--run`.', USO];
-  if (flag(argv, '--confirmar') && !flag(argv, '--porta')) return ['No modo de confirmação, informe a porta recebida em `ESCRITORIO:DAEMON`.', USO];
+  if (flag(argv, '--confirmar') && crew === undefined && !flag(argv, '--historico')) return ['No modo de confirmação, informe `--crew` e `--run`.', USO];
+  if (flag(argv, '--confirmar') && !argv.some((arg) => arg === '--porta' || arg.startsWith('--porta='))) return ['No modo de confirmação, informe a porta recebida em `ESCRITORIO:DAEMON`.', USO];
   if (flag(argv, '--confirmar') && flag(argv, '--preparar')) return ['Não combine `--confirmar` com `--preparar`.', USO];
   if (flag(argv, '--servidor')) return ['Não combine `--servidor` com `--automatico`.', USO];
   return null;
+}
+
+async function confirmarPreparada(porta, o, alvo) {
+  const restante = o.auto?.restante ?? prazoDeAbertura();
+  const sondar = o.sondar ?? ((numero) => sondarEstado(numero, Math.min(250, restante())));
+  const confirmar = (numero) => (o.pronto ?? sondarPronto)(
+    numero, alvo.projeto, alvo.versao, alvo.crew, alvo.run, Math.min(500, restante()), undefined, alvo.modo,
+  );
+  return confirmarPorta(porta, {
+    ...alvo, confirmar, sondar, restante, esperar: o.auto?.esperar,
+    ocupada: o.auto?.ocupada ?? ((numero) => alguemEscuta(numero, Math.min(100, restante()))),
+  });
 }
 
 async function executarAutomatico(argv, o, raiz, inicial) {
@@ -120,24 +124,27 @@ async function executarAutomatico(argv, o, raiz, inicial) {
   const { lan, vpn } = enderecosDeRede(o.interfaces);
   const projeto = projetoDe(raiz);
   const versao = versaoDe(raiz);
+  const modo = flag(argv, '--historico') ? 'manual' : 'automatico';
+  const alvo = { projeto, versao, crew, run, modo };
   if (flag(argv, '--confirmar')) {
-    if (!(await (o.pronto ?? sondarPronto)(inicial, projeto, versao, crew, run))) {
-      const escrever = o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`));
-      const servidor = await (o.sondar ?? sondarEstado)(inicial);
-      const conflito = servidor && (servidor.projeto !== projeto || servidor.versao !== versao);
-      escrever(conflito ? MSG.portaOcupada(inicial) : MSG.autoIndisponivel);
+    const resultado = await confirmarPreparada(inicial, o, alvo);
+    if (resultado !== 'pronta') {
+      o.escrever(resultado === 'ocupada' ? MSG.portaOcupada(inicial) : MSG.autoIndisponivel);
       return { code: 0 };
     }
-    const resultado = linhasDeUrl(inicial, crew, run, o.interfaces);
-    resultado.linhas.forEach((linha) => (o.escrever ?? ((texto) => process.stdout.write(`${texto}\n`)))(linha));
-    return { code: 0, porta: inicial, url: resultado.url };
+    const links = linhasDeUrl(inicial, crew, run, o.interfaces);
+    links.linhas.forEach(o.escrever);
+    if (flag(argv, '--externo') && !(await (o.abrirNavegador ?? abrirNoSistema)(links.url, o.navegador))) {
+      o.escrever('NAVEGADOR:INDISPONIVEL — o link continua disponível para abertura manual.');
+    }
+    return { code: 0, porta: inicial, url: links.url };
   }
   const resultado = await garantirServidor({
     raiz, script: fileURLToPath(import.meta.url), inicial, preparar,
-    projeto, versao, crew, run, hostRede: lan ?? vpn, ...(o.auto ?? {}), pronto: o.pronto ?? o.auto?.pronto ?? sondarPronto,
+    ...alvo, hostRede: lan ?? vpn, ...(o.auto ?? {}), pronto: o.pronto ?? o.auto?.pronto ?? sondarPronto,
   });
-  if (resultado.tipo === 'sem-porta') return (o.escrever?.(MSG.autoIndisponivel), { code: 0 });
-  if (resultado.tipo === 'nao-confirmado') return (o.escrever?.(MSG.autoIndisponivel), { code: 0 });
+  const falha = { 'sem-porta': MSG.autoSemPorta, 'nao-confirmado': MSG.autoIndisponivel, prazo: MSG.autoPrazo }[resultado.tipo];
+  if (falha) return (o.escrever(falha), { code: 0 });
   const { url, urlsRede, linhas } = linhasDeUrl(resultado.porta, crew, run, o.interfaces);
   const escrever = o.escrever ?? ((linha) => process.stdout.write(`${linha}\n`));
   const saida = resultado.tipo === 'daemon' ? [`ESCRITORIO:DAEMON ${resultado.porta} ${url}`, ...linhas.slice(1)] : linhas;
@@ -173,7 +180,7 @@ export async function main(argv, o = {}) {
     erro.forEach((linha) => escrever(linha));
     return { code: 1 };
   }
-  if (flag(argv, '--servidor')) return iniciarServidorExato({ raiz: cwd, pasta, arquivos, porta: inicial, escrever });
+  if (flag(argv, '--servidor')) return iniciarServidorExato({ raiz: cwd, pasta, arquivos, porta: inicial, escrever, automatico: flag(argv, '--automatico-servidor'), vigia: o.vigia });
   if (flag(argv, '--automatico')) return executarAutomatico(argv, { ...o, escrever }, cwd, inicial);
   const servidor = criarServidor({ raiz: cwd, pasta, arquivos });
   const tentar = (porta) => (o.abrir ?? abrir)(servidor, porta);

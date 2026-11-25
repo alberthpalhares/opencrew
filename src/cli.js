@@ -17,13 +17,14 @@ const OPTION_SPEC = {
   'repair-bridges': { type: 'boolean' },
   check: { type: 'boolean' },
   'dry-run': { type: 'boolean' },
+  menu: { type: 'boolean' },
 };
 
 const GLOBAL_OPTIONS = ['help', 'version'];
 const COMMAND_OPTIONS = {
   init: ['ide', 'all', 'yes', 'repair-bridges'],
-  update: ['check', 'dry-run'],
-  upgrade: ['check', 'dry-run'],
+  update: ['check', 'dry-run', 'menu'],
+  upgrade: ['check', 'dry-run', 'menu'],
 };
 
 /**
@@ -84,6 +85,7 @@ ${c.bold('Options for init')}
 ${c.bold('Options for update')}
   --check         Report whether an update is available without making changes
   --dry-run       Same as --check
+  --menu          Revalidate execution records under the project lock before applying
 
 ${c.bold('Examples')}
   npx @aksp/opencrew init

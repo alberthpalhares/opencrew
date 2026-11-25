@@ -69,7 +69,7 @@ test('U7F3C-06b: runner initialization points directly to opening the Browser, s
   const office = achatar(await ler('_opencrew/core/runner/escritorio.md'));
   assert.match(office, /--preparar/);
   assert.match(office, /ESCRITORIO:DAEMON/);
-  assert.match(office, /--servidor --porta/);
+  assert.match(office, /--servidor --automatico-servidor --porta/);
   const pedido = achatar(await ler('_opencrew/core/prompts/pedido.prompt.md'));
   assert.match(pedido, /shared server launch, exact-run confirmation, Browser and fallback flow/);
   const antigravity = achatar(ideById('antigravity').files.map((f) => f.content).join('\n'));
@@ -94,7 +94,8 @@ test('U7F3C-07c: Codex bridge opens the confirmed Office URL in a visible integr
   assert.match(codex, /host policy blocks navigation/);
   assert.match(codex, /--automatico --preparar/);
   assert.match(codex, /--automatico --confirmar --porta/);
-  assert.match(codex, /If startup or confirmation reports `ESCRITORIO:PORTA_OCUPADA`, repeat preparation and startup once/);
+  assert.match(codex, /If startup reports `ESCRITORIO:PORTA_OCUPADA`, confirm that port first/);
+  assert.match(codex, /repeat preparation and startup once, starting the search at the following port/);
   const antigravity = ideById('antigravity').files.map((f) => f.content).join('\n');
   assert.match(antigravity, /--automatico --confirmar --porta/);
   assert.match(antigravity, /Open only the confirmed `ESCRITORIO:URL`/);

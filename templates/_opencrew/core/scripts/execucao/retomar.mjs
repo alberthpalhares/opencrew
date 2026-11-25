@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pastasDe, temConteudo } from '../caminho/disco.mjs';
 import { lerCrew } from '../conserto/crew.mjs';
 import { PEDIDO, lerRegistro } from './registro.mjs';
+import { lerAposConsolidacao } from '../caminho/transacao.mjs';
 
 const MSG = {
   abertas: 'Execuções abertas (a mais recente primeiro):',
@@ -80,7 +81,7 @@ function proximoPasso(registro, passos, existe) {
   const rejeitou = ultimo?.marco?.evento === 'revisao' && ultimo.marco.resultado === 'rejeitado';
   const volta = rejeitou ? voltaDe(registro, passos, ultimo.passo) : null;
   const pelaOrdem = ultimo ? volta?.n ?? seguinte(ultimo.passo) : numeros[0] ?? 1;
-  const sumidos = registro.passos.filter((p) => p.n < pelaOrdem && !existe(p.arquivo)).map((p) => p.n);
+  const sumidos = registro.passos.filter((p) => p.n < pelaOrdem && (p.arquivos ?? [p.arquivo]).some((arquivo) => !existe(arquivo))).map((p) => p.n);
   const fim = numeros.length > 0 && pelaOrdem > numeros.at(-1);
   return { feito: ultimo?.passo ?? null, n: Math.min(pelaOrdem, ...sumidos), fim, incerto: volta?.incerto ?? false };
 }
@@ -95,16 +96,16 @@ function descrever(raiz, crew, registro) {
   // O pedido não tem pipeline: os passos dele são 1 (o trabalho), 2, 3… e a revisão rejeitada volta ao 1.
   const passos = ehPedido ? registro.marcos.filter((m) => m.evento === 'revisao').map((m) => ({ numero: m.passo, volta: 1 })) : passosDaCrew(raiz, crew);
   const { feito, n, fim, incerto } = proximoPasso(registro, passos, existe);
-  const linha = (p) => `- passo ${p.n}: ${p.arquivo}${existe(p.arquivo) ? '' : MSG.sumiu}`;
+  const linhas = (p) => (p.arquivos ?? [p.arquivo]).map((arquivo) => `- passo ${p.n}: ${arquivo}${existe(arquivo) ? '' : MSG.sumiu}`);
   // Pronto é só o que fica antes do passo de onde a execução continua; o resto será feito de novo.
-  const prontos = registro.passos.filter((p) => p.n < n).map(linha);
+  const prontos = registro.passos.filter((p) => p.n < n).flatMap(linhas);
   const doEvento = (evento) => registro.marcos.filter((m) => m.evento === evento).map(comNota);
   return [
     `Execução: ${registro.run}`,
     `Tema: ${registro.tema || '(sem tema)'}`,
     ...(ehPedido ? ['Tipo: pedido', `Agente: ${registro.agente || '(não registrado)'}`, `Formato: ${registro.formato || '(não registrado)'}`] : []),
     ...(prontos.length ? ['Passos conferidos:', ...prontos] : ['Passos conferidos: nenhum']),
-    ...grupo(MSG.refeitos, registro.passos.filter((p) => p.n >= n).map(linha)),
+    ...grupo(MSG.refeitos, registro.passos.filter((p) => p.n >= n).flatMap(linhas)),
     ...grupo('Checkpoints respondidos:', doEvento('checkpoint')),
     ...grupo('Revisões:', doEvento('revisao')),
     ...(feito === null ? [] : [`Parou depois do passo ${feito}.`]),
@@ -123,5 +124,8 @@ export async function retomar(raiz, crew, run) {
   if (!abertas.length) return [...(run ? [MSG.naoAberta(run)] : []), 'EXECUCAO:NADA'];
   const lista = abertas.length > 1 ? [MSG.abertas, ...abertas.map((r) => `- ${r.run} — ${r.tema || 'sem tema'}`)] : [];
   const alvo = run ? abertas.find((r) => r.run === run) : abertas[0];
-  return alvo ? [...lista, ...descrever(raiz, crew, alvo)] : [...lista, MSG.naoAberta(run), 'EXECUCAO:NADA'];
+  if (!alvo) return [...lista, MSG.naoAberta(run), 'EXECUCAO:NADA'];
+  const pasta = path.resolve(raiz, 'crews', crew, 'output', alvo.run);
+  const registro = alvo.organizada ? await lerAposConsolidacao(pasta) : alvo;
+  return registro?.status === 'aberta' ? [...lista, ...descrever(raiz, crew, { ...registro, run: alvo.run })] : [...lista, MSG.naoAberta(run), 'EXECUCAO:NADA'];
 }

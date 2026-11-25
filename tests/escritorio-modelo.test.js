@@ -167,7 +167,7 @@ test('E1-05d: no signal — after 20 minutes only who was working changes pose, 
   assert.deepEqual(resumo(parado(59)), ['Última atualização há 59 min', 'sem-sinal', 'Sem sinal há 59 min']);
   assert.deepEqual(resumo(parado(90)), ['Última atualização há 1 h', 'sem-sinal', 'Sem sinal há 1 h']);
   assert.deepEqual([60, 119, 120].map((min) => parado(min).parada), ['Última atualização há 1 h', 'Última atualização há 1 h', 'Última atualização há 2 h']);
-  for (const extra of [{ status: 'checkpoint' }, { status: 'completed' }, { status: 'failed' }, { updatedAt: undefined }, { updatedAt: 'ontem' }]) {
+  for (const extra of [{ status: 'completed' }, { status: 'failed' }, { updatedAt: undefined }, { updatedAt: 'ontem' }]) {
     const m = parado(300, extra);
     assert.ok(m.parada === null && m.agentes.every((a) => a.acao !== 'sem-sinal'), JSON.stringify(extra));
   }
@@ -204,7 +204,7 @@ test('E1-05k: demo, "no state" and no connection give the title "Escritório"', 
   assert.equal(ver(undefined).titulo, 'Escritório');
   assert.equal(montarPagina(MEMORIA_INICIAL, { agoraMs: AGORA }).titulo, 'Escritório');
   const semServidor = montarPagina(consultar(consultar(MEMORIA_INICIAL, resposta(['alfa', 1])), null), { agoraMs: AGORA });
-  assert.deepEqual([semServidor.titulo, semServidor.crew, semServidor.aviso], ['Escritório', 'alfa', TEXTOS.semServidor]);
+  assert.deepEqual([semServidor.titulo, semServidor.crew, semServidor.aviso], ['Escritório', 'alfa', TEXTOS.semServidorComEstado]);
 });
 
 test('E1-05l: a crew missing from 1, 2 and 3 answers keeps its last good state; at the 4th it leaves and the demo comes in', () => {
@@ -279,6 +279,9 @@ test('E1-05 (§6 and purity): the page texts letter by letter; no model module t
     aguardando: 'Aguardando você',
     abrindo: 'Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.',
     semServidor: 'Sem conexão com o escritório. Tentando de novo… Para reabrir, rode /opencrew dashboard.',
+    semServidorComEstado: 'Sem conexão com o escritório. A etapa exibida é a última conhecida. Tentando de novo…',
+    esperaRun: 'Aguardando dados desta execução.',
+    esperaCrew: 'Aguardando dados desta crew.',
     demonstracao: 'Demonstração — nenhuma execução ainda. Rode uma crew e ela aparece aqui.',
     demoForcada: 'Demonstração. Tire ?demo do endereço para ver a sua crew.',
   });

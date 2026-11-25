@@ -45,8 +45,7 @@ dentro da sua IDE, nos arquivos do seu projeto.**
 - 📬 **Entrega por canal** — depois de aprovar, você encontra a pasta `entrega/`: uma pasta por
   canal (Instagram, LinkedIn, blog, e-mail, WhatsApp, X/Twitter, YouTube), o texto pronto para
   colar, as imagens e um `LEIA-ME.md` com o passo a passo. O que não está pronto fica marcado.
-- 📁 **Entrega no seu projeto** — a crew pergunta uma vez onde guardar e copia a entrega para uma
-  pasta do seu projeto, uma subpasta por execução, sem sobrescrever nada.
+- 📁 **Destino da entrega** — após a aprovação, escolha manter na crew ou copiar para uma pasta do projeto, outro projeto, um disco externo ou uma pasta sincronizada.
 - 📄 **Documento Word em papel timbrado** — ata, ofício, declaração: o texto em markdown vira um
   arquivo do Word com as mesmas palavras, o seu logotipo no cabeçalho, "Página X de Y" no rodapé
   e as linhas de assinatura. Um comando: `/opencrew documento <arquivo>`.
@@ -139,8 +138,9 @@ npm start -- --all
 ### Iniciando o OpenCrew
 
 1. Abra a pasta do projeto na sua IDE de IA.
-2. Digite `/opencrew` para começar — na primeira vez ele configura o perfil
-   da sua empresa (nome, site, tom de voz), em poucos minutos.
+2. Peça para abrir o menu do OpenCrew. No Codex CLI, digite `$` e selecione
+   `opencrew`, ou use `/skills`. Para rodar uma crew, envie `$opencrew run nome-da-crew`.
+   A primeira conversa configura o perfil da sua empresa.
 3. Depois é só pedir: "cria uma crew para posts de Instagram em carrossel"
    ou "preciso de uma newsletter mensal sobre IA".
 
@@ -286,23 +286,13 @@ Só aparecem as pastas que a execução tem.
 
 ### A cópia no seu projeto
 
-Na primeira entrega de cada crew, a IA pergunta: "Quer que eu copie o resultado para uma pasta do
-projeto?". Se você disser uma pasta (por exemplo, `Conteudo/Prontos`), a crew copia a entrega para
-uma pasta do seu projeto, uma subpasta por execução: `<pasta>/<execução>/`, com o `LEIA-ME.md` e
-as pastas dos canais prontos.
+Ao concluir o trabalho aprovado, a crew pergunta onde guardar a entrega. Você pode ficar com o pacote em `output/<execução>/entrega/`, usar uma sugestão salva ou indicar outra pasta. Um destino já escolhido para a execução dispensa a pergunta. A crew só lembra a escolha quando você pedir.
 
-- **A pergunta é feita uma vez por crew.** A resposta — também o "não" — fica na linha
-  `entrega.destino` do `crew.yaml` da crew (o arquivo anterior fica em `crew.yaml.bak`). Para
-  mudar depois, peça à IA ou edite essa linha.
-- **Nada é sobrescrito.** Entregar de novo sem mudança não cria nada. Canal que ficou pronto
-  depois entra na mesma pasta. Se algo que já foi copiado mudou, a entrega nova vai para
-  `<execução>-reentrega-2` (depois `-3`…), ao lado, e a anterior fica como estava, com um aviso no
-  LEIA-ME dela. O que você editar ou guardar na cópia continua lá, e editar a cópia não faz a
-  entrega seguinte virar reentrega.
-- **Só vai o que está pronto.** Canal "Não está pronto" fica fora da cópia, a menos que você
-  escolha "Entregar assim mesmo".
-- **A pasta fica dentro do projeto**, fora de `_opencrew/`, `crews/`, `skills/`, `.git/` e
-  `node_modules/`; se não existe, é criada. Se ela entra no git, a escolha é sua.
+As novas execuções reúnem os arquivos conferidos em `atuais/` e guardam as revisões anteriores por arquivo em `historico/`. Abra o `INDICE.md` para consultar os caminhos. Use `/opencrew buscar "termo"`, com `--crew` ou `--run` quando quiser restringir a busca.
+
+- A cópia reutiliza o recibo quando o pacote e o destino são os mesmos. Uma versão alterada e aprovada ganha outra pasta (sufixo `-reentrega-2`, depois `-3`), preservando a anterior.
+- Se houver pendências, corrija os arquivos ou aceite as ressalvas antes da cópia. Você também pode deixar o pacote na crew e guardar depois.
+- Fora do projeto, indique o caminho absoluto de uma pasta existente. A gravação na pasta sincronizada é local e a sincronização fica a cargo do aplicativo da nuvem.
 
 A entrega não gera PDF nem imagem: `artigo.md`, `corpo.md` e os roteiros saem em markdown, e o
 LEIA-ME ensina a salvar como PDF pelo "Imprimir" do seu editor. O LEIA-ME e os nomes dos arquivos
@@ -455,8 +445,15 @@ da mesma rede (Wi-Fi/LAN) e de VPN/Tailscale para abrir no celular ou tablet. Um
 abrir a página, os links continuam disponíveis e o trabalho segue.
 
 Para abrir a visão geral manualmente, digite `/opencrew dashboard`. O comando inicia ou reutiliza
-um servidor local compatível e mostra o endereço — normalmente `http://127.0.0.1:4747`, ou outra
-porta livre. Sem uma execução selecionada, a página roda uma demonstração.
+um servidor de histórico que fica aberto e mostra o endereço, normalmente `http://127.0.0.1:4747`
+ou outra porta livre. A visão geral mostra a última execução de cada crew e roda uma demonstração
+quando não há estado. Um link de execução aguarda os dados daquela execução.
+
+O servidor aberto automaticamente com uma crew encerra dois minutos depois que a última execução
+ativa termina. O histórico manual tem duração própria. Se a sessão cair, o progresso continua
+disponível para `/opencrew retomar`. Quando o app não sinaliza o fim da sessão, duas horas sem
+eventos encerram a participação daquela execução no Escritório. A próxima invocação confere o
+servidor e informa o endereço atual.
 
 Depois de atualizar o OpenCrew, um servidor antigo continua aberto para as abas que já o usam.
 Uma execução nova inicia ou reutiliza o servidor da versão instalada, em outra porta se necessário;
@@ -539,6 +536,13 @@ Quem já usa o OpenCrew recebe o Escritório — com as salas, as falas e os per
 ```bash
 npx @aksp/opencrew@latest update
 ```
+
+Depois desse primeiro update na versão 1.22.0 ou posterior, o menu pode avisar quando há uma
+versão estável mais nova no npm. A consulta tem prazo curto e cache local de 24 horas; abrir o menu
+nunca atualiza o framework. Você pode ver a prévia, atualizar depois de uma segunda confirmação ou
+silenciar o aviso por um dia. Para desativar o aviso, em `/opencrew settings` escolha `Aviso de
+atualização: off`; o padrão é `on`. A atualização pelo menu espera execuções terminarem e mantém as
+proteções, backups e dados preservados pelo comando `update`.
 
 Um único comando traz **todas** as melhorias para quem já usa uma versão antiga — sem perder
 o que você fez:

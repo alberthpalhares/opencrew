@@ -1,6 +1,7 @@
 // Leitura e gravação de `crews/<crew>/state.json`: inteira ou nenhuma.
 // Spec: fase-e1-escritorio-ao-vivo.md, regras 3 e 6 (repositório do OpenCrew).
 import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { trocarNome } from '../comum.mjs';
 
 /** O estado gravado, ou `null` quando o arquivo falta ou está ilegível (pela metade, sem `agents` em lista). */
@@ -14,16 +15,16 @@ export async function lerEstado(arquivo) {
 }
 
 /**
- * Grava o texto num temporário da mesma pasta (`<arquivo>.<pid>.tmp`) e troca o nome: quem lê vê
- * o arquivo antigo ou o novo, nunca um pela metade. Quando desiste, o arquivo fica como estava, o
- * temporário é apagado e o erro sobe.
+ * Grava o texto num temporário exclusivo da mesma pasta (`<arquivo>.<pid>.<uuid>.tmp`) e troca o
+ * nome: quem lê vê o arquivo antigo ou o novo, nunca um pela metade. Quando desiste, o arquivo fica
+ * como estava, o temporário é apagado e o erro sobe.
  * @param {{ renomear?: Function, esperar?: Function }} [deps] SÓ PARA TESTE: a troca de nome
  *   (`(de, para) => Promise`) e a espera entre as tentativas (`(ms) => Promise`)
  */
 export async function gravarTexto(arquivo, texto, deps = {}) {
-  const temporario = `${arquivo}.${process.pid}.tmp`;
+  const temporario = `${arquivo}.${process.pid}.${randomUUID()}.tmp`;
   try {
-    await fs.writeFile(temporario, texto);
+    await fs.writeFile(temporario, texto, { flag: 'wx' });
     await trocarNome(temporario, arquivo, deps);
   } catch (erro) {
     await fs.rm(temporario, { force: true }).catch(() => {});

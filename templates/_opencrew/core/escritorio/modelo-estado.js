@@ -72,6 +72,7 @@ export function normalizar(bruto) {
     agents: bruto.agents.filter(ehObjeto).map(lerAgente),
     handoff: lerPassagem(bruto.handoff),
     motivo: texto(bruto.motivo),
+    ...(bruto.semVinculo === true ? { semVinculo: true } : {}),
     updatedAtMs: lerData(bruto.updatedAt),
   };
 }

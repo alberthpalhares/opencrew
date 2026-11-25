@@ -30,7 +30,10 @@ const LONGAS = {
 };
 
 const extensao = (item) => path.extname(item.abs).toLowerCase();
-const semExtensao = (item) => item.abs.slice(0, item.abs.length - path.extname(item.abs).length).toLowerCase();
+const semExtensao = (item) => {
+  const nome = item.logico ?? item.abs;
+  return nome.slice(0, nome.length - path.extname(nome).length).toLowerCase();
+};
 const ehImagem = (item) => IMAGEM.has(extensao(item));
 
 /** HTML editável: tem na lista uma imagem de mesmo nome, na mesma pasta. */
@@ -38,7 +41,8 @@ const ehEditavel = (item, itens) => HTML.has(extensao(item)) && itens.some((i) =
 
 /** Cópia com o nome original: `de` (os mesmos bytes do arquivo) ou `texto` (o corpo tratado). */
 function copia(item, pasta, tipo, texto = null) {
-  const base = { pasta, nome: path.basename(item.abs), tipo, origem: item.rel, pastaDeOrigem: path.dirname(item.abs), doCanal: item.canal ?? OUTROS };
+  const logico = item.logico ?? item.abs;
+  const base = { pasta, nome: path.basename(logico), tipo, origem: item.rel, pastaDeOrigem: path.dirname(logico), doCanal: item.canal ?? OUTROS };
   return texto ? { ...base, texto } : { ...base, de: item.abs };
 }
 

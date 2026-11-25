@@ -55,9 +55,9 @@ test('R3-04a: the memory format and runs.md are checked by reading the file, wit
   assert.doesNotMatch(runner, /NEW_FORMAT|OLD_FORMAT|EXISTS|MISSING|HAS_TLDR|SECTIONS:|TLDR:PASS/);
 });
 
-test('R3-04a: the output check, the section count and the TL;DR are one conferir call', () => {
+test('R3-04a: validate output contracts before consolidating the whole step', () => {
   const saida = flat(sectionOf(runner, '### Post-Step Output Validation'));
-  assert.match(saida, /run the `conferir` command[^.]*for EACH output file/);
+  assert.match(saida, /run `conferir` with every stored transformed path in one call/);
   assert.match(saida, /Use ONLY the `conferir` command/);
   const contrato = flat(sectionOf(runner, '### Output Contract Validation'));
   assert.match(contrato, /add `--secoes \{min_sections\}` to the same `conferir` command/);
@@ -110,7 +110,7 @@ test('R3-04c: the path rule stays written in prose, for when the script does not
   assert.match(regra, /highest `vN`[^.]*plus 1/);
   assert.match(regra, /`v10` comes after `v9`/);
   assert.match(regra, /from the highest `vN` down[^.]*then the group itself, with no version folder/);
-  assert.match(regra, /once per group/);
+  assert.match(regra, /a single call returns one `CAMINHO:OK` per output/i);
 });
 
 // ── R3-04d Discovery and the folders (rules 12 and 13) ──────────────────────────────

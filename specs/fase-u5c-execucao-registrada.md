@@ -84,10 +84,10 @@ node _opencrew/core/scripts/execucao.mjs "<crew>" retomar [--run "<id>"]
 |---|---|
 | `pasta` | `CAMINHO:OK <pasta>` (como hoje; o registro nasce junto) |
 | `conferir --passo N` | `CAMINHO:OK <arquivo>` ou `CAMINHO:REPROVADO <motivo>` (como hoje; só o OK entra no registro) |
-| `marcar` | `EXECUCAO:OK` |
+| `marcar` | `EXECUCAO:OK` quando o marco foi gravado; `EXECUCAO:MARCO_PENDENTE` quando o runner deve repetir só esse registro uma vez |
 | `fechar` | `EXECUCAO:FECHADA <resultado> <score>`, depois de imprimir a linha gravada no `runs.md` e, se houver, "Correções das últimas execuções:" com uma linha por correção (execução, passo, nota) |
 | `retomar` | `EXECUCAO:RETOMAR <run> <próximo passo>` — precedida de: tema, passos já conferidos com o arquivo de cada um, checkpoints já respondidos — ou `EXECUCAO:NADA` (nenhuma execução aberta) |
-| qualquer um, sem conseguir gravar | a linha de sempre do comando e, antes dela, "Não consegui gravar o registro desta execução: {motivo}" — a execução segue |
+| qualquer um, sem conseguir gravar | o aviso "Não consegui gravar o registro desta execução: {motivo}"; `marcar` termina em `EXECUCAO:MARCO_PENDENTE`, outros comandos mantêm sua linha de saída — a execução segue |
 
 **Linha do `runs.md`** (as mesmas seis colunas, a mais nova em cima):
 `| 2026-10-07 | 2026-10-07-143022 | Ata de março | Ata e comunicado | 2/3 | Aprovado |`
@@ -105,7 +105,9 @@ Resultados possíveis: `Aprovado`, `Rejeitado`, `Abortado`, `Publicado`, `Regist
 4. A gravação é atômica (temporário na mesma pasta e troca de nome). Registro ilegível ou cortado
    é tratado como ausente: o próximo `conferir --passo` ou `marcar` começa um registro novo, e o
    `fechar` grava a linha com o que o próprio comando informou, avisa e regrava o registro, fechado.
-5. Falha ao gravar o registro nunca para a execução nem muda a linha `CAMINHO:` (§4).
+5. Falha ao gravar o registro nunca para a execução nem muda a linha `CAMINHO:` (§4). `marcar`
+   responde `EXECUCAO:OK` somente após a gravação; em falha, responde `EXECUCAO:MARCO_PENDENTE`
+   e o runner repete uma vez só esse comando de registro, sem refazer o passo nem a entrega.
 6. Execução abortada (pelo usuário, por erro, ou rejeitada no limite de ciclos) é fechada com
    `fechar --resultado abortado` ou `rejeitado`. Execução que ficou aberta (contexto estourado)
    continua `aberta`: é o que o `retomar` procura.
@@ -174,7 +176,7 @@ Resultados possíveis: `Aprovado`, `Rejeitado`, `Abortado`, `Publicado`, `Regist
 - **U5c-01b** `pasta --run r1` numa pasta que já tem registro não muda o registro (regra 3).
 - **U5c-02a** `conferir --arquivo …/v1/ata.md --passo 2` com `CAMINHO:OK` grava o passo 2; com `CAMINHO:REPROVADO` não grava; sem `--passo` não grava (o comportamento da 1.13.0, byte a byte).
 - **U5c-02b** o mesmo passo conferido de novo com outro arquivo troca a entrada; os outros passos ficam.
-- **U5c-03a** `marcar` grava o marco e responde `EXECUCAO:OK`; resultado que não é do evento, `--run` sem pasta e passo inválido são erro de uso, sem gravar.
+- **U5c-03a** `marcar` grava o marco e responde `EXECUCAO:OK`; se não consegue gravar, responde `EXECUCAO:MARCO_PENDENTE`; resultado que não é do evento, `--run` sem pasta e passo inválido são erro de uso, sem gravar.
 - **U5c-03b** nota com quebra de linha vira uma linha; acima de 300 caracteres é cortada.
 - **U5c-04a** `fechar --resultado aprovado --saida "Ata e comunicado"` com 3 checkpoints (2 aprovados, 1 corrigido) grava a linha `… | 2/3 | Aprovado |` logo abaixo do cabeçalho, marca `status: aprovada` e responde `EXECUCAO:FECHADA aprovado 2/3`.
 - **U5c-04b** sem `runs.md`, o arquivo nasce com o cabeçalho; com `runs.md` de outras linhas (CRLF, comentário no topo), só a linha nova muda.
@@ -262,8 +264,7 @@ Decisões tomadas na implementação, para o dono conferir (o código manda; est
   e avisa.
 - Conserto: pasta que só tem o registro é "abandonada"; a pasta sem linha é mostrada pelos arquivos
   dela (`v1/convite.md`), não só por `v1/`.
-- Ficaram como estão, por desenho: duas gravações do registro no mesmo instante podem perder uma
-  (não há execução em paralelo nesta fase); pasta antiga com nome de data ganha registro se um
+- Ficaram como estão, por desenho: pasta antiga com nome de data ganha registro se um
   `conferir --passo` rodar nela.
 
 **Da execução real por IA (2026-10-08, duas conversas; nenhum comando falhou):**

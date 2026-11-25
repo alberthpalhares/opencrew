@@ -41,6 +41,10 @@ test('U3a-08a: the command has --crew, --run and --arquivo between double quotes
   const todos = [...comandos(runner), ...comandos(prompt)];
   assert.ok(todos.length >= 2, 'the command is written in the runner and in the prompt');
   for (const comando of todos) {
+    if (comando.includes('--sugerir-destino') || comando.includes('--copiar-final')) {
+      assert.match(comando, /--crew "crews\/\{name\}" --run "\{run_id\}" (?:--sugerir-destino|--copiar-final --destino "\{pasta\}")$/);
+      continue;
+    }
     assert.match(comando, /^node _opencrew\/core\/scripts\/entregar\.mjs --crew "crews\/\{name\}" --run "\{run_id\}" --arquivo "\{lista\}"( --vai-publicar \{canal\})?$/, comando);
   }
 });
@@ -52,11 +56,12 @@ test('U3a-08a: the moment — after the final approval, right before the first s
   tem(flat(sectionOf(runner, '### For each pipeline step:')), '**Entrega** — before the first step that publishes or sends');
 });
 
-test('U3a-08a: the delivery always comes before the end of the Escritório', () => {
+test('U7F3C-08b: delivery completes before the run close command', () => {
   tem(entrega, 'Always before the end-of-run command of the Escritório');
-  const [naEntrega, noConcluir] = [fim.indexOf('**Entrega**'), fim.indexOf('`concluir`')];
-  assert.ok(naEntrega > -1 && noConcluir > -1, 'After Pipeline Completion lost the delivery or the Escritório reminder');
-  assert.ok(naEntrega < noConcluir, 'the delivery comes after `concluir`');
+  const depois = sectionOf(runner, '### After Pipeline Completion');
+  const [naEntrega, noFechar] = [depois.indexOf('**Entrega**'), depois.indexOf('**Close the run**')];
+  assert.ok(naEntrega > -1 && noFechar > -1, 'After Pipeline Completion lost delivery or run close');
+  assert.ok(naEntrega < noFechar, 'the run closes before delivery completes');
 });
 
 test('U3a-08a: no delivery for a run that was rejected, aborted or has no approved file', () => {

@@ -109,9 +109,21 @@ migração no `update`. Release = commit + tag `v*` no GitHub (o CI publica no n
 `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`,
 `tests/upgrade-u5a.test.js`, `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a),
 `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg) e
-`tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg), `tests/upgrade-u7f3.test.js` (U7F3-upg), `tests/upgrade-u7f3c.test.js` (U7F3C-upg), `tests/upgrade-e5.test.js` (E5-upg) e `tests/upgrade-e6.test.js` (E6-upg).
+`tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg), `tests/upgrade-u7f3.test.js` (U7F3-upg), `tests/upgrade-u7f3c.test.js` (U7F3C-upg), `tests/upgrade-escritorio-ciclo.test.js` (U7F3C-08f), `tests/upgrade-e5.test.js` (E5-upg) e `tests/upgrade-e6.test.js` (E6-upg).
 
 ### 15. Script do runtime só escreve onde foi combinado
+Nas execuções organizadas da 1.21.3, `caminho.mjs` reserva e limpa rascunhos próprios,
+consolida `atuais/`, `historico/`, `INDICE.md` e seu diário dentro da execução.
+`buscar.mjs` só lê. A cópia de um pacote aprovado pode ir a uma pasta externa existente
+explicitamente escolhida. Só grava a cópia reservada e o respectivo recibo na execução.
+Com `--lembrar-final`, também grava a sugestão local dentro do `output/` da crew.
+
+`aviso-atualizacao.mjs` só lê `_opencrew/.opencrew-version`, `_opencrew/manifest.json` e a
+preferência de aviso; seu único arquivo gravável é `_opencrew/logs/.aviso-atualizacao.json`, já
+ignorado pelo Git. O `update --menu` compartilha a trava `_opencrew/.projeto-opencrew` com a criação
+de execuções e pedidos, relê os registros antes da primeira gravação e recusa registros abertos ou
+ilegíveis. A consulta do menu nunca aplica uma atualização.
+
 Script do runtime só escreve onde foi combinado: arquivos da crew (com `.bak`), o `state.json` da
 crew e `output/<execução>/estado-escritorio.json`, a pasta de saída da crew (`crews/<crew>/output/`) e o destino declarado; nunca sobrescreve arquivo do usuário, e só apaga a própria pasta de entrega e os temporários que ele mesmo criou.
 O `documento.mjs` grava o `.docx` pedido e o perfil que faltava (`--criar-perfil`); um `.docx`
@@ -120,7 +132,8 @@ O `conserto.mjs` só grava com `--aplicar`, e só o `crew.yaml`, o `crew-party.c
 passos, a memória e o histórico (`runs.md`) da crew, cada um com a cópia `.bak` (a que já existe
 fica); nunca apaga.
 O `caminho.mjs` e o `execucao.mjs` gravam o registro da execução (`output/<execução>/execucao.json`),
-e o `execucao.mjs fechar` põe ou troca uma linha do `runs.md` da crew; mais nada. O pedido avulso
+e o `execucao.mjs fechar` põe ou troca uma linha do `runs.md` da crew; mais nada. Escritas simultâneas
+do estado do Escritório ou histórico podem usar travas temporárias ao lado do próprio arquivo. O pedido avulso
 (`pasta --pedido`) é uma execução: vale a mesma regra. O `limpeza.mjs` também apaga: só a pasta inteira de
 uma execução **fechada** de `crews/<crew>/output/` (nunca a aberta, nunca o `runs.md`, nunca atalho que
 leva para fora) e o `.wav` com mais de 30 dias de `_investigations/`, e só os `run_id` escritos um a um em
@@ -153,8 +166,8 @@ muda a linha da execução.
 | 11 Continuidade | sem trava — revisão humana | — |
 | 12 Limite medido | `tests/verificar*.test.js`, `tests/runtime-contracts.test.js`, `tests/runtime-contracts-r1.test.js`, `tests/runtime-contracts-r4.test.js` (R4-01: os limites do Instagram de 2026), `tests/conserto-aplicar.test.js` (U4a-02f e 02g: a trava da proibição), `tests/u5a-scripts.test.js` (U5a-01 e 02: o que `texto-livre` mede e não mede) | Reprova |
 | 13 PT-BR para o usuário | sem trava — revisão humana (→ F4 e F6 do roteiro U7) | — |
-| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a), `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg), `tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg), `tests/upgrade-u7f3.test.js` (U7F3-upg), `tests/upgrade-u7f3c.test.js` (U7F3C-upg), `tests/upgrade-e5.test.js` (E5-upg), `tests/upgrade-e6.test.js` (E6-upg) | Reprova |
-| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido), `tests/limpeza*.test.js` (U6b-02 e 05a: só some o pedido), `tests/custo.test.js` (U6b-06c), `tests/relato.test.js` (U6b-08b: nada do cliente), `tests/caminho-aberta.test.js` (E4-03a: a execução aberta é perguntada sem gravar nada), `tests/estado-execucoes.test.js` (U7F3C-03a: um estado permitido por pasta de execução) | Reprova |
+| 14 Chega a quem já usa | `tests/upgrade.test.js`, `tests/upgrade-r3.test.js`, `tests/upgrade-u3a.test.js`, `tests/upgrade-u3a2.test.js`, `tests/upgrade-u3b.test.js`, `tests/upgrade-u4a.test.js`, `tests/upgrade-u5a.test.js`, `tests/runtime-contracts-u5b.test.js` (U5b-upg-a), `tests/upgrade-u5c.test.js`, `tests/runtime-contracts-u5d.test.js` (U5d-upg-a), `tests/runtime-contracts-u6a.test.js` (U6a-upg-a), `tests/runtime-contracts-u6b.test.js` (U6b-upg-a), `tests/upgrade-e2.test.js` (E2-upg), `tests/upgrade-e3.test.js` (E3-upg), `tests/upgrade-e4.test.js` (E4-upg), `tests/upgrade-r4.test.js` (R4-upg), `tests/upgrade-r5.test.js` (R5-upg), `tests/upgrade-u7f1.test.js` (U7F1-upg), `tests/upgrade-u7f3.test.js` (U7F3-upg), `tests/upgrade-u7f3c.test.js` (U7F3C-upg), `tests/upgrade-escritorio-ciclo.test.js` (U7F3C-08f), `tests/upgrade-e5.test.js` (E5-upg), `tests/upgrade-e6.test.js` (E6-upg), `tests/upgrade-aviso-atualizacao.test.js` (AU-15: update de 1.21.2 preserva dados, instala aviso e guarda backup) | Reprova |
+| 15 Script só escreve onde foi combinado | `tests/entregar*.test.js` (U3a-14b; com o destino: `entregar-destino`, `entregar-copia`, `entregar-ressalvas`, `entregar-leiame-copia`; com o documento Word: `tests/entregar-documentos.test.js`), `tests/upgrade-u3a2.test.js`, `tests/documento*.test.js` (U3b-04j), `tests/upgrade-u3b.test.js`, `tests/conserto*.test.js` (U4a-02j), `tests/execucao*.test.js` (U5c-07a e 04b; U5d-03b: o pedido), `tests/limpeza*.test.js` (U6b-02 e 05a: só some o pedido), `tests/custo.test.js` (U6b-06c), `tests/relato.test.js` (U6b-08b: nada do cliente), `tests/caminho-aberta.test.js` (E4-03a: a execução aberta é perguntada sem gravar nada), `tests/estado-execucoes.test.js` (U7F3C-03a: um estado permitido por pasta de execução), `tests/aviso-atualizacao.test.js` (AU-01 a AU-17: cache local, ausência de gravação fora e atualização protegida) | Reprova |
 
 ## Dogfood (usar o OpenCrew neste repo)
 Use `sandbox/` (fora do git): `cd sandbox && node ../bin/opencrew.js init --ide=claude-code`.

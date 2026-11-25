@@ -138,7 +138,7 @@ test('E1-02c: a crew that does not exist, or outside crews/ — exit 1, no ESTAD
 test('E1-02c: crew or event missing, an event out of the list, a folder without _opencrew/ — usage error, exit 1', async (t) => {
   const raiz = await projeto(t);
   const semRaiz = await pastaTemporaria(t, 'estado-vazio');
-  const eventos = 'iniciar, passo, checkpoint, pular, concluir, falhar';
+  const eventos = 'iniciar, passo, checkpoint, pular, concluir, falhar, desvincular';
   const casos = [
     [raiz, [], null, 'Falta o nome da crew.'],
     [raiz, [], 'teste', `Falta o evento. Eventos: ${eventos}.`],
@@ -235,13 +235,15 @@ test('E1-02g: enabled and legacy preference values keep the office on in any let
 test('E1-02h: a rename refused twice with EPERM passes on the third try — the state is written', async (t) => {
   const raiz = await projeto(t);
   const { esperas, esperar } = semEspera();
-  const trocas = []; // each [from, to] asked for — rule 3: from `state.json.<pid>.tmp`, in the same folder
+  const trocas = []; // each [from, to] asked for — same unique temporary path across rename retries
   const renomear = async (de, para) => {
     if (trocas.push([de, para]) <= 2) throw recusa('EPERM');
     return fs.rename(de, para);
   };
   assert.deepEqual(await rodar(raiz, ['iniciar', '--passos', '3'], { renomear, esperar }), { code: 0, linhas: [OK] });
-  assert.deepEqual([trocas, esperas.length, (await ler(raiz)).step.total], [Array(3).fill([`${arquivo(raiz)}.${process.pid}.tmp`, arquivo(raiz)]), 2, 3]);
+  const temporario = trocas[0][0];
+  assert.match(path.basename(temporario), /^state\.json\.\d+\.[\da-f-]{36}\.tmp$/i);
+  assert.deepEqual([trocas, esperas.length, (await ler(raiz)).step.total], [Array(3).fill([temporario, arquivo(raiz)]), 2, 3]);
   assert.deepEqual((await fs.readdir(path.dirname(arquivo(raiz)))).sort(), ['crew-party.csv', 'state.json']);
 });
 

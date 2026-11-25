@@ -197,12 +197,16 @@ test('E1-upg-b: after update, GET /estado of the installed server brings crew x 
 
   const estado = await pedir(`${origem}/estado`);
   assert.equal(estado.status, 200);
-  const { projeto, crews } = JSON.parse(estado.corpo);
+  const { projeto, versao, modo, crews } = JSON.parse(estado.corpo);
   assert.match(projeto, /^[0-9a-f]{12}$/);
+  assert.equal(modo, 'manual');
   assert.deepEqual(crews.map((c) => c.crew), ['x']);
   assert.deepEqual(crews[0].estado, JSON.parse(STATE_16));
   const inicio = await pedir(`${origem}/`);
-  assert.deepEqual([inicio.status, inicio.corpo], [200, await fs.readFile(path.join(core, 'escritorio', 'index.html'), 'utf8')]);
+  const pagina = await fs.readFile(path.join(core, 'escritorio', 'index.html'), 'utf8');
+  assert.deepEqual([inicio.status, inicio.corpo], [
+    200, pagina.replace('<html ', `<html data-projeto="${projeto}" data-versao="${versao}" `),
+  ]);
   // Every module the page imports is served: a file left out of the fixed list would be a 404.
   for (const nome of await fs.readdir(path.join(core, 'escritorio'))) {
     assert.equal((await pedir(`${origem}/${nome}`)).status, 200, `the installed server does not serve ${nome}`);

@@ -19,7 +19,8 @@ const MARCADORES = [
 const COMANDO = /^(?:node|npx|npm|pnpm|yarn|python3?|pip|git|bash|sh|ls|cd|cat|cp|mv|mkdir|curl)\s/;
 
 function pareceCaminho(t) {
-  if (/[{}<>*$|]/.test(t) || /^https?:/i.test(t) || !/[\\/]/.test(t)) return false;
+  if (/[<>*$|]|\{\{|\}\}/.test(t) || (/[{}]/.test(t) && !path.isAbsolute(t))) return false;
+  if (/^https?:/i.test(t) || !/[\\/]/.test(t)) return false;
   if (COMANDO.test(t) || MARCADORES.some((m) => m.test(t))) return false;
   return /\.[A-Za-z0-9]{1,5}$/.test(t) || /[\\/]$/.test(t);
 }

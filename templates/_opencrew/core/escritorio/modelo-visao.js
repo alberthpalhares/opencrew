@@ -19,7 +19,11 @@ export const SEM_SINAL_MS = 20 * MINUTO;
  * Nada é regravado: são textos e uma ação derivados da idade, refeitos a cada leitura.
  */
 function sinais(estado, { agoraMs, demo }) {
-  const vale = !demo && estado.status === 'running' && estado.updatedAtMs !== null && Number.isFinite(agoraMs);
+  if (estado.semVinculo && !demo) {
+    const aviso = 'A sessão terminou. Esta é a última etapa conhecida.';
+    return { parada: aviso, semSinal: 'Sessão encerrada' };
+  }
+  const vale = !demo && ['running', 'checkpoint'].includes(estado.status) && estado.updatedAtMs !== null && Number.isFinite(agoraMs);
   const idade = vale ? agoraMs - estado.updatedAtMs : 0;
   const minutos = Math.floor(idade / MINUTO);
   return {

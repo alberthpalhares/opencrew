@@ -153,7 +153,7 @@ test('E6-01b: --automatico --preparar also emits LAN and VPN links alongside ESC
     cwd: raiz,
     interfaces,
     escrever: (l) => linhas.push(l),
-    auto: { sondar: async () => null, ocupada: async () => false },
+    auto: { sondar: async () => null, ocupada: async () => false, testarBind: async () => true },
   });
   assert.equal(r.code, 0);
   assert.deepEqual(linhas, [

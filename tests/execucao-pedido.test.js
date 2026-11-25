@@ -17,10 +17,11 @@ test('U5d-01a: pasta --pedido creates the folder and a record of type "pedido", 
   const raiz = await projeto(t);
   assert.deepEqual((await pasta(raiz, '--pedido', '--tema', 'Ofício para a prefeitura')).linhas, [`CAMINHO:OK ${SAIDA}/${RUN}`]);
   const r = await registro(raiz);
-  assert.deepEqual(Object.keys(r), ['versao', 'crew', 'run', 'tema', 'tipo', 'status', 'iniciadaEm', 'passosPrevistos', 'passos', 'marcos', 'saida']);
+  assert.deepEqual(Object.keys(r), ['versao', 'crew', 'run', 'tema', 'tipo', 'status', 'iniciadaEm', 'passosPrevistos', 'passos', 'marcos', 'saida', 'organizada']);
   assert.deepEqual([r.tipo, r.tema, r.status, r.passosPrevistos], ['pedido', 'Ofício para a prefeitura', 'aberta', null]);
   await rodarCaminho(raiz, 'pasta', '--run', 'comum', '--tema', 'Ofício para a prefeitura', '--passos', '4');
-  assert.deepEqual(Object.keys(await registro(raiz, 'comum')), ['versao', 'crew', 'run', 'tema', 'status', 'iniciadaEm', 'passosPrevistos', 'passos', 'marcos', 'saida'], 'as in 1.14.0');
+  assert.equal((await registro(raiz, 'comum')).tipo, undefined);
+  assert.equal((await registro(raiz, 'comum')).organizada, true);
 });
 
 test('U5d-01b: --pedido with --passos, and --pedido outside pasta, are usage errors with nothing written', async (t) => {

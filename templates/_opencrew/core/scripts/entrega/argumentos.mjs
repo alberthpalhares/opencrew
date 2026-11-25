@@ -32,6 +32,11 @@ export function lerArgs(argv) {
     const solto = !nome && !argv[i].startsWith('--');
     if (nome) guardar(args, nome, colado ?? (i + 1 < argv.length && !argv[i + 1].startsWith('--') ? argv[++i] : ''));
     else if (argv[i] === '--ajuda') args.ajuda = true;
+    else if (argv[i] === '--somente-local') args.somenteLocal = true;
+    else if (argv[i] === '--aprovada') args.aprovada = true;
+    else if (argv[i] === '--copiar-final') args.copiarFinal = true;
+    else if (argv[i] === '--sugerir-destino') args.sugerirDestino = true;
+    else if (argv[i] === '--lembrar-final') args.lembrarFinal = true;
     else if (argv[i] === '--aceitar-pendencias') args.aceitar = true;
     else if (solto && naLista) args.arquivos.push(argv[i]);
     else args.desconhecida ??= argv[i];

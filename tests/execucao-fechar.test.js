@@ -3,11 +3,41 @@
 // corrections of the last runs, and touches nothing else in the project.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { main as execucao } from '../templates/_opencrew/core/scripts/execucao.mjs';
 import { CABECALHO, RUN, RUNS, SAIDA, conferido, existe, fechar, fora, gravar, ler, marcar, pasta, projeto, registro, rodarCaminho, rodarExecucao, temporarios } from './_execucao.js';
 
 const LINHA = `| 2026-10-07 | ${RUN} | Ata de março | Ata e comunicado | 2/3 | Aprovado |`;
+const SCRIPT_EXECUCAO = fileURLToPath(new URL('../templates/_opencrew/core/scripts/execucao.mjs', import.meta.url));
+
+function marcarEmProcesso(raiz, passo) {
+  return new Promise((resolve, reject) => {
+    const filho = spawn(process.execPath, [SCRIPT_EXECUCAO, 'atas', 'marcar', '--run', RUN, '--passo', String(passo), '--evento', 'checkpoint', '--resultado', 'aprovado'], {
+      cwd: raiz, windowsHide: true,
+    });
+    let saida = '';
+    filho.stdout.setEncoding('utf8').on('data', (parte) => { saida += parte; });
+    filho.stderr.setEncoding('utf8').on('data', (parte) => { saida += parte; });
+    filho.once('error', reject);
+    filho.once('close', (code) => resolve({ code, saida: saida.trim() }));
+  });
+}
+
+function fecharEmProcesso(raiz) {
+  return new Promise((resolve, reject) => {
+    const filho = spawn(process.execPath, [SCRIPT_EXECUCAO, 'atas', 'fechar', '--run', RUN, '--resultado', 'publicado'], {
+      cwd: raiz, windowsHide: true,
+    });
+    let saida = '';
+    filho.stdout.setEncoding('utf8').on('data', (parte) => { saida += parte; });
+    filho.stderr.setEncoding('utf8').on('data', (parte) => { saida += parte; });
+    filho.once('error', reject);
+    filho.once('close', (code) => resolve({ code, saida }));
+  });
+}
 
 /** A run with three answered checkpoints: two approved, one corrected (and one skipped, which does not count). */
 async function execucaoCompleta(raiz) {
@@ -32,8 +62,100 @@ test('U5c-04a: fechar writes the row right below the header, closes the record a
   const reg = await registro(raiz);
   assert.deepEqual([reg.status, reg.saida], ['aprovada', 'Ata e comunicado']);
   assert.match(reg.fechadaEm, /^\d{4}-\d{2}-\d{2}T/);
-  assert.deepEqual(Object.keys(reg), ['versao', 'crew', 'run', 'tema', 'status', 'iniciadaEm', 'fechadaEm', 'passosPrevistos', 'passos', 'marcos', 'saida']);
+  assert.deepEqual(Object.keys(reg), ['versao', 'crew', 'run', 'tema', 'status', 'iniciadaEm', 'fechadaEm', 'passosPrevistos', 'passos', 'marcos', 'saida', 'organizada']);
   assert.deepEqual(await fora(raiz, ['/execucao.json', '/runs.md']), antes, 'U5c-07a');
+  assert.deepEqual(await temporarios(raiz), []);
+});
+
+test('U7F3C-08b: failed close record signals one safe retry before writing the history row', async (t) => {
+  const raiz = await projeto(t);
+  await execucaoCompleta(raiz);
+  const antes = await registro(raiz);
+  const linhas = [];
+  await execucao(['atas', 'fechar', '--run', RUN, '--resultado', 'aprovado'], {
+    cwd: raiz,
+    escrever: (linha) => linhas.push(linha),
+    agora: () => new Date(),
+    renomear: async () => { throw Object.assign(new Error('locked'), { code: 'EBUSY' }); },
+    esperar: async () => {},
+  });
+  assert.equal(linhas.at(-1), 'EXECUCAO:FECHAMENTO_PENDENTE aprovado');
+  assert.equal((await registro(raiz)).status, antes.status);
+  await rodarExecucao(raiz, 'fechar', '--run', RUN, '--resultado', 'aprovado');
+  assert.equal((await registro(raiz)).status, 'aprovada');
+});
+
+test('U7F3C-09c: a failed read never replaces an existing record or its history', async (t) => {
+  const raiz = await projeto(t, { [RUNS]: CABECALHO });
+  await execucaoCompleta(raiz);
+  const antes = await fora(raiz, []);
+  const linhas = [];
+  await execucao(['atas', 'fechar', '--run', RUN, '--resultado', 'aprovado'], {
+    cwd: raiz, escrever: (linha) => linhas.push(linha),
+    lerRegistroParaFechar: async () => { throw Object.assign(new Error('locked'), { code: 'EBUSY' }); },
+  });
+  assert.equal(linhas.at(-1), 'EXECUCAO:FECHAMENTO_PENDENTE aprovado');
+  assert.deepEqual(await fora(raiz, []), antes);
+});
+
+test('U7F3C-10b: concurrent processes keep every milestone in the execution record', async (t) => {
+  const raiz = await projeto(t);
+  await pasta(raiz);
+  const respostas = await Promise.all(Array.from({ length: 12 }, (_, i) => marcarEmProcesso(raiz, i + 1)));
+  assert.ok(respostas.every(({ code, saida }) => code === 0 && saida === 'EXECUCAO:OK'), JSON.stringify(respostas));
+  assert.deepEqual((await registro(raiz)).marcos.map((m) => m.passo).sort((a, b) => a - b), Array.from({ length: 12 }, (_, i) => i + 1));
+});
+
+test('U7F3C-10b: a failed mark write signals one safe retry', async (t) => {
+  const raiz = await projeto(t);
+  await pasta(raiz);
+  const linhas = [];
+  await execucao(['atas', 'marcar', '--run', RUN, '--passo', '1', '--evento', 'checkpoint', '--resultado', 'aprovado'], {
+    cwd: raiz, escrever: (linha) => linhas.push(linha),
+    renomear: async () => { throw Object.assign(new Error('locked'), { code: 'EBUSY' }); },
+    esperar: async () => {},
+  });
+  assert.equal(linhas.at(-1), 'EXECUCAO:MARCO_PENDENTE');
+  assert.deepEqual((await registro(raiz)).marcos, []);
+  await marcar(raiz, 1, 'checkpoint', 'aprovado');
+  assert.equal((await registro(raiz)).marcos.length, 1);
+});
+
+test('U7F3C-10c: repeating the same close preserves its timestamp and repairs a missing history row', async (t) => {
+  const raiz = await projeto(t, { [RUNS]: CABECALHO });
+  await pasta(raiz);
+  await fechar(raiz, 'publicado', '--saida', 'Ata publicada');
+  const fechadaAntes = (await registro(raiz)).fechadaEm;
+  const fechamentos = await Promise.all(Array.from({ length: 4 }, () => fecharEmProcesso(raiz)));
+  assert.ok(fechamentos.every(({ code, saida }) => code === 0 && saida.includes('EXECUCAO:FECHADA publicado')), JSON.stringify(fechamentos));
+  assert.equal((await registro(raiz)).fechadaEm, fechadaAntes);
+  const linhasAntes = (await ler(raiz, RUNS)).split('\n').filter((linha) => linha.includes(`| ${RUN} |`));
+  assert.equal(linhasAntes.length, 1);
+  await fs.writeFile(path.join(raiz, RUNS), CABECALHO);
+  const linhas = [];
+  await execucao(['atas', 'fechar', '--run', RUN, '--resultado', 'publicado'], {
+    cwd: raiz, escrever: (linha) => linhas.push(linha), agora: () => new Date('2026-10-08T14:30:00.000Z'),
+  });
+  assert.equal((await registro(raiz)).fechadaEm, fechadaAntes);
+  assert.match(await ler(raiz, RUNS), new RegExp(`\\| ${RUN} \\| — \\| Ata publicada \\|`));
+  assert.equal(linhas.at(-1), 'EXECUCAO:FECHADA publicado —');
+});
+
+test('U7F3C-09c: concurrent runs from the same crew both reach the history', async (t) => {
+  const raiz = await projeto(t, { [RUNS]: CABECALHO });
+  const outro = '2026-10-07-143023';
+  await pasta(raiz);
+  await rodarCaminho(raiz, 'pasta', '--run', outro);
+  const fecha = (run) => execucao(['atas', 'fechar', '--run', run, '--resultado', 'aprovado'], {
+    cwd: raiz, escrever() {},
+    renomear: async (origem, destino) => {
+      if (destino.endsWith('runs.md')) await new Promise((resolver) => setTimeout(resolver, 50));
+      await fs.rename(origem, destino);
+    },
+  });
+  assert.deepEqual(await Promise.all([fecha(RUN), fecha(outro)]), [0, 0]);
+  const historico = await ler(raiz, RUNS);
+  for (const run of [RUN, outro]) assert.ok(historico.includes(`| ${run} |`));
   assert.deepEqual(await temporarios(raiz), []);
 });
 
@@ -148,8 +270,8 @@ test('U5c-05a: with no correction at all the section does not appear; only the 1
   }
   const r = await fechar(raiz, 'aprovado');
   const notas = r.linhas.filter((l) => l.startsWith('- c'));
-  assert.equal(notas.length, 9, 'the run closed now is one of the ten');
-  assert.ok(!r.texto.includes('nota 1\n') && !r.texto.includes('· nota 2\n'));
+  assert.equal(notas.length, 10, 'the ten newest closed runs with correction are listed');
+  assert.ok(!r.texto.includes('· nota 1\n') && r.texto.includes('· nota 2\n'));
 });
 
 test('U5c-07a: after a whole run — pasta, saida, conferir, marcar, fechar, retomar — only execucao.json and runs.md are new', async (t) => {

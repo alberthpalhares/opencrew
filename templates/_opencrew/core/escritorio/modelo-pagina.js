@@ -38,9 +38,12 @@ function lerResposta(resposta) {
  * @returns {object} a memória nova; a crew ausente continua, com o último estado bom, por
  *   `CONSULTAS_DE_ESPERA` respostas válidas seguidas, e a escolha do usuário cai quando a crew sai
  */
-export function consultar(memoria, resposta) {
+export function consultar(memoria, resposta, { crewAlvo = null, runAlvo = null } = {}) {
   const vindas = lerResposta(resposta);
-  if (!vindas) return { ...memoria, falhas: memoria.falhas + 1 };
+  const run = runAlvo?.replace(/[,;:!?\])>]+$/, '');
+  if (!vindas || vindas.some((c) => (crewAlvo !== null && c.crew !== crewAlvo) || (runAlvo !== null && c.estado.runId !== run))) {
+    return { ...memoria, falhas: memoria.falhas + 1 };
+  }
   const presentes = new Set(vindas.map((c) => c.crew));
   const ausentes = memoria.crews
     .filter((c) => !presentes.has(c.crew) && c.faltas < CONSULTAS_DE_ESPERA)
@@ -64,10 +67,13 @@ export function escolher(memoria, crew) {
  *   estado bruto dela; `crews` são os nomes para o seletor · `demo`: sem nenhuma crew, ou com
  *   `?demo` (aí sem seletor); `frase` é a da §6 para cada caso
  */
-export function emExibicao(memoria, { demo = false } = {}) {
+export function emExibicao(memoria, { demo = false, crewAlvo = null, runAlvo = null } = {}) {
   const semCrew = { modo: 'demo', crew: null, estado: null };
   if (demo) return { ...semCrew, crews: [], frase: TEXTOS.demoForcada };
   const crews = memoria.crews.map((c) => c.crew);
+  if (!crews.length && (crewAlvo !== null || runAlvo !== null)) {
+    return { modo: 'real', crew: crewAlvo, estado: null, crews, frase: runAlvo ? TEXTOS.esperaRun : TEXTOS.esperaCrew };
+  }
   if (!crews.length) return { ...semCrew, crews, frase: TEXTOS.demonstracao };
   const atual = memoria.crews.find((c) => c.crew === memoria.escolhida) ?? memoria.crews[0];
   return { modo: 'real', crew: atual.crew, estado: atual.estado, crews, frase: null };
@@ -93,5 +99,6 @@ export function montarPagina(memoria, opcoes = {}) {
   const demo = modo === 'demo';
   const semConexao = memoria.falhas > 0;
   const modelo = montarModelo(demo ? estadoDaDemo(decorridoDemoMs) : estado, { agoraMs, reduzirMovimento, demo, semConexao, crew, hora, periodo });
-  return { ...modelo, modo, crews, frase, aviso: semConexao ? TEXTOS.semServidor : null };
+  const aviso = semConexao ? (estado ? TEXTOS.semServidorComEstado : TEXTOS.semServidor) : null;
+  return { ...modelo, modo, crews, frase, aviso };
 }

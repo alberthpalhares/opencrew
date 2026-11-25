@@ -50,7 +50,10 @@ test('U7F3C-03d: reopening the Office for a confirmed resume preserves the saved
   const antes = await ler(raiz, RUN_A);
 
   assert.deepEqual(await rodar(raiz, RUN_A, 'iniciar', '--passos', '3'), { code: 0, linhas: ['ESTADO:OK'] });
-  assert.deepEqual(await ler(raiz, RUN_A), antes);
+  const depois = await ler(raiz, RUN_A);
+  assert.deepEqual([depois.step, depois.status], [antes.step, 'running']);
+  assert.ok(Date.parse(depois.updatedAt) > Date.parse(antes.updatedAt));
+  assert.deepEqual(depois.agents.map((agente) => agente.id), antes.agents.map((agente) => agente.id));
 });
 
 test('U7F3C-03c: pedido events keep the explicitly selected worker and reviewer', async (t) => {

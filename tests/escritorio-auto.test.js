@@ -7,7 +7,8 @@ import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
 import { main } from '../templates/_opencrew/core/scripts/escritorio.mjs';
-import { alguemEscuta, procurarAutomatico } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
+import { alguemEscuta } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
+import { procurarAutomatico } from '../templates/_opencrew/core/scripts/escritorio/procurar.mjs';
 import { abrirNoSistema } from '../templates/_opencrew/core/scripts/escritorio/navegador.mjs';
 import { lerEstadoDaConsulta } from '../templates/_opencrew/core/scripts/escritorio/leitura.mjs';
 import { projetoDe } from '../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
@@ -62,6 +63,35 @@ test('U7F3C-02a: automatic lookup reuses a compatible server before choosing a f
   assert.deepEqual([alvo.tipo, alvo.porta, sondagens, tentativas], ['ja-aberto', 4748, [4747, 4748], []]);
 });
 
+test('U7F3C-10d: a compatible daemon that disappears after discovery releases its port for retry', async () => {
+  let sondagens = 0;
+  let aberturas = 0;
+  const resultado = await procurarAutomatico({
+    inicial: 4868, projeto: 'projeto-local', versao: '1.21.3', tentativas: 1,
+    sondar: async () => (++sondagens === 1 ? { projeto: 'projeto-local', versao: '1.21.3' } : null),
+    confirmarExistente: async () => false,
+    ocupada: async () => false,
+    tentarAbrir: async () => { aberturas++; return true; },
+    confirmar: async () => true,
+    esperar: async () => {},
+  });
+  assert.deepEqual([resultado.tipo, resultado.porta, aberturas], ['aberto', 4868, 1]);
+});
+
+test('U7F3C-10d: an existing daemon gets the full readiness wait before another port is chosen', async () => {
+  let confirmacoes = 0;
+  let aberturas = 0;
+  const resultado = await procurarAutomatico({
+    inicial: 4868, projeto: 'projeto-local', versao: '1.21.3', tentativas: 2,
+    sondar: async () => ({ projeto: 'projeto-local', versao: '1.21.3' }),
+    confirmarExistente: async () => ++confirmacoes === 4,
+    ocupada: async () => true,
+    tentarAbrir: async () => { aberturas++; return true; },
+    esperar: async () => {},
+  });
+  assert.deepEqual([resultado.tipo, resultado.porta, confirmacoes, aberturas], ['ja-aberto', 4868, 4, 0]);
+});
+
 test('U7F3C-02b: automatic lookup skips occupied and old servers, then starts on the next free port', async () => {
   const abertas = [];
   const alvo = await procurarAutomatico({
@@ -92,6 +122,26 @@ test('U7F3C-02d: external browser launch keeps URL usable and reports a launch f
   assert.equal(semTela, false);
 });
 
+test('U7F3C-10d: confirmation accepts --porta=value and opens the confirmed URL externally', async (t) => {
+  const p = await projeto(t);
+  for (const porta of ['--porta', '--porta=']) {
+    let aberta;
+    const linhas = [];
+    const valor = porta.endsWith('=') ? `${porta}4868` : `${porta} 4868`;
+    const resultado = await main([
+      '--automatico', '--confirmar', '--externo', ...valor.split(' '),
+      '--crew', 'teste', '--run', RUN,
+    ], {
+      cwd: p.raiz, interfaces: {}, escrever: (linha) => linhas.push(linha),
+      sondar: async () => null,
+      pronto: async () => true,
+      abrirNavegador: async (url) => { aberta = url; return true; },
+    });
+    const url = `http://127.0.0.1:4868/?crew=teste&run_id=${RUN}`;
+    assert.deepEqual([resultado.code, aberta, linhas[0]], [0, url, `ESCRITORIO:URL ${url}`]);
+  }
+});
+
 test('U7F3C-02a: automatic mode starts in the background, confirms the server and returns the run URL', async (t) => {
   const p = await projeto(t);
   let iniciado = false;
@@ -116,7 +166,7 @@ test('U7F3C-02a: automatic mode starts in the background, confirms the server an
   assert.deepEqual([resultado.code, resultado.url, linhas], [0, url, [`ESCRITORIO:URL ${url}`]]);
   assert.equal(desanexado, true);
   assert.equal(opcoesSpawn.exe, process.execPath);
-  assert.deepEqual(opcoesSpawn.args.slice(-3), ['--servidor', '--porta', '4747']);
+  assert.deepEqual(opcoesSpawn.args.slice(-4), ['--servidor', '--automatico-servidor', '--porta', '4747']);
   assert.deepEqual(opcoesSpawn.opcoes, {
     cwd: p.raiz, detached: true, stdio: 'ignore', windowsHide: true, shell: false,
   });
@@ -198,16 +248,22 @@ test('U7F3C-06a/07b: --preparar confirms or returns a daemon, which keeps servin
   }
 });
 
-test('U7F3C-06b: /estado falls back cleanly on truncated ?crew, trailing chat punctuation, or missing run file, while keeping traversal blocked', async (t) => {
+test('U7F3C-06b: /estado falls back for crew-only queries but never substitutes another run', async (t) => {
   const p = await projeto(t);
   const semRun = await lerEstadoDaConsulta(p.raiz, new URLSearchParams('crew=teste'));
   assert.equal(semRun[0]?.estado.runId, `${RUN}-2`);
-  const pontuado = await lerEstadoDaConsulta(p.raiz, new URLSearchParams(`crew=teste&run_id=${RUN}.`));
+  const pontuado = await lerEstadoDaConsulta(p.raiz, new URLSearchParams(`crew=teste&run_id=${RUN}!`));
   assert.equal(pontuado[0]?.estado.runId, RUN);
   const ausente = await lerEstadoDaConsulta(p.raiz, new URLSearchParams('crew=teste&run_id=2026-11-12-999999'));
-  assert.equal(ausente[0]?.estado.runId, `${RUN}-2`);
+  assert.deepEqual(ausente, []);
   assert.deepEqual(await lerEstadoDaConsulta(p.raiz, new URLSearchParams('crew=teste&run_id=..')), []);
   assert.deepEqual(await lerEstadoDaConsulta(p.raiz, new URLSearchParams('crew=..&run_id=1')), []);
+  const runPontoPonto = 'campanha..revisao';
+  const pasta = path.join(p.raiz, 'crews', 'teste', 'output', runPontoPonto);
+  await fs.mkdir(pasta, { recursive: true });
+  await fs.writeFile(path.join(pasta, 'estado-escritorio.json'), JSON.stringify(ESTADO(runPontoPonto, 'c', '2026-11-12T12:02:00.000Z')));
+  const runValido = await lerEstadoDaConsulta(p.raiz, new URLSearchParams({ crew: 'teste', run_id: runPontoPonto }));
+  assert.equal(runValido[0]?.estado.runId, runPontoPonto);
 });
 
 test('E6-01b: automatic mode emits LAN and VPN URLs alongside the local URL', async (t) => {

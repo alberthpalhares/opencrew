@@ -27,7 +27,9 @@
 3. O apelido `--execucao` para `--run` **fica de fora** (§6).
 
 **Decisões que o dono confirma ao aprovar** (a opção recomendada já está no texto):
-4. **"Execução recente" = atividade nas últimas 2 horas.** Execução aberta mais antiga que isso
+4. **"Execução recente" = vínculo com uma sessão e atividade nas últimas 2 horas.** A atualização
+   U7-F3c exige um vínculo verificável com o Escritório antes de pedir ao usuário para escolher.
+   Execução aberta mais antiga que isso
    não barra uma nova (ela continua aparecendo no `/opencrew retomar`).
 5. **O comando com servidor desatualizado sai com código 1**, para a IA não tratar a linha como
    sucesso.
@@ -73,7 +75,7 @@ seja perguntada. O boneco que aparece trabalhando é o do agente do passo.
 
 ### Duas execuções da mesma crew
 8. **Perguntar antes de abrir.** `caminho.mjs <crew> pasta`, sem `--run`, sem `--pedido` e sem
-   `--nova`: se a crew tem execução `aberta`, que não seja pedido, com atividade nas últimas
+   `--nova`: se a crew tem execução `aberta`, que não seja pedido, vinculada a uma sessão com atividade nas últimas
    2 horas, o script **não cria pasta nem grava nada**, escreve as linhas da §3 e termina com
    `CAMINHO:ABERTA <run>` (código 0). Atividade é o mais recente entre `iniciadaEm`, o `em` dos
    passos e o `em` dos marcos. Com mais de uma, vale a de atividade mais recente.
@@ -109,7 +111,7 @@ seja perguntada. O boneco que aparece trabalhando é o do agente do passo.
 | `index.html`, abertura | `Abrindo o escritório… Se esta mensagem não sumir, feche o escritório e rode /opencrew dashboard de novo. Confira também se abriu pelo endereço que o comando mostrou, e não pelo arquivo.` |
 | `aviso.js`, arquivo faltando | `O escritório não carregou: faltou <nomes>. Feche o escritório e rode /opencrew dashboard de novo.` |
 | `caminho.mjs pasta`, linha 1 | `A crew <crew> já tem uma execução aberta: <run> (<tema>), com atividade há <N> min.` (sem tema: sem os parênteses) |
-| linha 2 | `O painel do escritório é um só por crew: duas execuções ao mesmo tempo se misturam nele.` |
+| linha 2 | `Essa execução ainda tem um vínculo recente com uma sessão.` |
 | linha 3 | `Pergunte ao usuário: continuar aquela (/opencrew retomar <crew>) ou abrir outra (repita este comando com --nova).` |
 | última linha | `CAMINHO:ABERTA <run>` |
 | `estado.mjs`, agente corrigido | `ESTADO:OK — agente do passo <K>: <id>` (passo sem `agent:`: `nenhum`) |

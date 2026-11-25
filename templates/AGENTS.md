@@ -40,6 +40,25 @@ selector with these options (max 4 per question). Use your IDE's native
 interactive-choice mechanism if it has one; otherwise present the options as a
 numbered list and ask the user to reply with a number.
 
+Before rendering the main menu, run `node _opencrew/core/scripts/aviso-atualizacao.mjs verificar`.
+If it prints `ATUALIZACAO:DISPONIVEL <installed> <available>`, show the exact versions and offer
+**Ver prévia**, **Atualizar** and **Lembrar amanhã**. A missing result, offline result or script
+failure must never block the menu or suggest an unverified version. For **Lembrar amanhã**, run
+`node _opencrew/core/scripts/aviso-atualizacao.mjs adiar` and then show the menu.
+
+For **Ver prévia** and **Atualizar**, run
+`npx --yes @aksp/opencrew@<available> update --check` with the exact version from the notice. The
+command exits with code 1 for an available update; accept the preview only when its exit code is 1,
+its output contains exactly `ATUALIZACAO:DISPONIVEL <installed> <available>` and the `Installed` and
+`Package` versions match the notice. Show its full report. On any other exit/result, explain that the preview could
+not be verified and do not offer to apply it. **Ver prévia** returns to the menu after showing the
+report. **Atualizar** asks for a separate explicit confirmation after the preview; on cancellation,
+write nothing. On confirmation run `npx --yes @aksp/opencrew@<available> update --menu` using that
+same pinned version. This protected flow checks all execution records under the project lock before
+writing. If an execution is open or unreadable, do not close it: explain how to resume or close it
+and let the user choose. On success, show the command's actual summary and ask the user to reopen
+the menu so the new framework is loaded. Never run `update` merely because the menu opened.
+
 **Primary menu:** Create a new crew · Run an existing crew · My crews ·
 More options
 
@@ -63,6 +82,7 @@ Route input to the matching action:
 | `/opencrew cleanup <name>`, or a request in plain words to free space of old runs ("libera espaço da crew X", "apaga as execuções antigas") | Load `_opencrew/core/prompts/limpeza.prompt.md` → list what can go, ask, and delete only what the user approved; the history stays |
 | `/opencrew feedback`, or a request in plain words to report a problem or tell how it went ("quero reportar um problema") | Load `_opencrew/core/prompts/relato.prompt.md` → build a usage report with nothing of the client, for the user to paste in an issue |
 | `/opencrew retomar <name>` | Load Pipeline Runner → resume the run of that crew that stopped in the middle (`_opencrew/core/runner/retomar.md`) |
+| `/opencrew buscar "<termo>"` | Load `_opencrew/core/prompts/buscar.prompt.md` → find runs and current files |
 | `/opencrew edit <name> <changes>` | Load the Architect → Edit Crew flow |
 | `/opencrew repair <name>` | Load `_opencrew/core/prompts/repair.prompt.md` → show what an existing crew is missing and fix one point at a time, each with a `.bak` copy |
 | `/opencrew skills` | Load Skills Engine → Show skills menu |
@@ -79,6 +99,11 @@ Route input to the matching action:
 | Request to deliver a run that already ended ("monte a entrega da execução …") | Load `_opencrew/core/prompts/entrega.prompt.md` → build the `entrega/` folder of that run |
 | Request to change where the delivery is copied ("muda a pasta de entrega", "não quero mais cópia", "volta a copiar") | Load `_opencrew/core/prompts/entrega.prompt.md` → "Changing the folder later" |
 | Natural language about crews | Infer intent and route accordingly |
+
+In `/opencrew settings`, when the user asks about update notices, show the current
+`Aviso de atualização` preference and offer `on` or `off`. Change only that field in
+`_opencrew/_memory/preferences.md`, preserving every other line; if it is absent, append
+`- **Aviso de atualização:** on` or `- **Aviso de atualização:** off` as chosen. The default is on.
 
 ## Loading Agents
 
@@ -115,9 +140,11 @@ each step with one short command (see `_opencrew/core/runner.pipeline.md`).
 **`/opencrew dashboard`** — in this order:
 1. Write `- **Dashboard:** enabled` in `_opencrew/_memory/preferences.md`, changing only that
    line (if the file has no `Dashboard` line, add it at the end). Leave the rest of the file as is.
-2. Start `node _opencrew/core/scripts/escritorio.mjs --automatico` from the project root. It starts
-   or reuses a confirmed server in the background and prints its URL (plus `ESCRITORIO:URL_REDE`
-   and `ESCRITORIO:URL_VPN` when available for phone/tablet).
+2. Start `node _opencrew/core/scripts/escritorio.mjs --automatico --historico` from the project root.
+   This opens the persistent manual history server and prints its confirmed URLs (`ESCRITORIO:URL_REDE`
+   and `ESCRITORIO:URL_VPN` when available). In the same
+   desktop environments that require `--preparar`, use it with `--historico`. Start the requested
+   port with `--servidor --porta <port>`, then confirm with `--automatico --historico --confirmar --porta <port>`.
 3. Show the address and any returned mobile/tablet network links (`ESCRITORIO:URL_REDE`,
    `ESCRITORIO:URL_VPN`), and open it in the harness Browser when available; in a CLI, add
    `--externo` to open the system browser.

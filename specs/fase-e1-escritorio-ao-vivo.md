@@ -356,8 +356,9 @@ errado. Depois desta fase ele chega a quem já usa com um `update` e funciona na
   arquivo, inclusive o `iniciar`, e a última linha é a "desligado" da §6, com código 0; DADAS as
   duas formas da linha citadas no runner ENTÃO as duas ligam.
 - **E1-02h** DADA a troca de nome (recebida por parâmetro) que falha 2 vezes com EPERM e passa na
-  3ª ENTÃO o estado é gravado; DADA a que falha sempre ENTÃO `ESTADO:IGNORADO — não foi possível
-  gravar o estado`, código 0, e nenhum temporário sobra.
+  3ª ENTÃO o estado é gravado com um temporário exclusivo (`<arquivo>.<pid>.<uuid>.tmp`); DADA a que
+  falha sempre ENTÃO `ESTADO:IGNORADO — não foi possível gravar o estado`, código 0, e nenhum
+  temporário sobra.
 - **E1-02i** DADA uma execução `completed` QUANDO `passo --n 1 --agente a` ENTÃO o elenco volta a
   `idle` (menos `a`), o `handoff` é nulo, `startedAt` é novo e o `step.total` é o anterior.
 

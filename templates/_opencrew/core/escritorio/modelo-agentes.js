@@ -20,6 +20,7 @@ const MONITOR = Object.freeze({
 
 /** A ação é o status, menos para quem trabalha numa execução em checkpoint ou sem sinal. */
 function acaoDe(status, contexto) {
+  if (status === 'checkpoint') return contexto.semSinal ? 'sem-sinal' : 'checkpoint';
   if (status !== 'working') return status;
   if (contexto.execucao === 'checkpoint') return 'idle';
   return contexto.semSinal ? 'sem-sinal' : 'working';

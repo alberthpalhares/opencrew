@@ -1,17 +1,18 @@
-// A crew já tem uma execução aberta e recente? O painel do escritório (`state.json`) é um só por
-// crew: uma segunda execução, aberta por outra conversa, escreve por cima do que a primeira mostra.
-// Antes de abrir outra, `caminho.mjs pasta` devolve o que está aqui, e o usuário decide. Só lê.
+// Antes de abrir outra execução, avisa se a crew tem um vínculo recente com uma sessão.
+// Um registro sozinho continua retomável e não impede que uma nova sessão comece.
 // Spec: fase-e4-robustez-do-escritorio.md, regra 8 (repositório do OpenCrew).
+import path from 'node:path';
 import { PEDIDO } from '../execucao/registro.mjs';
 import { registrosDe } from '../execucao/retomar.mjs';
+import { lerJsonDentro } from '../escritorio/leitura.mjs';
+import { SEM_EVENTO_MS, ultimaAtividade } from '../escritorio/vigia.mjs';
 
-/** Execução parada há mais tempo que isto não barra uma nova (ela continua no `/opencrew retomar`). */
-const JANELA_MS = 2 * 60 * 60 * 1000;
-
-/** A última atividade de uma execução: o mais recente entre o início, os passos conferidos e os marcos. */
-function ultimaAtividade(registro) {
-  const horas = [registro.iniciadaEm, ...registro.passos.map((p) => p.em), ...registro.marcos.map((m) => m.em)];
-  return Math.max(-Infinity, ...horas.map((hora) => Date.parse(hora)).filter(Number.isFinite));
+async function atividadeComVinculo(raiz, crew, registro) {
+  const pasta = path.join(raiz, 'crews', crew, 'output', registro.run);
+  const visual = await lerJsonDentro(raiz, pasta, path.join(pasta, 'estado-escritorio.json'));
+  if (visual?.runId !== registro.run || !visual.sessao || visual.desvinculadoEm) return null;
+  const em = ultimaAtividade(registro, visual);
+  return em === null ? null : { run: registro.run, tema: registro.tema, em };
 }
 
 /**
@@ -21,15 +22,16 @@ function ultimaAtividade(registro) {
  */
 export async function abertaRecente(raiz, crew, agora) {
   const abertas = (await registrosDe(raiz, crew)).filter((r) => r.status === 'aberta' && r.tipo !== PEDIDO);
-  const [ultima] = abertas.map((r) => ({ run: r.run, tema: r.tema, em: ultimaAtividade(r) })).sort((a, b) => b.em - a.em);
+  const vinculadas = await Promise.all(abertas.map((registro) => atividadeComVinculo(raiz, crew, registro)));
+  const [ultima] = vinculadas.filter(Boolean).sort((a, b) => b.em - a.em);
   const parada = ultima ? agora.getTime() - ultima.em : Infinity;
-  return parada < JANELA_MS ? { run: ultima.run, tema: ultima.tema, minutos: Math.max(0, Math.round(parada / 60_000)) } : null;
+  return parada < SEM_EVENTO_MS ? { run: ultima.run, tema: ultima.tema, minutos: Math.max(0, Math.round(parada / 60_000)) } : null;
 }
 
 /** O que `pasta` responde no lugar de criar a execução: a instrução para a IA e, por último, a linha que o runner lê. */
 export const linhasDaAberta = (crew, { run, tema, minutos }) => [
   `A crew ${crew} já tem uma execução aberta: ${run}${tema ? ` (${tema})` : ''}, com atividade há ${minutos} min.`,
-  'O painel do escritório é um só por crew: duas execuções ao mesmo tempo se misturam nele.',
+  'Essa execução ainda tem um vínculo recente com uma sessão.',
   `Pergunte ao usuário: continuar aquela (/opencrew retomar ${crew}) ou abrir outra (repita este comando com --nova).`,
   `CAMINHO:ABERTA ${run}`,
 ];

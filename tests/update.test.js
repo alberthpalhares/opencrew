@@ -6,7 +6,7 @@ import { init } from '../src/commands/init.js';
 import { update } from '../src/commands/update.js';
 import { exists } from '../src/lib/fsx.js';
 import { packageJsonPath } from '../src/lib/paths.js';
-import { mkTmp, withCwd } from './_helpers.js';
+import { captureOutput, mkTmp, withCwd } from './_helpers.js';
 
 test('update does nothing when no opencrew workspace exists yet', async () => {
   const dir = await mkTmp('update');
@@ -189,3 +189,54 @@ test('F1-04b: an AGENTS.md.bak the user already had is never touched; the new co
   const [stamp] = await fs.readdir(path.join(dir, '.opencrew-backup'));
   assert.equal(await fs.readFile(path.join(dir, '.opencrew-backup', stamp, 'AGENTS.md'), 'utf8'), LEGACY_AGENTS);
 });
+
+for (const arquivo of ['_opencrew/manifest.json', '_opencrew/.opencrew-version']) {
+  test(`U7F3C-10g: update stops before writing when ${arquivo} is a symbolic link`, async () => {
+    const dir = await mkTmp('update-recibo-link');
+    await withCwd(dir, () => init({ ide: ['claude-code'] }));
+    const relativo = '_opencrew/core/runner.pipeline.md';
+    const sentinela = path.join(dir, relativo);
+    await fs.writeFile(sentinela, 'preservar antes da atualização');
+    const caminho = path.join(dir, arquivo);
+    const lstatOriginal = fs.lstat;
+    process.exitCode = 0;
+    fs.lstat = async (alvo, ...args) => path.resolve(String(alvo)) === path.resolve(caminho)
+      ? { isSymbolicLink: () => true }
+      : lstatOriginal.call(fs, alvo, ...args);
+    let saida;
+    try {
+      saida = await captureOutput(() => withCwd(dir, () => update()));
+    } finally {
+      fs.lstat = lstatOriginal;
+    }
+    assert.equal(process.exitCode, 1);
+    assert.match(saida, new RegExp(arquivo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(saida, /Updated to v/);
+    assert.equal(await fs.readFile(sentinela, 'utf8'), 'preservar antes da atualização');
+    process.exitCode = 0;
+  });
+}
+
+for (const arquivo of ['_opencrew/manifest.json', '_opencrew/.opencrew-version']) {
+  test(`U7F3C-10h: update reports a failed write to ${arquivo} instead of success`, async () => {
+    const dir = await mkTmp('update-recibo-write');
+    await withCwd(dir, () => init({ ide: ['claude-code'] }));
+    const caminho = path.join(dir, arquivo);
+    const escreverOriginal = fs.writeFile;
+    process.exitCode = 0;
+    fs.writeFile = async (alvo, ...args) => {
+      if (path.resolve(String(alvo)) === path.resolve(caminho)) throw Object.assign(new Error('blocked'), { code: 'EACCES' });
+      return escreverOriginal.call(fs, alvo, ...args);
+    };
+    let saida;
+    try {
+      saida = await captureOutput(() => withCwd(dir, () => update()));
+    } finally {
+      fs.writeFile = escreverOriginal;
+    }
+    assert.equal(process.exitCode, 1);
+    assert.match(saida, new RegExp(arquivo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(saida, /Updated to v/);
+    process.exitCode = 0;
+  });
+}

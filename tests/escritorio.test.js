@@ -11,7 +11,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { main, ARQUIVOS } from '../templates/_opencrew/core/scripts/escritorio.mjs';
 import { criarServidor } from '../templates/_opencrew/core/scripts/escritorio/servidor.mjs';
-import { abrir, sondar } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
+import { abrir, aceitaBind, sondar } from '../templates/_opencrew/core/scripts/escritorio/porta.mjs';
 import { idDoProjeto, projetoDe } from '../templates/_opencrew/core/scripts/escritorio/projeto.mjs';
 import { mkTmp, snapshot } from './_helpers.js';
 
@@ -89,6 +89,28 @@ async function portaLivre(t) {
   return new Promise((ok) => servidor.close(() => ok(String(porta))));
 }
 
+async function portaComIntervaloLivre(t, servidor) {
+  const conexoes = new Set();
+  servidor.on('connection', (conexao) => conexoes.add(conexao.on('error', () => {})));
+  t.after(() => {
+    for (const conexao of conexoes) conexao.destroy();
+    return servidor.listening ? new Promise((ok) => servidor.close(() => ok())) : undefined;
+  });
+  for (let tentativa = 0; tentativa < 100; tentativa++) {
+    if (servidor.listening) await new Promise((ok) => servidor.close(() => ok()));
+    await new Promise((ok, falhar) => {
+      const erro = (falha) => { servidor.off('listening', ouvindo); falhar(falha); };
+      const ouvindo = () => { servidor.off('error', erro); ok(); };
+      servidor.once('error', erro).once('listening', ouvindo).listen(0, '127.0.0.1');
+    });
+    const porta = servidor.address().port;
+    if (porta > 65000) continue;
+    const livres = await Promise.all(Array.from({ length: 9 }, (_, i) => aceitaBind(porta + i + 1)));
+    if (livres.every(Boolean)) return porta;
+  }
+  throw new Error('no adjacent test port range was available');
+}
+
 test('E1-04a: /estado brings the project id and every crew, the latest update first, and writes nothing', async (t) => {
   const nova = estado(HORA(11), { desk: 2 });
   const { raiz, porta } = await subir(t, { antiga: estado(HORA(10)), nova });
@@ -96,7 +118,7 @@ test('E1-04a: /estado brings the project id and every crew, the latest update fi
   const r = await pedir(porta, '/estado');
   assert.deepEqual([r.status, r.headers['content-type']], [200, 'application/json; charset=utf-8']);
   const { projeto: id, crews, ...resto } = JSON.parse(r.corpo);
-  assert.deepEqual(resto, { versao: '' }, 'the version came with phase E4; this fake project has no stamp');
+  assert.deepEqual(resto, { versao: '', modo: 'manual' }, 'this fake project has no version stamp');
   assert.match(id, /^[0-9a-f]{12}$/);
   assert.equal(id, projetoDe(raiz));
   assert.ok(!r.corpo.includes(path.basename(raiz)), 'the path of the project is not exposed');
@@ -123,7 +145,7 @@ test('E1-04b: no crew with a state, or no crews/ folder at all — "crews": []',
   for (const crews of [{ 'sem-arquivo': null }, {}]) {
     const { raiz, porta } = await subir(t, crews);
     const r = await pedir(porta, '/estado');
-    assert.deepEqual([r.status, JSON.parse(r.corpo)], [200, { projeto: projetoDe(raiz), versao: '', crews: [] }]);
+    assert.deepEqual([r.status, JSON.parse(r.corpo)], [200, { projeto: projetoDe(raiz), versao: '', modo: 'manual', crews: [] }]);
   }
 });
 
@@ -138,13 +160,38 @@ test('E1-04c: / and /?demo give the page; /modelo.js gives the module as JavaScr
   }
 });
 
+test('U7F3C-10f: an already running Office serves one consistent asset snapshot after an update', async (t) => {
+  const p = await projeto(t);
+  await fs.writeFile(path.join(p.pasta, 'index.html'), '<!doctype html><html>v1.21.2</html>');
+  await fs.writeFile(path.join(p.pasta, 'modelo.js'), 'export const versao = "1.21.2";');
+  const servidor = criarServidor(p);
+  t.after(() => fechar(servidor));
+  assert.equal(await abrir(servidor, 0), true);
+  const porta = servidor.address().port;
+  await fs.writeFile(path.join(p.pasta, 'index.html'), '<!doctype html><html>v1.21.3</html>');
+  await fs.writeFile(path.join(p.pasta, 'modelo.js'), 'export const versao = "1.21.3";');
+  const pagina = await pedir(porta, '/');
+  const modulo = await pedir(porta, '/modelo.js');
+  assert.match(pagina.corpo, /v1\.21\.2/);
+  assert.match(modulo.corpo, /1\.21\.2/);
+});
+
 test('E1-04c: run as a process in an installed project, the script finds the page folder next to it', async (t) => {
   const { raiz } = await projeto(t);
   const destino = path.join(raiz, '_opencrew', 'core', 'scripts');
-  await fs.mkdir(path.join(destino, 'escritorio'), { recursive: true });
+  for (const pasta of ['escritorio', 'estado', 'execucao', 'caminho']) await fs.mkdir(path.join(destino, pasta), { recursive: true });
+  const pastaPagina = path.join(raiz, '_opencrew', 'core', 'escritorio');
+  for (const arquivo of ARQUIVOS) {
+    const caminho = path.join(pastaPagina, arquivo);
+    if (!(await fs.stat(caminho).then(() => true, () => false))) await fs.writeFile(caminho, '');
+  }
   const modulos = (await fs.readdir(path.join(CORE, 'scripts', 'escritorio'))).map((m) => `escritorio/${m}`);
-  for (const f of ['comum.mjs', 'escritorio.mjs', ...modulos]) await fs.copyFile(path.join(CORE, 'scripts', f), path.join(destino, f));
+  for (const f of ['comum.mjs', 'escritorio.mjs', 'trava.mjs', 'caminho/argumentos.mjs', 'caminho/nucleo.mjs', 'execucao/registro.mjs', 'estado/preferencia.mjs', 'estado/arquivo.mjs', ...modulos]) {
+    await fs.copyFile(path.join(CORE, 'scripts', f), path.join(destino, f));
+  }
   const filho = spawn(process.execPath, ['_opencrew/core/scripts/escritorio.mjs', '--porta', await portaLivre(t)], { cwd: raiz });
+  let erroFilho = '';
+  filho.stderr.setEncoding('utf8').on('data', (parte) => { erroFilho += parte; });
   const saiu = new Promise((ok) => filho.once('exit', ok));
   try {
     const saida = await new Promise((ok) => {
@@ -153,7 +200,7 @@ test('E1-04c: run as a process in an installed project, the script finds the pag
       saiu.then(() => ok(texto));
     });
     const porta = Number(saida.match(/^Escritório aberto em http:\/\/127\.0\.0\.1:(\d+) — Ctrl\+C para fechar\r?\n$/)?.[1]);
-    assert.ok(porta, `first line: ${JSON.stringify(saida)}`);
+    assert.ok(porta, `first line: ${JSON.stringify(saida)}; stderr: ${erroFilho}`);
     assert.equal((await pedir(porta, '/')).corpo, PAGINA['index.html']);
   } finally {
     filho.kill();
@@ -201,7 +248,10 @@ const OCUPANTES = {
 for (const [nome, criar] of Object.entries(OCUPANTES)) {
   test(`E1-04f: the port taken by ${nome} — the office opens on a later port and says which`, async (t) => {
     const { raiz } = await projeto(t);
-    const ocupada = await segurar(t, await criar(t));
+    const servidor = await criar(t);
+    const ocupada = nome === 'a service that never answers'
+      ? await portaComIntervaloLivre(t, servidor)
+      : await segurar(t, servidor);
     const inicio = performance.now();
     const r = await rodar(t, raiz, ['--porta', String(ocupada)]);
     assert.ok(performance.now() - inicio < 5000, 'a port that does not answer is given up after about 1 s');
@@ -245,7 +295,12 @@ test('E1-04h: run again with the office of this project on the port — exit 0, 
   const { raiz } = await projeto(t);
   const primeiro = await rodar(t, raiz, ['--porta', await portaLivre(t)]);
   assert.deepEqual([primeiro.code, primeiro.linhas], [0, [ABERTO(primeiro.porta)]]);
-  await fs.symlink(raiz, `${raiz}-elo`, 'junction'); // the same project, reached through a folder link
+  try {
+    await fs.symlink(raiz, `${raiz}-elo`, 'junction'); // the same project, reached through a folder link
+  } catch (erro) {
+    if (['EPERM', 'EACCES', 'ENOTSUP'].includes(erro.code)) return t.skip(`the environment cannot create directory links (${erro.code})`);
+    throw erro;
+  }
   t.after(() => fs.unlink(`${raiz}-elo`));
   for (const cwd of [raiz, `${raiz}-elo`]) {
     const deNovo = await rodar(t, cwd, ['--porta', String(primeiro.porta)]);

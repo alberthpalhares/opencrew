@@ -371,3 +371,10 @@
 - **Custo de adiar:** baixo: exige um link que o próprio usuário pôs no lugar de um arquivo do OpenCrew.
 - **Aprovação:** não.
 
+## Escritório: receber o fim de sessão nativo do Codex App
+- **O que plano/specs já dizem:** U7F3C-09d implementa o vínculo verificável entre run e sessão e o comando para desvincular apenas o run correspondente; sem um sinal de encerramento entregue pelo harness, a vigia conserva o run retomável por até duas horas. O runtime não integra nem automatiza a interface do Codex App.
+- **Ideia:** integrar um evento/API de ciclo de vida oficialmente exposto pelo Codex App ao vínculo do runtime, enviando a sessão e o run exatos quando a sessão terminar. Um sinal atrasado precisa deixar intactos outros runs ativos da crew e permitir retomar o run encerrado.
+- **Alocação:** → Fase U7-F3d — ciclo nativo de sessão; spec própria, condicionada à disponibilidade de um sinal suportado pelo harness.
+- **Custo de adiar:** sem o sinal, uma sessão encerrada pode continuar contando como ativa até o limite de duas horas e exigir a escolha de um novo run.
+- **Aprovação:** pendente para abrir a fase; fora da candidata 1.21.3.
+

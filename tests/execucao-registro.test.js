@@ -15,7 +15,7 @@ test('U5c-01a: pasta --tema --passos creates the folder and the record, open, wi
   const antes = await fora(raiz);
   assert.deepEqual((await pasta(raiz, '--tema', 'Ata de março', '--passos', '4')).linhas, [OK_PASTA]);
   const r = await registro(raiz);
-  assert.deepEqual({ ...r, iniciadaEm: 'ISO' }, { versao: 1, crew: CREW, run: RUN, tema: 'Ata de março', status: 'aberta', iniciadaEm: 'ISO', passosPrevistos: 4, passos: [], marcos: [], saida: '' });
+  assert.deepEqual({ ...r, iniciadaEm: 'ISO' }, { versao: 1, crew: CREW, run: RUN, tema: 'Ata de março', status: 'aberta', iniciadaEm: 'ISO', passosPrevistos: 4, passos: [], marcos: [], saida: '', organizada: true });
   assert.match(r.iniciadaEm, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   assert.deepEqual(await fora(raiz), antes, 'U5c-07a');
   assert.deepEqual(await temporarios(raiz), []);
@@ -159,7 +159,7 @@ test('U5c-07b: a record that cannot be written does not stop the run — the war
   assert.equal(c.fim, `CAMINHO:OK ${SAIDA}/${RUN}/v1/minuta.md`);
   const m = await marcar(raiz, 1, 'checkpoint', 'aprovado');
   assert.match(m.linhas[0], AVISO);
-  assert.deepEqual([m.code, m.fim], [0, 'EXECUCAO:OK']);
+  assert.deepEqual([m.code, m.fim], [0, 'EXECUCAO:MARCO_PENDENTE']);
   assert.deepEqual(await temporarios(raiz), []);
 });
 

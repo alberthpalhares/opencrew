@@ -52,6 +52,8 @@ function opcoesDe(p, agora, naDemo) {
   const data = new Date(agora);
   return {
     agoraMs: agora,
+    crewAlvo: p.crew,
+    runAlvo: p.runId,
     hora: { horas: data.getHours(), minutos: data.getMinutes() },
     periodo: p.periodo,
     reduzirMovimento: p.menosMovimento.matches,
@@ -67,7 +69,7 @@ function opcoesDe(p, agora, naDemo) {
  */
 function ler(p) {
   const agora = Date.now();
-  const naDemo = emExibicao(p.memoria, { demo: p.demo }).modo === 'demo';
+  const naDemo = emExibicao(p.memoria, { demo: p.demo, crewAlvo: p.crew, runAlvo: p.runId }).modo === 'demo';
   p.demoDesde = naDemo ? (p.demoDesde ?? agora) : null;
   const primeira = p.leitura === null;
   p.leitura = transicao(p.leitura, montarPagina(p.memoria, opcoesDe(p, agora, naDemo)), agora);
@@ -84,13 +86,15 @@ async function perguntar(p) {
   const prazo = p.janela.setTimeout(() => corte.abort(), PRAZO_MS);
   try {
     const consulta = new URLSearchParams();
-    if (p.crew && p.runId) {
-      consulta.set('crew', p.crew);
-      consulta.set('run_id', p.runId);
-    }
+    if (p.crew !== null) consulta.set('crew', p.crew);
+    if (p.runId !== null) consulta.set('run_id', p.runId);
     const destino = consulta.size ? `${ENDERECO}?${consulta}` : ENDERECO;
     const resposta = await p.janela.fetch(destino, { cache: 'no-store', signal: corte.signal });
-    return resposta.ok ? await resposta.json() : null;
+    if (!resposta.ok) return null;
+    const dados = await resposta.json();
+    if (typeof dados?.projeto !== 'string' || !Array.isArray(dados.crews)) return null;
+    p.identidade ??= { projeto: dados.projeto, versao: dados.versao };
+    return dados.projeto === p.identidade.projeto && dados.versao === p.identidade.versao ? dados : null;
   } catch {
     return null;
   } finally {
@@ -104,7 +108,7 @@ async function consultarServidor(p) {
   p.consultando = true;
   const resposta = await perguntar(p);
   p.consultando = false;
-  p.memoria = consultar(p.memoria ?? MEMORIA_INICIAL, resposta);
+  p.memoria = consultar(p.memoria ?? MEMORIA_INICIAL, resposta, { crewAlvo: p.crew, runAlvo: p.runId });
   ler(p);
 }
 
@@ -136,6 +140,7 @@ function criarPagina(janela) {
   const documento = janela.document;
   const el = (id) => documento.getElementById(id);
   const endereco = new URLSearchParams(janela.location.search);
+  const identidade = documento.documentElement?.dataset;
   const p = {
     janela,
     documento,
@@ -143,6 +148,7 @@ function criarPagina(janela) {
     demo: endereco.has('demo'),
     crew: endereco.get('crew'),
     runId: endereco.get('run_id'),
+    identidade: identidade?.projeto ? { projeto: decodeURIComponent(identidade.projeto), versao: decodeURIComponent(identidade.versao ?? '') } : null,
     periodo: endereco.get('periodo'), // força o período do dia; valor desconhecido: vale a hora
     menosMovimento: janela.matchMedia('(prefers-reduced-motion: reduce)'),
     rotulos: criarRotulos(el('rotulos'), documento),

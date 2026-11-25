@@ -10,10 +10,9 @@
 // <crew> é o nome da pasta em `crews/`.
 // Só grava `crews/<crew>/output/<id>/execucao.json` e, no `fechar`, uma linha de
 // `crews/<crew>/_memory/runs.md` (posta ou trocada); `retomar` só lê. Nunca apaga.
-// Última linha da saída (o runner lê esta linha): EXECUCAO:OK · EXECUCAO:FECHADA <resultado> <score>
-// · EXECUCAO:RETOMAR <id> <próximo passo> · EXECUCAO:NADA (nenhuma execução aberta).
-// Código de saída: 0 sempre que a linha EXECUCAO: sai — também quando o registro ou o histórico
-// não pôde ser gravado (o aviso vem antes da linha) · 1 = erro de uso; nada é gravado.
+// Última linha da saída: EXECUCAO:OK (marco gravado) · EXECUCAO:MARCO_PENDENTE (repetir só o marco)
+// · EXECUCAO:FECHADA <resultado> <score> · EXECUCAO:RETOMAR <id> <próximo passo> · EXECUCAO:NADA.
+// Código de saída: 0 quando sai uma linha EXECUCAO: · 1 = erro de uso; nada é gravado.
 // Spec: fase-u5c-execucao-registrada.md (repositório do OpenCrew).
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -24,8 +23,9 @@ import { ehPasta } from './caminho/disco.mjs';
 import { gravarTexto } from './estado/arquivo.mjs';
 import { USO, erroDeArgumentos, lerArgs } from './execucao/argumentos.mjs';
 import { ROTULO, comLinha, dataDe, linhaDe } from './execucao/historico.mjs';
-import { PEDIDO, anotar, comMarco, comTema, fechado, gravarRegistro, lerRegistro, limparNota, motivoDe, novoRegistro, score } from './execucao/registro.mjs';
+import { STATUS, PEDIDO, AVISO, anotar, comMarco, comTema, fechado, gravarRegistro, lerParaGravar, limparNota, motivoDe, novoRegistro, score } from './execucao/registro.mjs';
 import { correcoesRecentes, retomar } from './execucao/retomar.mjs';
+import { comTrava } from './trava.mjs';
 
 const MSG = {
   semExecucao: (run) => `Execução não encontrada: ${limpar(run)}`,
@@ -48,10 +48,13 @@ function localizar(raiz, args) {
   return args.acao !== 'retomar' && !valida ? { erro: MSG.semExecucao(args.run) } : { crew: achada.crew, pasta };
 }
 
-async function marcar({ pasta, base }, args) {
+async function marcar({ pasta, base }, args, deps) {
   const marco = { passo: Number(args.passo), evento: args.evento, resultado: args.resultado, nota: limparNota(args.nota), em: base.em };
-  const aviso = await anotar(pasta, base, (registro) => comMarco(comTema(registro, args.tema), marco));
-  return [aviso, 'EXECUCAO:OK'];
+  const aviso = await anotar(pasta, base, (registro) => {
+    if (registro.status !== 'aberta') throw new Error('a execução já foi encerrada');
+    return comMarco(comTema(registro, args.tema), marco);
+  }, deps);
+  return aviso ? [aviso, 'EXECUCAO:MARCO_PENDENTE'] : ['EXECUCAO:OK'];
 }
 
 /** O texto do arquivo, com o BOM se houver; `undefined` quando os bytes não são UTF-8 (o arquivo não é regravado). */
@@ -64,15 +67,18 @@ function emUtf8(bytes) {
 }
 
 /** Regra 7: a linha da execução no `runs.md` da crew. @returns {Promise<string|null>} o aviso, ou `null` */
-async function gravarHistorico({ raiz, crew, base: { run } }, linha) {
+async function gravarHistorico({ raiz, crew, base: { run } }, linha, deps) {
   const arquivo = path.resolve(raiz, 'crews', crew, '_memory', 'runs.md');
   try {
-    const bytes = await fs.readFile(arquivo).catch((erro) => (erro.code === 'ENOENT' ? null : Promise.reject(erro)));
-    const atual = bytes === null ? null : emUtf8(bytes);
-    if (atual === undefined) return MSG.semHistorico(MSG.naoUtf8);
+    if (!realDentroDe(raiz, arquivo)) return MSG.semHistorico('o arquivo runs.md fica fora do projeto');
     await fs.mkdir(path.dirname(arquivo), { recursive: true });
-    await gravarTexto(arquivo, comLinha(atual, { crew, run, linha }));
-    return null;
+    return await comTrava(arquivo, async () => {
+      const bytes = await fs.readFile(arquivo).catch((erro) => (erro.code === 'ENOENT' ? null : Promise.reject(erro)));
+      const atual = bytes === null ? null : emUtf8(bytes);
+      if (atual === undefined) return MSG.semHistorico(MSG.naoUtf8);
+      await gravarTexto(arquivo, comLinha(atual, { crew, run, linha }), deps);
+      return null;
+    });
   } catch (erro) {
     return MSG.semHistorico(motivoDe(erro));
   }
@@ -81,22 +87,41 @@ async function gravarHistorico({ raiz, crew, base: { run } }, linha) {
 /** Regra 8 da U5d: no histórico, o tema de um pedido começa por "Pedido: ". */
 const temaNoHistorico = (registro) => (registro.tipo === PEDIDO ? `Pedido: ${registro.tema || 'sem tema'}` : registro.tema);
 
-async function fechar(ctx, args) {
+async function fechar(ctx, args, deps) {
   const { raiz, crew, pasta, base, agora } = ctx;
-  const lido = await lerRegistro(pasta);
-  const registro = fechado(comTema(lido ?? novoRegistro(base), args.tema), { resultado: args.resultado, saida: args.saida, em: base.em });
-  const avisos = [lido ? null : MSG.semRegistro, await gravarRegistro(pasta, registro)];
+  const pendente = `EXECUCAO:FECHAMENTO_PENDENTE ${args.resultado}`;
+  let lido;
+  try {
+    lido = await lerParaGravar(pasta, deps.lerRegistroParaFechar);
+  } catch (erro) {
+    return [AVISO(motivoDe(erro)), pendente];
+  }
+  const resultadoExistente = Object.keys(STATUS).find((resultado) => STATUS[resultado] === lido?.status);
+  const jaFechado = resultadoExistente === args.resultado;
+  const registro = jaFechado
+    ? lido
+    : fechado(comTema(lido ?? novoRegistro(base), args.tema), { resultado: args.resultado, saida: args.saida, em: base.em });
+  if (!jaFechado) {
+    const falhaRegistro = await gravarRegistro(pasta, registro, deps);
+    if (falhaRegistro) return [lido ? null : MSG.semRegistro, falhaRegistro, pendente];
+  }
   const pontos = score(registro);
-  const linha = linhaDe({ data: dataDe(base.run, agora), run: base.run, tema: temaNoHistorico(registro), saida: registro.saida, score: pontos, resultado: ROTULO[args.resultado] });
-  const semHistorico = await gravarHistorico(ctx, linha);
-  return [...avisos, semHistorico ?? linha, ...(await correcoesRecentes(raiz, crew)), `EXECUCAO:FECHADA ${args.resultado} ${pontos}`];
+  const resultadoFinal = jaFechado ? resultadoExistente : args.resultado;
+  const fechadaEm = registro.fechadaEm ? new Date(registro.fechadaEm) : agora;
+  const linha = linhaDe({ data: dataDe(base.run, fechadaEm), run: base.run, tema: temaNoHistorico(registro), saida: registro.saida, score: pontos, resultado: ROTULO[resultadoFinal] });
+  const semHistorico = await gravarHistorico(ctx, linha, deps);
+  return [lido ? null : MSG.semRegistro, semHistorico ?? linha, ...(await correcoesRecentes(raiz, crew)), `EXECUCAO:FECHADA ${resultadoFinal} ${pontos}`];
 }
 
-async function responder(raiz, crew, pasta, args, agora) {
+async function responder(raiz, crew, pasta, args, agora, deps) {
   if (args.acao === 'retomar') return retomar(raiz, crew, args.run);
   const base = { crew, run: args.run, em: agora.toISOString() };
-  const acao = args.acao === 'marcar' ? marcar : fechar;
-  return (await acao({ raiz, crew, pasta, base, agora }, args)).filter(Boolean);
+  const contexto = { raiz, crew, pasta, base, agora };
+  const executar = () => fechar(contexto, args, deps);
+  const linhas = args.acao === 'marcar'
+    ? await marcar(contexto, args, deps)
+    : await comTrava(path.join(pasta, 'execucao.json'), executar);
+  return linhas.filter(Boolean);
 }
 
 /**
@@ -115,7 +140,7 @@ export async function main(argv, deps = {}) {
     return 1;
   }
   try {
-    (await responder(cwd, local.crew, local.pasta, args, agora())).forEach((linha) => escrever(linha));
+    (await responder(cwd, local.crew, local.pasta, args, agora(), deps)).forEach((linha) => escrever(linha));
     return 0;
   } catch (erro) {
     escrever(MSG.falha(erro?.message ?? erro));

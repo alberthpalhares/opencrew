@@ -1,5 +1,15 @@
 # Entrega — The Delivery Folder of a Run
 
+## Entrega organizada
+
+A montagem local conclui a preparação. Para um pacote pronto e aprovado, a escolha de destino é um checkpoint antes do menu final. Espere a resposta, inclusive quando há uma sugestão. Só dispense a pergunta se o usuário já escolheu para esta execução.
+
+Acrescente `--somente-local` ao comando de montagem. Para uma execução organizada, a lista usa os caminhos devolvidos por `conferir` ao consolidar cada passo. Use `--aprovada` só para os arquivos que o usuário aprovou. Sem aprovação comprovada, monte primeiro sem essa opção, mostre o pacote e peça aprovação. Se houver correção, confirme a nova revisão antes de montar novamente com `--aprovada`. Se a entrega continuar incompleta, mantenha o pacote local.
+
+Depois da última etapa, com `ENTREGA:OK` ou `ENTREGA:COM_RESSALVA` e aprovação registrada, pergunte: “Onde você quer guardar esta entrega?”. Ofereça manter na crew, usar uma sugestão ou indicar outra pasta. Consulte sugestões com `node _opencrew/core/scripts/entregar.mjs --crew "crews/{name}" --run "{run_id}" --sugerir-destino`. Use o destino informado para esta execução sem repetir a pergunta. Para gravar a cópia, execute `node _opencrew/core/scripts/entregar.mjs --crew "crews/{name}" --run "{run_id}" --copiar-final --destino "{pasta}"`. Acrescente `--lembrar-final` só se solicitado. Se ficar na crew, mostre o caminho local.
+
+Uma pasta absoluta pode ficar em outro projeto, numa pasta sincronizada ou num disco externo. Precisa existir. A regra de nome seguro abaixo vale também para o destino final. Informe o caminho gravado. A sincronização fica a cargo do aplicativo da nuvem. Em falha, mostre o caminho local e ofereça nova tentativa. Para copiar mais tarde uma entrega aprovada, use `--copiar-final` sem remontar o pacote nem repetir etapas. As instruções abaixo sobre cópia automática via configuração valem somente para chamadas legadas, sem `--somente-local`.
+
 One script turns the approved files of a run into `crews/{name}/output/{run_id}/entrega/`: one
 folder per channel, text ready to paste and a `LEIA-ME.md` that tells the user what to do with each
 file. The same script copies what is ready to a folder of the project the user chose, one folder per
