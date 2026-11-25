@@ -75,6 +75,8 @@ async function esperarPagina(porta, processo) {
 
 async function encerrarProcesso(processo) {
   if (processo.exitCode !== null || processo.signalCode !== null) return;
+  // `subir()` unrefs the detached daemon. Re-ref it so Node keeps the test alive for its exit event.
+  processo.ref();
   const finalizado = once(processo, 'exit');
   processo.kill('SIGKILL');
   await finalizado;
