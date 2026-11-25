@@ -37,8 +37,11 @@ Evidência: `sandbox/aceite-destinos-1.22.0-20261124/aceite-fisico.log`.
 - Consulta ao npm: `latest` = 1.21.2; `@aksp/opencrew@1.22.0` ainda não publicado.
 - A primeira tentativa de publicação (workflow `45538366890`, commit `0334465`) parou antes do publish: o cenário de dois fechamentos simultâneos falhou no Windows/Node 22 e o job `publish` foi pulado. Nenhum pacote 1.22.0 foi publicado.
 - Reproduzi a corrida no Windows: em 100 repetições, falhou na 87ª; a segunda execução recebeu `EPERM` transitório na recuperação da trava e deixou de gravar a linha de `runs.md`. A recuperação agora trata `EPERM`/`EBUSY` como disputa transitória e volta ao ciclo de aquisição. Depois da correção, o mesmo cenário passou em 200 repetições consecutivas.
-- A tag `v1.22.0` já existe no commit da tentativa que falhou, mas ainda não publicou no npm. O próximo commit deve chegar à `main` e passar a matriz inteira antes de substituir essa tag não publicada pelo commit final; então será possível disparar a publicação OIDC com o código corrigido.
-- O dono autorizou commit, push, tag e publicação. Restam `npm run verify`, commit e push, CI verde em Windows e Ubuntu com Node 20.17, 22 e 24, confirmar a ausência de 1.22.0 no registry e que `latest` não retrocederá, recriar a tag final, acompanhar OIDC, confirmar `latest` e publicar a release do GitHub.
+- Evidências: falha reproduzida em `sandbox/stress-fechar-diagnostico.log`; resumo e última passagem em `sandbox/stress-fechar-resumo.txt` e `sandbox/stress-fechar-fix.log`.
+- A validação local posterior à correção (`npm run verify`, Windows/Node 24.14.0) passou com **1.756 aprovados, zero falhas e dois pulados**. Evidência: `sandbox/verify-1.22.0-racefix-elevated.log`.
+- A correção foi enviada no commit `3846ae6`; o CI `45541626666` passou nas seis combinações Windows/Ubuntu × Node 20.17/22/24, incluindo a auditoria de segurança. A versão continua fora do npm (`latest` = 1.21.2; consulta a `@aksp/opencrew@1.22.0` retornou 404).
+- A tag `v1.22.0` ainda aponta ao commit da tentativa que falhou (`0334465`), cujo workflow `45538366890` pulou o publish. Depois de registrar esta atualização do relatório, a nova cabeça da `main` precisa passar a mesma matriz antes de substituir a tag não publicada e disparar o workflow OIDC.
+- O dono autorizou commit, push, tag e publicação. Restam validar a nova cabeça da `main`, substituir `v1.22.0`, acompanhar OIDC, confirmar que `latest` virou 1.22.0 e publicar a release do GitHub.
 
 ## Limitação conhecida
 
